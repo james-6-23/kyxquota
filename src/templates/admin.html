@@ -33,6 +33,10 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    .refresh-spin {
+      animation: spin 0.6s ease-in-out;
+    }
   </style>
 </head>
 <body class="bg-slate-50">
@@ -335,8 +339,8 @@
         <div id="keysSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">Keys 管理</h2>
-            <button onclick="loadKeysList()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="refreshKeys()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg id="keysRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               刷新
@@ -369,8 +373,8 @@
         <div id="claimsSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">领取记录</h2>
-            <button onclick="loadClaimRecords(1)" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="refreshClaims()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg id="claimsRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               刷新
@@ -407,8 +411,8 @@
         <div id="donatesSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">投喂记录</h2>
-            <button onclick="loadDonateRecords(1)" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="refreshDonates()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg id="donatesRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               刷新
@@ -446,8 +450,8 @@
         <div id="usersSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">用户列表</h2>
-            <button onclick="loadUsersList()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <button onclick="refreshUsers()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg id="usersRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               刷新
@@ -730,6 +734,47 @@
       } catch (e) {
         showMessage('更新失败', 'error');
       }
+    }
+
+    // 刷新按钮包装函数
+    async function refreshKeys() {
+      const icon = document.getElementById('keysRefreshIcon');
+      icon.classList.add('refresh-spin');
+      await loadKeysList();
+      setTimeout(() => {
+        icon.classList.remove('refresh-spin');
+        showMessage('Keys 列表已刷新', 'success');
+      }, 600);
+    }
+
+    async function refreshClaims() {
+      const icon = document.getElementById('claimsRefreshIcon');
+      icon.classList.add('refresh-spin');
+      await loadClaimRecords(1);
+      setTimeout(() => {
+        icon.classList.remove('refresh-spin');
+        showMessage('领取记录已刷新', 'success');
+      }, 600);
+    }
+
+    async function refreshDonates() {
+      const icon = document.getElementById('donatesRefreshIcon');
+      icon.classList.add('refresh-spin');
+      await loadDonateRecords(1);
+      setTimeout(() => {
+        icon.classList.remove('refresh-spin');
+        showMessage('投喂记录已刷新', 'success');
+      }, 600);
+    }
+
+    async function refreshUsers() {
+      const icon = document.getElementById('usersRefreshIcon');
+      icon.classList.add('refresh-spin');
+      await loadUsersList();
+      setTimeout(() => {
+        icon.classList.remove('refresh-spin');
+        showMessage('用户列表已刷新', 'success');
+      }, 600);
     }
 
     async function loadKeysList() {
