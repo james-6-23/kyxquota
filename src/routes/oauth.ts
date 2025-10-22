@@ -101,10 +101,12 @@ app.get('/callback', async (c) => {
             name: userInfo.name || userInfo.username,
         });
 
-        // 重定向到首页，并设置 Cookie
-        return c.redirect('/', 302, {
-            'Set-Cookie': setCookie('session_id', sessionId),
-        });
+        // 设置 Cookie 并重定向到首页
+        const cookieValue = setCookie('session_id', sessionId);
+        console.log('[OAuth] Setting cookie:', cookieValue);
+        console.log('[OAuth] Session ID:', sessionId);
+        c.header('Set-Cookie', cookieValue);
+        return c.redirect('/');
     } catch (e: any) {
         console.error('[OAuth] Callback failed:', e);
         return c.html(

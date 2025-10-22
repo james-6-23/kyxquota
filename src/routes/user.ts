@@ -17,12 +17,16 @@ const app = new Hono();
  */
 async function requireAuth(c: any, next: any) {
     const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    console.log('[Auth] Checking session, ID:', sessionId);
     if (!sessionId) {
+        console.log('[Auth] No session ID found in cookies');
         return c.json({ success: false, message: '未登录' }, 401);
     }
 
     const session = await getSession(sessionId);
+    console.log('[Auth] Session data:', session ? 'found' : 'not found');
     if (!session || !session.linux_do_id) {
+        console.log('[Auth] Invalid session');
         return c.json({ success: false, message: '会话无效' }, 401);
     }
 
@@ -474,9 +478,8 @@ app.post('/auth/logout', async (c) => {
         await deleteSession(sessionId);
     }
 
-    return c.json({ success: true }, 200, {
-        'Set-Cookie': setCookie('session_id', '', 0),
-    });
+    c.header('Set-Cookie', setCookie('session_id', '', 0));
+    return c.json({ success: true });
 });
 
 export default app;
