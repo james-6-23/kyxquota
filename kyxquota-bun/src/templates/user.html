@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="KYX API 公益站额度管理系统">
+  <title>KYX API Quota Bridge</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --gradient-success: linear-gradient(135deg, #0F9D58 0%, #0b7a42 100%);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    .gradient-bg {
+      background: var(--gradient-primary);
+    }
+
+    .card-hover {
+      transition: all 0.3s ease;
+    }
+
+    .card-hover:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .animate-in {
+      animation: fadeInUp 0.5s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .spinner {
+      border: 3px solid #f3f4f6;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(100px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Loading Page -->
+  <div id="loadingPage" class="fixed inset-0 gradient-bg flex flex-col items-center justify-center z-50">
+    <div class="spinner"></div>
+    <p class="text-white text-lg mt-4">正在加载...</p>
+  </div>
+
+  <!-- Login Section -->
+  <div id="loginSection" class="hidden min-h-screen gradient-bg flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full animate-in">
+      <div class="flex justify-center mb-6">
+        <svg class="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-center text-slate-900 mb-8">KYX API Quota Bridge</h1>
+      <button onclick="login()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
+        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+        </svg>
+        使用 Linux Do 账户登录
+      </button>
+      <p class="text-xs text-slate-500 text-center mt-6">登录即表示您同意我们的服务条款和隐私政策</p>
+    </div>
+  </div>
+
+  <!-- Bind Section -->
+  <div id="bindSection" class="hidden min-h-screen gradient-bg flex items-center justify-center p-6">
+    <div class="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full animate-in">
+      <h2 class="text-2xl font-bold text-center text-slate-900 mb-2">绑定公益站账号</h2>
+      <p class="text-sm text-slate-600 text-center mb-6">请输入您在公益站的用户名</p>
+      <div id="bindMessage" class="hidden mb-4 p-3 rounded-lg"></div>
+      <input type="text" id="username" placeholder="输入您的公益站用户名" class="w-full px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      <button onclick="bindAccount()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">绑定账号</button>
+    </div>
+  </div>
+
+  <!-- Main Section -->
+  <div id="mainSection" class="hidden">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <h1 class="text-xl font-bold text-slate-900">KYX API 公益站</h1>
+          <div class="relative">
+            <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+              <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                <span id="userInitial">U</span>
+              </div>
+              <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+              </svg>
+            </button>
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1">
+              <div class="px-4 py-3 border-b border-slate-200">
+                <p id="userName" class="font-semibold text-slate-900">用户名</p>
+                <p id="userId" class="text-xs text-slate-500">ID: xxx</p>
+              </div>
+              <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                <span>📊</span> 我的记录
+              </button>
+              <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
+                <span>🚪</span> 退出登录
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="max-w-4xl mx-auto p-6">
+      <div id="message" class="hidden mb-4 p-4 rounded-lg animate-in"></div>
+
+      <!-- Quota Display -->
+      <div class="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-8 text-white mb-6 shadow-xl animate-in">
+        <p class="text-sm opacity-90 mb-2">当前剩余额度</p>
+        <h2 id="quotaValue" class="text-5xl font-bold mb-4">--</h2>
+        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
+          <div>
+            <p class="text-xs opacity-75">已使用</p>
+            <p id="quotaUsage" class="text-lg font-semibold">--</p>
+          </div>
+          <div>
+            <p class="text-xs opacity-75">状态</p>
+            <p id="quotaStatus" class="text-lg font-semibold">正常</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions Card -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in card-hover">
+        <h3 class="text-xl font-bold text-slate-900 mb-4">💰 每日额度领取</h3>
+        <p class="text-sm text-slate-600 mb-2">当您的剩余额度低于 $20 时，可以每天领取额度补充</p>
+        
+        <!-- 额度说明 -->
+        <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div class="flex items-center gap-2 text-xs text-amber-800">
+            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>额度单位：<strong>500,000 quota = $1 美元</strong></span>
+          </div>
+        </div>
+        
+        <button id="claimBtn" onclick="claimQuota()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          领取今日额度
+        </button>
+      </div>
+
+      <!-- Donate Card -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
+        <h3 class="text-xl font-bold text-slate-900 mb-4">🎁 投喂 ModelScope Key</h3>
+        <p class="text-sm text-slate-600 mb-2">每个有效的 ModelScope API Key 可为您增加 $50 额度</p>
+        
+        <!-- 投喂限制说明 -->
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center gap-2 text-xs text-red-800">
+            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <span>⚠️ 限制：<strong>每天只能提交 1 个 Key</strong>，请珍惜机会</span>
+          </div>
+        </div>
+        
+        <textarea id="keysInput" placeholder="请输入 1 个 ModelScope API Key：&#10;ms-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
+        <button onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          🚀 提交 Key
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Records Modal -->
+  <div id="recordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in">
+      <div class="flex justify-between items-center p-6 border-b border-slate-200">
+        <h2 class="text-2xl font-bold text-slate-900">我的记录</h2>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6">
+        <div class="flex gap-2 mb-6 border-b border-slate-200">
+          <button onclick="showTab('claim')" class="tab-btn px-4 py-2 font-semibold border-b-2 border-indigo-600 text-indigo-600">领取记录</button>
+          <button onclick="showTab('donate')" class="tab-btn px-4 py-2 font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-900">投喂记录</button>
+        </div>
+        <div id="claimRecords" class="tab-content overflow-y-auto max-h-96"></div>
+        <div id="donateRecords" class="tab-content hidden overflow-y-auto max-h-96"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CONFIG = {
+      LINUX_DO_AUTH_URL: 'https://connect.linux.do/oauth2/authorize',
+      LINUX_DO_CLIENT_ID: '',
+      LINUX_DO_REDIRECT_URI: window.location.origin + '/oauth/callback',
+    };
+
+    let currentUser = null;
+
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast px-6 py-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-3">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'}
+          </svg>
+          <span>${message}</span>
+        </div>
+      `;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    function toggleDropdown() {
+      document.getElementById('dropdownMenu').classList.toggle('hidden');
+    }
+
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('dropdownMenu');
+      if (!e.target.closest('button[onclick="toggleDropdown()"]') && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    function login() {
+      sessionStorage.setItem('oauth_loading', 'true');
+      const authUrl = `${CONFIG.LINUX_DO_AUTH_URL}?client_id=${CONFIG.LINUX_DO_CLIENT_ID}&redirect_uri=${encodeURIComponent(CONFIG.LINUX_DO_REDIRECT_URI)}&response_type=code&scope=user`;
+      window.location.href = authUrl;
+    }
+
+    async function bindAccount() {
+      const username = document.getElementById('username').value.trim();
+      if (!username) {
+        showMessage('请输入用户名', 'error', 'bind');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/bind', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          document.getElementById('bindSection').classList.add('hidden');
+          document.getElementById('mainSection').classList.remove('hidden');
+          await loadQuota();
+          showToast(data.message, 'success');
+        } else {
+          showMessage(data.message, 'error', 'bind');
+        }
+      } catch (e) {
+        showMessage('绑定失败', 'error', 'bind');
+      }
+    }
+
+    async function loadQuota() {
+      try {
+        const res = await fetch('/api/user/quota');
+        const data = await res.json();
+
+        if (data.success) {
+          const { quota, used_quota, total, username, linux_do_id, avatar_url } = data.data;
+
+          document.getElementById('userName').textContent = username;
+          document.getElementById('userId').textContent = 'ID: ' + linux_do_id;
+          document.getElementById('userInitial').textContent = username[0].toUpperCase();
+
+          if (avatar_url) {
+            document.getElementById('userAvatar').style.backgroundImage = `url(${avatar_url})`;
+            document.getElementById('userAvatar').style.backgroundSize = 'cover';
+            document.getElementById('userInitial').textContent = '';
+          }
+
+          const quotaUSD = (quota / 500000).toFixed(2);
+          document.getElementById('quotaValue').textContent = '$' + quotaUSD;
+          document.getElementById('quotaUsage').textContent = ((used_quota / total * 100).toFixed(2)) + '%';
+          document.getElementById('quotaStatus').textContent = quota < 10000000 ? '额度不足' : '充足';
+
+          const claimBtn = document.getElementById('claimBtn');
+          if (data.data.claimed_today) {
+            claimBtn.disabled = true;
+            claimBtn.textContent = '✓ 今日已领取';
+          } else if (!data.data.can_claim) {
+            claimBtn.disabled = true;
+            claimBtn.textContent = '❌ 额度充足';
+          }
+        } else if (res.status === 400) {
+          document.getElementById('loginSection').classList.add('hidden');
+          document.getElementById('bindSection').classList.remove('hidden');
+        }
+      } catch (e) {
+        console.error('加载额度失败', e);
+      }
+    }
+
+    async function claimQuota() {
+      const btn = document.getElementById('claimBtn');
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner inline-block"></div> 领取中...';
+
+      try {
+        const res = await fetch('/api/claim/daily', { method: 'POST' });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          await loadQuota();
+        } else {
+          showToast(data.message, 'error');
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      } catch (e) {
+        showToast('领取失败', 'error');
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    async function donateKeys() {
+      const keysText = document.getElementById('keysInput').value.trim();
+      if (!keysText) {
+        showToast('请输入 Keys', 'error');
+        return;
+      }
+
+      const keys = keysText.split('\n').map(k => k.trim()).filter(k => k);
+      if (keys.length === 0) {
+        showToast('没有有效的 Key', 'error');
+        return;
+      }
+
+      // 提示：每天只能提交1个Key
+      if (keys.length > 1) {
+        showToast('每天只能提交 1 个 Key，已自动提取第一个', 'error');
+        return;
+      }
+
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner inline-block"></div> 验证中...';
+
+      try {
+        const res = await fetch('/api/donate/validate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          document.getElementById('keysInput').value = '';
+          await loadQuota();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast('提交失败', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
+    function showMessage(text, type, section = 'main') {
+      const msgId = section === 'bind' ? 'bindMessage' : 'message';
+      const msg = document.getElementById(msgId);
+      msg.textContent = text;
+      msg.className = `p-4 rounded-lg mb-4 ${type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`;
+      msg.classList.remove('hidden');
+      setTimeout(() => msg.classList.add('hidden'), 5000);
+    }
+
+    async function showMyRecords() {
+      document.getElementById('dropdownMenu').classList.add('hidden');
+      document.getElementById('recordsModal').classList.remove('hidden');
+      await loadMyRecords();
+    }
+
+    async function loadMyRecords() {
+      try {
+        const [claimRes, donateRes] = await Promise.all([
+          fetch('/api/user/records/claim'),
+          fetch('/api/user/records/donate')
+        ]);
+        const claimData = await claimRes.json();
+        const donateData = await donateRes.json();
+
+        const claimContainer = document.getElementById('claimRecords');
+        const donateContainer = document.getElementById('donateRecords');
+
+        if (claimData.success && claimData.data.length > 0) {
+          claimContainer.innerHTML = claimData.data.map(r => `
+            <div class="border-b border-slate-200 py-3">
+              <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+              <p class="font-semibold text-slate-900">领取额度: $${(r.quota_added / 500000).toFixed(2)}</p>
+            </div>
+          `).join('');
+        } else {
+          claimContainer.innerHTML = '<p class="text-center text-slate-500 py-8">暂无领取记录</p>';
+        }
+
+        if (donateData.success && donateData.data.length > 0) {
+          donateContainer.innerHTML = donateData.data.map(r => `
+            <div class="border-b border-slate-200 py-3">
+              <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+              <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: $${(r.total_quota_added / 500000).toFixed(2)}</p>
+            </div>
+          `).join('');
+        } else {
+          donateContainer.innerHTML = '<p class="text-center text-slate-500 py-8">暂无投喂记录</p>';
+        }
+      } catch (e) {
+        console.error('加载记录失败', e);
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('recordsModal').classList.add('hidden');
+    }
+
+    function showTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-indigo-600', 'text-indigo-600');
+        btn.classList.add('border-transparent', 'text-slate-500');
+      });
+      event.target.classList.add('border-indigo-600', 'text-indigo-600');
+      event.target.classList.remove('border-transparent', 'text-slate-500');
+
+      if (tab === 'claim') {
+        document.getElementById('claimRecords').classList.remove('hidden');
+        document.getElementById('donateRecords').classList.add('hidden');
+      } else {
+        document.getElementById('claimRecords').classList.add('hidden');
+        document.getElementById('donateRecords').classList.remove('hidden');
+      }
+    }
+
+    async function logout() {
+      if (!confirm('确定要退出登录吗？')) return;
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.reload();
+      } catch (e) {
+        showToast('登出失败', 'error');
+      }
+    }
+
+    window.onload = async () => {
+      const isOAuthCallback = document.referrer.includes('connect.linux.do') || sessionStorage.getItem('oauth_loading');
+
+      if (!isOAuthCallback) {
+        document.getElementById('loadingPage').classList.add('hidden');
+      }
+
+      try {
+        const res = await fetch('/api/user/quota');
+        if (res.ok) {
+          document.getElementById('loadingPage').classList.add('hidden');
+          document.getElementById('mainSection').classList.remove('hidden');
+          await loadQuota();
+          if (isOAuthCallback) {
+            showToast('登录成功', 'success');
+            sessionStorage.removeItem('oauth_loading');
+          }
+        } else if (res.status === 400) {
+          document.getElementById('loadingPage').classList.add('hidden');
+          document.getElementById('bindSection').classList.remove('hidden');
+        } else {
+          document.getElementById('loadingPage').classList.add('hidden');
+          document.getElementById('loginSection').classList.remove('hidden');
+        }
+      } catch (e) {
+        document.getElementById('loadingPage').classList.add('hidden');
+        document.getElementById('loginSection').classList.remove('hidden');
+      }
+    };
+  </script>
+</body>
+</html>
+

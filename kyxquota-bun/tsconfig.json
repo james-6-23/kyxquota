@@ -1,0 +1,48 @@
+{
+    "compilerOptions": {
+        // 语言和环境
+        "target": "ESNext",
+        "lib": [
+            "ESNext"
+        ],
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        // JSX
+        "jsx": "react-jsx",
+        "jsxImportSource": "hono/jsx",
+        // 类型检查
+        "strict": true,
+        "noUncheckedIndexedAccess": true,
+        "noImplicitReturns": true,
+        "noFallthroughCasesInSwitch": true,
+        "noUnusedLocals": true,
+        "noUnusedParameters": true,
+        // 模块解析
+        "esModuleInterop": true,
+        "allowSyntheticDefaultImports": true,
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        // 其他
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        // Bun 类型
+        "types": [
+            "bun-types"
+        ],
+        // 路径映射（可选）
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "src/*"
+            ]
+        }
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "data"
+    ]
+}
