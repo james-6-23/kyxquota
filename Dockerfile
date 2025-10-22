@@ -4,11 +4,11 @@ FROM oven/bun:1.0.25-alpine
 # 设置工作目录
 WORKDIR /app
 
-# 只复制 package.json
+# 复制 package.json
 COPY package.json ./
 
-# 只安装生产依赖
-RUN bun install --production
+# 安装依赖
+RUN bun install
 
 # 复制源代码
 COPY src ./src
