@@ -412,6 +412,9 @@ app.get('/users', requireAdmin, async (c) => {
             username: user.username,
             linux_do_id: user.linux_do_id,
             created_at: user.created_at,
+            is_banned: user.is_banned || 0,
+            banned_at: user.banned_at,
+            banned_reason: user.banned_reason,
             claim_count: totalClaimCount,
             claim_quota: totalClaimQuota,
             donate_count: totalDonateCount,
@@ -628,6 +631,37 @@ app.post('/retry-push', requireAdmin, async (c) => {
             pushResult.message ||
             (pushResult.success ? '重新推送成功' : '重新推送失败'),
     });
+});
+
+/**
+ * 封禁用户
+ */
+app.post('/users/:linuxDoId/ban', requireAdmin, async (c) => {
+    const linuxDoId = c.req.param('linuxDoId');
+    const { reason } = await c.req.json();
+
+    try {
+        userQueries.ban.run(Date.now(), reason || '违规行为', linuxDoId);
+        return c.json({ success: true, message: '用户已被封禁' });
+    } catch (e: any) {
+        console.error('封禁用户失败:', e);
+        return c.json({ success: false, message: '封禁失败' }, 500);
+    }
+});
+
+/**
+ * 解封用户
+ */
+app.post('/users/:linuxDoId/unban', requireAdmin, async (c) => {
+    const linuxDoId = c.req.param('linuxDoId');
+
+    try {
+        userQueries.unban.run(linuxDoId);
+        return c.json({ success: true, message: '用户已解封' });
+    } catch (e: any) {
+        console.error('解封用户失败:', e);
+        return c.json({ success: false, message: '解封失败' }, 500);
+    }
 });
 
 export default app;

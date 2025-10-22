@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="KYX API 公益站额度管理系统">
   <title>KYX API Quota Bridge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     :root {
@@ -138,10 +139,8 @@
       <div class="flex justify-center mb-8">
         <div class="relative">
           <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-          <div class="relative bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
-            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
+          <div class="relative bg-white p-2 rounded-2xl shadow-lg">
+            <img src="https://lh3.googleusercontent.com/a/ACg8ocJmyq3J-RuNfGv7J430fFiZ6EYQ0AB_phVlIPwm265e9HC1vJc=s288-c-no" alt="Logo" class="w-16 h-16 rounded-xl">
           </div>
         </div>
       </div>
@@ -151,9 +150,7 @@
       <button onclick="login()" class="group relative w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]">
         <div class="absolute inset-0 bg-gradient-to-r from-blue-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         <div class="relative flex items-center justify-center gap-3">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
-          </svg>
+          <img src="https://linux.do/uploads/default/original/4X/c/c/d/ccd8c210609d498cbeb3d5201d4c259348447562.png" alt="Linux Do" class="w-6 h-6">
           <span class="text-lg">使用 Linux Do 账户登录</span>
           <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
@@ -257,7 +254,25 @@
       <!-- Actions Card -->
       <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in card-hover">
         <h3 class="text-xl font-bold text-slate-900 mb-4">💰 每日额度领取</h3>
-        <p class="text-sm text-slate-600 mb-4">当您的剩余额度低于 $20 时，可以每天领取额度补充</p>
+        <p class="text-sm text-slate-600 mb-2">当您的剩余额度低于 $20 时，可以每天领取额度补充</p>
+        
+        <!-- 领取次数显示 -->
+        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2 text-xs text-blue-800">
+              <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+              </svg>
+              <span>今日领取情况</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-sm font-bold text-blue-700">
+                已领取 <span id="todayClaimCount" class="text-lg">0</span>/<span id="maxDailyClaims">1</span> 次
+              </span>
+              <span id="remainingClaims" class="px-2 py-1 bg-blue-600 text-white rounded-full text-xs font-semibold">剩余 1 次</span>
+            </div>
+          </div>
+        </div>
         
         <button id="claimBtn" onclick="claimQuota()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
           领取今日额度
@@ -270,7 +285,7 @@
         <p class="text-sm text-slate-600 mb-2">每个有效的 ModelScope API Key 可为您增加 $50 额度</p>
         
         <!-- 投喂限制说明 -->
-        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+        <div id="donateWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
           <div class="flex items-center gap-2 text-xs text-red-800">
             <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
@@ -278,9 +293,19 @@
             <span>⚠️ 限制：<strong>每天只能提交 1 个 Key</strong>，请珍惜机会</span>
           </div>
         </div>
+
+        <!-- 今日已投喂提示 -->
+        <div id="donatedToday" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center gap-2 text-xs text-green-800">
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>✓ <strong>今日已投喂</strong>，感谢您的支持！明天再来吧</span>
+          </div>
+        </div>
         
         <textarea id="keysInput" placeholder="请输入 1 个 ModelScope API Key：&#10;ms-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
-        <button onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+        <button id="donateBtn" onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
           🚀 提交 Key
         </button>
       </div>
@@ -390,6 +415,15 @@
         const res = await fetch('/api/user/quota');
         const data = await res.json();
 
+        // 检查是否被封禁
+        if (res.status === 403 && data.banned) {
+          document.getElementById('mainSection').classList.add('hidden');
+          document.getElementById('loginSection').classList.remove('hidden');
+          alert('⚠️ ' + data.message);
+          await logout();
+          return;
+        }
+
         if (data.success) {
           const { quota, used_quota, total, username, linux_do_id, avatar_url } = data.data;
 
@@ -408,13 +442,57 @@
           document.getElementById('quotaUsage').textContent = ((used_quota / total * 100).toFixed(2)) + '%';
           document.getElementById('quotaStatus').textContent = quota < 10000000 ? '额度不足' : '充足';
 
+          // 更新领取次数信息
+          const todayClaimCount = data.data.today_claim_count || 0;
+          const maxDailyClaims = data.data.max_daily_claims || 1;
+          const remainingClaims = data.data.remaining_claims || 0;
+          
+          document.getElementById('todayClaimCount').textContent = todayClaimCount;
+          document.getElementById('maxDailyClaims').textContent = maxDailyClaims;
+          document.getElementById('remainingClaims').textContent = remainingClaims > 0 ? `剩余 ${remainingClaims} 次` : '已用完';
+          document.getElementById('remainingClaims').className = remainingClaims > 0 
+            ? 'px-2 py-1 bg-blue-600 text-white rounded-full text-xs font-semibold'
+            : 'px-2 py-1 bg-slate-400 text-white rounded-full text-xs font-semibold';
+
           const claimBtn = document.getElementById('claimBtn');
-          if (data.data.claimed_today) {
+          if (remainingClaims === 0) {
             claimBtn.disabled = true;
-            claimBtn.textContent = '✓ 今日已领取';
+            claimBtn.textContent = '✓ 今日已达上限';
+            claimBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
           } else if (!data.data.can_claim) {
             claimBtn.disabled = true;
             claimBtn.textContent = '❌ 额度充足';
+            claimBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
+          } else {
+            claimBtn.disabled = false;
+            claimBtn.textContent = '领取今日额度';
+            claimBtn.className = 'w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
+          }
+
+          // 处理投喂状态
+          const donateBtn = document.getElementById('donateBtn');
+          const donateWarning = document.getElementById('donateWarning');
+          const donatedToday = document.getElementById('donatedToday');
+          const keysInput = document.getElementById('keysInput');
+          
+          if (data.data.donated_today) {
+            // 今日已投喂
+            donateWarning.classList.add('hidden');
+            donatedToday.classList.remove('hidden');
+            donateBtn.disabled = true;
+            donateBtn.textContent = '✓ 今日已投喂';
+            donateBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
+            keysInput.disabled = true;
+            keysInput.className = 'w-full h-24 px-4 py-3 border border-slate-200 rounded-lg mb-4 font-mono text-sm bg-slate-50 cursor-not-allowed';
+          } else {
+            // 可以投喂
+            donateWarning.classList.remove('hidden');
+            donatedToday.classList.add('hidden');
+            donateBtn.disabled = false;
+            donateBtn.textContent = '🚀 提交 Key';
+            donateBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
+            keysInput.disabled = false;
+            keysInput.className = 'w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm';
           }
         } else if (res.status === 400) {
           document.getElementById('loginSection').classList.add('hidden');
@@ -590,6 +668,8 @@
 
       try {
         const res = await fetch('/api/user/quota');
+        const data = await res.json();
+        
         if (res.ok) {
           document.getElementById('loadingPage').classList.add('hidden');
           document.getElementById('mainSection').classList.remove('hidden');
@@ -598,6 +678,11 @@
             showToast('登录成功', 'success');
             sessionStorage.removeItem('oauth_loading');
           }
+        } else if (res.status === 403 && data.banned) {
+          // 用户被封禁
+          document.getElementById('loadingPage').classList.add('hidden');
+          document.getElementById('loginSection').classList.remove('hidden');
+          alert('⚠️ ' + data.message);
         } else if (res.status === 400) {
           document.getElementById('loadingPage').classList.add('hidden');
           document.getElementById('bindSection').classList.remove('hidden');

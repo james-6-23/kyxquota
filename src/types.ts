@@ -3,6 +3,9 @@ export interface User {
     linux_do_id: string;
     username: string;
     kyx_user_id: number;
+    is_banned: number;  // 0: 正常, 1: 已封禁
+    banned_at?: number;
+    banned_reason?: string;
     created_at: number;
 }
 

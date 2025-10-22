@@ -30,9 +30,29 @@ export function initDatabase() {
       linux_do_id TEXT UNIQUE NOT NULL,
       username TEXT NOT NULL,
       kyx_user_id INTEGER NOT NULL,
+      is_banned INTEGER DEFAULT 0,
+      banned_at INTEGER,
+      banned_reason TEXT,
       created_at INTEGER NOT NULL
     )
   `);
+
+    // 添加封禁相关字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN banned_at INTEGER');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN banned_reason TEXT');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 领取记录表
     db.exec(`
@@ -158,6 +178,12 @@ function initQueries() {
             'UPDATE users SET username = ?, kyx_user_id = ? WHERE linux_do_id = ?'
         ),
         getAll: db.query<User, never>('SELECT * FROM users'),
+        ban: db.query(
+            'UPDATE users SET is_banned = 1, banned_at = ?, banned_reason = ? WHERE linux_do_id = ?'
+        ),
+        unban: db.query(
+            'UPDATE users SET is_banned = 0, banned_at = NULL, banned_reason = NULL WHERE linux_do_id = ?'
+        ),
     };
 
     // 领取记录相关

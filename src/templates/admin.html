@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理后台 - KYX API Quota Bridge</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -466,6 +467,8 @@
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">投喂次数</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">领取次数</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">总获得额度</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
                   </tr>
                 </thead>
                 <tbody id="usersListBody"></tbody>
@@ -892,20 +895,33 @@
           const tbody = document.getElementById('usersListBody');
 
           if (data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">暂无用户</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">暂无用户</td></tr>';
             return;
           }
 
-          tbody.innerHTML = data.data.map((user, index) => `
-            <tr class="border-b border-slate-100">
-              <td class="px-4 py-3">${index + 1}</td>
-              <td class="px-4 py-3 font-semibold">${user.username}</td>
-              <td class="px-4 py-3 font-mono text-xs">${user.linux_do_id}</td>
-              <td class="px-4 py-3 text-center">${user.donate_count}</td>
-              <td class="px-4 py-3 text-center">${user.claim_count}</td>
-              <td class="px-4 py-3 text-right font-semibold">¥${(user.total_quota / 500000).toFixed(2)}</td>
-            </tr>
-          `).join('');
+          tbody.innerHTML = data.data.map((user, index) => {
+            const isBanned = user.is_banned === 1;
+            const statusHtml = isBanned 
+              ? `<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">🚫 已封禁</span>` 
+              : `<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✓ 正常</span>`;
+            
+            const actionButton = isBanned
+              ? `<button onclick="unbanUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold transition-colors">解封</button>`
+              : `<button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">封禁</button>`;
+            
+            return `
+              <tr class="border-b border-slate-100 ${isBanned ? 'bg-red-50' : ''}">
+                <td class="px-4 py-3">${index + 1}</td>
+                <td class="px-4 py-3 font-semibold">${user.username}</td>
+                <td class="px-4 py-3 font-mono text-xs">${user.linux_do_id}</td>
+                <td class="px-4 py-3 text-center">${user.donate_count}</td>
+                <td class="px-4 py-3 text-center">${user.claim_count}</td>
+                <td class="px-4 py-3 text-right font-semibold">$${(user.total_quota / 500000).toFixed(2)}</td>
+                <td class="px-4 py-3 text-center">${statusHtml}</td>
+                <td class="px-4 py-3 text-center">${actionButton}</td>
+              </tr>
+            `;
+          }).join('');
         }
       } catch (e) {
         console.error('加载用户列表失败', e);
@@ -923,6 +939,49 @@
         setTimeout(() => showMessage('用户数据导出成功', 'success'), 500);
       } catch (e) {
         showMessage('导出失败', 'error');
+      }
+    }
+
+    async function banUser(linuxDoId, username) {
+      const reason = prompt(`确定要封禁用户 "${username}" 吗？\n\n请输入封禁原因（可选）：`, '违规行为');
+      if (reason === null) return; // 用户取消
+      
+      try {
+        const res = await fetch(`/api/admin/users/${linuxDoId}/ban`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason || '违规行为' }),
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(`用户 "${username}" 已被封禁`, 'success');
+          await loadUsersList();
+        } else {
+          showMessage(data.message || '封禁失败', 'error');
+        }
+      } catch (e) {
+        showMessage('封禁失败', 'error');
+      }
+    }
+
+    async function unbanUser(linuxDoId, username) {
+      if (!confirm(`确定要解封用户 "${username}" 吗？`)) return;
+      
+      try {
+        const res = await fetch(`/api/admin/users/${linuxDoId}/unban`, {
+          method: 'POST',
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(`用户 "${username}" 已解封`, 'success');
+          await loadUsersList();
+        } else {
+          showMessage(data.message || '解封失败', 'error');
+        }
+      } catch (e) {
+        showMessage('解封失败', 'error');
       }
     }
 

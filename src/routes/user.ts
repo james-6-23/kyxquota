@@ -30,6 +30,17 @@ async function requireAuth(c: any, next: any) {
         return c.json({ success: false, message: '会话无效' }, 401);
     }
 
+    // 检查用户是否被封禁
+    const user = userQueries.get.get(session.linux_do_id);
+    if (user && user.is_banned) {
+        console.log('[Auth] User is banned:', session.linux_do_id);
+        return c.json({
+            success: false,
+            message: `您的账号已被封禁${user.banned_reason ? '，原因：' + user.banned_reason : ''}`,
+            banned: true
+        }, 403);
+    }
+
     c.set('session', session);
     await next();
 }
@@ -262,6 +273,26 @@ app.get('/user/quota', requireAuth, async (c) => {
         3600000 // 1小时
     );
 
+    // 检查今日是否已投喂
+    const todayStart = new Date(today).getTime();
+    const todayEnd = todayStart + 86400000;
+    const allDonates = donateQueries.getByUser.all(user.linux_do_id);
+    const todayDonates = allDonates.filter(
+        (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
+    );
+    const donated_today = todayDonates.length > 0;
+
+    // 计算今日已领取次数
+    const allClaims = claimQueries.getByUser.all(user.linux_do_id);
+    const todayClaims = allClaims.filter(
+        (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
+    );
+    const today_claim_count = todayClaims.length;
+
+    // 获取管理员配置的最大领取次数
+    const max_daily_claims = adminConfig?.max_daily_claims || 1;
+    const remaining_claims = Math.max(0, max_daily_claims - today_claim_count);
+
     return c.json({
         success: true,
         data: {
@@ -275,6 +306,10 @@ app.get('/user/quota', requireAuth, async (c) => {
             total: kyxUser.quota + kyxUser.used_quota,
             can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && !claimToday,
             claimed_today: !!claimToday,
+            donated_today: donated_today,
+            today_claim_count: today_claim_count,
+            max_daily_claims: max_daily_claims,
+            remaining_claims: remaining_claims,
         },
     });
 });
