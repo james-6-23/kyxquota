@@ -7,8 +7,8 @@ WORKDIR /app
 # 只复制 package.json
 COPY package.json ./
 
-# 先完整安装（生成锁文件），然后 prune 为生产模式
-RUN bun install && bun prune --production
+# 只安装生产依赖
+RUN bun install --production
 
 # 复制源代码
 COPY src ./src
