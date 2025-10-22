@@ -23,7 +23,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: 登录 Docker Hub
-        if: github.event_name != 'pull_request' && secrets.DOCKERHUB_TOKEN != ''
+        if: ${{ github.event_name != 'pull_request' && secrets.DOCKERHUB_TOKEN != '' }}
         uses: docker/login-action@v3
         with:
           username: james-6-23
@@ -42,7 +42,6 @@ jobs:
             james-6-23/kyxquota-bun:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          outputs: type=docker,dest=/tmp/kyxquota-bun.tar
 
       - name: 构建完成
         run: |
