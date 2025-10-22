@@ -20,12 +20,12 @@
     }
 
     .spinner {
-      border: 2px solid #f3f4f6;
-      border-top: 2px solid #6366f1;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top: 3px solid #ffffff;
       border-radius: 50%;
-      width: 16px;
-      height: 16px;
-      animation: spin 1s linear infinite;
+      width: 40px;
+      height: 40px;
+      animation: spin 0.8s linear infinite;
     }
 
     @keyframes spin {
@@ -35,8 +35,16 @@
   </style>
 </head>
 <body class="bg-slate-50">
+  <!-- Loading Section -->
+  <div id="loadingSection" class="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center">
+    <div class="text-center">
+      <div class="spinner mx-auto mb-4"></div>
+      <p class="text-white text-lg">验证登录中...</p>
+    </div>
+  </div>
+
   <!-- Login Section -->
-  <div id="loginSection" class="min-h-screen bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center p-6">
+  <div id="loginSection" class="hidden min-h-screen bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center p-6">
     <div class="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full">
       <h1 class="text-3xl font-bold text-center text-slate-900 mb-8">管理员后台</h1>
       <div id="loginMessage" class="hidden mb-4 p-3 rounded-lg"></div>
@@ -122,6 +130,109 @@
               </div>
             </div>
           </div>
+
+          <!-- 当前配置卡片 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900">当前系统配置</h3>
+              </div>
+              <button onclick="showSection('config')" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium flex items-center gap-1">
+                <span>编辑配置</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                </svg>
+              </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- 每日领取额度 -->
+              <div class="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border border-purple-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">💰</span>
+                  <span class="text-sm font-semibold text-slate-700">每日领取额度</span>
+                </div>
+                <p id="dashboardQuota" class="text-2xl font-bold text-purple-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">≈ <span id="dashboardQuotaUSD">--</span> quota</p>
+              </div>
+
+              <!-- 每日最大领取次数 -->
+              <div class="p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🔢</span>
+                  <span class="text-sm font-semibold text-slate-700">每日最大领取次数</span>
+                </div>
+                <p id="dashboardMaxClaims" class="text-2xl font-bold text-green-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">次/天</p>
+              </div>
+
+              <!-- API Session 状态 -->
+              <div class="p-4 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg border border-orange-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🔑</span>
+                  <span class="text-sm font-semibold text-slate-700">API Session</span>
+                </div>
+                <p id="dashboardSessionStatus" class="text-lg font-bold text-orange-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">KYX API 认证</p>
+              </div>
+
+              <!-- New-API-User -->
+              <div class="p-4 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg border border-teal-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🆔</span>
+                  <span class="text-sm font-semibold text-slate-700">New-API-User</span>
+                </div>
+                <p id="dashboardNewApiUser" class="text-2xl font-bold text-teal-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">请求头参数</p>
+              </div>
+
+              <!-- Keys API URL -->
+              <div class="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-lg border border-blue-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🔗</span>
+                  <span class="text-sm font-semibold text-slate-700">Keys API URL</span>
+                </div>
+                <p id="dashboardKeysApi" class="text-sm font-mono text-blue-700 truncate" title="">--</p>
+                <p class="text-xs text-slate-600 mt-1">验证服务地址</p>
+              </div>
+
+              <!-- Group ID -->
+              <div class="p-4 bg-gradient-to-br from-pink-50 to-rose-50 rounded-lg border border-pink-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">👥</span>
+                  <span class="text-sm font-semibold text-slate-700">Group ID</span>
+                </div>
+                <p id="dashboardGroupId" class="text-2xl font-bold text-pink-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">用户分组</p>
+              </div>
+
+              <!-- Keys Authorization -->
+              <div class="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-lg border border-indigo-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🔐</span>
+                  <span class="text-sm font-semibold text-slate-700">Keys Authorization</span>
+                </div>
+                <p id="dashboardKeysAuth" class="text-lg font-bold text-indigo-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">API 授权状态</p>
+              </div>
+            </div>
+
+            <!-- 更新时间 -->
+            <div class="mt-4 pt-4 border-t border-slate-200">
+              <p class="text-xs text-slate-500 flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>最后更新：<span id="dashboardUpdatedAt">--</span></span>
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Config Section -->
@@ -145,11 +256,14 @@
             <div class="mb-6">
               <label class="block text-sm font-semibold text-slate-700 mb-2">每日领取额度</label>
               <div class="flex gap-2 items-center">
-                <input type="number" id="claimQuota" placeholder="20000000" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
-                <span class="text-sm text-slate-600 whitespace-nowrap">≈ $<span id="quotaUSD">40.00</span></span>
+                <div class="flex-1 relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-600 font-semibold">$</span>
+                  <input type="number" id="claimQuotaUSD" placeholder="40" step="0.01" min="0" class="w-full pl-8 pr-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                <span class="text-sm text-slate-600 whitespace-nowrap">≈ <span id="quotaValue">20,000,000</span> quota</span>
                 <button onclick="updateQuota()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">更新</button>
               </div>
-              <p class="text-xs text-slate-500 mt-1">当前单位：quota（500,000 = $1）</p>
+              <p class="text-xs text-slate-500 mt-1">输入美元金额，自动转换为 quota（$1 = 500,000 quota）</p>
             </div>
 
             <div class="mb-6">
@@ -163,9 +277,33 @@
             </div>
             <div class="mb-6">
               <label class="block text-sm font-semibold text-slate-700 mb-2">API Session</label>
+              <div class="mb-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="text-xs text-slate-500 mb-1">当前 Session:</div>
+                <div id="currentSession" class="text-sm font-mono text-slate-700 break-all">未配置</div>
+              </div>
               <div class="flex gap-2">
-                <input type="text" id="sessionValue" placeholder="输入新的 Session" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
-                <button onclick="updateSession()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">更新</button>
+                <input type="text" id="sessionValue" placeholder="输入新的 Session" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg font-mono">
+                <button onclick="updateSession()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">更新</button>
+              </div>
+            </div>
+
+            <div class="mb-6">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">New-API-User</label>
+              <div class="mb-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div class="flex items-start gap-2">
+                  <svg class="w-4 h-4 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <div class="text-xs text-blue-800">
+                    <p>KYX API 请求头参数，用于用户搜索和额度更新</p>
+                    <p class="mt-1">默认值：<code class="px-1 bg-blue-100 rounded">1</code>（通常无需修改）</p>
+                  </div>
+                </div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <input type="text" id="newApiUserValue" placeholder="1" class="w-32 px-4 py-2 border border-slate-300 rounded-lg text-center font-mono">
+                <span class="text-sm text-slate-600">当前值: <code id="currentNewApiUser" class="px-2 py-1 bg-slate-100 rounded font-mono">1</code></span>
+                <button onclick="updateNewApiUser()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">更新</button>
               </div>
             </div>
             <div class="mb-6">
@@ -194,7 +332,15 @@
 
         <!-- Keys Section -->
         <div id="keysSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">Keys 管理</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">Keys 管理</h2>
+            <button onclick="loadKeysList()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
             <div class="flex gap-2 mb-4">
               <button onclick="exportKeys()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出所有</button>
@@ -220,7 +366,15 @@
 
         <!-- Claims Section -->
         <div id="claimsSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">领取记录</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">领取记录</h2>
+            <button onclick="loadClaimRecords(1)" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
@@ -250,7 +404,15 @@
 
         <!-- Donates Section -->
         <div id="donatesSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">投喂记录</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">投喂记录</h2>
+            <button onclick="loadDonateRecords(1)" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
@@ -281,7 +443,15 @@
 
         <!-- Users Section -->
         <div id="usersSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">用户列表</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">用户列表</h2>
+            <button onclick="loadUsersList()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
             <button onclick="exportUsersData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出用户数据</button>
           </div>
@@ -355,39 +525,84 @@
 
         if (data.success) {
           const claimQuota = data.data.claim_quota;
-          document.getElementById('claimQuota').value = claimQuota;
-          document.getElementById('currentQuota').textContent = '$' + (claimQuota / 500000).toFixed(2);
-          document.getElementById('quotaUSD').textContent = (claimQuota / 500000).toFixed(2);
-          document.getElementById('maxDailyClaims').value = data.data.max_daily_claims || 1;
-          document.getElementById('keysApiUrl').value = data.data.keys_api_url || '';
-          document.getElementById('groupId').value = data.data.group_id || 26;
+          const usdValue = (claimQuota / 500000).toFixed(2);
+          const maxDailyClaims = data.data.max_daily_claims || 1;
+          const session = data.data.session || '';
+          const newApiUser = data.data.new_api_user || '1';
+          const keysApiUrl = data.data.keys_api_url || '';
+          const groupId = data.data.group_id || 26;
+          const keysAuthConfigured = data.data.keys_authorization_configured;
+          const updatedAt = data.data.updated_at;
+          
+          // 更新配置页面
+          document.getElementById('claimQuotaUSD').value = usdValue;
+          document.getElementById('currentQuota').textContent = '$' + usdValue;
+          document.getElementById('quotaValue').textContent = claimQuota.toLocaleString();
+          document.getElementById('maxDailyClaims').value = maxDailyClaims;
+          
+          // 显示当前 session
+          document.getElementById('currentSession').textContent = session || '未配置';
+          document.getElementById('currentSession').className = session 
+            ? 'text-sm font-mono text-slate-700 break-all' 
+            : 'text-sm font-mono text-slate-400 break-all';
+          
+          // 显示当前 new_api_user
+          document.getElementById('currentNewApiUser').textContent = newApiUser;
+          
+          document.getElementById('keysApiUrl').value = keysApiUrl;
+          document.getElementById('groupId').value = groupId;
+          
+          // 更新仪表板配置卡片
+          document.getElementById('dashboardQuota').textContent = '$' + usdValue;
+          document.getElementById('dashboardQuotaUSD').textContent = claimQuota.toLocaleString();
+          document.getElementById('dashboardMaxClaims').textContent = maxDailyClaims;
+          document.getElementById('dashboardSessionStatus').textContent = session ? '已配置 ✓' : '未配置';
+          document.getElementById('dashboardSessionStatus').className = session 
+            ? 'text-lg font-bold text-green-600' 
+            : 'text-lg font-bold text-orange-600';
+          
+          document.getElementById('dashboardNewApiUser').textContent = newApiUser;
+          document.getElementById('dashboardKeysApi').textContent = keysApiUrl || '未配置';
+          document.getElementById('dashboardKeysApi').title = keysApiUrl || '未配置';
+          document.getElementById('dashboardGroupId').textContent = groupId;
+          document.getElementById('dashboardKeysAuth').textContent = keysAuthConfigured ? '已配置 ✓' : '未配置';
+          document.getElementById('dashboardKeysAuth').className = keysAuthConfigured 
+            ? 'text-lg font-bold text-green-600' 
+            : 'text-lg font-bold text-orange-600';
+          
+          // 格式化更新时间
+          if (updatedAt) {
+            const date = new Date(updatedAt);
+            document.getElementById('dashboardUpdatedAt').textContent = date.toLocaleString('zh-CN');
+          }
         }
       } catch (e) {
         console.error('加载配置失败', e);
       }
     }
 
-    // 实时计算美元显示
+    // 实时计算 quota 显示
     document.addEventListener('DOMContentLoaded', () => {
-      const claimQuotaInput = document.getElementById('claimQuota');
-      if (claimQuotaInput) {
-        claimQuotaInput.addEventListener('input', (e) => {
-          const quota = parseInt(e.target.value) || 0;
-          const usd = (quota / 500000).toFixed(2);
-          const usdEl = document.getElementById('quotaUSD');
-          if (usdEl) {
-            usdEl.textContent = usd;
+      const claimQuotaUSDInput = document.getElementById('claimQuotaUSD');
+      if (claimQuotaUSDInput) {
+        claimQuotaUSDInput.addEventListener('input', (e) => {
+          const usd = parseFloat(e.target.value) || 0;
+          const quota = Math.round(usd * 500000);
+          const quotaEl = document.getElementById('quotaValue');
+          if (quotaEl) {
+            quotaEl.textContent = quota.toLocaleString();
           }
         });
       }
     });
 
     async function updateQuota() {
-      const quota = parseInt(document.getElementById('claimQuota').value);
-      if (!quota || quota <= 0) {
-        showMessage('请输入有效的额度值', 'error');
+      const usd = parseFloat(document.getElementById('claimQuotaUSD').value);
+      if (!usd || usd <= 0) {
+        showMessage('请输入有效的美元金额', 'error');
         return;
       }
+      const quota = Math.round(usd * 500000);
       try {
         const res = await fetch('/api/admin/config/quota', {
           method: 'PUT',
@@ -436,7 +651,33 @@
         });
         const data = await res.json();
         showMessage(data.message, data.success ? 'success' : 'error');
-        if (data.success) document.getElementById('sessionValue').value = '';
+        if (data.success) {
+          document.getElementById('sessionValue').value = '';
+          await loadConfig();  // 重新加载配置以刷新显示
+        }
+      } catch (e) {
+        showMessage('更新失败', 'error');
+      }
+    }
+
+    async function updateNewApiUser() {
+      const new_api_user = document.getElementById('newApiUserValue').value.trim();
+      if (!new_api_user) {
+        showMessage('请输入 New-API-User 值', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/config/new-api-user', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ new_api_user }),
+        });
+        const data = await res.json();
+        showMessage(data.message, data.success ? 'success' : 'error');
+        if (data.success) {
+          document.getElementById('newApiUserValue').value = '';
+          await loadConfig();  // 重新加载配置以刷新显示
+        }
       } catch (e) {
         showMessage('更新失败', 'error');
       }
@@ -705,12 +946,20 @@
       try {
         const res = await fetch('/api/admin/config');
         if (res.ok) {
-          document.getElementById('loginSection').classList.add('hidden');
+          // 验证成功，显示管理界面
+          document.getElementById('loadingSection').classList.add('hidden');
           document.getElementById('adminSection').classList.remove('hidden');
           await loadAdminData();
+        } else {
+          // 验证失败，显示登录界面
+          document.getElementById('loadingSection').classList.add('hidden');
+          document.getElementById('loginSection').classList.remove('hidden');
         }
       } catch (e) {
+        // 请求失败，显示登录界面
         console.log('需要登录');
+        document.getElementById('loadingSection').classList.add('hidden');
+        document.getElementById('loginSection').classList.remove('hidden');
       }
     };
   </script>

@@ -44,9 +44,8 @@ app.post('/login', async (c) => {
     const sessionId = generateSessionId();
     await saveSession(sessionId, { admin: true });
 
-    return c.json({ success: true }, 200, {
-        'Set-Cookie': setCookie('admin_session', sessionId),
-    });
+    c.header('Set-Cookie', setCookie('admin_session', sessionId));
+    return c.json({ success: true });
 });
 
 /**
@@ -61,7 +60,9 @@ app.get('/config', requireAdmin, async (c) => {
         data: {
             claim_quota: config!.claim_quota,
             max_daily_claims: config!.max_daily_claims || 1,
+            session: config!.session || '',  // 返回实际的 session 值
             session_configured: !!config!.session,
+            new_api_user: config!.new_api_user || '1',  // 返回 new_api_user 值
             keys_api_url: config!.keys_api_url,
             keys_authorization_configured: !!config!.keys_authorization,
             group_id: config!.group_id,

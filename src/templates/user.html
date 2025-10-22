@@ -17,7 +17,27 @@
     }
 
     .gradient-bg {
-      background: var(--gradient-primary);
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 25%, #8b5cf6 75%, #ec4899 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gradient-bg::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+      animation: float 20s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      25% { transform: translate(10%, 10%) rotate(90deg); }
+      50% { transform: translate(0, 20%) rotate(180deg); }
+      75% { transform: translate(-10%, 10%) rotate(270deg); }
     }
 
     .card-hover {
@@ -45,12 +65,13 @@
     }
 
     .spinner {
-      border: 3px solid #f3f4f6;
-      border-top: 3px solid #667eea;
+      border: 4px solid rgba(255, 255, 255, 0.2);
+      border-top: 4px solid #ffffff;
       border-radius: 50%;
-      width: 24px;
-      height: 24px;
+      width: 48px;
+      height: 48px;
       animation: spin 1s linear infinite;
+      box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
     }
 
     @keyframes spin {
@@ -64,16 +85,29 @@
       right: 20px;
       z-index: 9999;
       animation: slideIn 0.3s ease-out;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     }
 
     @keyframes slideIn {
       from {
         opacity: 0;
-        transform: translateX(100px);
+        transform: translateX(100px) scale(0.8);
       }
       to {
         opacity: 1;
-        transform: translateX(0);
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(100px) scale(0.8);
       }
     }
   </style>
@@ -84,37 +118,86 @@
 
   <!-- Loading Page -->
   <div id="loadingPage" class="fixed inset-0 gradient-bg flex flex-col items-center justify-center z-50">
-    <div class="spinner"></div>
-    <p class="text-white text-lg mt-4">正在加载...</p>
+    <div class="relative">
+      <div class="absolute inset-0 bg-white/20 rounded-full blur-2xl"></div>
+      <div class="relative">
+        <div class="spinner"></div>
+      </div>
+    </div>
+    <p class="text-white text-xl font-semibold mt-6 tracking-wide">正在加载...</p>
+    <div class="flex gap-2 mt-3">
+      <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0s"></div>
+      <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+      <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+    </div>
   </div>
 
   <!-- Login Section -->
   <div id="loginSection" class="hidden min-h-screen gradient-bg flex items-center justify-center p-6">
-    <div class="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full animate-in">
-      <div class="flex justify-center mb-6">
-        <svg class="w-16 h-16 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-        </svg>
+    <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full animate-in border border-white/20">
+      <div class="flex justify-center mb-8">
+        <div class="relative">
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
+          <div class="relative bg-gradient-to-br from-blue-500 to-purple-600 p-4 rounded-2xl">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+            </svg>
+          </div>
+        </div>
       </div>
-      <h1 class="text-3xl font-bold text-center text-slate-900 mb-8">KYX API Quota Bridge</h1>
-      <button onclick="login()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-300 flex items-center justify-center gap-2">
-        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
-        </svg>
-        使用 Linux Do 账户登录
+      <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">KYX API Quota Bridge</h1>
+      <p class="text-center text-slate-600 mb-8 text-sm">🚀 公益站额度管理系统</p>
+      
+      <button onclick="login()" class="group relative w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]">
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-700 via-purple-700 to-pink-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-center gap-3">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+          </svg>
+          <span class="text-lg">使用 Linux Do 账户登录</span>
+          <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+          </svg>
+        </div>
       </button>
-      <p class="text-xs text-slate-500 text-center mt-6">登录即表示您同意我们的服务条款和隐私政策</p>
+      
+      <div class="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+        </svg>
+        <span>安全登录，保护您的隐私</span>
+      </div>
+      
+      <p class="text-xs text-slate-400 text-center mt-4">登录即表示您同意我们的服务条款和隐私政策</p>
     </div>
   </div>
 
   <!-- Bind Section -->
   <div id="bindSection" class="hidden min-h-screen gradient-bg flex items-center justify-center p-6">
-    <div class="bg-white rounded-2xl shadow-2xl p-12 max-w-md w-full animate-in">
-      <h2 class="text-2xl font-bold text-center text-slate-900 mb-2">绑定公益站账号</h2>
-      <p class="text-sm text-slate-600 text-center mb-6">请输入您在公益站的用户名</p>
+    <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full animate-in border border-white/20">
+      <div class="flex justify-center mb-6">
+        <div class="relative">
+          <div class="absolute inset-0 bg-gradient-to-r from-green-600 to-blue-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
+          <div class="relative bg-gradient-to-br from-green-500 to-blue-600 p-4 rounded-2xl">
+            <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <h2 class="text-2xl font-bold text-center bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-2">绑定公益站账号</h2>
+      <p class="text-sm text-slate-600 text-center mb-8">🔗 请输入您在公益站的用户名</p>
       <div id="bindMessage" class="hidden mb-4 p-3 rounded-lg"></div>
-      <input type="text" id="username" placeholder="输入您的公益站用户名" class="w-full px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-      <button onclick="bindAccount()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">绑定账号</button>
+      <input type="text" id="username" placeholder="输入您的公益站用户名" class="w-full px-4 py-3 border-2 border-slate-200 rounded-xl mb-6 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 outline-none text-lg">
+      <button onclick="bindAccount()" class="group relative w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-4 px-6 rounded-xl font-semibold overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]">
+        <div class="absolute inset-0 bg-gradient-to-r from-green-700 to-blue-700 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        <div class="relative flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          <span class="text-lg">确认绑定</span>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -124,7 +207,7 @@
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <h1 class="text-xl font-bold text-slate-900">KYX API 公益站</h1>
+          <h1 class="text-xl font-bold text-slate-900">KYX API 加油站</h1>
           <div class="relative">
             <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
               <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
@@ -174,17 +257,7 @@
       <!-- Actions Card -->
       <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in card-hover">
         <h3 class="text-xl font-bold text-slate-900 mb-4">💰 每日额度领取</h3>
-        <p class="text-sm text-slate-600 mb-2">当您的剩余额度低于 $20 时，可以每天领取额度补充</p>
-        
-        <!-- 额度说明 -->
-        <div class="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-          <div class="flex items-center gap-2 text-xs text-amber-800">
-            <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>额度单位：<strong>500,000 quota = $1 美元</strong></span>
-          </div>
-        </div>
+        <p class="text-sm text-slate-600 mb-4">当您的剩余额度低于 $20 时，可以每天领取额度补充</p>
         
         <button id="claimBtn" onclick="claimQuota()" class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
           领取今日额度
@@ -248,17 +321,23 @@
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
-      toast.className = `toast px-6 py-4 rounded-lg shadow-lg text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+      const bgColor = type === 'success' ? 'bg-gradient-to-r from-green-500 to-emerald-600' : 'bg-gradient-to-r from-red-500 to-pink-600';
+      toast.className = `toast px-6 py-4 rounded-xl ${bgColor} text-white min-w-[300px]`;
       toast.innerHTML = `
         <div class="flex items-center gap-3">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'}
-          </svg>
-          <span>${message}</span>
+          <div class="flex-shrink-0 w-6 h-6 rounded-full ${type === 'success' ? 'bg-white/20' : 'bg-white/20'} flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              ${type === 'success' ? '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>' : '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>'}
+            </svg>
+          </div>
+          <span class="font-medium">${message}</span>
         </div>
       `;
       container.appendChild(toast);
-      setTimeout(() => toast.remove(), 3000);
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
     }
 
     function toggleDropdown() {
