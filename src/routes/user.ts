@@ -295,10 +295,10 @@ app.get('/user/quota', requireAuth, async (c) => {
     );
     const donated_today = todayDonates.length > 0;
 
-    // 计算今日已领取次数
+    // 计算今日已领取次数（排除绑定奖励）
     const allClaims = claimQueries.getByUser.all(user.linux_do_id);
     const todayClaims = allClaims.filter(
-        (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
+        (r) => r.timestamp >= todayStart && r.timestamp < todayEnd && r.quota_added !== 50000000
     );
     const today_claim_count = todayClaims.length;
 
@@ -344,13 +344,13 @@ app.post('/claim/daily', requireAuth, async (c) => {
     const todayStart = new Date(today).getTime();
     const todayEnd = todayStart + 86400000;
 
-    // 查询今日领取记录数
+    // 查询今日领取记录数（排除绑定奖励）
     const todayClaimsResult = await cacheManager.getOrLoad(
         `claims_count:${user.linux_do_id}:${today}`,
         async () => {
             const allClaims = claimQueries.getByUser.all(user.linux_do_id);
             return allClaims.filter(
-                (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
+                (r) => r.timestamp >= todayStart && r.timestamp < todayEnd && r.quota_added !== 50000000
             ).length;
         },
         3600000 // 缓存1小时
