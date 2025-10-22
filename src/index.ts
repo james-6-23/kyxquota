@@ -83,7 +83,7 @@ Bun.serve({
 });
 
 console.log(`
-🚀 KYX API Quota Bridge is running!
+🚀 KYX API Refueling Station is running!
 
    URL: http://${CONFIG.HOST}:${CONFIG.PORT}
    Admin: http://${CONFIG.HOST}:${CONFIG.PORT}/admin
