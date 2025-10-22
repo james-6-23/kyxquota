@@ -1,14 +1,11 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CONFIG, validateConfig } from './config';
-import { initDatabase, db } from './database';
+import { db } from './database';
 import { cacheManager } from './cache';
 
 // 验证配置
 validateConfig();
-
-// 初始化数据库
-initDatabase();
 
 // 创建应用
 const app = new Hono();

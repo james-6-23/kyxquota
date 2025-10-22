@@ -130,6 +130,9 @@ export function initDatabase() {
     console.log('✅ 数据库初始化完成');
 }
 
+// 先初始化数据库表
+initDatabase();
+
 // ========== 预编译查询语句（性能优化） ==========
 
 // 用户相关
