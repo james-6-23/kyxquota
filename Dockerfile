@@ -6,9 +6,10 @@ WORKDIR /app
 
 # 复制依赖文件
 COPY package.json ./
+COPY bun.lockb* ./
 
 # 安装依赖
-RUN bun install --production
+RUN bun install --frozen-lockfile=false --production
 
 # 复制源代码
 COPY src ./src
