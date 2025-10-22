@@ -66,9 +66,9 @@ fi
 
 echo -e "${GREEN}✅ 环境配置检查通过${NC}"
 
-# 构建镜像
-echo "🔨 构建 Docker 镜像..."
-docker-compose build --no-cache
+# 拉取镜像
+echo "📥 拉取 Docker 镜像..."
+docker-compose pull
 
 # 启动服务
 echo "🚀 启动服务..."

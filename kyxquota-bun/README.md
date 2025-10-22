@@ -123,7 +123,7 @@ if (kyxUser.linux_do_id !== session.linux_do_id) {
 ### 前置要求
 - Docker & Docker Compose 已安装
 
-### 部署步骤
+### 🎯 方式一：使用预构建镜像（推荐）
 
 ```bash
 # 1. 进入项目目录
@@ -133,13 +133,34 @@ cd kyxquota-bun
 cp env.example .env
 nano .env  # 填写必要配置（见下方）
 
-# 3. 一键部署
-chmod +x deploy.sh
-./deploy.sh
+# 3. 拉取并启动镜像
+docker-compose pull
+docker-compose up -d
 
 # 4. 验证部署
 chmod +x verify.sh
 ./verify.sh
+```
+
+**使用的镜像**: `james-6-23/kyxquota-bun:latest`（GitHub Actions 自动构建）
+
+---
+
+### 🔨 方式二：本地构建（可选）
+
+如果需要修改代码后本地构建：
+
+```bash
+# 使用本地构建配置
+docker-compose -f docker-compose.build.yml build
+docker-compose -f docker-compose.build.yml up -d
+```
+
+或使用部署脚本：
+
+```bash
+chmod +x deploy.sh
+./deploy.sh
 ```
 
 ### 环境变量配置
@@ -361,6 +382,43 @@ kyxquota-bun/
 - **前端**: Tailwind CSS
 - **部署**: Docker Compose
 - **语言**: TypeScript
+- **CI/CD**: GitHub Actions（自动构建镜像）
+
+---
+
+## 🤖 GitHub Actions 自动构建
+
+### 配置 Docker Hub Token
+
+1. **在 Docker Hub 创建 Access Token**:
+   - 访问 https://hub.docker.com/settings/security
+   - 点击 "New Access Token"
+   - 创建 Token 并复制
+
+2. **在 GitHub 仓库添加 Secret**:
+   - 访问你的 GitHub 仓库
+   - Settings → Secrets and variables → Actions
+   - 点击 "New repository secret"
+   - Name: `DOCKERHUB_TOKEN`
+   - Value: 粘贴刚才复制的 Token
+   - 点击 "Add secret"
+
+### 自动构建触发
+
+推送代码到 GitHub 后，会自动构建并推送镜像：
+
+```bash
+git add .
+git commit -m "更新代码"
+git push origin main  # 触发自动构建
+```
+
+### 镜像地址
+
+- **Docker Hub**: https://hub.docker.com/r/james-6-23/kyxquota-bun
+- **镜像标签**: 
+  - `james-6-23/kyxquota-bun:latest`
+  - `james-6-23/kyxquota-bun:main`
 
 ---
 

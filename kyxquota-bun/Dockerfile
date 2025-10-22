@@ -1,14 +1,14 @@
 # 使用官方 Bun 镜像
-FROM oven/bun:1.0.25-alpine as base
+FROM oven/bun:1.0.25-alpine
 
 # 设置工作目录
 WORKDIR /app
 
 # 复制依赖文件
-COPY package.json bun.lockb* ./
+COPY package.json ./
 
 # 安装依赖
-RUN bun install --frozen-lockfile --production
+RUN bun install --production
 
 # 复制源代码
 COPY src ./src

@@ -1,6 +1,8 @@
 services:
   app:
-    image: james-6-23/kyxquota-bun:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: kyxquota-bun
     restart: unless-stopped
     ports:
