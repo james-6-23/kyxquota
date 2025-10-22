@@ -28,7 +28,12 @@ app.route('/oauth', oauthRoutes);
 
 // 首页
 app.get('/', async (c) => {
-    const html = await Bun.file('src/templates/user.html').text();
+    let html = await Bun.file('src/templates/user.html').text();
+    // 注入环境变量
+    html = html.replace(
+        "LINUX_DO_CLIENT_ID: ''",
+        `LINUX_DO_CLIENT_ID: '${CONFIG.LINUX_DO_CLIENT_ID}'`
+    );
     return c.html(html);
 });
 
