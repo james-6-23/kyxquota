@@ -19,7 +19,8 @@ export function setCookie(
     value: string,
     maxAge: number = 86400
 ): string {
-    return `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; SameSite=Lax`;
+    // 添加 Secure 标志以支持 HTTPS
+    return `${name}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 export async function getSession(sessionId: string): Promise<SessionData | null> {

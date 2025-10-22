@@ -19,7 +19,7 @@ const app = new Hono();
  * 管理员认证中间件
  */
 async function requireAdmin(c: any, next: any) {
-    const sessionId = getCookie(c, 'admin_session');
+    const sessionId = getCookie(c.req.raw.headers, 'admin_session');
     if (!sessionId) {
         return c.json({ success: false, message: '未授权' }, 401);
     }

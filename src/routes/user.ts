@@ -16,7 +16,7 @@ const app = new Hono();
  * 中间件：验证用户登录
  */
 async function requireAuth(c: any, next: any) {
-    const sessionId = getCookie(c, 'session_id');
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
     if (!sessionId) {
         return c.json({ success: false, message: '未登录' }, 401);
     }
@@ -469,7 +469,7 @@ app.get('/user/records/donate', requireAuth, async (c) => {
  * 用户登出
  */
 app.post('/auth/logout', async (c) => {
-    const sessionId = getCookie(c, 'session_id');
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
     if (sessionId) {
         await deleteSession(sessionId);
     }
