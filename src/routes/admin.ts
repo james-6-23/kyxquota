@@ -664,5 +664,26 @@ app.post('/users/:linuxDoId/unban', requireAdmin, async (c) => {
     }
 });
 
+/**
+ * 解除用户绑定
+ */
+app.post('/users/:linuxDoId/unbind', requireAdmin, async (c) => {
+    const linuxDoId = c.req.param('linuxDoId');
+
+    try {
+        // 删除用户记录
+        db.exec(`DELETE FROM users WHERE linux_do_id = '${linuxDoId}'`);
+
+        // 清除缓存
+        cacheManager.delete(`user:${linuxDoId}`);
+
+        console.log('[Admin] 用户绑定已解除:', linuxDoId);
+        return c.json({ success: true, message: '用户绑定已解除' });
+    } catch (e: any) {
+        console.error('解绑用户失败:', e);
+        return c.json({ success: false, message: '解绑失败' }, 500);
+    }
+});
+
 export default app;
 

@@ -473,7 +473,7 @@
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">领取次数</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">总获得额度</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
-                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">管理</th>
                   </tr>
                 </thead>
                 <tbody id="usersListBody"></tbody>
@@ -961,9 +961,14 @@
               ? `<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">🚫 已封禁</span>` 
               : `<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✓ 正常</span>`;
             
-            const actionButton = isBanned
+            const actionButtons = isBanned
               ? `<button onclick="unbanUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold transition-colors">解封</button>`
-              : `<button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">封禁</button>`;
+              : `
+                <div class="flex gap-2 justify-center">
+                  <button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">封禁</button>
+                  <button onclick="unbindUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-semibold transition-colors">解绑</button>
+                </div>
+              `;
             
             return `
               <tr class="border-b border-slate-100 ${isBanned ? 'bg-red-50' : ''}">
@@ -974,7 +979,7 @@
                 <td class="px-4 py-3 text-center">${user.claim_count}</td>
                 <td class="px-4 py-3 text-right font-semibold">$${(user.total_quota / 500000).toFixed(2)}</td>
                 <td class="px-4 py-3 text-center">${statusHtml}</td>
-                <td class="px-4 py-3 text-center">${actionButton}</td>
+                <td class="px-4 py-3 text-center">${actionButtons}</td>
               </tr>
             `;
           }).join('');
@@ -1038,6 +1043,26 @@
         }
       } catch (e) {
         showMessage('解封失败', 'error');
+      }
+    }
+
+    async function unbindUser(linuxDoId, username) {
+      if (!confirm(`⚠️ 确定要解除用户 "${username}" 的绑定吗？\n\n此操作将：\n• 删除该用户的绑定信息\n• 清除所有相关记录\n• 用户需要重新绑定才能使用\n\n此操作不可恢复！`)) return;
+      
+      try {
+        const res = await fetch(`/api/admin/users/${linuxDoId}/unbind`, {
+          method: 'POST',
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(`用户 "${username}" 的绑定已解除`, 'success');
+          await loadUsersList();
+        } else {
+          showMessage(data.message || '解绑失败', 'error');
+        }
+      } catch (e) {
+        showMessage('解绑失败', 'error');
       }
     }
 
