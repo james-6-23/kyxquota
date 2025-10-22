@@ -488,13 +488,31 @@
             </button>
           </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
-            <button onclick="exportUsersData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出用户数据</button>
+            <div class="flex justify-between items-center">
+              <button onclick="exportUsersData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出用户数据</button>
+              <button onclick="toggleUsersBatchMode()" id="usersBatchBtn" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">批量操作</button>
+            </div>
+            <div id="usersBatchActions" class="hidden mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers()" class="w-4 h-4 rounded border-slate-300">
+                  <label class="text-sm font-semibold text-slate-700">全选 (<span id="selectedUsersCount">0</span> 个已选)</label>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="batchBanUsers()" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold">🚫 批量封禁</button>
+                  <button onclick="batchUnbindUsers()" class="px-3 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 text-sm font-semibold">🔓 批量解绑</button>
+                </div>
+              </div>
+            </div>
           </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full text-sm">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
+                    <th id="usersCheckboxHeader" class="hidden px-4 py-3 text-center font-semibold text-slate-700 w-12">
+                      <input type="checkbox" id="selectAllUsersHeader" onchange="toggleSelectAllUsers()" class="w-4 h-4 rounded border-slate-300">
+                    </th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">#</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">用户名</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">Linux Do ID</th>
@@ -1160,7 +1178,10 @@
               `;
             
             return `
-              <tr class="border-b border-slate-100 ${isBanned ? 'bg-red-50' : ''}">
+              <tr class="border-b border-slate-100 ${isBanned ? 'bg-red-50' : 'hover:bg-slate-50'}">
+                <td class="usersCheckboxCell hidden px-4 py-3 text-center">
+                  <input type="checkbox" class="user-checkbox w-4 h-4 rounded border-slate-300" value="${user.linux_do_id}" data-username="${user.username}" onchange="updateSelectedUsersCount()">
+                </td>
                 <td class="px-4 py-3">${index + 1}</td>
                 <td class="px-4 py-3 font-semibold">${user.username}</td>
                 <td class="px-4 py-3 font-mono text-xs">${user.linux_do_id}</td>
@@ -1253,6 +1274,116 @@
       } catch (e) {
         showMessage('解绑失败', 'error');
       }
+    }
+
+    // 用户列表批量操作功能
+    let usersBatchMode = false;
+
+    function toggleUsersBatchMode() {
+      usersBatchMode = !usersBatchMode;
+      const btn = document.getElementById('usersBatchBtn');
+      const batchActions = document.getElementById('usersBatchActions');
+      const checkboxCells = document.querySelectorAll('.usersCheckboxCell');
+      const checkboxHeader = document.getElementById('usersCheckboxHeader');
+      
+      if (usersBatchMode) {
+        btn.textContent = '✓ 退出批量';
+        btn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700';
+        batchActions.classList.remove('hidden');
+        checkboxHeader.classList.remove('hidden');
+        checkboxCells.forEach(cell => cell.classList.remove('hidden'));
+      } else {
+        btn.textContent = '批量操作';
+        btn.className = 'px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700';
+        batchActions.classList.add('hidden');
+        checkboxHeader.classList.add('hidden');
+        checkboxCells.forEach(cell => cell.classList.add('hidden'));
+        document.querySelectorAll('.user-checkbox').forEach(cb => cb.checked = false);
+        updateSelectedUsersCount();
+      }
+    }
+
+    function toggleSelectAllUsers() {
+      const selectAll = document.getElementById('selectAllUsers');
+      const selectAllHeader = document.getElementById('selectAllUsersHeader');
+      const checkboxes = document.querySelectorAll('.user-checkbox');
+      checkboxes.forEach(cb => cb.checked = selectAll.checked || selectAllHeader.checked);
+      if (selectAllHeader.checked) selectAll.checked = true;
+      if (selectAll.checked) selectAllHeader.checked = true;
+      updateSelectedUsersCount();
+    }
+
+    function updateSelectedUsersCount() {
+      const selected = document.querySelectorAll('.user-checkbox:checked');
+      document.getElementById('selectedUsersCount').textContent = selected.length;
+    }
+
+    function getSelectedUsers() {
+      return Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => ({
+        linuxDoId: cb.value,
+        username: cb.dataset.username
+      }));
+    }
+
+    async function batchBanUsers() {
+      const selectedUsers = getSelectedUsers();
+      if (selectedUsers.length === 0) {
+        showMessage('请先选择要封禁的用户', 'error');
+        return;
+      }
+      
+      const reason = prompt(`确定要批量封禁 ${selectedUsers.length} 个用户吗？\n\n请输入封禁原因：`, '违规行为');
+      if (reason === null) return;
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const user of selectedUsers) {
+        try {
+          const res = await fetch(`/api/admin/users/${user.linuxDoId}/ban`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reason }),
+          });
+          const data = await res.json();
+          if (data.success) successCount++;
+          else failCount++;
+        } catch (e) {
+          failCount++;
+        }
+      }
+      
+      showMessage(`批量封禁完成：成功 ${successCount} 个，失败 ${failCount} 个`, 'success');
+      await loadUsersList();
+    }
+
+    async function batchUnbindUsers() {
+      const selectedUsers = getSelectedUsers();
+      if (selectedUsers.length === 0) {
+        showMessage('请先选择要解绑的用户', 'error');
+        return;
+      }
+      
+      if (!confirm(`⚠️ 确定要批量解绑 ${selectedUsers.length} 个用户吗？\n\n此操作不可恢复！`)) return;
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const user of selectedUsers) {
+        try {
+          const res = await fetch(`/api/admin/users/${user.linuxDoId}/unbind`, {
+            method: 'POST',
+          });
+          const data = await res.json();
+          if (data.success) successCount++;
+          else failCount++;
+        } catch (e) {
+          failCount++;
+        }
+      }
+      
+      showMessage(`批量解绑完成：成功 ${successCount} 个，失败 ${failCount} 个`, 'success');
+      await loadUsersList();
     }
 
     function showSection(section) {
