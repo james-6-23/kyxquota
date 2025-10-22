@@ -4,11 +4,11 @@ FROM oven/bun:1.0.25-alpine
 # 设置工作目录
 WORKDIR /app
 
-# 复制依赖文件
-COPY package.json ./
+# 复制依赖文件（包括 lockfile！）
+COPY package.json bun.lockb ./  # 新增：复制 bun.lockb
 
-# 安装依赖（不使用lockfile，全新安装）
-RUN bun install --no-save --production
+# 安装依赖（使用 frozen-lockfile 确保可重现）
+RUN bun install --frozen-lockfile --production
 
 # 复制源代码
 COPY src ./src
@@ -32,4 +32,3 @@ ENV NODE_ENV=production \
 
 # 启动应用
 CMD ["bun", "src/index.ts"]
-
