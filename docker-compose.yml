@@ -1,6 +1,6 @@
 services:
   app:
-    image: james-6-23/kyxquota-bun:latest
+    image: ghcr.io/james-6-23/kyxquota-bun:latest
     container_name: kyxquota-bun
     restart: unless-stopped
     ports:
