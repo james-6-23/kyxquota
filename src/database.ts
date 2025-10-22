@@ -184,6 +184,9 @@ function initQueries() {
         unban: db.query(
             'UPDATE users SET is_banned = 0, banned_at = NULL, banned_reason = NULL WHERE linux_do_id = ?'
         ),
+        delete: db.query(
+            'DELETE FROM users WHERE linux_do_id = ?'
+        ),
     };
 
     // 领取记录相关
