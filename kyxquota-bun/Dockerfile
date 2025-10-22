@@ -24,9 +24,11 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3000/ || exit 1
 
-# 设置环境变量
-ENV NODE_ENV=production
-ENV DATABASE_PATH=/app/data/kyxquota.db
+# 设置默认环境变量（容器内部配置）
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOST=0.0.0.0 \
+    DATABASE_PATH=/app/data/kyxquota.db
 
 # 启动应用
 CMD ["bun", "src/index.ts"]
