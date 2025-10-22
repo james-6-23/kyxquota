@@ -71,7 +71,7 @@ process.on('SIGINT', async () => {
 });
 
 // 启动服务器
-const server = Bun.serve({
+Bun.serve({
     port: CONFIG.PORT,
     hostname: CONFIG.HOST,
     fetch: app.fetch,
@@ -87,5 +87,5 @@ console.log(`
    Environment: ${process.env.NODE_ENV || 'development'}
 `);
 
-export default server;
+export default app;
 

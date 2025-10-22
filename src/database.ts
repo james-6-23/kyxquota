@@ -128,7 +128,7 @@ export function initDatabase() {
     }
 
     console.log('✅ 数据库初始化完成');
-    
+
     // 初始化预编译查询语句
     initQueries();
 }
