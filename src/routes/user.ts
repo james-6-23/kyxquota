@@ -181,6 +181,19 @@ app.post('/auth/bind', requireAuth, async (c) => {
 
         if (updateResult.success) {
             console.log('[绑定] 新手奖励发放成功');
+
+            // 保存绑定奖励记录到领取记录表
+            const today = new Date().toISOString().split('T')[0];
+            const timestamp = Date.now();
+            claimQueries.insert.run(
+                session.linux_do_id,
+                kyxUser.username,
+                bonusQuota,
+                timestamp,
+                today
+            );
+            console.log('[绑定] 绑定奖励已记录');
+
             return c.json({
                 success: true,
                 message: `绑定成功！已赠送新手奖励 $${(bonusQuota / 500000).toFixed(2)}`,

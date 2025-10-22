@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>管理后台 - KYX API Refueling Station</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚡</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚙️</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body {
@@ -388,6 +388,7 @@
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">时间</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">用户名</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">Linux Do ID</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">类型</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">领取额度</th>
                   </tr>
                 </thead>
@@ -865,18 +866,28 @@
           document.getElementById('claimNextBtn').disabled = !data.pagination.hasMore;
 
           if (data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-8 text-slate-500">暂无数据</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">暂无数据</td></tr>';
             return;
           }
 
-          tbody.innerHTML = data.data.map(r => `
-            <tr class="border-b border-slate-100 hover:bg-slate-50">
-              <td class="px-4 py-3">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
-              <td class="px-4 py-3">${r.username}</td>
-              <td class="px-4 py-3 font-mono text-xs">${r.linux_do_id}</td>
-              <td class="px-4 py-3 text-right font-semibold">$${(r.quota_added / 500000).toFixed(2)}</td>
-            </tr>
-          `).join('');
+          tbody.innerHTML = data.data.map(r => {
+            const quotaUSD = (r.quota_added / 500000).toFixed(2);
+            const isBindingBonus = r.quota_added === 50000000; // 绑定奖励是 $100
+            
+            const typeLabel = isBindingBonus 
+              ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-semibold">🎁 绑定奖励</span>'
+              : '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">📅 每日领取</span>';
+            
+            return `
+              <tr class="border-b border-slate-100 hover:bg-slate-50">
+                <td class="px-4 py-3">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                <td class="px-4 py-3 font-semibold">${r.username}</td>
+                <td class="px-4 py-3 font-mono text-xs">${r.linux_do_id}</td>
+                <td class="px-4 py-3 text-center">${typeLabel}</td>
+                <td class="px-4 py-3 text-right font-semibold text-green-600">$${quotaUSD}</td>
+              </tr>
+            `;
+          }).join('');
         }
       } catch (e) {
         console.error('加载领取记录失败', e);

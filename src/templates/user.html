@@ -138,13 +138,13 @@
     <div class="bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl p-12 max-w-md w-full animate-in border border-white/20">
       <div class="flex justify-center mb-8">
         <div class="relative">
-          <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-xl opacity-50 animate-pulse"></div>
-          <div class="relative bg-white p-2 rounded-2xl shadow-lg">
-            <img src="https://lh3.googleusercontent.com/a/ACg8ocJmyq3J-RuNfGv7J430fFiZ6EYQ0AB_phVlIPwm265e9HC1vJc=s288-c-no" alt="Logo" class="w-16 h-16 rounded-xl">
+          <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-2xl opacity-60 animate-pulse"></div>
+          <div class="relative bg-white p-3 rounded-full shadow-2xl ring-4 ring-white/50">
+            <img src="https://lh3.googleusercontent.com/a/ACg8ocJmyq3J-RuNfGv7J430fFiZ6EYQ0AB_phVlIPwm265e9HC1vJc=s288-c-no" alt="Logo" class="w-20 h-20 rounded-full object-cover">
           </div>
         </div>
       </div>
-      <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">KYX API Refueling Station</h1>
+      <h1 class="text-3xl font-bold text-center bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3 whitespace-nowrap">KYX API Refueling Station</h1>
       <p class="text-center text-slate-600 mb-8 text-sm">⚡ 公益站额度加油站</p>
       
       <button onclick="login()" class="group relative w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white py-4 px-6 rounded-xl font-semibold overflow-hidden transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl active:scale-[0.98]">
@@ -603,12 +603,24 @@
         const donateContainer = document.getElementById('donateRecords');
 
         if (claimData.success && claimData.data.length > 0) {
-          claimContainer.innerHTML = claimData.data.map(r => `
-            <div class="border-b border-slate-200 py-3">
-              <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
-              <p class="font-semibold text-slate-900">领取额度: $${(r.quota_added / 500000).toFixed(2)}</p>
-            </div>
-          `).join('');
+          claimContainer.innerHTML = claimData.data.map(r => {
+            const quotaUSD = (r.quota_added / 500000).toFixed(2);
+            const isBindingBonus = r.quota_added === 50000000; // 绑定奖励是 $100
+            
+            const typeLabel = isBindingBonus 
+              ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-semibold">🎁 绑定奖励</span>'
+              : '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">📅 每日领取</span>';
+            
+            return `
+              <div class="border-b border-slate-200 py-3">
+                <div class="flex items-center justify-between mb-1">
+                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+                  ${typeLabel}
+                </div>
+                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">$${quotaUSD}</span></p>
+              </div>
+            `;
+          }).join('');
         } else {
           claimContainer.innerHTML = '<p class="text-center text-slate-500 py-8">暂无领取记录</p>';
         }
