@@ -356,9 +356,25 @@
             </button>
           </div>
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
-            <div class="flex gap-2 mb-4">
-              <button onclick="exportKeys()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出所有</button>
-              <button onclick="copyAllKeys()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">📋 复制所有</button>
+            <div class="flex justify-between items-center mb-4">
+              <div class="flex gap-2">
+                <button onclick="exportKeys()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">📥 导出所有</button>
+                <button onclick="copyAllKeys()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">📋 复制所有</button>
+                <button onclick="testAllKeys()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">🧪 一键测试</button>
+              </div>
+              <button onclick="toggleKeysBatchMode()" id="keysBatchBtn" class="px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700">批量操作</button>
+            </div>
+            <div id="keysBatchActions" class="hidden mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <input type="checkbox" id="selectAllKeys" onchange="toggleSelectAllKeys()" class="w-4 h-4 rounded border-slate-300">
+                  <label class="text-sm font-semibold text-slate-700">全选 (<span id="selectedKeysCount">0</span> 个已选)</label>
+                </div>
+                <div class="flex gap-2">
+                  <button onclick="deleteSelectedKeys()" class="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm font-semibold">🗑️ 删除选中</button>
+                  <button onclick="testSelectedKeys()" class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm font-semibold">🧪 测试选中</button>
+                </div>
+              </div>
             </div>
             <p class="text-sm text-slate-600">总计: <span id="totalKeysCount">0</span> 个 Key</p>
           </div>
@@ -367,9 +383,13 @@
               <table class="w-full text-sm">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
+                    <th id="keysCheckboxHeader" class="hidden px-4 py-3 text-center font-semibold text-slate-700 w-12">
+                      <input type="checkbox" id="selectAllKeysHeader" onchange="toggleSelectAllKeys()" class="w-4 h-4 rounded border-slate-300">
+                    </th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">Key</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">投喂用户</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">投喂时间</th>
+                    <th id="keysStatusHeader" class="hidden px-4 py-3 text-center font-semibold text-slate-700">状态</th>
                   </tr>
                 </thead>
                 <tbody id="keysListBody"></tbody>
@@ -814,16 +834,160 @@
             return;
           }
 
-          tbody.innerHTML = data.data.map(item => `
-            <tr class="border-b border-slate-100">
+          tbody.innerHTML = data.data.map((item, index) => `
+            <tr class="border-b border-slate-100 hover:bg-slate-50" data-key="${item.key}">
+              <td class="keysCheckboxCell hidden px-4 py-3 text-center">
+                <input type="checkbox" class="key-checkbox w-4 h-4 rounded border-slate-300" value="${item.key}" onchange="updateSelectedCount()">
+              </td>
               <td class="px-4 py-3 font-mono text-xs">${item.key}</td>
               <td class="px-4 py-3">${item.username || '-'}</td>
               <td class="px-4 py-3">${new Date(item.timestamp).toLocaleString('zh-CN')}</td>
+              <td class="keysStatusCell hidden px-4 py-3 text-center">
+                <span class="key-status-${index}">-</span>
+              </td>
             </tr>
           `).join('');
         }
       } catch (e) {
         console.error('加载Keys失败', e);
+      }
+    }
+
+    // Keys 批量操作功能
+    let keysBatchMode = false;
+
+    function toggleKeysBatchMode() {
+      keysBatchMode = !keysBatchMode;
+      const btn = document.getElementById('keysBatchBtn');
+      const batchActions = document.getElementById('keysBatchActions');
+      const checkboxCells = document.querySelectorAll('.keysCheckboxCell');
+      const checkboxHeader = document.getElementById('keysCheckboxHeader');
+      const statusCells = document.querySelectorAll('.keysStatusCell');
+      const statusHeader = document.getElementById('keysStatusHeader');
+      
+      if (keysBatchMode) {
+        btn.textContent = '✓ 退出批量';
+        btn.className = 'px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700';
+        batchActions.classList.remove('hidden');
+        checkboxHeader.classList.remove('hidden');
+        statusHeader.classList.remove('hidden');
+        checkboxCells.forEach(cell => cell.classList.remove('hidden'));
+        statusCells.forEach(cell => cell.classList.remove('hidden'));
+      } else {
+        btn.textContent = '批量操作';
+        btn.className = 'px-4 py-2 bg-slate-600 text-white rounded-lg hover:bg-slate-700';
+        batchActions.classList.add('hidden');
+        checkboxHeader.classList.add('hidden');
+        statusHeader.classList.add('hidden');
+        checkboxCells.forEach(cell => cell.classList.add('hidden'));
+        statusCells.forEach(cell => cell.classList.add('hidden'));
+        // 清除所有选中
+        document.querySelectorAll('.key-checkbox').forEach(cb => cb.checked = false);
+        updateSelectedCount();
+      }
+    }
+
+    function toggleSelectAllKeys() {
+      const selectAll = document.getElementById('selectAllKeys');
+      const selectAllHeader = document.getElementById('selectAllKeysHeader');
+      const checkboxes = document.querySelectorAll('.key-checkbox');
+      checkboxes.forEach(cb => cb.checked = selectAll.checked || selectAllHeader.checked);
+      if (selectAllHeader.checked) selectAll.checked = true;
+      if (selectAll.checked) selectAllHeader.checked = true;
+      updateSelectedCount();
+    }
+
+    function updateSelectedCount() {
+      const selected = document.querySelectorAll('.key-checkbox:checked');
+      document.getElementById('selectedKeysCount').textContent = selected.length;
+    }
+
+    function getSelectedKeys() {
+      return Array.from(document.querySelectorAll('.key-checkbox:checked')).map(cb => cb.value);
+    }
+
+    async function deleteSelectedKeys() {
+      const selectedKeys = getSelectedKeys();
+      if (selectedKeys.length === 0) {
+        showMessage('请先选择要删除的 Keys', 'error');
+        return;
+      }
+      
+      if (!confirm(`确定要删除 ${selectedKeys.length} 个 Keys 吗？此操作不可恢复！`)) return;
+      
+      try {
+        const res = await fetch('/api/admin/keys/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: selectedKeys }),
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage(data.message, 'success');
+          await loadKeysList();
+        } else {
+          showMessage(data.message || '删除失败', 'error');
+        }
+      } catch (e) {
+        showMessage('删除失败', 'error');
+      }
+    }
+
+    async function testSelectedKeys() {
+      const selectedKeys = getSelectedKeys();
+      if (selectedKeys.length === 0) {
+        showMessage('请先选择要测试的 Keys', 'error');
+        return;
+      }
+      
+      showMessage(`正在测试 ${selectedKeys.length} 个 Keys...`, 'success');
+      await testKeys(selectedKeys);
+    }
+
+    async function testAllKeys() {
+      const allKeys = Array.from(document.querySelectorAll('.key-checkbox')).map(cb => cb.value);
+      if (allKeys.length === 0) {
+        showMessage('暂无 Keys 可测试', 'error');
+        return;
+      }
+      
+      if (!confirm(`确定要测试全部 ${allKeys.length} 个 Keys 吗？`)) return;
+      
+      showMessage(`正在测试全部 ${allKeys.length} 个 Keys...`, 'success');
+      await testKeys(allKeys);
+    }
+
+    async function testKeys(keys) {
+      try {
+        const res = await fetch('/api/admin/keys/test', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys }),
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          // 显示测试结果
+          data.data.forEach((result, index) => {
+            const statusSpan = document.querySelector(`.key-status-${index}`);
+            if (statusSpan) {
+              if (result.valid) {
+                statusSpan.innerHTML = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">✓ 有效</span>';
+              } else {
+                statusSpan.innerHTML = '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs">✕ 失效</span>';
+              }
+            }
+          });
+          
+          const validCount = data.data.filter(r => r.valid).length;
+          const invalidCount = data.data.length - validCount;
+          showMessage(`测试完成：有效 ${validCount} 个，失效 ${invalidCount} 个`, 'success');
+        } else {
+          showMessage(data.message || '测试失败', 'error');
+        }
+      } catch (e) {
+        showMessage('测试失败', 'error');
       }
     }
 
