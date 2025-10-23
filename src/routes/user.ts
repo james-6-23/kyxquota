@@ -5,10 +5,11 @@ import { cacheManager } from '../cache';
 import {
     searchAndFindExactUser,
     updateKyxUserQuota,
+    getKyxUserById,
 } from '../services/kyx-api';
 import { validateAndDonateKeys } from '../services/keys';
 import { CONFIG } from '../config';
-import type { User, ClaimRecord } from '../types';
+import type { User } from '../types';
 
 const app = new Hono();
 
@@ -17,23 +18,19 @@ const app = new Hono();
  */
 async function requireAuth(c: any, next: any) {
     const sessionId = getCookie(c.req.raw.headers, 'session_id');
-    console.log('[Auth] Checking session, ID:', sessionId);
     if (!sessionId) {
-        console.log('[Auth] No session ID found in cookies');
         return c.json({ success: false, message: '未登录' }, 401);
     }
 
     const session = await getSession(sessionId);
-    console.log('[Auth] Session data:', session ? 'found' : 'not found');
     if (!session || !session.linux_do_id) {
-        console.log('[Auth] Invalid session');
         return c.json({ success: false, message: '会话无效' }, 401);
     }
 
     // 检查用户是否被封禁
     const user = userQueries.get.get(session.linux_do_id);
     if (user && user.is_banned) {
-        console.log('[Auth] User is banned:', session.linux_do_id);
+        console.log(`[用户操作] ❌ 已封禁用户尝试访问 - Linux Do ID: ${session.linux_do_id}, 原因: ${user.banned_reason || '未知'}`);
         return c.json({
             success: false,
             message: `您的账号已被封禁${user.banned_reason ? '，原因：' + user.banned_reason : ''}`,
@@ -150,18 +147,19 @@ app.post('/auth/bind', requireAuth, async (c) => {
             kyxUser.id,
             Date.now()
         );
+        console.log(`[用户操作] ✅ 新用户绑定 - 用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}, KYX ID: ${kyxUser.id}`);
     } else {
         userQueries.update.run(
             kyxUser.username,
             kyxUser.id,
             session.linux_do_id
         );
+        console.log(`[用户操作] 🔄 重新绑定 - 用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}`);
     }
 
     // 清除缓存
     cacheManager.delete(`user:${session.linux_do_id}`);
-
-    console.log('[绑定] 绑定信息已保存');
+    cacheManager.clear(`kyx_user:${kyxUser.id}`);
 
     // 如果是首次绑定，赠送新手额度
     if (isFirstBind) {
@@ -180,8 +178,6 @@ app.post('/auth/bind', requireAuth, async (c) => {
         );
 
         if (updateResult.success) {
-            console.log('[绑定] 新手奖励发放成功');
-
             // 保存绑定奖励记录到领取记录表
             const today = new Date().toISOString().split('T')[0];
             const timestamp = Date.now();
@@ -192,7 +188,7 @@ app.post('/auth/bind', requireAuth, async (c) => {
                 timestamp,
                 today
             );
-            console.log('[绑定] 绑定奖励已记录');
+            console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
 
             return c.json({
                 success: true,
@@ -203,14 +199,13 @@ app.post('/auth/bind', requireAuth, async (c) => {
                 },
             });
         } else {
-            console.log('[绑定] 新手奖励发放失败:', updateResult.message);
+            console.log(`[用户操作] ❌ 新手奖励发放失败 - 用户: ${kyxUser.username}, 原因: ${updateResult.message}`);
             return c.json({
                 success: true,
                 message: '绑定成功，但奖励发放失败，请联系管理员',
             });
         }
     } else {
-        console.log('[绑定] 重新绑定，不发放奖励');
         return c.json({
             success: true,
             message: '重新绑定成功',
@@ -244,18 +239,24 @@ app.get('/user/quota', requireAuth, async (c) => {
         300000
     );
 
-    // 查询公益站实时额度
-    const searchResult = await searchAndFindExactUser(
-        user.username,
-        adminConfig!.session,
-        adminConfig!.new_api_user,
-        '查询额度'
+    // 优化：直接通过 kyx_user_id 查询，避免每次都搜索用户
+    const cacheKey = `kyx_user:${user.kyx_user_id}:quota`;
+    const kyxUserResult = await cacheManager.getOrLoad(
+        cacheKey,
+        async () => {
+            return await getKyxUserById(
+                user.kyx_user_id,
+                adminConfig!.session,
+                adminConfig!.new_api_user
+            );
+        },
+        30000 // 缓存30秒，确保额度信息较实时
     );
 
-    if (!searchResult.success) {
+    if (!kyxUserResult.success || !kyxUserResult.user) {
         if (
-            searchResult.message?.includes('未登录') ||
-            searchResult.message?.includes('无权进行此操作')
+            kyxUserResult.message?.includes('未登录') ||
+            kyxUserResult.message?.includes('无权进行此操作')
         ) {
             return c.json(
                 {
@@ -268,13 +269,13 @@ app.get('/user/quota', requireAuth, async (c) => {
         return c.json(
             {
                 success: false,
-                message: searchResult.message || '查询额度失败',
+                message: kyxUserResult.message || '查询额度失败',
             },
             500
         );
     }
 
-    const kyxUser = searchResult.user!;
+    const kyxUser = kyxUserResult.user!;
 
     // 检查今日是否已领取
     const today = new Date().toISOString().split('T')[0];
@@ -287,7 +288,7 @@ app.get('/user/quota', requireAuth, async (c) => {
     );
 
     // 检查今日是否已投喂（按类型分别检查）
-    const todayStart = new Date(today).getTime();
+    const todayStart = new Date(today || '').getTime();
     const todayEnd = todayStart + 86400000;
     const allDonates = donateQueries.getByUser.all(user.linux_do_id);
     const todayDonates = allDonates.filter(
@@ -342,7 +343,7 @@ app.post('/claim/daily', requireAuth, async (c) => {
     }
 
     // 检查今日领取次数
-    const today = new Date().toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0] || '';
     const todayStart = new Date(today).getTime();
     const todayEnd = todayStart + 86400000;
 
@@ -457,6 +458,9 @@ app.post('/claim/daily', requireAuth, async (c) => {
     // 清除缓存
     cacheManager.clear(`claim:${user.linux_do_id}`);
     cacheManager.clear(`claims_count:${user.linux_do_id}`);
+    cacheManager.clear(`kyx_user:${user.kyx_user_id}`);
+
+    console.log(`[用户操作] 💰 每日领取成功 - 用户: ${user.username}, 额度: $${(adminConfig.claim_quota / 500000).toFixed(2)}, 今日第 ${todayClaimsResult + 1} 次`);
 
     return c.json({
         success: true,
@@ -489,6 +493,12 @@ app.post('/donate/validate', requireAuth, async (c) => {
         'modelscope'
     );
 
+    if (result.success) {
+        console.log(`[用户操作] 🎁 ModelScope 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}`);
+    } else {
+        console.log(`[用户操作] ❌ ModelScope 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
+    }
+
     return c.json(result, result.success ? 200 : 400);
 });
 
@@ -515,6 +525,12 @@ app.post('/donate/iflow', requireAuth, async (c) => {
         keys,
         'iflow'
     );
+
+    if (result.success) {
+        console.log(`[用户操作] ✨ iFlow 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}`);
+    } else {
+        console.log(`[用户操作] ❌ iFlow 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
+    }
 
     return c.json(result, result.success ? 200 : 400);
 });
@@ -553,6 +569,13 @@ app.get('/user/records/donate', requireAuth, async (c) => {
 app.post('/auth/logout', async (c) => {
     const sessionId = getCookie(c.req.raw.headers, 'session_id');
     if (sessionId) {
+        const session = await getSession(sessionId);
+        if (session?.linux_do_id) {
+            const user = userQueries.get.get(session.linux_do_id);
+            if (user) {
+                console.log(`[用户操作] 🚪 用户登出 - 用户: ${user.username}, Linux Do ID: ${session.linux_do_id}`);
+            }
+        }
         await deleteSession(sessionId);
     }
 

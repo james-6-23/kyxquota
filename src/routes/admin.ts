@@ -38,12 +38,14 @@ async function requireAdmin(c: any, next: any) {
 app.post('/login', async (c) => {
     const { password } = await c.req.json();
     if (password !== CONFIG.ADMIN_PASSWORD) {
+        console.log('[管理员] ❌ 登录失败 - 密码错误');
         return c.json({ success: false, message: '密码错误' }, 401);
     }
 
     const sessionId = generateSessionId();
     await saveSession(sessionId, { admin: true });
 
+    console.log('[管理员] ✅ 管理员登录成功');
     c.header('Set-Cookie', setCookie('admin_session', sessionId));
     return c.json({ success: true });
 });
@@ -102,6 +104,7 @@ app.put('/config/quota', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
+    console.log(`[管理员] ⚙️ 更新领取额度配置 - 新值: $${(claim_quota / 500000).toFixed(2)}`);
     return c.json({ success: true, message: '配置已更新' });
 });
 
@@ -134,6 +137,7 @@ app.put('/config/max-daily-claims', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
+    console.log(`[管理员] ⚙️ 更新每日领取次数 - 新值: ${max_daily_claims} 次`);
     return c.json({ success: true, message: '每日领取次数已更新' });
 });
 
@@ -162,6 +166,7 @@ app.put('/config/session', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
+    console.log('[管理员] ⚙️ 更新 Session 配置');
     return c.json({ success: true, message: 'Session 已更新' });
 });
 
@@ -277,6 +282,7 @@ app.put('/config/modelscope-group-id', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
+    console.log(`[管理员] ⚙️ 更新 ModelScope Group ID - 新值: ${modelscope_group_id}`);
     return c.json({ success: true, message: 'ModelScope Group ID 已更新' });
 });
 
@@ -305,6 +311,7 @@ app.put('/config/iflow-group-id', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
+    console.log(`[管理员] ⚙️ 更新 iFlow Group ID - 新值: ${iflow_group_id}`);
     return c.json({ success: true, message: 'iFlow Group ID 已更新' });
 });
 
@@ -435,6 +442,7 @@ app.post('/keys/delete', requireAdmin, async (c) => {
         }
     }
 
+    console.log(`[管理员] 🗑️ 删除 Keys - 数量: ${keys.length}`);
     return c.json({
         success: true,
         message: `成功删除 ${keys.length} 个Key`,
@@ -641,6 +649,7 @@ app.post('/rebind-user', requireAdmin, async (c) => {
     // 清除缓存
     cacheManager.delete(`user:${linux_do_id}`);
 
+    console.log(`[管理员] 🔄 重新绑定用户 - 从 ${currentUser.username} → ${kyxUser.username}, Linux Do ID: ${linux_do_id}`);
     return c.json({
         success: true,
         message: `用户重新绑定成功，从 ${currentUser.username} 更新为 ${kyxUser.username}`,
@@ -708,10 +717,12 @@ app.post('/users/:linuxDoId/ban', requireAdmin, async (c) => {
     const { reason } = await c.req.json();
 
     try {
+        const user = userQueries.get.get(linuxDoId);
         userQueries.ban.run(Date.now(), reason || '违规行为', linuxDoId);
+        console.log(`[管理员] 🚫 封禁用户 - 用户: ${user?.username || linuxDoId}, 原因: ${reason || '违规行为'}`);
         return c.json({ success: true, message: '用户已被封禁' });
     } catch (e: any) {
-        console.error('封禁用户失败:', e);
+        console.error(`[管理员] ❌ 封禁用户失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
         return c.json({ success: false, message: '封禁失败' }, 500);
     }
 });
@@ -723,10 +734,12 @@ app.post('/users/:linuxDoId/unban', requireAdmin, async (c) => {
     const linuxDoId = c.req.param('linuxDoId');
 
     try {
+        const user = userQueries.get.get(linuxDoId);
         userQueries.unban.run(linuxDoId);
+        console.log(`[管理员] ✅ 解封用户 - 用户: ${user?.username || linuxDoId}`);
         return c.json({ success: true, message: '用户已解封' });
     } catch (e: any) {
-        console.error('解封用户失败:', e);
+        console.error(`[管理员] ❌ 解封用户失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
         return c.json({ success: false, message: '解封失败' }, 500);
     }
 });
@@ -738,16 +751,17 @@ app.post('/users/:linuxDoId/unbind', requireAdmin, async (c) => {
     const linuxDoId = c.req.param('linuxDoId');
 
     try {
+        const user = userQueries.get.get(linuxDoId);
         // 删除用户记录
         userQueries.delete.run(linuxDoId);
 
         // 清除缓存
         cacheManager.delete(`user:${linuxDoId}`);
 
-        console.log('[Admin] 用户绑定已解除:', linuxDoId);
+        console.log(`[管理员] 🔓 解除用户绑定 - 用户: ${user?.username || linuxDoId}, Linux Do ID: ${linuxDoId}`);
         return c.json({ success: true, message: '用户绑定已解除' });
     } catch (e: any) {
-        console.error('解绑用户失败:', e);
+        console.error(`[管理员] ❌ 解绑用户失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
         return c.json({ success: false, message: `解绑失败: ${e.message}` }, 500);
     }
 });
