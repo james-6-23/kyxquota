@@ -319,7 +319,7 @@ app.get('/user/quota', requireAuth, async (c) => {
             quota: kyxUser.quota,
             used_quota: kyxUser.used_quota,
             total: kyxUser.quota + kyxUser.used_quota,
-            can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && !claimToday,
+            can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && remaining_claims > 0,
             claimed_today: !!claimToday,
             donated_modelscope_today: donated_modelscope_today,
             donated_iflow_today: donated_iflow_today,
