@@ -450,9 +450,12 @@ app.post('/keys/delete', requireAdmin, async (c) => {
 });
 
 /**
- * 获取用户列表
+ * 获取用户列表（支持分页）
  */
 app.get('/users', requireAdmin, async (c) => {
+    const page = parseInt(c.req.query('page') || '1');
+    const pageSize = parseInt(c.req.query('pageSize') || '20');
+
     // 获取所有用户
     const users = userQueries.getAll.all();
 
@@ -501,7 +504,23 @@ app.get('/users', requireAdmin, async (c) => {
     // 按总额度排序
     userStats.sort((a, b) => b.total_quota - a.total_quota);
 
-    return c.json({ success: true, data: userStats });
+    // 分页
+    const totalCount = userStats.length;
+    const totalPages = Math.ceil(totalCount / pageSize);
+    const offset = (page - 1) * pageSize;
+    const paginatedData = userStats.slice(offset, offset + pageSize);
+
+    return c.json({
+        success: true,
+        data: paginatedData,
+        pagination: {
+            page,
+            pageSize,
+            total: totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        },
+    });
 });
 
 /**
