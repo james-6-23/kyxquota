@@ -279,66 +279,93 @@
         </button>
       </div>
 
-      <!-- ModelScope Donate Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in card-hover">
-        <h3 class="text-xl font-bold text-slate-900 mb-4">🎁 投喂 ModelScope Key</h3>
-        <p class="text-sm text-slate-600 mb-2">每个有效的 ModelScope API Key 可为您增加 $50 额度</p>
-        
-        <!-- 投喂限制说明 -->
-        <div id="donateWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div class="flex items-center gap-2 text-xs text-red-800">
-            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <span><strong>每天只能提交 1 个 Key</strong></span>
-          </div>
-        </div>
-
-        <!-- 今日已投喂提示 -->
-        <div id="donatedToday" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div class="flex items-center gap-2 text-xs text-green-800">
-            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>✓ <strong>今日已投喂</strong>，感谢您的支持！明天再来吧</span>
-          </div>
-        </div>
-        
-        <textarea id="keysInput" placeholder="请输入 1 个 ModelScope API Key：&#10;ms-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
-        <button id="donateBtn" onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
-          🚀 提交 Key
-        </button>
-      </div>
-
-      <!-- iFlow Donate Card -->
+      <!-- Donate Cards Container -->
       <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
-        <h3 class="text-xl font-bold text-slate-900 mb-4">✨ 投喂 iFlow API Key</h3>
-        <p class="text-sm text-slate-600 mb-2">每个有效的 iFlow API Key 可为您增加 $50 额度</p>
+        <h3 class="text-2xl font-bold text-slate-900 mb-6 text-center">💝 投喂 API Keys</h3>
+        <p class="text-sm text-slate-600 mb-6 text-center">每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 1 个</p>
         
-        <!-- 投喂限制说明 -->
-        <div id="donateIflowWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-          <div class="flex items-center gap-2 text-xs text-red-800">
-            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-            </svg>
-            <span><strong>每天只能提交 1 个 Key</strong></span>
-          </div>
-        </div>
+        <!-- 两列布局 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- ModelScope Card -->
+          <div class="border-2 border-indigo-200 rounded-xl p-5 hover:border-indigo-400 transition-colors">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="text-2xl">🎁</span>
+              <h4 class="text-lg font-bold text-slate-900">ModelScope Key</h4>
+            </div>
+            
+            <!-- 投喂限制说明 -->
+            <div id="donateWarning" class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex items-center gap-2 text-xs text-red-800">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <span><strong>每天只能提交 1 个</strong></span>
+              </div>
+            </div>
 
-        <!-- 今日已投喂提示 -->
-        <div id="donatedIflowToday" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div class="flex items-center gap-2 text-xs text-green-800">
-            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span>✓ <strong>今日已投喂</strong>，感谢您的支持！明天再来吧</span>
+            <!-- 今日已投喂提示 -->
+            <div id="donatedToday" class="hidden mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center gap-2 text-xs text-green-800">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>✓ <strong>今日已投喂</strong></span>
+              </div>
+            </div>
+            
+            <textarea id="keysInput" placeholder="ms-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm resize-none"></textarea>
+            <button id="donateBtn" onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3">
+              🚀 提交 ModelScope Key
+            </button>
+            <a href="https://www.modelscope.cn/my/myaccesstoken" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 text-xs text-indigo-600 hover:text-indigo-800 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+              <span class="font-medium">获取 ModelScope API Key</span>
+            </a>
           </div>
+
+          <!-- iFlow Card -->
+          <div class="border-2 border-emerald-200 rounded-xl p-5 hover:border-emerald-400 transition-colors">
+            <div class="flex items-center gap-2 mb-4">
+              <span class="text-2xl">✨</span>
+              <h4 class="text-lg font-bold text-slate-900">iFlow API Key</h4>
+            </div>
+            
+            <!-- 投喂限制说明 -->
+            <div id="donateIflowWarning" class="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg">
+              <div class="flex items-center gap-2 text-xs text-red-800">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+                <span><strong>每天只能提交 1 个</strong></span>
+              </div>
+            </div>
+
+            <!-- 今日已投喂提示 -->
+            <div id="donatedIflowToday" class="hidden mb-3 p-2 bg-green-50 border border-green-200 rounded-lg">
+              <div class="flex items-center gap-2 text-xs text-green-800">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span>✓ <strong>今日已投喂</strong></span>
+              </div>
+            </div>
+            
+            <textarea id="iflowKeysInput" placeholder="sk-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm resize-none"></textarea>
+            <button id="donateIflowBtn" onclick="donateIflowKeys()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3">
+              🚀 提交 iFlow Key
+            </button>
+            <a href="https://platform.iflow.cn/profile?tab=apiKey" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 text-xs text-emerald-600 hover:text-emerald-800 transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+              <span class="font-medium">获取 iFlow API Key</span>
+            </a>
+          </div>
+          
         </div>
-        
-        <textarea id="iflowKeysInput" placeholder="请输入 1 个 iFlow API Key：&#10;sk-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm"></textarea>
-        <button id="donateIflowBtn" onclick="donateIflowKeys()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
-          🚀 提交 iFlow Key
-        </button>
       </div>
     </div>
   </div>

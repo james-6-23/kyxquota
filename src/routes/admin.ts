@@ -64,6 +64,7 @@ app.get('/config', requireAdmin, async (c) => {
             session_configured: !!config!.session,
             new_api_user: config!.new_api_user || '1',  // 返回 new_api_user 值
             keys_api_url: config!.keys_api_url,
+            keys_authorization: config!.keys_authorization || '',  // 返回实际值
             keys_authorization_configured: !!config!.keys_authorization,
             modelscope_group_id: config!.modelscope_group_id,
             iflow_group_id: config!.iflow_group_id || 26,
@@ -381,10 +382,32 @@ app.post('/keys/test', requireAdmin, async (c) => {
         return c.json({ success: false, message: 'Keys 不能为空' }, 400);
     }
 
+    const { validateIFlowKey } = await import('../services/keys');
+
     const results: any[] = [];
-    for (const key of keys) {
-        const isValid = await validateModelScopeKey(key);
-        results.push({ key, valid: isValid });
+    for (const keyItem of keys) {
+        let keyValue: string;
+        let keyType: string;
+
+        // 支持两种格式
+        if (typeof keyItem === 'string') {
+            keyValue = keyItem;
+            keyType = 'modelscope';  // 默认
+        } else {
+            keyValue = keyItem.key;
+            keyType = keyItem.key_type || 'modelscope';
+        }
+
+        // 根据类型调用不同的验证函数
+        const isValid = keyType === 'iflow'
+            ? await validateIFlowKey(keyValue)
+            : await validateModelScopeKey(keyValue);
+
+        results.push({
+            key: keyValue,
+            key_type: keyType,
+            valid: isValid
+        });
     }
 
     return c.json({ success: true, data: results });
@@ -400,8 +423,16 @@ app.post('/keys/delete', requireAdmin, async (c) => {
         return c.json({ success: false, message: 'Keys 不能为空' }, 400);
     }
 
-    for (const key of keys) {
-        keyQueries.delete.run(key);
+    for (const keyItem of keys) {
+        // 支持两种格式：字符串（旧格式）或对象（新格式带 key_type）
+        if (typeof keyItem === 'string') {
+            // 旧格式：删除所有类型的该 key
+            keyQueries.delete.run(keyItem, 'modelscope');
+            keyQueries.delete.run(keyItem, 'iflow');
+        } else if (keyItem.key && keyItem.key_type) {
+            // 新格式：只删除指定类型的 key
+            keyQueries.delete.run(keyItem.key, keyItem.key_type);
+        }
     }
 
     return c.json({
