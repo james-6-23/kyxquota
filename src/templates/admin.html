@@ -725,10 +725,10 @@
 
     async function loadUsersCount() {
       try {
-        const res = await fetch('/api/admin/users');
+        const res = await fetch('/api/admin/users?page=1&pageSize=1');
         const data = await res.json();
         if (data.success) {
-          document.getElementById('userCount').textContent = data.data.length;
+          document.getElementById('userCount').textContent = data.pagination.total;
         }
       } catch (e) {
         console.error('加载用户数失败', e);

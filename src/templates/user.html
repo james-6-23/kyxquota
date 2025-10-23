@@ -423,6 +423,55 @@
       }, 3000);
     }
 
+    function showThankYouToast() {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-20 left-1/2 transform -translate-x-1/2 z-[10000] px-8 py-6 rounded-2xl bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white shadow-2xl';
+      toast.style.animation = 'fadeInScale 0.5s ease-out';
+      toast.innerHTML = `
+        <div class="text-center">
+          <div class="text-3xl mb-2">🎉</div>
+          <div class="text-lg font-bold mb-1">感谢您的支持！</div>
+          <div class="text-sm opacity-90">您的投喂让公益站更好运行</div>
+        </div>
+      `;
+      
+      // 添加动画样式
+      const style = document.createElement('style');
+      style.textContent = `
+        @keyframes fadeInScale {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -20px) scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+          }
+        }
+        @keyframes fadeOutScale {
+          from {
+            opacity: 1;
+            transform: translate(-50%, 0) scale(1);
+          }
+          to {
+            opacity: 0;
+            transform: translate(-50%, -20px) scale(0.9);
+          }
+        }
+      `;
+      if (!document.querySelector('#thankYouToastStyle')) {
+        style.id = 'thankYouToastStyle';
+        document.head.appendChild(style);
+      }
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.animation = 'fadeOutScale 0.4s ease-in forwards';
+        setTimeout(() => toast.remove(), 400);
+      }, 3000);
+    }
+
     function toggleDropdown() {
       document.getElementById('dropdownMenu').classList.toggle('hidden');
     }
@@ -646,6 +695,9 @@
 
         if (data.success) {
           showToast(data.message, 'success');
+          if (data.show_thanks) {
+            setTimeout(() => showThankYouToast(), 500);
+          }
           document.getElementById('keysInput').value = '';
           await loadQuota();
         } else {
@@ -693,6 +745,9 @@
 
         if (data.success) {
           showToast(data.message, 'success');
+          if (data.show_thanks) {
+            setTimeout(() => showThankYouToast(), 500);
+          }
           document.getElementById('iflowKeysInput').value = '';
           await loadQuota();
         } else {
