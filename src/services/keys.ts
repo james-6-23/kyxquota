@@ -1,8 +1,7 @@
 import { CONFIG } from '../config';
-import { keyQueries, donateQueries, userQueries } from '../database';
+import { keyQueries, donateQueries } from '../database';
 import { searchAndFindExactUser, updateKyxUserQuota, pushKeysToGroup } from './kyx-api';
 import { cacheManager } from '../cache';
-import type { DonateRecord } from '../types';
 
 /**
  * 验证 ModelScope API Key
@@ -31,15 +30,41 @@ export async function validateModelScopeKey(apiKey: string): Promise<boolean> {
 }
 
 /**
+ * 验证 iFlow API Key
+ */
+export async function validateIFlowKey(apiKey: string): Promise<boolean> {
+    try {
+        const response = await fetch(
+            `${CONFIG.IFLOW_API_BASE}/chat/completions`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${apiKey}`,
+                },
+                body: JSON.stringify({
+                    model: 'TBStars2-200B-A13B',
+                    messages: [{ role: 'user', content: 'test' }],
+                    max_tokens: 1,
+                }),
+            }
+        );
+        return response.ok || response.status === 429; // 429 表示请求过多但 key 有效
+    } catch {
+        return false;
+    }
+}
+
+/**
  * 检查 Key 是否已被使用
  */
-export async function isKeyUsed(key: string): Promise<boolean> {
-    const cacheKey = `key_used:${key}`;
+export async function isKeyUsed(key: string, keyType: 'modelscope' | 'iflow' = 'modelscope'): Promise<boolean> {
+    const cacheKey = `key_used:${keyType}:${key}`;
 
     return await cacheManager.getOrLoad(
         cacheKey,
         async () => {
-            const result = keyQueries.isUsed.get(key);
+            const result = keyQueries.isUsed.get(key, keyType);
             return (result?.count || 0) > 0;
         },
         600000 // 缓存10分钟
@@ -52,25 +77,31 @@ export async function isKeyUsed(key: string): Promise<boolean> {
 export async function markKeyUsed(
     key: string,
     linuxDoId: string,
-    username: string
+    username: string,
+    keyType: 'modelscope' | 'iflow' = 'modelscope'
 ): Promise<void> {
     const timestamp = Date.now();
-    keyQueries.insert.run(key, linuxDoId, username, timestamp);
+    keyQueries.insert.run(key, linuxDoId, username, timestamp, keyType);
 
     // 更新缓存
-    cacheManager.set(`key_used:${key}`, true, 600000);
+    cacheManager.set(`key_used:${keyType}:${key}`, true, 600000);
 }
 
 /**
  * 获取今日投喂数量
  */
-export async function getTodayDonateCount(linuxDoId: string): Promise<number> {
-    const today = new Date().toISOString().split('T')[0];
+export async function getTodayDonateCount(linuxDoId: string, keyType?: 'modelscope' | 'iflow'): Promise<number> {
+    const today = new Date().toISOString().split('T')[0] || '';
     const todayStart = new Date(today).getTime();
     const todayEnd = todayStart + 86400000; // 24 小时后
 
-    const result = donateQueries.getTodayCount.get(linuxDoId, todayStart, todayEnd);
-    return result?.total || 0;
+    if (keyType) {
+        const result = donateQueries.getTodayCountByType.get(linuxDoId, todayStart, todayEnd, keyType);
+        return result?.total || 0;
+    } else {
+        const result = donateQueries.getTodayCount.get(linuxDoId, todayStart, todayEnd);
+        return result?.total || 0;
+    }
 }
 
 /**
@@ -79,23 +110,24 @@ export async function getTodayDonateCount(linuxDoId: string): Promise<number> {
 export async function validateAndDonateKeys(
     linuxDoId: string,
     username: string,
-    keys: string[]
+    keys: string[],
+    keyType: 'modelscope' | 'iflow' = 'modelscope'
 ): Promise<any> {
-    // 检查今日投喂次数限制
-    const todayDonateCount = await getTodayDonateCount(linuxDoId);
+    // 检查今日投喂次数限制（按类型分别计算）
+    const todayDonateCount = await getTodayDonateCount(linuxDoId, keyType);
     const remainingQuota = CONFIG.MAX_DAILY_DONATE - todayDonateCount;
 
     if (remainingQuota <= 0) {
         return {
             success: false,
-            message: `今日投喂已达上限（${CONFIG.MAX_DAILY_DONATE}个Key），明天再来吧！今日已投喂：${todayDonateCount} 个Key`,
+            message: `今日${keyType === 'modelscope' ? 'ModelScope' : 'iFlow'} Key 投喂已达上限（${CONFIG.MAX_DAILY_DONATE}个），明天再来吧！今日已投喂：${todayDonateCount} 个Key`,
         };
     }
 
     if (keys.length > remainingQuota) {
         return {
             success: false,
-            message: `今日还可投喂 ${remainingQuota} 个Key，您提交了 ${keys.length} 个。请减少提交数量。`,
+            message: `今日还可投喂 ${remainingQuota} 个 ${keyType === 'modelscope' ? 'ModelScope' : 'iFlow'} Key，您提交了 ${keys.length} 个。请减少提交数量。`,
         };
     }
 
@@ -109,7 +141,7 @@ export async function validateAndDonateKeys(
     const keysToValidate: string[] = [];
 
     for (const key of uniqueKeys) {
-        if (await isKeyUsed(key)) {
+        if (await isKeyUsed(key, keyType)) {
             alreadyExistsKeys.push(key);
         } else {
             keysToValidate.push(key);
@@ -132,9 +164,10 @@ export async function validateAndDonateKeys(
 
     // 并发验证函数
     async function validateBatch(batch: string[]) {
+        const validateFunc = keyType === 'modelscope' ? validateModelScopeKey : validateIFlowKey;
         return await Promise.all(
             batch.map(async (key) => {
-                const isValid = await validateModelScopeKey(key);
+                const isValid = await validateFunc(key);
                 return { key, valid: isValid };
             })
         );
@@ -168,7 +201,7 @@ export async function validateAndDonateKeys(
     if (validKeys.length > 0) {
         await Promise.all(
             validKeys.map(async (key) => {
-                await markKeyUsed(key, linuxDoId, username);
+                await markKeyUsed(key, linuxDoId, username, keyType);
             })
         );
     }
@@ -214,17 +247,22 @@ export async function validateAndDonateKeys(
         );
     }
 
-    // 推送 keys 到分组
+    // 推送 keys 到分组（根据 key_type 使用不同的 group_id）
     let pushStatus: 'success' | 'failed' = 'success';
     let pushMessage = '推送成功';
     let failedKeys: string[] = [];
 
     if (validKeys.length > 0 && adminConfig.keys_authorization) {
+        // 根据 keyType 选择对应的 group_id
+        const targetGroupId = keyType === 'iflow'
+            ? (adminConfig.iflow_group_id || adminConfig.modelscope_group_id)
+            : adminConfig.modelscope_group_id;
+
         const pushResult = await pushKeysToGroup(
             validKeys,
             adminConfig.keys_api_url,
             adminConfig.keys_authorization,
-            adminConfig.group_id
+            targetGroupId
         );
 
         if (!pushResult.success) {
@@ -248,7 +286,8 @@ export async function validateAndDonateKeys(
         timestamp,
         pushStatus,
         pushMessage,
-        failedKeys.length > 0 ? JSON.stringify(failedKeys) : null
+        failedKeys.length > 0 ? JSON.stringify(failedKeys) : null,
+        keyType
     );
 
     // 构建详细消息
@@ -291,7 +330,9 @@ async function getAdminConfig() {
                 claim_quota: CONFIG.DEFAULT_CLAIM_QUOTA,
                 keys_api_url: 'https://gpt-load.kyx03.de/api/keys/add-async',
                 keys_authorization: '',
-                group_id: 26,
+                modelscope_group_id: 26,
+                iflow_group_id: 26,
+                max_daily_claims: 1,
                 updated_at: Date.now(),
             };
 
@@ -306,8 +347,11 @@ async function getAdminConfig() {
                 keys_api_url: config.keys_api_url || defaults.keys_api_url,
                 keys_authorization:
                     config.keys_authorization || defaults.keys_authorization,
-                group_id:
-                    config.group_id !== undefined ? config.group_id : defaults.group_id,
+                modelscope_group_id:
+                    config.modelscope_group_id !== undefined ? config.modelscope_group_id : defaults.modelscope_group_id,
+                iflow_group_id:
+                    config.iflow_group_id !== undefined ? config.iflow_group_id : defaults.iflow_group_id,
+                max_daily_claims: config.max_daily_claims || defaults.max_daily_claims,
                 updated_at: config.updated_at || defaults.updated_at,
             };
         },

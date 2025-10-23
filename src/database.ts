@@ -84,7 +84,8 @@ export function initDatabase() {
       timestamp INTEGER NOT NULL,
       push_status TEXT DEFAULT 'success',
       push_message TEXT,
-      failed_keys TEXT
+      failed_keys TEXT,
+      key_type TEXT DEFAULT 'modelscope'
     )
   `);
     db.exec(
@@ -94,17 +95,33 @@ export function initDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_donate_timestamp ON donate_records(timestamp)'
     );
 
+    // 添加 key_type 字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE donate_records ADD COLUMN key_type TEXT DEFAULT \'modelscope\'');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 已使用的 Key 表
     db.exec(`
     CREATE TABLE IF NOT EXISTS used_keys (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT UNIQUE NOT NULL,
+      key TEXT NOT NULL,
       linux_do_id TEXT NOT NULL,
       username TEXT NOT NULL,
-      timestamp INTEGER NOT NULL
+      timestamp INTEGER NOT NULL,
+      key_type TEXT DEFAULT 'modelscope',
+      UNIQUE(key, key_type)
     )
   `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_used_keys_key ON used_keys(key)');
+
+    // 添加 key_type 字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE used_keys ADD COLUMN key_type TEXT DEFAULT \'modelscope\'');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // Session 表
     db.exec(`
@@ -128,7 +145,8 @@ export function initDatabase() {
       max_daily_claims INTEGER DEFAULT 1,
       keys_api_url TEXT DEFAULT 'https://gpt-load.kyx03.de/api/keys/add-async',
       keys_authorization TEXT DEFAULT '',
-      group_id INTEGER DEFAULT 26,
+      modelscope_group_id INTEGER DEFAULT 26,
+      iflow_group_id INTEGER DEFAULT 26,
       updated_at INTEGER NOT NULL
     )
   `);
@@ -143,6 +161,31 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_claims INTEGER DEFAULT 1');
         console.log('✅ 已添加 max_daily_claims 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 兼容旧数据：重命名 group_id 为 modelscope_group_id
+    try {
+        // SQLite 不支持 RENAME COLUMN，需要通过查询判断
+        const hasOldColumn = db.query("SELECT COUNT(*) as count FROM pragma_table_info('admin_config') WHERE name='group_id'").get();
+        const hasNewColumn = db.query("SELECT COUNT(*) as count FROM pragma_table_info('admin_config') WHERE name='modelscope_group_id'").get();
+
+        if ((hasOldColumn as any).count > 0 && (hasNewColumn as any).count === 0) {
+            // 先添加新字段
+            db.exec('ALTER TABLE admin_config ADD COLUMN modelscope_group_id INTEGER DEFAULT 26');
+            // 复制旧数据
+            db.exec('UPDATE admin_config SET modelscope_group_id = group_id');
+            console.log('✅ 已将 group_id 迁移为 modelscope_group_id');
+        }
+    } catch (e) {
+        // 忽略错误
+    }
+
+    // 兼容旧数据：如果表已存在但缺少 iflow_group_id 字段，则添加
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN iflow_group_id INTEGER DEFAULT 26');
+        console.log('✅ 已添加 iflow_group_id 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -214,7 +257,7 @@ function initQueries() {
     // 投喂记录相关
     donateQueries = {
         insert: db.query(
-            'INSERT INTO donate_records (linux_do_id, username, keys_count, total_quota_added, timestamp, push_status, push_message, failed_keys) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO donate_records (linux_do_id, username, keys_count, total_quota_added, timestamp, push_status, push_message, failed_keys, key_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getByUser: db.query<DonateRecord, string>(
             'SELECT * FROM donate_records WHERE linux_do_id = ? ORDER BY timestamp DESC'
@@ -231,6 +274,9 @@ function initQueries() {
         getTodayCount: db.query<{ total: number }, [string, number, number]>(
             'SELECT COALESCE(SUM(keys_count), 0) as total FROM donate_records WHERE linux_do_id = ? AND timestamp >= ? AND timestamp < ?'
         ),
+        getTodayCountByType: db.query<{ total: number }, [string, number, number, string]>(
+            'SELECT COALESCE(SUM(keys_count), 0) as total FROM donate_records WHERE linux_do_id = ? AND timestamp >= ? AND timestamp < ? AND key_type = ?'
+        ),
         getByTimestamp: db.query<DonateRecord, [string, number]>(
             'SELECT * FROM donate_records WHERE linux_do_id = ? AND timestamp = ?'
         ),
@@ -241,17 +287,17 @@ function initQueries() {
 
     // 已使用的 Key 相关
     keyQueries = {
-        isUsed: db.query<{ count: number }, string>(
-            'SELECT COUNT(*) as count FROM used_keys WHERE key = ?'
+        isUsed: db.query<{ count: number }, [string, string]>(
+            'SELECT COUNT(*) as count FROM used_keys WHERE key = ? AND key_type = ?'
         ),
         insert: db.query(
-            'INSERT INTO used_keys (key, linux_do_id, username, timestamp) VALUES (?, ?, ?, ?)'
+            'INSERT INTO used_keys (key, linux_do_id, username, timestamp, key_type) VALUES (?, ?, ?, ?, ?)'
         ),
         getAll: db.query<
-            { key: string; linux_do_id: string; username: string; timestamp: number },
+            { key: string; linux_do_id: string; username: string; timestamp: number; key_type: string },
             never
         >('SELECT * FROM used_keys ORDER BY timestamp DESC'),
-        delete: db.query('DELETE FROM used_keys WHERE key = ?'),
+        delete: db.query('DELETE FROM used_keys WHERE key = ? AND key_type = ?'),
     };
 
     // Session 相关
@@ -270,7 +316,7 @@ function initQueries() {
     adminQueries = {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
-            'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, group_id = ?, updated_at = ? WHERE id = 1'
+            'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, updated_at = ? WHERE id = 1'
         ),
     };
 

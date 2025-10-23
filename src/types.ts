@@ -28,6 +28,7 @@ export interface DonateRecord {
     push_status?: 'success' | 'failed';
     push_message?: string;
     failed_keys?: string;
+    key_type?: 'modelscope' | 'iflow';
 }
 
 // 管理员配置
@@ -38,7 +39,8 @@ export interface AdminConfig {
     max_daily_claims: number;  // 每日最大领取次数
     keys_api_url: string;
     keys_authorization: string;
-    group_id: number;
+    modelscope_group_id: number;  // ModelScope 分组 ID
+    iflow_group_id: number;       // iFlow 分组 ID
     updated_at: number;
 }
 

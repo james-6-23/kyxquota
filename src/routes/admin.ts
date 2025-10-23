@@ -65,7 +65,8 @@ app.get('/config', requireAdmin, async (c) => {
             new_api_user: config!.new_api_user || '1',  // 返回 new_api_user 值
             keys_api_url: config!.keys_api_url,
             keys_authorization_configured: !!config!.keys_authorization,
-            group_id: config!.group_id,
+            modelscope_group_id: config!.modelscope_group_id,
+            iflow_group_id: config!.iflow_group_id || 26,
             updated_at: config!.updated_at,
         },
         cache_stats: {
@@ -93,7 +94,8 @@ app.put('/config/quota', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         config.keys_api_url,
         config.keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -124,7 +126,8 @@ app.put('/config/max-daily-claims', requireAdmin, async (c) => {
         max_daily_claims,
         config.keys_api_url,
         config.keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -151,7 +154,8 @@ app.put('/config/session', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         config.keys_api_url,
         config.keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -178,7 +182,8 @@ app.put('/config/new-api-user', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         config.keys_api_url,
         config.keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -205,7 +210,8 @@ app.put('/config/keys-api-url', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         keys_api_url,
         config.keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -235,7 +241,8 @@ app.put('/config/keys-authorization', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         config.keys_api_url,
         keys_authorization,
-        config.group_id,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
         Date.now()
     );
 
@@ -245,13 +252,13 @@ app.put('/config/keys-authorization', requireAdmin, async (c) => {
 });
 
 /**
- * 更新 Group ID
+ * 更新 ModelScope Group ID
  */
-app.put('/config/group-id', requireAdmin, async (c) => {
-    const { group_id } = await c.req.json();
+app.put('/config/modelscope-group-id', requireAdmin, async (c) => {
+    const { modelscope_group_id } = await c.req.json();
 
-    if (group_id === undefined || group_id === null) {
-        return c.json({ success: false, message: 'Group ID 不能为空' }, 400);
+    if (modelscope_group_id === undefined || modelscope_group_id === null) {
+        return c.json({ success: false, message: 'ModelScope Group ID 不能为空' }, 400);
     }
 
     const config = adminQueries.get.get()!;
@@ -262,13 +269,42 @@ app.put('/config/group-id', requireAdmin, async (c) => {
         config.max_daily_claims || 1,
         config.keys_api_url,
         config.keys_authorization,
-        parseInt(group_id),
+        parseInt(modelscope_group_id),
+        config.iflow_group_id || 26,
         Date.now()
     );
 
     cacheManager.clear('admin_config');
 
-    return c.json({ success: true, message: 'Group ID 已更新' });
+    return c.json({ success: true, message: 'ModelScope Group ID 已更新' });
+});
+
+/**
+ * 更新 iFlow Group ID
+ */
+app.put('/config/iflow-group-id', requireAdmin, async (c) => {
+    const { iflow_group_id } = await c.req.json();
+
+    if (iflow_group_id === undefined || iflow_group_id === null) {
+        return c.json({ success: false, message: 'iFlow Group ID 不能为空' }, 400);
+    }
+
+    const config = adminQueries.get.get()!;
+    adminQueries.update.run(
+        config.session,
+        config.new_api_user,
+        config.claim_quota,
+        config.max_daily_claims || 1,
+        config.keys_api_url,
+        config.keys_authorization,
+        config.modelscope_group_id,
+        parseInt(iflow_group_id),
+        Date.now()
+    );
+
+    cacheManager.clear('admin_config');
+
+    return c.json({ success: true, message: 'iFlow Group ID 已更新' });
 });
 
 /**
@@ -608,12 +644,12 @@ app.post('/retry-push', requireAdmin, async (c) => {
         return c.json({ success: false, message: '未配置推送授权' }, 500);
     }
 
-    // 重新推送
+    // 重新推送（使用 ModelScope Group ID，因为旧记录默认是 ModelScope）
     const pushResult = await pushKeysToGroup(
         failedKeys,
         adminConfig.keys_api_url,
         adminConfig.keys_authorization,
-        adminConfig.group_id
+        adminConfig.modelscope_group_id
     );
 
     // 更新记录

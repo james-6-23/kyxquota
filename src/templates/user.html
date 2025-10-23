@@ -279,8 +279,8 @@
         </button>
       </div>
 
-      <!-- Donate Card -->
-      <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
+      <!-- ModelScope Donate Card -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in card-hover">
         <h3 class="text-xl font-bold text-slate-900 mb-4">🎁 投喂 ModelScope Key</h3>
         <p class="text-sm text-slate-600 mb-2">每个有效的 ModelScope API Key 可为您增加 $50 额度</p>
         
@@ -307,6 +307,37 @@
         <textarea id="keysInput" placeholder="请输入 1 个 ModelScope API Key：&#10;ms-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
         <button id="donateBtn" onclick="donateKeys()" class="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
           🚀 提交 Key
+        </button>
+      </div>
+
+      <!-- iFlow Donate Card -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
+        <h3 class="text-xl font-bold text-slate-900 mb-4">✨ 投喂 iFlow API Key</h3>
+        <p class="text-sm text-slate-600 mb-2">每个有效的 iFlow API Key 可为您增加 $50 额度</p>
+        
+        <!-- 投喂限制说明 -->
+        <div id="donateIflowWarning" class="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+          <div class="flex items-center gap-2 text-xs text-red-800">
+            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+            </svg>
+            <span><strong>每天只能提交 1 个 Key</strong></span>
+          </div>
+        </div>
+
+        <!-- 今日已投喂提示 -->
+        <div id="donatedIflowToday" class="hidden mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center gap-2 text-xs text-green-800">
+            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>✓ <strong>今日已投喂</strong>，感谢您的支持！明天再来吧</span>
+          </div>
+        </div>
+        
+        <textarea id="iflowKeysInput" placeholder="请输入 1 个 iFlow API Key：&#10;sk-xxxxx-xxxx-xxxx-xxxx" class="w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm"></textarea>
+        <button id="donateIflowBtn" onclick="donateIflowKeys()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all">
+          🚀 提交 iFlow Key
         </button>
       </div>
     </div>
@@ -469,13 +500,13 @@
             claimBtn.className = 'w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
           }
 
-          // 处理投喂状态
+          // 处理 ModelScope 投喂状态
           const donateBtn = document.getElementById('donateBtn');
           const donateWarning = document.getElementById('donateWarning');
           const donatedToday = document.getElementById('donatedToday');
           const keysInput = document.getElementById('keysInput');
           
-          if (data.data.donated_today) {
+          if (data.data.donated_modelscope_today) {
             // 今日已投喂
             donateWarning.classList.add('hidden');
             donatedToday.classList.remove('hidden');
@@ -493,6 +524,32 @@
             donateBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
             keysInput.disabled = false;
             keysInput.className = 'w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm';
+          }
+
+          // 处理 iFlow 投喂状态
+          const donateIflowBtn = document.getElementById('donateIflowBtn');
+          const donateIflowWarning = document.getElementById('donateIflowWarning');
+          const donatedIflowToday = document.getElementById('donatedIflowToday');
+          const iflowKeysInput = document.getElementById('iflowKeysInput');
+          
+          if (data.data.donated_iflow_today) {
+            // 今日已投喂
+            donateIflowWarning.classList.add('hidden');
+            donatedIflowToday.classList.remove('hidden');
+            donateIflowBtn.disabled = true;
+            donateIflowBtn.textContent = '✓ 今日已投喂';
+            donateIflowBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
+            iflowKeysInput.disabled = true;
+            iflowKeysInput.className = 'w-full h-24 px-4 py-3 border border-slate-200 rounded-lg mb-4 font-mono text-sm bg-slate-50 cursor-not-allowed';
+          } else {
+            // 可以投喂
+            donateIflowWarning.classList.remove('hidden');
+            donatedIflowToday.classList.add('hidden');
+            donateIflowBtn.disabled = false;
+            donateIflowBtn.textContent = '🚀 提交 iFlow Key';
+            donateIflowBtn.className = 'w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
+            iflowKeysInput.disabled = false;
+            iflowKeysInput.className = 'w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm';
           }
         } else if (res.status === 400) {
           document.getElementById('loginSection').classList.add('hidden');
@@ -575,6 +632,53 @@
       }
     }
 
+    async function donateIflowKeys() {
+      const keysText = document.getElementById('iflowKeysInput').value.trim();
+      if (!keysText) {
+        showToast('请输入 iFlow Keys', 'error');
+        return;
+      }
+
+      const keys = keysText.split('\n').map(k => k.trim()).filter(k => k);
+      if (keys.length === 0) {
+        showToast('没有有效的 iFlow Key', 'error');
+        return;
+      }
+
+      // 提示：每天只能提交1个Key
+      if (keys.length > 1) {
+        showToast('每天只能提交 1 个 iFlow Key，已自动提取第一个', 'error');
+        return;
+      }
+
+      const btn = event.target;
+      const originalText = btn.textContent;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner inline-block"></div> 验证中...';
+
+      try {
+        const res = await fetch('/api/donate/iflow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys }),
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          document.getElementById('iflowKeysInput').value = '';
+          await loadQuota();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (e) {
+        showToast('提交失败', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+
     function showMessage(text, type, section = 'main') {
       const msgId = section === 'bind' ? 'bindMessage' : 'message';
       const msg = document.getElementById(msgId);
@@ -626,12 +730,21 @@
         }
 
         if (donateData.success && donateData.data.length > 0) {
-          donateContainer.innerHTML = donateData.data.map(r => `
-            <div class="border-b border-slate-200 py-3">
-              <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
-              <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: $${(r.total_quota_added / 500000).toFixed(2)}</p>
-            </div>
-          `).join('');
+          donateContainer.innerHTML = donateData.data.map(r => {
+            const keyTypeLabel = r.key_type === 'iflow' 
+              ? '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">✨ iFlow</span>'
+              : '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">🎁 ModelScope</span>';
+            
+            return `
+              <div class="border-b border-slate-200 py-3">
+                <div class="flex items-center justify-between mb-1">
+                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+                  ${keyTypeLabel}
+                </div>
+                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">$${(r.total_quota_added / 500000).toFixed(2)}</span></p>
+              </div>
+            `;
+          }).join('');
         } else {
           donateContainer.innerHTML = '<p class="text-center text-slate-500 py-8">暂无投喂记录</p>';
         }

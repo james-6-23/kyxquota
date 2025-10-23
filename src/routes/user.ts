@@ -286,14 +286,15 @@ app.get('/user/quota', requireAuth, async (c) => {
         3600000 // 1小时
     );
 
-    // 检查今日是否已投喂
+    // 检查今日是否已投喂（按类型分别检查）
     const todayStart = new Date(today).getTime();
     const todayEnd = todayStart + 86400000;
     const allDonates = donateQueries.getByUser.all(user.linux_do_id);
     const todayDonates = allDonates.filter(
         (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
     );
-    const donated_today = todayDonates.length > 0;
+    const donated_modelscope_today = todayDonates.some(r => r.key_type === 'modelscope' || !r.key_type);
+    const donated_iflow_today = todayDonates.some(r => r.key_type === 'iflow');
 
     // 计算今日已领取次数（排除绑定奖励）
     const allClaims = claimQueries.getByUser.all(user.linux_do_id);
@@ -319,7 +320,8 @@ app.get('/user/quota', requireAuth, async (c) => {
             total: kyxUser.quota + kyxUser.used_quota,
             can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && !claimToday,
             claimed_today: !!claimToday,
-            donated_today: donated_today,
+            donated_modelscope_today: donated_modelscope_today,
+            donated_iflow_today: donated_iflow_today,
             today_claim_count: today_claim_count,
             max_daily_claims: max_daily_claims,
             remaining_claims: remaining_claims,
@@ -483,7 +485,35 @@ app.post('/donate/validate', requireAuth, async (c) => {
     const result = await validateAndDonateKeys(
         user.linux_do_id,
         user.username,
-        keys
+        keys,
+        'modelscope'
+    );
+
+    return c.json(result, result.success ? 200 : 400);
+});
+
+/**
+ * 投喂 iFlow Keys
+ */
+app.post('/donate/iflow', requireAuth, async (c) => {
+    const session = c.get('session');
+
+    const user = userQueries.get.get(session.linux_do_id);
+    if (!user) {
+        return c.json({ success: false, message: '未绑定账号' }, 400);
+    }
+
+    let { keys } = await c.req.json();
+    if (!Array.isArray(keys) || keys.length === 0) {
+        return c.json({ success: false, message: 'Keys 不能为空' }, 400);
+    }
+
+    // 调用验证服务
+    const result = await validateAndDonateKeys(
+        user.linux_do_id,
+        user.username,
+        keys,
+        'iflow'
     );
 
     return c.json(result, result.success ? 200 : 400);

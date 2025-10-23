@@ -3,7 +3,8 @@
         // 语言和环境
         "target": "ESNext",
         "lib": [
-            "ESNext"
+            "ESNext",
+            "DOM"
         ],
         "module": "ESNext",
         "moduleResolution": "bundler",

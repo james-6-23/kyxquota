@@ -17,6 +17,7 @@ export const CONFIG = {
     LINUX_DO_USER_INFO_URL: 'https://connect.linux.do/api/user',
     KYX_API_BASE: 'https://api.kkyyxx.xyz',
     MODELSCOPE_API_BASE: 'https://api-inference.modelscope.cn/v1',
+    IFLOW_API_BASE: 'https://apis.iflow.cn/v1',
 
     // 默认配置
     DEFAULT_CLAIM_QUOTA: 20000000,
