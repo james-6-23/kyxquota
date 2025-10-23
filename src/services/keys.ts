@@ -43,13 +43,34 @@ export async function validateIFlowKey(apiKey: string): Promise<boolean> {
                     Authorization: `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
-                    model: 'TBStars2-200B-A13B',
-                    messages: [{ role: 'user', content: 'test' }],
-                    max_tokens: 1,
+                    model: 'qwen3-32b',
+                    messages: [{ role: 'user', content: 'Hi' }],
+                    max_tokens: 10,
                 }),
             }
         );
-        return response.ok || response.status === 429; // 429 表示请求过多但 key 有效
+
+        // 检查响应状态
+        if (!response.ok) {
+            // 429 表示请求过多但 key 可能有效，需要进一步验证
+            if (response.status === 429) {
+                return true;
+            }
+            return false;
+        }
+
+        // 解析响应内容，确保返回了有效内容
+        const result = await response.json();
+
+        // 验证返回内容
+        if (result.choices &&
+            result.choices.length > 0 &&
+            result.choices[0].message &&
+            result.choices[0].message.content) {
+            return true;
+        }
+
+        return false;
     } catch {
         return false;
     }
