@@ -39,39 +39,42 @@ export async function validateIFlowKey(apiKey: string): Promise<boolean> {
             {
                 method: 'POST',
                 headers: {
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${apiKey}`,
                 },
                 body: JSON.stringify({
                     model: 'qwen3-32b',
                     messages: [{ role: 'user', content: 'Hi' }],
-                    max_tokens: 10,
+                    temperature: 0.7,
+                    max_tokens: 100,
                 }),
             }
         );
 
         // 检查响应状态
         if (!response.ok) {
-            // 429 表示请求过多但 key 可能有效，需要进一步验证
+            // 429 表示请求过多但 key 有效
             if (response.status === 429) {
                 return true;
             }
             return false;
         }
 
-        // 解析响应内容，确保返回了有效内容
+        // 解析响应内容
         const result = await response.json();
 
-        // 验证返回内容
+        // 验证返回内容不为空
         if (result.choices &&
             result.choices.length > 0 &&
             result.choices[0].message &&
-            result.choices[0].message.content) {
-            return true;
+            result.choices[0].message.content &&
+            result.choices[0].message.content.trim().length > 0) {
+            return true;  // 返回内容不为空，验证成功
         }
 
         return false;
-    } catch {
+    } catch (error) {
+        console.error('[iFlow验证] 验证异常:', error);
         return false;
     }
 }
