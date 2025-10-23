@@ -539,18 +539,18 @@
             donatedToday.classList.remove('hidden');
             donateBtn.disabled = true;
             donateBtn.textContent = '✓ 今日已投喂';
-            donateBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
+            donateBtn.className = 'w-full bg-slate-400 text-white py-2.5 rounded-lg font-semibold cursor-not-allowed text-sm mb-3';
             keysInput.disabled = true;
-            keysInput.className = 'w-full h-24 px-4 py-3 border border-slate-200 rounded-lg mb-4 font-mono text-sm bg-slate-50 cursor-not-allowed';
+            keysInput.className = 'w-full h-24 px-3 py-2 border border-slate-200 rounded-lg mb-3 font-mono text-sm bg-slate-50 cursor-not-allowed resize-none';
           } else {
             // 可以投喂
             donateWarning.classList.remove('hidden');
             donatedToday.classList.add('hidden');
             donateBtn.disabled = false;
-            donateBtn.textContent = '🚀 提交 Key';
-            donateBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
+            donateBtn.textContent = '🚀 提交 ModelScope Key';
+            donateBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3';
             keysInput.disabled = false;
-            keysInput.className = 'w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm';
+            keysInput.className = 'w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm resize-none';
           }
 
           // 处理 iFlow 投喂状态
@@ -565,18 +565,18 @@
             donatedIflowToday.classList.remove('hidden');
             donateIflowBtn.disabled = true;
             donateIflowBtn.textContent = '✓ 今日已投喂';
-            donateIflowBtn.className = 'w-full bg-slate-400 text-white py-3 rounded-lg font-semibold cursor-not-allowed';
+            donateIflowBtn.className = 'w-full bg-slate-400 text-white py-2.5 rounded-lg font-semibold cursor-not-allowed text-sm mb-3';
             iflowKeysInput.disabled = true;
-            iflowKeysInput.className = 'w-full h-24 px-4 py-3 border border-slate-200 rounded-lg mb-4 font-mono text-sm bg-slate-50 cursor-not-allowed';
+            iflowKeysInput.className = 'w-full h-24 px-3 py-2 border border-slate-200 rounded-lg mb-3 font-mono text-sm bg-slate-50 cursor-not-allowed resize-none';
           } else {
             // 可以投喂
             donateIflowWarning.classList.remove('hidden');
             donatedIflowToday.classList.add('hidden');
             donateIflowBtn.disabled = false;
             donateIflowBtn.textContent = '🚀 提交 iFlow Key';
-            donateIflowBtn.className = 'w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-3 rounded-lg font-semibold hover:shadow-lg transition-all';
+            donateIflowBtn.className = 'w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3';
             iflowKeysInput.disabled = false;
-            iflowKeysInput.className = 'w-full h-24 px-4 py-3 border border-slate-300 rounded-lg mb-4 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm';
+            iflowKeysInput.className = 'w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm resize-none';
           }
         } else if (res.status === 400) {
           document.getElementById('loginSection').classList.add('hidden');

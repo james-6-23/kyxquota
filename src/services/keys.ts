@@ -117,17 +117,19 @@ export async function validateAndDonateKeys(
     const todayDonateCount = await getTodayDonateCount(linuxDoId, keyType);
     const remainingQuota = CONFIG.MAX_DAILY_DONATE - todayDonateCount;
 
+    const keyTypeName = keyType === 'modelscope' ? 'ModelScope' : 'iFlow';
+
     if (remainingQuota <= 0) {
         return {
             success: false,
-            message: `今日${keyType === 'modelscope' ? 'ModelScope' : 'iFlow'} Key 投喂已达上限（${CONFIG.MAX_DAILY_DONATE}个），明天再来吧！今日已投喂：${todayDonateCount} 个Key`,
+            message: `今日 ${keyTypeName} Key 投喂已达上限，明天再来吧！😊`,
         };
     }
 
     if (keys.length > remainingQuota) {
         return {
             success: false,
-            message: `今日还可投喂 ${remainingQuota} 个 ${keyType === 'modelscope' ? 'ModelScope' : 'iFlow'} Key，您提交了 ${keys.length} 个。请减少提交数量。`,
+            message: `今日还可投喂 ${remainingQuota} 个 ${keyTypeName} Key，您提交了 ${keys.length} 个`,
         };
     }
 
@@ -207,9 +209,27 @@ export async function validateAndDonateKeys(
     }
 
     if (validKeys.length === 0) {
+        // 构建友好的错误提示
+        let friendlyMessage = '';
+
+        if (alreadyExistsKeys.length > 0 && invalidKeys.length === 0) {
+            // 全部是已存在的 Key
+            friendlyMessage = alreadyExistsKeys.length === 1
+                ? '该 Key 已被使用过，请提交其他 Key'
+                : `提交的 ${alreadyExistsKeys.length} 个 Key 都已被使用过`;
+        } else if (alreadyExistsKeys.length === 0 && invalidKeys.length > 0) {
+            // 全部是无效的 Key
+            friendlyMessage = invalidKeys.length === 1
+                ? 'Key 无效或已失效，请检查后重试'
+                : `提交的 ${invalidKeys.length} 个 Key 都无效或已失效`;
+        } else {
+            // 混合情况
+            friendlyMessage = `${alreadyExistsKeys.length} 个已被使用，${invalidKeys.length} 个无效，没有可用的 Key`;
+        }
+
         return {
             success: false,
-            message: `提交了 ${originalCount} 个Key，去重后 ${uniqueKeys.length} 个，数据库已存在 ${alreadyExistsKeys.length} 个，验证后无有效Key`,
+            message: friendlyMessage,
             data: {
                 valid_keys: 0,
                 already_exists: alreadyExistsKeys.length,
@@ -290,21 +310,26 @@ export async function validateAndDonateKeys(
         keyType
     );
 
-    // 构建详细消息
-    let message = '';
+    // 构建友好的成功消息
+    const quotaUSD = (totalQuotaAdded / 500000).toFixed(2);
+    let message = `🎉 投喂成功！奖励额度 $${quotaUSD}`;
+
+    // 添加额外信息（如果有）
+    const extraInfo: string[] = [];
     if (duplicateCount > 0) {
-        message += `已自动去重 ${duplicateCount} 个重复Key。`;
+        extraInfo.push(`去重 ${duplicateCount} 个`);
     }
     if (alreadyExistsKeys.length > 0) {
-        message += `数据库已存在 ${alreadyExistsKeys.length} 个Key。`;
+        extraInfo.push(`${alreadyExistsKeys.length} 个已存在`);
     }
-    if (validKeys.length > 0) {
-        message += `成功投喂 ${validKeys.length} 个新Key，奖励额度 $${(totalQuotaAdded / 500000).toLocaleString('en-US')}`;
+
+    if (extraInfo.length > 0) {
+        message += `（${extraInfo.join('，')}）`;
     }
 
     return {
-        success: validKeys.length > 0,
-        message: message || '没有新的有效 Key',
+        success: true,
+        message: message,
         data: {
             valid_keys: validKeys.length,
             already_exists: alreadyExistsKeys.length,
