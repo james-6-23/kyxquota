@@ -501,7 +501,10 @@ app.post('/donate/validate', requireAuth, async (c) => {
         console.log(`[用户操作] ❌ ModelScope 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
     }
 
-    return c.json(result, result.success ? 200 : 400);
+    return c.json({
+        ...result,
+        show_thanks: result.success ? true : undefined,
+    }, result.success ? 200 : 400);
 });
 
 /**
@@ -536,7 +539,10 @@ app.post('/donate/iflow', requireAuth, async (c) => {
         console.log(`[用户操作] ❌ iFlow 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
     }
 
-    return c.json(result, result.success ? 200 : 400);
+    return c.json({
+        ...result,
+        show_thanks: result.success ? true : undefined,
+    }, result.success ? 200 : 400);
 });
 
 /**
