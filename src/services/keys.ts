@@ -137,16 +137,24 @@ export async function validateAndDonateKeys(
     keys: string[],
     keyType: 'modelscope' | 'iflow' = 'modelscope'
 ): Promise<any> {
+    // 获取管理员配置（提前获取以使用投喂限制配置）
+    const adminConfig = await getAdminConfig();
+
+    // 获取对应渠道的每日投喂限制
+    const maxDailyDonate = keyType === 'modelscope'
+        ? (adminConfig.max_daily_donate_modelscope || 1)
+        : (adminConfig.max_daily_donate_iflow || 1);
+
     // 检查今日投喂次数限制（按类型分别计算）
     const todayDonateCount = await getTodayDonateCount(linuxDoId, keyType);
-    const remainingQuota = CONFIG.MAX_DAILY_DONATE - todayDonateCount;
+    const remainingQuota = maxDailyDonate - todayDonateCount;
 
     const keyTypeName = keyType === 'modelscope' ? 'ModelScope' : 'iFlow';
 
     if (remainingQuota <= 0) {
         return {
             success: false,
-            message: `今日 ${keyTypeName} Key 投喂已达上限，明天再来吧！😊`,
+            message: `今日 ${keyTypeName} Key 投喂已达上限（${maxDailyDonate} 个/天），明天再来吧！😊`,
         };
     }
 
@@ -267,10 +275,7 @@ export async function validateAndDonateKeys(
     // 计算奖励额度
     const totalQuotaAdded = validKeys.length * CONFIG.DONATE_QUOTA_PER_KEY;
 
-    // 获取管理员配置
-    const adminConfig = await getAdminConfig();
-
-    // 查询用户信息并更新额度
+    // 查询用户信息并更新额度（adminConfig 已在函数开头获取）
     const searchResult = await searchAndFindExactUser(
         username,
         adminConfig.session,

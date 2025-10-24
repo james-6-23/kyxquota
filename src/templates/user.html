@@ -430,24 +430,25 @@
       toast.style.animation = 'fadeInScale 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)';
       toast.innerHTML = `
         <div class="relative">
-          <!-- 粒子容器 -->
-          <div class="absolute inset-0 overflow-hidden rounded-3xl">
-            ${Array.from({length: 20}, (_, i) => `
-              <div class="particle absolute w-2 h-2 bg-white rounded-full opacity-80" style="
+          <!-- 粒子容器（在最底层） -->
+          <div class="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none" style="z-index: 0;">
+            ${Array.from({length: 25}, (_, i) => `
+              <div class="particle absolute w-1.5 h-1.5 bg-white rounded-full" style="
                 left: ${Math.random() * 100}%;
                 top: ${Math.random() * 100}%;
+                opacity: ${0.15 + Math.random() * 0.2};
                 animation: float ${2 + Math.random() * 3}s ease-in-out infinite;
                 animation-delay: ${Math.random() * 2}s;
               "></div>
             `).join('')}
           </div>
           
-          <!-- 内容 -->
-          <div class="relative text-center">
+          <!-- 内容（在最上层） -->
+          <div class="relative text-center" style="z-index: 10;">
             <div class="text-6xl mb-4 animate-bounce">🎉</div>
-            <div class="text-3xl font-bold mb-3">感谢您的支持！</div>
-            <div class="text-lg opacity-95 mb-2">您的投喂让公益站更好运行</div>
-            <div class="flex items-center justify-center gap-2 text-sm opacity-90">
+            <div class="text-3xl font-bold mb-3 drop-shadow-lg">感谢您的支持！</div>
+            <div class="text-lg opacity-95 mb-2 drop-shadow-md">您的投喂让公益站更好运行</div>
+            <div class="flex items-center justify-center gap-2 text-sm opacity-90 drop-shadow-md">
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
               </svg>

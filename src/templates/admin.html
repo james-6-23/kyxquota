@@ -287,6 +287,26 @@
                 <p id="dashboardKeysAuth" class="text-sm font-mono text-indigo-700 truncate" title="">--</p>
                 <p id="dashboardKeysAuthStatus" class="text-xs text-slate-600 mt-1">--</p>
               </div>
+
+              <!-- ModelScope 投喂限制 -->
+              <div class="p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg border border-amber-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">🎁</span>
+                  <span class="text-sm font-semibold text-slate-700">ModelScope 投喂限制</span>
+                </div>
+                <p id="dashboardMaxDonateModelscope" class="text-2xl font-bold text-amber-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">个/天</p>
+              </div>
+
+              <!-- iFlow 投喂限制 -->
+              <div class="p-4 bg-gradient-to-br from-teal-50 to-green-50 rounded-lg border border-teal-100">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-xl">✨</span>
+                  <span class="text-sm font-semibold text-slate-700">iFlow 投喂限制</span>
+                </div>
+                <p id="dashboardMaxDonateIflow" class="text-2xl font-bold text-teal-700">--</p>
+                <p class="text-xs text-slate-600 mt-1">个/天</p>
+              </div>
             </div>
 
             <!-- 更新时间 -->
@@ -398,6 +418,37 @@
               <div class="flex gap-2">
                 <input type="number" id="iflowGroupId" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
                 <button onclick="updateIflowGroupId()" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">更新</button>
+              </div>
+            </div>
+            
+            <!-- 投喂限制配置 -->
+            <div class="mb-6 p-4 bg-amber-50 border-2 border-amber-200 rounded-lg">
+              <h4 class="text-lg font-bold text-amber-900 mb-4 flex items-center gap-2">
+                <span>🎁</span>
+                <span>每日投喂限制配置</span>
+              </h4>
+              <p class="text-sm text-amber-800 mb-4">控制用户每天可以投喂的 Key 数量，不同渠道单独配置</p>
+              
+              <!-- ModelScope 投喂限制 -->
+              <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">ModelScope 每日投喂限制</label>
+                <div class="flex gap-2 items-center">
+                  <input type="number" id="maxDailyDonateModelscope" placeholder="1" min="1" max="10" class="w-32 px-4 py-2 border border-slate-300 rounded-lg">
+                  <span class="text-sm text-slate-600">个/天</span>
+                  <button onclick="updateMaxDailyDonateModelscope()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">更新</button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">建议设置：1-3次（设置过高可能导致额度滥用）</p>
+              </div>
+              
+              <!-- iFlow 投喂限制 -->
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2">iFlow 每日投喂限制</label>
+                <div class="flex gap-2 items-center">
+                  <input type="number" id="maxDailyDonateIflow" placeholder="1" min="1" max="10" class="w-32 px-4 py-2 border border-slate-300 rounded-lg">
+                  <span class="text-sm text-slate-600">个/天</span>
+                  <button onclick="updateMaxDailyDonateIflow()" class="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 whitespace-nowrap">更新</button>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">建议设置：1-3次（设置过高可能导致额度滥用）</p>
               </div>
             </div>
           </div>
@@ -752,6 +803,8 @@
           const iflowGroupId = data.data.iflow_group_id || 26;
           const keysAuthConfigured = data.data.keys_authorization_configured;
           const updatedAt = data.data.updated_at;
+          const maxDailyDonateModelscope = data.data.max_daily_donate_modelscope || 1;
+          const maxDailyDonateIflow = data.data.max_daily_donate_iflow || 1;
           
           // 更新配置页面
           document.getElementById('claimQuotaUSD').value = usdValue;
@@ -771,6 +824,8 @@
           document.getElementById('keysApiUrl').value = keysApiUrl;
           document.getElementById('modelscopeGroupId').value = modelscopeGroupId;
           document.getElementById('iflowGroupId').value = iflowGroupId;
+          document.getElementById('maxDailyDonateModelscope').value = maxDailyDonateModelscope;
+          document.getElementById('maxDailyDonateIflow').value = maxDailyDonateIflow;
           
           // 更新仪表板配置卡片
           document.getElementById('dashboardQuota').textContent = '$' + usdValue;
@@ -786,6 +841,8 @@
           document.getElementById('dashboardKeysApi').title = keysApiUrl || '未配置';
           document.getElementById('dashboardGroupId').textContent = modelscopeGroupId;
           document.getElementById('dashboardIflowGroupId').textContent = iflowGroupId;
+          document.getElementById('dashboardMaxDonateModelscope').textContent = maxDailyDonateModelscope;
+          document.getElementById('dashboardMaxDonateIflow').textContent = maxDailyDonateIflow;
           
           // 显示 Keys Authorization（前20个字符）
           if (keysAuthorization) {
@@ -972,6 +1029,55 @@
         });
         const data = await res.json();
         showMessage(data.message, data.success ? 'success' : 'error');
+        if (data.success) await loadConfig();
+      } catch (e) {
+        showMessage('更新失败', 'error');
+      }
+    }
+
+    async function updateMaxDailyDonateModelscope() {
+      const maxDonate = parseInt(document.getElementById('maxDailyDonateModelscope').value);
+      if (!maxDonate || maxDonate <= 0) {
+        showMessage('请输入有效的投喂限制次数', 'error');
+        return;
+      }
+      if (maxDonate > 10) {
+        showMessage('ModelScope 每日投喂限制不能超过10次', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/config/max-daily-donate-modelscope', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ max_daily_donate_modelscope: maxDonate }),
+        });
+        const data = await res.json();
+        showMessage(data.message, data.success ? 'success' : 'error');
+        if (data.success) await loadConfig();
+      } catch (e) {
+        showMessage('更新失败', 'error');
+      }
+    }
+
+    async function updateMaxDailyDonateIflow() {
+      const maxDonate = parseInt(document.getElementById('maxDailyDonateIflow').value);
+      if (!maxDonate || maxDonate <= 0) {
+        showMessage('请输入有效的投喂限制次数', 'error');
+        return;
+      }
+      if (maxDonate > 10) {
+        showMessage('iFlow 每日投喂限制不能超过10次', 'error');
+        return;
+      }
+      try {
+        const res = await fetch('/api/admin/config/max-daily-donate-iflow', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ max_daily_donate_iflow: maxDonate }),
+        });
+        const data = await res.json();
+        showMessage(data.message, data.success ? 'success' : 'error');
+        if (data.success) await loadConfig();
       } catch (e) {
         showMessage('更新失败', 'error');
       }

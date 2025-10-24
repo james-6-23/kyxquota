@@ -147,6 +147,8 @@ export function initDatabase() {
       keys_authorization TEXT DEFAULT '',
       modelscope_group_id INTEGER DEFAULT 26,
       iflow_group_id INTEGER DEFAULT 26,
+      max_daily_donate_modelscope INTEGER DEFAULT 1,
+      max_daily_donate_iflow INTEGER DEFAULT 1,
       updated_at INTEGER NOT NULL
     )
   `);
@@ -186,6 +188,21 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE admin_config ADD COLUMN iflow_group_id INTEGER DEFAULT 26');
         console.log('✅ 已添加 iflow_group_id 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 兼容旧数据：添加投喂限制字段
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_donate_modelscope INTEGER DEFAULT 1');
+        console.log('✅ 已添加 max_daily_donate_modelscope 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_donate_iflow INTEGER DEFAULT 1');
+        console.log('✅ 已添加 max_daily_donate_iflow 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -316,7 +333,7 @@ function initQueries() {
     adminQueries = {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
-            'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, updated_at = ? WHERE id = 1'
+            'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
         ),
     };
 

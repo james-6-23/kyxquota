@@ -70,6 +70,8 @@ app.get('/config', requireAdmin, async (c) => {
             keys_authorization_configured: !!config!.keys_authorization,
             modelscope_group_id: config!.modelscope_group_id,
             iflow_group_id: config!.iflow_group_id || 26,
+            max_daily_donate_modelscope: config!.max_daily_donate_modelscope || 1,
+            max_daily_donate_iflow: config!.max_daily_donate_iflow || 1,
             updated_at: config!.updated_at,
         },
         cache_stats: {
@@ -99,6 +101,8 @@ app.put('/config/quota', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -132,6 +136,8 @@ app.put('/config/max-daily-claims', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -161,6 +167,8 @@ app.put('/config/session', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -190,6 +198,8 @@ app.put('/config/new-api-user', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -218,6 +228,8 @@ app.put('/config/keys-api-url', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -249,6 +261,8 @@ app.put('/config/keys-authorization', requireAdmin, async (c) => {
         keys_authorization,
         config.modelscope_group_id,
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -277,6 +291,8 @@ app.put('/config/modelscope-group-id', requireAdmin, async (c) => {
         config.keys_authorization,
         parseInt(modelscope_group_id),
         config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -306,6 +322,8 @@ app.put('/config/iflow-group-id', requireAdmin, async (c) => {
         config.keys_authorization,
         config.modelscope_group_id,
         parseInt(iflow_group_id),
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
         Date.now()
     );
 
@@ -313,6 +331,76 @@ app.put('/config/iflow-group-id', requireAdmin, async (c) => {
 
     console.log(`[管理员] ⚙️ 更新 iFlow Group ID - 新值: ${iflow_group_id}`);
     return c.json({ success: true, message: 'iFlow Group ID 已更新' });
+});
+
+/**
+ * 更新 ModelScope 每日投喂限制
+ */
+app.put('/config/max-daily-donate-modelscope', requireAdmin, async (c) => {
+    const { max_daily_donate_modelscope } = await c.req.json();
+
+    if (typeof max_daily_donate_modelscope !== 'number' || max_daily_donate_modelscope <= 0) {
+        return c.json({ success: false, message: 'ModelScope 每日投喂限制必须为正数' }, 400);
+    }
+
+    if (max_daily_donate_modelscope > 10) {
+        return c.json({ success: false, message: 'ModelScope 每日投喂限制不能超过10次' }, 400);
+    }
+
+    const config = adminQueries.get.get()!;
+    adminQueries.update.run(
+        config.session,
+        config.new_api_user,
+        config.claim_quota,
+        config.max_daily_claims || 1,
+        config.keys_api_url,
+        config.keys_authorization,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
+        max_daily_donate_modelscope,
+        config.max_daily_donate_iflow || 1,
+        Date.now()
+    );
+
+    cacheManager.clear('admin_config');
+
+    console.log(`[管理员] ⚙️ 更新 ModelScope 每日投喂限制 - 新值: ${max_daily_donate_modelscope} 次`);
+    return c.json({ success: true, message: 'ModelScope 每日投喂限制已更新' });
+});
+
+/**
+ * 更新 iFlow 每日投喂限制
+ */
+app.put('/config/max-daily-donate-iflow', requireAdmin, async (c) => {
+    const { max_daily_donate_iflow } = await c.req.json();
+
+    if (typeof max_daily_donate_iflow !== 'number' || max_daily_donate_iflow <= 0) {
+        return c.json({ success: false, message: 'iFlow 每日投喂限制必须为正数' }, 400);
+    }
+
+    if (max_daily_donate_iflow > 10) {
+        return c.json({ success: false, message: 'iFlow 每日投喂限制不能超过10次' }, 400);
+    }
+
+    const config = adminQueries.get.get()!;
+    adminQueries.update.run(
+        config.session,
+        config.new_api_user,
+        config.claim_quota,
+        config.max_daily_claims || 1,
+        config.keys_api_url,
+        config.keys_authorization,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        max_daily_donate_iflow,
+        Date.now()
+    );
+
+    cacheManager.clear('admin_config');
+
+    console.log(`[管理员] ⚙️ 更新 iFlow 每日投喂限制 - 新值: ${max_daily_donate_iflow} 次`);
+    return c.json({ success: true, message: 'iFlow 每日投喂限制已更新' });
 });
 
 /**

@@ -41,6 +41,8 @@ export interface AdminConfig {
     keys_authorization: string;
     modelscope_group_id: number;  // ModelScope 分组 ID
     iflow_group_id: number;       // iFlow 分组 ID
+    max_daily_donate_modelscope: number;  // ModelScope 每日最大投喂次数
+    max_daily_donate_iflow: number;       // iFlow 每日最大投喂次数
     updated_at: number;
 }
 
