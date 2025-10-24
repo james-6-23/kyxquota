@@ -287,15 +287,25 @@ app.get('/user/quota', requireAuth, async (c) => {
         3600000 // 1小时
     );
 
-    // 检查今日是否已投喂（按类型分别检查）
+    // 检查今日投喂情况（按类型分别统计）
     const todayStart = new Date(today || '').getTime();
     const todayEnd = todayStart + 86400000;
     const allDonates = donateQueries.getByUser.all(user.linux_do_id);
     const todayDonates = allDonates.filter(
         (r) => r.timestamp >= todayStart && r.timestamp < todayEnd
     );
-    const donated_modelscope_today = todayDonates.some(r => r.key_type === 'modelscope' || !r.key_type);
-    const donated_iflow_today = todayDonates.some(r => r.key_type === 'iflow');
+
+    // 统计今日各类型投喂次数
+    const today_donate_modelscope_count = todayDonates.filter(r => r.key_type === 'modelscope' || !r.key_type).length;
+    const today_donate_iflow_count = todayDonates.filter(r => r.key_type === 'iflow').length;
+
+    // 获取投喂限制配置
+    const max_daily_donate_modelscope = adminConfig?.max_daily_donate_modelscope || 1;
+    const max_daily_donate_iflow = adminConfig?.max_daily_donate_iflow || 1;
+
+    // 计算剩余投喂次数
+    const remaining_donate_modelscope = Math.max(0, max_daily_donate_modelscope - today_donate_modelscope_count);
+    const remaining_donate_iflow = Math.max(0, max_daily_donate_iflow - today_donate_iflow_count);
 
     // 计算今日已领取次数（排除绑定奖励）
     const allClaims = claimQueries.getByUser.all(user.linux_do_id);
@@ -321,8 +331,17 @@ app.get('/user/quota', requireAuth, async (c) => {
             total: kyxUser.quota + kyxUser.used_quota,
             can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && remaining_claims > 0,
             claimed_today: !!claimToday,
-            donated_modelscope_today: donated_modelscope_today,
-            donated_iflow_today: donated_iflow_today,
+            // 投喂相关信息
+            today_donate_modelscope_count: today_donate_modelscope_count,
+            today_donate_iflow_count: today_donate_iflow_count,
+            max_daily_donate_modelscope: max_daily_donate_modelscope,
+            max_daily_donate_iflow: max_daily_donate_iflow,
+            remaining_donate_modelscope: remaining_donate_modelscope,
+            remaining_donate_iflow: remaining_donate_iflow,
+            // 兼容旧版前端
+            donated_modelscope_today: today_donate_modelscope_count >= max_daily_donate_modelscope,
+            donated_iflow_today: today_donate_iflow_count >= max_daily_donate_iflow,
+            // 领取相关信息
             today_claim_count: today_claim_count,
             max_daily_claims: max_daily_claims,
             remaining_claims: remaining_claims,

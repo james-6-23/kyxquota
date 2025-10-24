@@ -282,7 +282,7 @@
       <!-- Donate Cards Container -->
       <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
         <h3 class="text-2xl font-bold text-slate-900 mb-6 text-center">💝 投喂 API Keys</h3>
-        <p class="text-sm text-slate-600 mb-6 text-center">每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 1 个</p>
+        <p id="donateDescription" class="text-sm text-slate-600 mb-6 text-center">每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 1 个</p>
         
         <!-- 两列布局 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -587,6 +587,15 @@
           document.getElementById('quotaValue').textContent = '$' + quotaUSD;
           document.getElementById('quotaUsage').textContent = ((used_quota / total * 100).toFixed(2)) + '%';
           document.getElementById('quotaStatus').textContent = quota < 10000000 ? '额度不足' : '充足';
+          
+          // 更新投喂说明（在获取配置后）
+          const maxModelscope = data.data.max_daily_donate_modelscope || 1;
+          const maxIflow = data.data.max_daily_donate_iflow || 1;
+          if (maxModelscope === maxIflow) {
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 ${maxModelscope} 个`;
+          } else {
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度 · ModelScope 每天可投喂 ${maxModelscope} 个，iFlow 每天可投喂 ${maxIflow} 个`;
+          }
 
           // 更新领取次数信息
           const todayClaimCount = data.data.today_claim_count || 0;
@@ -621,21 +630,29 @@
           const donatedToday = document.getElementById('donatedToday');
           const keysInput = document.getElementById('keysInput');
           
-          if (data.data.donated_modelscope_today) {
-            // 今日已投喂
+          const todayDonateModelscope = data.data.today_donate_modelscope_count || 0;
+          const maxDonateModelscope = data.data.max_daily_donate_modelscope || 1;
+          const remainingDonateModelscope = data.data.remaining_donate_modelscope || 0;
+          
+          // 更新投喂限制说明
+          donateWarning.querySelector('span').innerHTML = `<strong>每天可以投喂 ${maxDonateModelscope} 个</strong>`;
+          
+          if (remainingDonateModelscope <= 0) {
+            // 今日已达上限
             donateWarning.classList.add('hidden');
             donatedToday.classList.remove('hidden');
+            donatedToday.querySelector('span').innerHTML = `✓ <strong>今日已投喂 ${todayDonateModelscope}/${maxDonateModelscope} 个</strong>`;
             donateBtn.disabled = true;
             donateBtn.textContent = '✓ 今日已投喂';
             donateBtn.className = 'w-full bg-slate-400 text-white py-2.5 rounded-lg font-semibold cursor-not-allowed text-sm mb-3';
             keysInput.disabled = true;
             keysInput.className = 'w-full h-24 px-3 py-2 border border-slate-200 rounded-lg mb-3 font-mono text-sm bg-slate-50 cursor-not-allowed resize-none';
           } else {
-            // 可以投喂
+            // 可以继续投喂
             donateWarning.classList.remove('hidden');
             donatedToday.classList.add('hidden');
             donateBtn.disabled = false;
-            donateBtn.textContent = '🚀 提交 ModelScope Key';
+            donateBtn.textContent = `🚀 提交 ModelScope Key（还可投喂 ${remainingDonateModelscope} 个）`;
             donateBtn.className = 'w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3';
             keysInput.disabled = false;
             keysInput.className = 'w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm resize-none';
@@ -647,21 +664,29 @@
           const donatedIflowToday = document.getElementById('donatedIflowToday');
           const iflowKeysInput = document.getElementById('iflowKeysInput');
           
-          if (data.data.donated_iflow_today) {
-            // 今日已投喂
+          const todayDonateIflow = data.data.today_donate_iflow_count || 0;
+          const maxDonateIflow = data.data.max_daily_donate_iflow || 1;
+          const remainingDonateIflow = data.data.remaining_donate_iflow || 0;
+          
+          // 更新投喂限制说明
+          donateIflowWarning.querySelector('span').innerHTML = `<strong>每天可以投喂 ${maxDonateIflow} 个</strong>`;
+          
+          if (remainingDonateIflow <= 0) {
+            // 今日已达上限
             donateIflowWarning.classList.add('hidden');
             donatedIflowToday.classList.remove('hidden');
+            donatedIflowToday.querySelector('span').innerHTML = `✓ <strong>今日已投喂 ${todayDonateIflow}/${maxDonateIflow} 个</strong>`;
             donateIflowBtn.disabled = true;
             donateIflowBtn.textContent = '✓ 今日已投喂';
             donateIflowBtn.className = 'w-full bg-slate-400 text-white py-2.5 rounded-lg font-semibold cursor-not-allowed text-sm mb-3';
             iflowKeysInput.disabled = true;
             iflowKeysInput.className = 'w-full h-24 px-3 py-2 border border-slate-200 rounded-lg mb-3 font-mono text-sm bg-slate-50 cursor-not-allowed resize-none';
           } else {
-            // 可以投喂
+            // 可以继续投喂
             donateIflowWarning.classList.remove('hidden');
             donatedIflowToday.classList.add('hidden');
             donateIflowBtn.disabled = false;
-            donateIflowBtn.textContent = '🚀 提交 iFlow Key';
+            donateIflowBtn.textContent = `🚀 提交 iFlow Key（还可投喂 ${remainingDonateIflow} 个）`;
             donateIflowBtn.className = 'w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all text-sm mb-3';
             iflowKeysInput.disabled = false;
             iflowKeysInput.className = 'w-full h-24 px-3 py-2 border border-slate-300 rounded-lg mb-3 focus:ring-2 focus:ring-emerald-500 focus:border-transparent font-mono text-sm resize-none';
