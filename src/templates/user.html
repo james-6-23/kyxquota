@@ -371,7 +371,7 @@
                 <p id="userId" class="text-xs text-slate-500">ID: xxx</p>
               </div>
               <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
-                <span>🎰</span> 游戏记录
+                <span>🎰</span> 抽奖记录
               </button>
               <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
                 <span>📊</span> 我的记录
@@ -610,7 +610,7 @@
                 <p id="slotUserId" class="text-xs text-slate-500">ID: xxx</p>
               </div>
                 <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
-                  <span>🎰</span> 游戏记录
+                  <span>🎰</span> 抽奖记录
                 </button>
                 <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
                   <span>📊</span> 我的记录
@@ -730,7 +730,7 @@
   <div id="slotRecordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-purple-600 to-indigo-600">
-        <h2 class="text-2xl font-bold text-white">🎰 我的游戏记录</h2>
+        <h2 class="text-2xl font-bold text-white">🎰 我的抽奖记录</h2>
         <button onclick="closeSlotRecords()" class="text-white hover:text-yellow-300 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1173,26 +1173,45 @@
             };
             img.onerror = function() {
               console.error('[头像加载] 失败:', avatar_url);
-              // 如果加载失败，尝试使用LinuxDo的默认头像格式
-              const fallbackUrl = `https://linux.do/user_avatar/linux.do/${linux_do_username}/120/1_2.png`;
-              console.log('[头像加载] 尝试fallback URL:', fallbackUrl);
+              // 如果加载失败，使用LinuxDo的letter_avatar（字母头像）
+              const firstLetter = (linux_do_username || username).charAt(0).toLowerCase();
+              const colorCode = firstLetter.charCodeAt(0) % 10;
+              const fallbackUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
+              console.log('[头像加载] 尝试letter avatar:', fallbackUrl);
               const fallbackImg = new Image();
               fallbackImg.onload = function() {
-                console.log('[头像加载] Fallback成功');
+                console.log('[头像加载] Letter avatar加载成功');
                 userAvatar.style.backgroundImage = `url(${fallbackUrl})`;
                 userAvatar.style.backgroundSize = 'cover';
                 userAvatar.style.backgroundPosition = 'center';
                 document.getElementById('userInitial').textContent = '';
               };
               fallbackImg.onerror = function() {
-                console.error('[头像加载] Fallback也失败，保留首字母');
+                console.error('[头像加载] Letter avatar也失败，保留首字母');
                 // 保留首字母显示
               };
               fallbackImg.src = fallbackUrl;
             };
             img.src = avatar_url;
           } else {
-            console.log('[设置头像] 无头像URL，使用首字母');
+            console.log('[设置头像] 无头像URL，尝试使用letter avatar');
+            // 如果没有avatar_url，直接使用letter_avatar
+            const firstLetter = (linux_do_username || username).charAt(0).toLowerCase();
+            const colorCode = firstLetter.charCodeAt(0) % 10;
+            const letterAvatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
+            const img = new Image();
+            img.onload = function() {
+              console.log('[头像加载] Letter avatar加载成功');
+              const userAvatar = document.getElementById('userAvatar');
+              userAvatar.style.backgroundImage = `url(${letterAvatarUrl})`;
+              userAvatar.style.backgroundSize = 'cover';
+              userAvatar.style.backgroundPosition = 'center';
+              document.getElementById('userInitial').textContent = '';
+            };
+            img.onerror = function() {
+              console.error('[头像加载] Letter avatar失败，使用首字母');
+            };
+            img.src = letterAvatarUrl;
           }
 
           const quotaUSD = (quota / 500000).toFixed(2);
@@ -1771,10 +1790,21 @@
 
             // 构建头像HTML
             const username = user.username || user.linux_do_id;
-            // 优先使用数据库中的avatar_url，如果没有则使用LinuxDo默认头像
-            const avatarUrl = user.avatar_url && user.avatar_url.trim() 
-                            ? user.avatar_url 
-                            : `https://linux.do/user_avatar/linux.do/${username}/48/1_2.png`;
+            
+            // 头像URL构建策略：
+            // 1. 如果有avatar_url且不为空，使用它
+            // 2. 否则使用LinuxDo的letter_avatar格式（字母头像）
+            let avatarUrl = '';
+            if (user.avatar_url && user.avatar_url.trim()) {
+              avatarUrl = user.avatar_url;
+            } else {
+              // 使用LinuxDo的letter_avatar格式，这是一个通用的字母头像
+              // 格式：https://linux.do/letter_avatar_proxy/v4/letter/用户名首字母/颜色代码/48.png
+              const firstLetter = username.charAt(0).toLowerCase();
+              // 使用用户名生成一个简单的颜色代码（基于字母）
+              const colorCode = firstLetter.charCodeAt(0) % 10;
+              avatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/48.png`;
+            }
             
             console.log(`[排行榜#${rank}] 用户: ${username}, 头像URL: ${avatarUrl}`);
 
@@ -2074,13 +2104,22 @@
           return;
         }
 
-        const records = data.data;
+        // 只显示最近5条记录
+        const records = data.data.slice(0, 5);
         const container = document.getElementById('slotRecordsContent');
 
         if (records.length === 0) {
-          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无游戏记录</p>';
+          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无抽奖记录</p>';
         } else {
-          container.innerHTML = records.map((r, idx) => {
+          // 添加记录条数提示
+          const totalCount = data.data.length;
+          const headerHtml = totalCount > 5 
+            ? `<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+                <p class="text-sm text-blue-800">📊 显示最近 5 条记录，共 ${totalCount} 条</p>
+               </div>`
+            : '';
+          
+          container.innerHTML = headerHtml + records.map((r, idx) => {
             const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
             const bgClass = r.win_amount > 0 ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200';
             const symbolsHTML = r.result_symbols.map(s => {
@@ -2117,8 +2156,8 @@
 
         document.getElementById('slotRecordsModal').classList.remove('hidden');
       } catch (error) {
-        console.error('获取游戏记录失败:', error);
-        showToast('获取游戏记录失败', 'error');
+        console.error('获取抽奖记录失败:', error);
+        showToast('获取抽奖记录失败', 'error');
       }
     }
 

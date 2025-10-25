@@ -292,9 +292,11 @@ slot.post('/spin', requireAuth, async (c) => {
         );
 
         // 更新用户总统计（用于排行榜）
+        // 使用LinuxDo用户名，如果不存在则使用公益站用户名
+        const displayUsername = user.linux_do_username || session.username || user.username;
         updateUserTotalStats(
             session.linux_do_id,
-            user.username,
+            displayUsername,
             session.avatar_url || '',
             betAmount,
             winAmount,
