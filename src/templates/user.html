@@ -496,21 +496,21 @@
           
           <!-- 中间：模式切换按钮 -->
           <div class="absolute left-1/2 transform -translate-x-1/2">
-            <div class="inline-flex bg-white/10 backdrop-blur-sm rounded-xl p-1 relative border border-white/20" data-switch-container>
+            <div class="inline-flex bg-black/20 backdrop-blur-sm rounded-xl p-1 relative border border-white/10" data-switch-container>
               <!-- 滑动背景 -->
               <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
                    style="width: 120px; left: 132px;"></div>
               
               <!-- 加油站按钮 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2">
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
               
               <!-- 娱乐站按钮 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2">
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>🎰</span>
                 <span>娱乐站</span>
               </button>
@@ -526,67 +526,98 @@
             <button onclick="showSlotRecords()" class="text-white hover:text-yellow-400 transition-colors p-2" title="游戏记录">
               📊
             </button>
-            <button onclick="showLeaderboard()" class="text-white hover:text-yellow-400 transition-colors p-2" title="排行榜">
-              🏆
-            </button>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- 老虎机主体 -->
-    <div class="max-w-5xl mx-auto p-6 flex flex-col items-center justify-center" style="height: calc(100vh - 200px);">
+    <!-- 老虎机主体（左右布局：主体+排行榜）-->
+    <div class="flex h-[calc(100vh-160px)]">
       
-      <!-- 标题 -->
-      <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
-        🎰 幸运老虎机
-      </h1>
-      
-      <!-- 次数显示 -->
-      <div class="bg-white/10 backdrop-blur-md rounded-lg px-8 py-3 mb-6">
-        <p class="text-white text-center text-lg">
-          今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-2xl">5</span> 次
-          <span class="mx-3">|</span>
-          免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-2xl">0</span> 次
-        </p>
+      <!-- 左侧：老虎机游戏区 -->
+      <div class="flex-1 flex flex-col items-center justify-center p-6">
+        
+        <!-- 标题 -->
+        <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
+          🎰 幸运老虎机
+        </h1>
+        
+        <!-- 次数显示 -->
+        <div class="bg-white/10 backdrop-blur-md rounded-lg px-8 py-3 mb-6">
+          <p class="text-white text-center text-lg">
+            今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-2xl">5</span> 次
+            <span class="mx-3">|</span>
+            免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-2xl">0</span> 次
+          </p>
+        </div>
+
+        <!-- 老虎机滚轮容器 (1行4列) -->
+        <div id="slotReelsContainer" class="bg-black/50 rounded-3xl p-10 shadow-2xl mb-8">
+          <div id="slotReels" class="flex gap-6 justify-center">
+            <!-- 滚轮将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+
+        <!-- 结果显示 -->
+        <div id="slotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
+                                         rounded-xl px-10 py-5 mb-6 shadow-xl">
+          <p id="slotResultText" class="text-white text-3xl font-bold text-center drop-shadow-lg"></p>
+        </div>
+
+        <!-- 控制按钮 -->
+        <div class="flex gap-6">
+          <button id="spinButton" onclick="spinSlot(false)" 
+                  class="px-16 py-5 bg-gradient-to-r from-green-500 to-emerald-600 
+                         text-white text-3xl font-bold rounded-xl shadow-lg 
+                         hover:scale-105 transform transition-all duration-200
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            🎰 旋转 ($20)
+          </button>
+          
+          <button id="freeSpinButton" onclick="spinSlot(true)" 
+                  class="hidden px-16 py-5 bg-gradient-to-r from-purple-500 to-pink-600 
+                         text-white text-3xl font-bold rounded-xl shadow-lg 
+                         hover:scale-105 transform transition-all duration-200
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            ✨ 免费旋转
+          </button>
+        </div>
+
+        <!-- 规则说明按钮 -->
+        <button onclick="showSlotRules()" class="mt-6 text-white/70 hover:text-white text-base transition-colors">
+          📖 查看游戏规则
+        </button>
       </div>
 
-      <!-- 老虎机滚轮容器 (1行4列) -->
-      <div id="slotReelsContainer" class="bg-black/50 rounded-3xl p-10 shadow-2xl mb-8">
-        <div id="slotReels" class="flex gap-6 justify-center">
-          <!-- 滚轮将通过 JavaScript 动态生成 -->
+      <!-- 右侧：排行榜（固定显示）-->
+      <div class="w-[420px] bg-black/30 backdrop-blur-md border-l border-white/10 overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-white/10">
+          <h2 class="text-xl font-bold text-yellow-400 text-center flex items-center justify-center gap-2">
+            <span>🏆</span>
+            <span>获奖排行榜 TOP 20</span>
+          </h2>
+        </div>
+        
+        <!-- 用户自己的统计（固定在上方）-->
+        <div id="myLeaderboardStats" class="p-3 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-b border-white/10">
+          <div class="text-white text-sm space-y-1">
+            <div class="flex justify-between">
+              <span>我的排名：</span>
+              <span id="sidebarMyRank" class="font-bold text-yellow-400">-</span>
+            </div>
+            <div class="flex justify-between">
+              <span>总获奖：</span>
+              <span id="sidebarMyTotalWin" class="font-bold text-green-400">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 排行榜列表（可滚动）-->
+        <div id="sidebarLeaderboard" class="flex-1 overflow-y-auto p-3 space-y-2">
+          <div class="text-center text-white/50 py-8">加载中...</div>
         </div>
       </div>
 
-      <!-- 结果显示 -->
-      <div id="slotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
-                                       rounded-xl px-10 py-5 mb-6 shadow-xl">
-        <p id="slotResultText" class="text-white text-3xl font-bold text-center drop-shadow-lg"></p>
-      </div>
-
-      <!-- 控制按钮 -->
-      <div class="flex gap-6">
-        <button id="spinButton" onclick="spinSlot(false)" 
-                class="px-16 py-5 bg-gradient-to-r from-green-500 to-emerald-600 
-                       text-white text-3xl font-bold rounded-xl shadow-lg 
-                       hover:scale-105 transform transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-          🎰 旋转 ($20)
-        </button>
-        
-        <button id="freeSpinButton" onclick="spinSlot(true)" 
-                class="hidden px-16 py-5 bg-gradient-to-r from-purple-500 to-pink-600 
-                       text-white text-3xl font-bold rounded-xl shadow-lg 
-                       hover:scale-105 transform transition-all duration-200
-                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-          ✨ 免费旋转
-        </button>
-      </div>
-
-      <!-- 规则说明按钮 -->
-      <button onclick="showSlotRules()" class="mt-6 text-white/70 hover:text-white text-base transition-colors">
-        📖 查看游戏规则
-      </button>
     </div>
 
     <!-- 底部统计 -->
@@ -793,8 +824,8 @@
         if (mode === 'refuel') {
           // 加油站模式
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2';
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           } else {
             refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
             entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2';
@@ -807,8 +838,8 @@
         } else {
           // 娱乐站模式
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           } else {
             refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2';
             entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
@@ -1438,6 +1469,9 @@
         // 更新界面数据
         updateSlotUI();
 
+        // 加载排行榜（显示在侧边栏）
+        loadSidebarLeaderboard();
+
         // 隐藏主界面，显示老虎机界面
         document.getElementById('mainSection').classList.add('hidden');
         document.getElementById('slotMachineModal').classList.remove('hidden');
@@ -1448,6 +1482,76 @@
         if (currentMode === 'entertain') {
           switchToRefuel();
         }
+      }
+    }
+
+    // 加载侧边栏排行榜
+    async function loadSidebarLeaderboard() {
+      try {
+        const res = await fetch('/api/slot/leaderboard?limit=20');
+        const data = await res.json();
+
+        if (!data.success) {
+          document.getElementById('sidebarLeaderboard').innerHTML = '<div class="text-center text-white/50 py-8">加载失败</div>';
+          return;
+        }
+
+        const { leaderboard, userStats, userRank } = data.data;
+
+        // 更新用户自己的统计
+        document.getElementById('sidebarMyRank').textContent = userRank > 0 ? `#${userRank}` : '未上榜';
+        document.getElementById('sidebarMyTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
+
+        // 渲染排行榜
+        const container = document.getElementById('sidebarLeaderboard');
+        
+        if (leaderboard.length === 0) {
+          container.innerHTML = '<div class="text-center text-white/50 py-8">暂无排行数据</div>';
+        } else {
+          container.innerHTML = leaderboard.map((user, index) => {
+            const rank = index + 1;
+            let rankDisplay = '';
+            let bgClass = 'bg-white/5 hover:bg-white/10';
+            
+            if (rank === 1) {
+              rankDisplay = '<span class="text-2xl">🥇</span>';
+              bgClass = 'bg-gradient-to-r from-yellow-500/20 to-amber-500/20 border border-yellow-500/30';
+            } else if (rank === 2) {
+              rankDisplay = '<span class="text-2xl">🥈</span>';
+              bgClass = 'bg-gradient-to-r from-gray-400/20 to-slate-400/20 border border-gray-400/30';
+            } else if (rank === 3) {
+              rankDisplay = '<span class="text-2xl">🥉</span>';
+              bgClass = 'bg-gradient-to-r from-orange-500/20 to-amber-600/20 border border-orange-500/30';
+            } else {
+              rankDisplay = `<span class="text-sm font-bold text-white/60">#${rank}</span>`;
+            }
+
+            // LinuxDo头像URL
+            const avatarUrl = `https://linux.do/user_avatar/linux.do/${user.username || user.linux_do_id}/48/1_2.png`;
+
+            return `
+              <div class="p-2 rounded-lg ${bgClass} transition-all">
+                <div class="flex items-center gap-2">
+                  <div class="w-10 text-center flex-shrink-0">${rankDisplay}</div>
+                  <img src="${avatarUrl}" 
+                       alt="${user.username || user.linux_do_id}" 
+                       class="w-8 h-8 rounded-full border border-white/20 flex-shrink-0"
+                       onerror="this.src='https://linux.do/letter_avatar_proxy/v4/letter/${(user.username || 'u')[0].toLowerCase()}/48/2.png'">
+                  <div class="flex-1 min-w-0">
+                    <p class="font-bold text-sm text-white truncate">${user.username || user.linux_do_id}</p>
+                    <p class="text-xs text-white/60">${user.total_spins} 次</p>
+                  </div>
+                  <div class="text-right flex-shrink-0">
+                    <p class="text-sm font-bold text-green-400">$${(user.total_win / 500000).toFixed(2)}</p>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (error) {
+        console.error('加载排行榜失败:', error);
+        document.getElementById('sidebarLeaderboard').innerHTML = '<div class="text-center text-white/50 py-8">加载失败</div>';
       }
     }
 
@@ -1496,6 +1600,28 @@
       const freeSpinButton = document.getElementById('freeSpinButton');
       const resultDiv = document.getElementById('slotResult');
 
+      // 如果使用免费次数，先从服务器验证是否真的有免费次数（防止数据不同步）
+      if (useFreeSpinn) {
+        try {
+          const verifyRes = await fetch('/api/slot/config');
+          const verifyData = await verifyRes.json();
+          if (verifyData.success) {
+            const actualFreeSpins = verifyData.data.user.free_spins;
+            if (actualFreeSpins <= 0) {
+              showToast('没有免费次数', 'error');
+              // 更新本地数据
+              slotUserData.free_spins = actualFreeSpins;
+              updateSlotUI();
+              return;
+            }
+            // 更新本地数据为最新值
+            slotUserData.free_spins = actualFreeSpins;
+          }
+        } catch (error) {
+          console.error('验证免费次数失败:', error);
+        }
+      }
+
       // 隐藏上次结果
       resultDiv.classList.add('hidden');
 
@@ -1516,6 +1642,21 @@
         if (!data.success) {
           showToast(data.message, 'error');
           isSpinning = false;
+
+          // 如果是免费次数相关错误，重新加载配置以同步最新数据
+          if (data.message && (data.message.includes('免费次数') || data.message.includes('扣除免费次数失败'))) {
+            try {
+              const configRes = await fetch('/api/slot/config');
+              const configData = await configRes.json();
+              if (configData.success) {
+                slotUserData = configData.data.user;
+                updateSlotUI();
+              }
+            } catch (error) {
+              console.error('重新加载配置失败:', error);
+            }
+          }
+
           spinButton.disabled = false;
           if (slotUserData.free_spins > 0) freeSpinButton.disabled = false;
           return;
@@ -1541,6 +1682,11 @@
         slotUserData.today_win += result.win_amount;
 
         updateSlotUI();
+
+        // 刷新排行榜（如果中奖）
+        if (result.win_amount > 0) {
+          setTimeout(() => loadSidebarLeaderboard(), 1000);
+        }
 
         // 显示结果
         document.getElementById('slotResultText').textContent = data.message;
