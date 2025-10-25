@@ -294,6 +294,7 @@ export function getUserTodayStats(linuxDoId: string) {
 export function updateUserTotalStats(
     linuxDoId: string,
     username: string,
+    avatarUrl: string,
     betAmount: number,
     winAmount: number,
     winType: WinType
@@ -314,6 +315,7 @@ export function updateUserTotalStats(
         slotQueries.updateUserStats.run(
             linuxDoId,
             username,
+            avatarUrl,
             newTotalSpins,
             newTotalBet,
             newTotalWin,
@@ -326,6 +328,7 @@ export function updateUserTotalStats(
         slotQueries.updateUserStats.run(
             linuxDoId,
             username,
+            avatarUrl,
             1, // total_spins
             betAmount,
             winAmount,

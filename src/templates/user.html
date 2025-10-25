@@ -290,21 +290,21 @@
           
           <!-- 中间：模式切换按钮 -->
           <div class="absolute left-1/2 transform -translate-x-1/2">
-            <div class="inline-flex bg-slate-100 rounded-xl p-1 relative" data-switch-container>
+            <div class="inline-flex bg-slate-100 rounded-xl p-1 gap-1 relative" data-switch-container>
               <!-- 滑动背景 -->
               <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
                    style="width: 120px; left: 4px;"></div>
               
               <!-- 加油站按钮 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
               
               <!-- 娱乐站按钮 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>🎰</span>
                 <span>娱乐站</span>
               </button>
@@ -322,11 +322,14 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1">
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
               <div class="px-4 py-3 border-b border-slate-200">
                 <p id="userName" class="font-semibold text-slate-900">用户名</p>
                 <p id="userId" class="text-xs text-slate-500">ID: xxx</p>
               </div>
+              <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                <span>🎰</span> 游戏记录
+              </button>
               <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
                 <span>📊</span> 我的记录
               </button>
@@ -514,36 +517,58 @@
           
           <!-- 中间：模式切换按钮 -->
           <div class="absolute left-1/2 transform -translate-x-1/2">
-            <div class="inline-flex bg-black/20 backdrop-blur-sm rounded-xl p-1 relative border border-white/10" data-switch-container>
+            <div class="inline-flex bg-black/20 backdrop-blur-sm rounded-xl p-1 gap-1 relative border border-white/10" data-switch-container>
               <!-- 滑动背景 -->
               <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
-                   style="width: 120px; left: 132px;"></div>
+                   style="width: 120px; left: 124px;"></div>
               
               <!-- 加油站按钮 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
               
               <!-- 娱乐站按钮 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
                 <span>🎰</span>
                 <span>娱乐站</span>
               </button>
             </div>
           </div>
           
-          <!-- 右侧：额度显示和功能按钮 -->
-          <div class="flex items-center gap-4 w-48 justify-end">
+          <!-- 右侧：用户菜单 -->
+          <div class="flex items-center gap-3 w-48 justify-end">
             <div class="text-white text-right">
               <p class="text-xs opacity-75">剩余额度</p>
               <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
             </div>
-            <button onclick="showSlotRecords()" class="text-white hover:text-yellow-400 transition-colors p-2" title="游戏记录">
-              📊
-            </button>
+            <div class="relative">
+              <button onclick="toggleSlotDropdown()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
+                <div id="slotUserAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold border-2 border-white/30">
+                  <span id="slotUserInitial">U</span>
+                </div>
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+              <div id="slotDropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                <div class="px-4 py-3 border-b border-slate-200">
+                  <p id="slotUserName" class="font-semibold text-slate-900">用户名</p>
+                  <p id="slotUserId" class="text-xs text-slate-500">ID: xxx</p>
+                </div>
+                <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
+                  <span>🎰</span> 游戏记录
+                </button>
+                <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
+                  <span>📊</span> 我的记录
+                </button>
+                <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
+                  <span>🚪</span> 退出登录
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -557,7 +582,7 @@
         
         <!-- 标题 -->
         <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
-          🎰 幸运老虎机
+          🎰 KYX-Slot-Machine
         </h1>
         
         <!-- 次数显示 -->
@@ -589,7 +614,7 @@
                          text-white text-3xl font-bold rounded-xl shadow-lg 
                          hover:scale-105 transform transition-all duration-200
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-            🎰 旋转 ($20)
+            🎰 spin ($20)
           </button>
           
           <button id="freeSpinButton" onclick="spinSlot(true)" 
@@ -597,7 +622,7 @@
                          text-white text-3xl font-bold rounded-xl shadow-lg 
                          hover:scale-105 transform transition-all duration-200
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-            ✨ 免费旋转
+            ✨ free spin
           </button>
         </div>
 
@@ -842,11 +867,11 @@
         if (mode === 'refuel') {
           // 加油站模式
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           } else {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           }
           
           if (switchBg) {
@@ -856,15 +881,15 @@
         } else {
           // 娱乐站模式
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           } else {
-            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
           }
           
           if (switchBg) {
-            switchBg.style.left = '132px';
+            switchBg.style.left = '124px';
             switchBg.style.background = 'linear-gradient(to right, rgb(234, 179, 8), rgb(249, 115, 22))';
           }
         }
@@ -985,10 +1010,20 @@
       document.getElementById('dropdownMenu').classList.toggle('hidden');
     }
 
+    function toggleSlotDropdown() {
+      document.getElementById('slotDropdownMenu').classList.toggle('hidden');
+    }
+
     document.addEventListener('click', (e) => {
       const dropdown = document.getElementById('dropdownMenu');
-      if (!e.target.closest('button[onclick="toggleDropdown()"]') && !dropdown.contains(e.target)) {
+      const slotDropdown = document.getElementById('slotDropdownMenu');
+      
+      if (dropdown && !e.target.closest('button[onclick="toggleDropdown()"]') && !dropdown.contains(e.target)) {
         dropdown.classList.add('hidden');
+      }
+      
+      if (slotDropdown && !e.target.closest('button[onclick="toggleSlotDropdown()"]') && !slotDropdown.contains(e.target)) {
+        slotDropdown.classList.add('hidden');
       }
     });
 
@@ -1305,7 +1340,12 @@
     }
 
     async function showMyRecords() {
-      document.getElementById('dropdownMenu').classList.add('hidden');
+      // 关闭所有下拉菜单
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const slotDropdownMenu = document.getElementById('slotDropdownMenu');
+      if (dropdownMenu) dropdownMenu.classList.add('hidden');
+      if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
+      
       document.getElementById('recordsModal').classList.remove('hidden');
       await loadMyRecords();
     }
@@ -1487,6 +1527,9 @@
         // 更新界面数据
         updateSlotUI();
 
+        // 同步用户信息到老虎机界面
+        syncUserInfoToSlot();
+
         // 加载排行榜（显示在侧边栏）
         loadSidebarLeaderboard();
 
@@ -1499,6 +1542,32 @@
         // 出错时切换回加油站模式
         if (currentMode === 'entertain') {
           switchToRefuel();
+        }
+      }
+    }
+
+    // 同步用户信息到老虎机界面
+    function syncUserInfoToSlot() {
+      // 从主界面复制用户信息到老虎机界面
+      const userName = document.getElementById('userName')?.textContent;
+      const userId = document.getElementById('userId')?.textContent;
+      const userAvatar = document.getElementById('userAvatar');
+      const userInitial = document.getElementById('userInitial')?.textContent;
+      
+      if (userName) document.getElementById('slotUserName').textContent = userName;
+      if (userId) document.getElementById('slotUserId').textContent = userId;
+      if (userInitial) document.getElementById('slotUserInitial').textContent = userInitial;
+      
+      // 复制头像样式
+      if (userAvatar) {
+        const slotAvatar = document.getElementById('slotUserAvatar');
+        if (slotAvatar) {
+          slotAvatar.style.backgroundImage = userAvatar.style.backgroundImage;
+          slotAvatar.style.backgroundSize = 'cover';
+          slotAvatar.style.backgroundPosition = 'center';
+          if (userAvatar.style.backgroundImage) {
+            document.getElementById('slotUserInitial').textContent = '';
+          }
         }
       }
     }
@@ -1820,6 +1889,12 @@
 
     // 显示游戏记录
     async function showSlotRecords() {
+      // 关闭所有下拉菜单
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const slotDropdownMenu = document.getElementById('slotDropdownMenu');
+      if (dropdownMenu) dropdownMenu.classList.add('hidden');
+      if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
+      
       try {
         const res = await fetch('/api/slot/records');
         const data = await res.json();

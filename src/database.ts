@@ -267,6 +267,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS user_slot_stats (
       linux_do_id TEXT PRIMARY KEY,
       username TEXT NOT NULL,
+      avatar_url TEXT,
       total_spins INTEGER DEFAULT 0,
       total_bet INTEGER DEFAULT 0,
       total_win INTEGER DEFAULT 0,
@@ -275,6 +276,13 @@ export function initDatabase() {
       updated_at INTEGER NOT NULL
     )
   `);
+
+    // 添加 avatar_url 字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE user_slot_stats ADD COLUMN avatar_url TEXT');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
 
     console.log('✅ 数据库初始化完成');
@@ -460,10 +468,10 @@ function initQueries() {
             'SELECT * FROM user_slot_stats WHERE linux_do_id = ?'
         ),
         updateUserStats: db.query(
-            'INSERT OR REPLACE INTO user_slot_stats (linux_do_id, username, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT OR REPLACE INTO user_slot_stats (linux_do_id, username, avatar_url, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getLeaderboard: db.query<any, number>(
-            'SELECT linux_do_id, username, total_spins, total_bet, total_win, biggest_win, biggest_win_type FROM user_slot_stats ORDER BY total_win DESC LIMIT ?'
+            'SELECT linux_do_id, username, avatar_url, total_spins, total_bet, total_win, biggest_win, biggest_win_type FROM user_slot_stats ORDER BY total_win DESC LIMIT ?'
         ),
         getUserRank: db.query<{ rank: number }, [number, string]>(
             'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE total_win > (SELECT total_win FROM user_slot_stats WHERE linux_do_id = ?)'

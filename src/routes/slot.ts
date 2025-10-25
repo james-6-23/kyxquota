@@ -295,6 +295,7 @@ slot.post('/spin', requireAuth, async (c) => {
         updateUserTotalStats(
             session.linux_do_id,
             user.username,
+            session.avatar_url || '',
             betAmount,
             winAmount,
             result.winType
