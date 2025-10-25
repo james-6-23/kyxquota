@@ -6,6 +6,7 @@ import {
     donateQueries,
     keyQueries,
     userQueries,
+    slotQueries,
 } from '../database';
 import { cacheManager } from '../cache';
 import { CONFIG } from '../config';

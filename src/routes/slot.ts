@@ -225,14 +225,17 @@ slot.post('/spin', requireAuth, async (c) => {
                 }, 400);
             }
 
-            // 扣除投注额度
-            const deductSuccess = await updateKyxUserQuota(
+            // 扣除投注额度（计算新额度 = 当前额度 - 投注金额）
+            const newQuotaAfterBet = currentQuota - betAmount;
+            const deductResult = await updateKyxUserQuota(
                 user.kyx_user_id,
-                -betAmount,
+                newQuotaAfterBet,
                 adminConfig.session,
-                adminConfig.new_api_user
+                adminConfig.new_api_user,
+                user.username,
+                kyxUserResult.user.group || 'default'
             );
-            if (!deductSuccess) {
+            if (!deductResult || !deductResult.success) {
                 return c.json({ success: false, message: '扣除额度失败' }, 500);
             }
         }
@@ -247,19 +250,27 @@ slot.post('/spin', requireAuth, async (c) => {
         const winAmount = Math.floor(betAmount * result.multiplier);
 
         // 获取管理员配置（用于更新额度）
-        const adminConfig = adminQueries.get.get();
-        if (!adminConfig) {
+        const adminConfigForWin = adminQueries.get.get();
+        if (!adminConfigForWin) {
             return c.json({ success: false, message: '系统配置未找到' }, 500);
         }
 
         // 如果中奖，增加额度
         if (winAmount > 0) {
-            await updateKyxUserQuota(
-                user.kyx_user_id,
-                winAmount,
-                adminConfig.session,
-                adminConfig.new_api_user
-            );
+            // 获取当前额度
+            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
+            if (currentKyxUser.success && currentKyxUser.user) {
+                // 计算新额度 = 当前额度 + 中奖金额
+                const newQuotaAfterWin = currentKyxUser.user.quota + winAmount;
+                await updateKyxUserQuota(
+                    user.kyx_user_id,
+                    newQuotaAfterWin,
+                    adminConfigForWin.session,
+                    adminConfigForWin.new_api_user,
+                    user.username,
+                    currentKyxUser.user.group || 'default'
+                );
+            }
         }
 
         // 如果奖励免费次数
@@ -290,7 +301,7 @@ slot.post('/spin', requireAuth, async (c) => {
         );
 
         // 获取更新后的状态
-        const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+        const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
         const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
 
         const todaySpinsAfter = getUserTodaySpins(session.linux_do_id);

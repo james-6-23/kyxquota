@@ -1374,14 +1374,16 @@
         reelsContainer.appendChild(reelContainer);
       }
 
-      // 为每个滚轮填充初始符号
+      // 为每个滚轮填充初始符号（显示一个随机符号）
       document.querySelectorAll('.slot-reel').forEach((reel, idx) => {
         const symbolsContainer = reel.querySelector('.slot-symbols');
-        // 初始显示随机符号
-        for (let j = 0; j < 20; j++) {
-          const symbol = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
-          symbolsContainer.appendChild(createSymbolElement(symbol));
-        }
+        // 初始显示一个随机符号
+        const initialSymbol = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+        symbolsContainer.appendChild(createSymbolElement(initialSymbol));
+        
+        // 确保容器样式正确
+        symbolsContainer.style.transform = 'translateY(0)';
+        symbolsContainer.style.filter = 'none';
       });
     }
 
@@ -1389,14 +1391,24 @@
     function createSymbolElement(symbolName) {
       const div = document.createElement('div');
       div.className = 'slot-symbol';
+      div.setAttribute('data-symbol', symbolName);
+      
       const img = document.createElement('img');
       const ext = ['lq', 'bj', 'bdk'].includes(symbolName) ? 'jpg' : 'png';
       img.src = `/slot-symbols/${symbolName}.${ext}`;
       img.alt = symbolName;
+      img.loading = 'eager'; // 立即加载
+      
       img.onerror = () => {
-        console.error('图片加载失败:', symbolName);
-        img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="40">?</text></svg>';
+        console.error('图片加载失败:', symbolName, `扩展名: ${ext}`);
+        // 创建一个带文字的占位符
+        img.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="150"><rect width="150" height="150" fill="%23667eea"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="24" fill="white">${symbolName}</text></svg>`;
       };
+      
+      img.onload = () => {
+        console.log('✅ 图片加载成功:', symbolName);
+      };
+      
       div.appendChild(img);
       return div;
     }
@@ -1511,8 +1523,12 @@
 
         const result = data.data;
 
+        console.log('🎰 旋转结果:', result.symbols, '中奖类型:', result.win_type, '倍率:', result.multiplier);
+
         // 开始动画
         await playSpinAnimation(result.symbols);
+
+        console.log('✅ 动画完成，最终符号应该显示:', result.symbols);
 
         // 更新用户数据
         slotUserData.quota = result.quota_after;
@@ -1578,6 +1594,8 @@
         
         // 清空现有符号
         symbolsContainer.innerHTML = '';
+        symbolsContainer.style.transform = '';
+        symbolsContainer.style.filter = '';
 
         // 计算动画参数（每个滚轮递延停止，更有真实感）
         const baseDuration = 2000; // 基础时长2秒
@@ -1600,9 +1618,9 @@
             filter: 'blur(0px)'
           },
           { 
-            transform: 'translateY(-20px)',
-            filter: 'blur(3px)',
-            offset: 0.1
+            transform: 'translateY(-50px)',
+            filter: 'blur(4px)',
+            offset: 0.15
           },
           { 
             transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
@@ -1616,10 +1634,18 @@
 
         // 动画结束后
         animation.onfinish = () => {
-          // 只保留最后一个符号
+          // 停止动画
+          animation.cancel();
+          
+          // 只保留最终符号，清空其他
           symbolsContainer.innerHTML = '';
-          symbolsContainer.appendChild(createSymbolElement(finalSymbol));
+          const finalElement = createSymbolElement(finalSymbol);
+          symbolsContainer.appendChild(finalElement);
+          
+          // 重置transform和filter
           symbolsContainer.style.transform = 'translateY(0)';
+          symbolsContainer.style.filter = 'none';
+          
           resolve();
         };
       });
