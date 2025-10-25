@@ -17,6 +17,7 @@ const app = new Hono();
 import userRoutes from './routes/user';
 import adminRoutes from './routes/admin';
 import oauthRoutes from './routes/oauth';
+import slotRoutes from './routes/slot';
 
 // 中间件
 app.use('*', cors());
@@ -25,6 +26,17 @@ app.use('*', cors());
 app.route('/api', userRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/oauth', oauthRoutes);
+app.route('/api/slot', slotRoutes);
+
+// 静态文件服务（老虎机符号图片）
+app.get('/slot-symbols/:filename', async (c) => {
+    const filename = c.req.param('filename');
+    const file = Bun.file(`public/slot-symbols/${filename}`);
+    if (await file.exists()) {
+        return new Response(file);
+    }
+    return c.notFound();
+});
 
 // 首页
 app.get('/', async (c) => {

@@ -14,6 +14,9 @@ RUN bun install
 COPY src ./src
 COPY tsconfig.json ./
 
+# 复制老虎机符号图片（重要！）
+COPY public ./public
+
 # 创建数据目录
 RUN mkdir -p /app/data
 

@@ -460,6 +460,86 @@ app.get('/records/donate', requireAdmin, async (c) => {
 });
 
 /**
+ * 获取老虎机记录（分页）
+ */
+app.get('/records/slot', requireAdmin, async (c) => {
+    const page = parseInt(c.req.query('page') || '1');
+    const pageSize = parseInt(c.req.query('pageSize') || '50');
+
+    const offset = (page - 1) * pageSize;
+    const records = slotQueries.getAllRecordsPaginated.all(pageSize, offset);
+    const totalCount = slotQueries.countRecords.get()!.count;
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    return c.json({
+        success: true,
+        data: records,
+        pagination: {
+            page,
+            pageSize,
+            total: totalCount,
+            totalPages,
+            hasMore: page < totalPages,
+        },
+    });
+});
+
+/**
+ * 获取老虎机配置
+ */
+app.get('/slot/config', requireAdmin, async (c) => {
+    const config = slotQueries.getConfig.get();
+    return c.json({
+        success: true,
+        data: config
+    });
+});
+
+/**
+ * 更新老虎机配置
+ */
+app.post('/slot/config', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { bet_amount, max_daily_spins, min_quota_required, enabled } = body;
+
+        // 验证参数
+        if (bet_amount !== undefined && (typeof bet_amount !== 'number' || bet_amount < 0)) {
+            return c.json({ success: false, message: '投注金额必须是非负数' }, 400);
+        }
+        if (max_daily_spins !== undefined && (typeof max_daily_spins !== 'number' || max_daily_spins < 0)) {
+            return c.json({ success: false, message: '每日次数必须是非负数' }, 400);
+        }
+        if (min_quota_required !== undefined && (typeof min_quota_required !== 'number' || min_quota_required < 0)) {
+            return c.json({ success: false, message: '最低额度必须是非负数' }, 400);
+        }
+        if (enabled !== undefined && typeof enabled !== 'number') {
+            return c.json({ success: false, message: '启用状态必须是数字' }, 400);
+        }
+
+        const now = Date.now();
+        const currentConfig = slotQueries.getConfig.get();
+
+        slotQueries.updateConfig.run(
+            bet_amount !== undefined ? bet_amount : currentConfig!.bet_amount,
+            max_daily_spins !== undefined ? max_daily_spins : currentConfig!.max_daily_spins,
+            min_quota_required !== undefined ? min_quota_required : currentConfig!.min_quota_required,
+            enabled !== undefined ? enabled : currentConfig!.enabled,
+            now
+        );
+
+        return c.json({
+            success: true,
+            message: '老虎机配置已更新',
+            data: slotQueries.getConfig.get()
+        });
+    } catch (error: any) {
+        console.error('更新老虎机配置失败:', error);
+        return c.json({ success: false, message: '更新失败' }, 500);
+    }
+});
+
+/**
  * 导出所有 Keys
  */
 app.get('/keys/export', requireAdmin, async (c) => {

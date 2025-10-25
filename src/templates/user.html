@@ -111,6 +111,69 @@
         transform: translateX(100px) scale(0.8);
       }
     }
+
+    /* 老虎机样式 */
+    .slot-reel-container {
+      width: 180px;
+      height: 180px;
+      border: 5px solid #fbbf24;
+      border-radius: 16px;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+      box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .slot-reel {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    .slot-symbols {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slot-symbol {
+      width: 100%;
+      height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 15px;
+      flex-shrink: 0;
+    }
+
+    .slot-symbol img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+    }
+
+    /* 老虎机动画优化 */
+    @media (prefers-reduced-motion: reduce) {
+      .slot-symbols {
+        animation: none !important;
+      }
+    }
+
+    /* 响应式调整 */
+    @media only screen and (max-width: 768px) {
+      .slot-reel-container {
+        width: 140px;
+        height: 140px;
+      }
+      
+      .slot-symbol {
+        height: 140px;
+        padding: 10px;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -205,15 +268,25 @@
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <h1 class="text-xl font-bold text-slate-900">KYX API 加油站</h1>
-          <div class="relative">
-            <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-              <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                <span id="userInitial">U</span>
-              </div>
-              <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-              </svg>
+          <div class="flex items-center gap-3">
+            <!-- 老虎机入口按钮 -->
+            <button onclick="showSlotMachine()" 
+                    class="px-4 py-2 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 
+                           text-white rounded-lg font-bold shadow-lg hover:scale-105 
+                           transform transition-all duration-200">
+              <span class="text-lg">🎰</span>
+              <span class="ml-1">娱乐模式</span>
             </button>
+            
+            <div class="relative">
+              <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+                <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                  <span id="userInitial">U</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
             <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1">
               <div class="px-4 py-3 border-b border-slate-200">
                 <p id="userName" class="font-semibold text-slate-900">用户名</p>
@@ -388,6 +461,231 @@
         </div>
         <div id="claimRecords" class="tab-content overflow-y-auto max-h-96"></div>
         <div id="donateRecords" class="tab-content hidden overflow-y-auto max-h-96"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 老虎机全屏界面 -->
+  <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-purple-900 via-indigo-900 to-blue-900">
+    
+    <!-- 顶部栏 -->
+    <div class="bg-black/30 backdrop-blur-md p-4 flex justify-between items-center">
+      <button onclick="closeSlotMachine()" class="text-white text-lg hover:text-yellow-400 transition-colors">
+        ← 返回主页
+      </button>
+      <div class="text-white text-center">
+        <p class="text-sm">剩余额度</p>
+        <p id="slotQuota" class="text-2xl font-bold text-yellow-400">$0.00</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="showSlotRecords()" class="text-white text-lg hover:text-yellow-400 transition-colors">
+          📊 记录
+        </button>
+        <button onclick="showLeaderboard()" class="text-white text-lg hover:text-yellow-400 transition-colors">
+          🏆 排行榜
+        </button>
+      </div>
+    </div>
+
+    <!-- 老虎机主体 -->
+    <div class="max-w-5xl mx-auto p-6 flex flex-col items-center justify-center" style="height: calc(100vh - 200px);">
+      
+      <!-- 标题 -->
+      <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
+        🎰 幸运老虎机
+      </h1>
+      
+      <!-- 次数显示 -->
+      <div class="bg-white/10 backdrop-blur-md rounded-lg px-8 py-3 mb-6">
+        <p class="text-white text-center text-lg">
+          今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-2xl">5</span> 次
+          <span class="mx-3">|</span>
+          免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-2xl">0</span> 次
+        </p>
+      </div>
+
+      <!-- 老虎机滚轮容器 (1行4列) -->
+      <div id="slotReelsContainer" class="bg-black/50 rounded-3xl p-10 shadow-2xl mb-8">
+        <div id="slotReels" class="flex gap-6 justify-center">
+          <!-- 滚轮将通过 JavaScript 动态生成 -->
+        </div>
+      </div>
+
+      <!-- 结果显示 -->
+      <div id="slotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
+                                       rounded-xl px-10 py-5 mb-6 shadow-xl">
+        <p id="slotResultText" class="text-white text-3xl font-bold text-center drop-shadow-lg"></p>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="flex gap-6">
+        <button id="spinButton" onclick="spinSlot(false)" 
+                class="px-16 py-5 bg-gradient-to-r from-green-500 to-emerald-600 
+                       text-white text-3xl font-bold rounded-xl shadow-lg 
+                       hover:scale-105 transform transition-all duration-200
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+          🎰 旋转 ($20)
+        </button>
+        
+        <button id="freeSpinButton" onclick="spinSlot(true)" 
+                class="hidden px-16 py-5 bg-gradient-to-r from-purple-500 to-pink-600 
+                       text-white text-3xl font-bold rounded-xl shadow-lg 
+                       hover:scale-105 transform transition-all duration-200
+                       disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+          ✨ 免费旋转
+        </button>
+      </div>
+
+      <!-- 规则说明按钮 -->
+      <button onclick="showSlotRules()" class="mt-6 text-white/70 hover:text-white text-base transition-colors">
+        📖 查看游戏规则
+      </button>
+    </div>
+
+    <!-- 底部统计 -->
+    <div class="bg-black/30 backdrop-blur-md p-4 text-center text-white">
+      <p class="text-lg">
+        今日已玩 <span id="todayPlayed" class="font-bold text-yellow-400">0</span> 次 
+        <span class="mx-2">|</span> 
+        今日投注 <span id="todayBet" class="font-bold text-red-400">$0</span>
+        <span class="mx-2">|</span>
+        今日赢得 <span id="todayWon" class="font-bold text-green-400">$0</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- 老虎机记录弹窗 -->
+  <div id="slotRecordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-purple-600 to-indigo-600">
+        <h2 class="text-2xl font-bold text-white">🎰 我的游戏记录</h2>
+        <button onclick="closeSlotRecords()" class="text-white hover:text-yellow-300 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div id="slotRecordsContent" class="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+        <!-- 记录将通过 JavaScript 加载 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 排行榜弹窗 -->
+  <div id="leaderboardModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-yellow-500 to-orange-600">
+        <h2 class="text-2xl font-bold text-white">🏆 获奖总额排行榜</h2>
+        <button onclick="closeLeaderboard()" class="text-white hover:text-gray-200 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      
+      <!-- 用户统计卡片 -->
+      <div class="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-slate-200">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">我的排名</p>
+            <p id="myRank" class="text-2xl font-bold text-indigo-600">-</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">总游玩次数</p>
+            <p id="myTotalSpins" class="text-2xl font-bold text-purple-600">0</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">总投注</p>
+            <p id="myTotalBet" class="text-2xl font-bold text-red-600">$0</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">总获奖</p>
+            <p id="myTotalWin" class="text-2xl font-bold text-green-600">$0</p>
+          </div>
+        </div>
+        <div class="mt-4 text-center">
+          <p class="text-sm text-slate-600">最大单次奖金：<span id="myBiggestWin" class="text-lg font-bold text-orange-600">$0</span> <span id="myBiggestWinType" class="text-sm text-slate-500"></span></p>
+        </div>
+      </div>
+
+      <div id="leaderboardContent" class="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+        <!-- 排行榜内容 -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 老虎机规则弹窗 -->
+  <div id="slotRulesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+      <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-yellow-500 to-orange-600">
+        <h2 class="text-2xl font-bold text-white">📖 游戏规则</h2>
+        <button onclick="closeSlotRules()" class="text-white hover:text-gray-200 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
+            <ul class="list-disc list-inside space-y-2 text-slate-700">
+              <li>每次旋转投注 <strong>$20</strong></li>
+              <li>每天有 <strong>5次</strong> 免费游玩机会</li>
+              <li>最低额度要求：<strong>$20</strong></li>
+              <li>1行4列布局，共9种符号</li>
+            </ul>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 mb-3">💰 中奖规则</h3>
+            <div class="space-y-3">
+              <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
+                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256倍 = $5,120）</p>
+                <p class="text-sm text-slate-600 mt-1">j→n→t→m 按顺序排列 或 bj→zft→bdk→lq 按顺序排列</p>
+              </div>
+              
+              <div class="p-3 bg-purple-50 rounded-lg border border-purple-300">
+                <p class="font-bold text-purple-700">💎 特殊组合（32倍 = $640）</p>
+                <p class="text-sm text-slate-600 mt-1">包含 j、n、t、m 全部（不按顺序）或 bj、zft、bdk、lq 全部（不按顺序）</p>
+              </div>
+              
+              <div class="p-3 bg-blue-50 rounded-lg border border-blue-300">
+                <p class="font-bold text-blue-700">🎰 四连（16倍 = $320）+ 🎁 免费1次</p>
+                <p class="text-sm text-slate-600 mt-1">4个相同符号</p>
+              </div>
+              
+              <div class="p-3 bg-green-50 rounded-lg border border-green-300">
+                <p class="font-bold text-green-700">✨ 三连（8倍 = $160）+ 🎁 免费1次</p>
+                <p class="text-sm text-slate-600 mt-1">3个相同符号</p>
+              </div>
+              
+              <div class="p-3 bg-teal-50 rounded-lg border border-teal-300">
+                <p class="font-bold text-teal-700">🎁 双连（4倍 = $80）</p>
+                <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
+              </div>
+              
+              <div class="p-3 bg-red-50 rounded-lg border border-red-300">
+                <p class="font-bold text-red-700">⚡ 惩罚（0倍）</p>
+                <p class="text-sm text-slate-600 mt-1">出现 lsh 符号，奖励清零</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h3 class="text-xl font-bold text-slate-900 mb-3">🎁 免费次数</h3>
+            <ul class="list-disc list-inside space-y-2 text-slate-700">
+              <li>抽中3个或4个相同符号，奖励1次免费机会</li>
+              <li>免费次数可累积，没有上限</li>
+              <li>使用免费次数不消耗额度，但仍可获得奖励</li>
+            </ul>
+          </div>
+
+          <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
+            <p class="font-bold text-yellow-800">⚠️ 温馨提示</p>
+            <p class="text-sm text-yellow-700 mt-1">老虎机是娱乐功能，请理性游玩，适度娱乐！</p>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -929,6 +1227,442 @@
         showToast('登出失败', 'error');
       }
     }
+
+    // ========== 老虎机相关功能 ==========
+    
+    const SLOT_SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
+    let slotConfig = null;
+    let slotUserData = null;
+    let isSpinning = false;
+
+    // 初始化老虎机滚轮
+    function initSlotReels() {
+      const reelsContainer = document.getElementById('slotReels');
+      reelsContainer.innerHTML = '';
+
+      for (let i = 0; i < 4; i++) {
+        const reelContainer = document.createElement('div');
+        reelContainer.className = 'slot-reel-container';
+        reelContainer.innerHTML = `
+          <div class="slot-reel" data-reel="${i}">
+            <div class="slot-symbols"></div>
+          </div>
+        `;
+        reelsContainer.appendChild(reelContainer);
+      }
+
+      // 为每个滚轮填充初始符号
+      document.querySelectorAll('.slot-reel').forEach((reel, idx) => {
+        const symbolsContainer = reel.querySelector('.slot-symbols');
+        // 初始显示随机符号
+        for (let j = 0; j < 20; j++) {
+          const symbol = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+          symbolsContainer.appendChild(createSymbolElement(symbol));
+        }
+      });
+    }
+
+    // 创建符号元素
+    function createSymbolElement(symbolName) {
+      const div = document.createElement('div');
+      div.className = 'slot-symbol';
+      const img = document.createElement('img');
+      const ext = ['lq', 'bj', 'bdk'].includes(symbolName) ? 'jpg' : 'png';
+      img.src = `/slot-symbols/${symbolName}.${ext}`;
+      img.alt = symbolName;
+      img.onerror = () => {
+        console.error('图片加载失败:', symbolName);
+        img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><text x="50%" y="50%" text-anchor="middle" dy=".3em" font-size="40">?</text></svg>';
+      };
+      div.appendChild(img);
+      return div;
+    }
+
+    // 打开老虎机
+    async function showSlotMachine() {
+      try {
+        // 加载老虎机配置
+        const res = await fetch('/api/slot/config');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast(data.message, 'error');
+          return;
+        }
+
+        slotConfig = data.data.config;
+        slotUserData = data.data.user;
+
+        // 初始化滚轮
+        initSlotReels();
+
+        // 更新界面数据
+        updateSlotUI();
+
+        // 显示老虎机界面
+        document.getElementById('slotMachineModal').classList.remove('hidden');
+      } catch (error) {
+        console.error('打开老虎机失败:', error);
+        showToast('打开老虎机失败', 'error');
+      }
+    }
+
+    // 关闭老虎机
+    function closeSlotMachine() {
+      document.getElementById('slotMachineModal').classList.add('hidden');
+      // 刷新主页额度
+      loadQuota();
+    }
+
+    // 更新老虎机界面数据
+    function updateSlotUI() {
+      if (!slotUserData) return;
+
+      document.getElementById('slotQuota').textContent = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+      document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins;
+      document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins;
+      document.getElementById('todayPlayed').textContent = slotUserData.today_count;
+      document.getElementById('todayBet').textContent = `$${(slotUserData.today_bet / 500000).toFixed(2)}`;
+      document.getElementById('todayWon').textContent = `$${(slotUserData.today_win / 500000).toFixed(2)}`;
+
+      // 更新按钮状态
+      const spinButton = document.getElementById('spinButton');
+      const freeSpinButton = document.getElementById('freeSpinButton');
+
+      // 普通旋转按钮
+      if (slotUserData.remaining_spins > 0 && slotUserData.quota >= slotConfig.min_quota_required) {
+        spinButton.disabled = false;
+      } else {
+        spinButton.disabled = true;
+      }
+
+      // 免费旋转按钮
+      if (slotUserData.free_spins > 0) {
+        freeSpinButton.classList.remove('hidden');
+        freeSpinButton.disabled = false;
+      } else {
+        freeSpinButton.classList.add('hidden');
+      }
+    }
+
+    // 旋转老虎机（带丝滑动画）
+    async function spinSlot(useFreeSpinn = false) {
+      if (isSpinning) return;
+
+      const spinButton = document.getElementById('spinButton');
+      const freeSpinButton = document.getElementById('freeSpinButton');
+      const resultDiv = document.getElementById('slotResult');
+
+      // 隐藏上次结果
+      resultDiv.classList.add('hidden');
+
+      // 禁用按钮
+      spinButton.disabled = true;
+      freeSpinButton.disabled = true;
+      isSpinning = true;
+
+      try {
+        // 调用 API
+        const res = await fetch('/api/slot/spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ useFreeSpinn })
+        });
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast(data.message, 'error');
+          isSpinning = false;
+          spinButton.disabled = false;
+          if (slotUserData.free_spins > 0) freeSpinButton.disabled = false;
+          return;
+        }
+
+        const result = data.data;
+
+        // 开始动画
+        await playSpinAnimation(result.symbols);
+
+        // 更新用户数据
+        slotUserData.quota = result.quota_after;
+        slotUserData.remaining_spins = result.spins_remaining;
+        slotUserData.free_spins = result.free_spins_remaining;
+        if (!useFreeSpinn) {
+          slotUserData.today_count++;
+          slotUserData.today_bet += result.bet_amount;
+        }
+        slotUserData.today_win += result.win_amount;
+
+        updateSlotUI();
+
+        // 显示结果
+        document.getElementById('slotResultText').textContent = data.message;
+        resultDiv.classList.remove('hidden');
+
+        // 3秒后隐藏结果
+        setTimeout(() => {
+          resultDiv.classList.add('hidden');
+        }, 5000);
+
+        // 如果中奖，显示Toast
+        if (result.win_amount > 0) {
+          setTimeout(() => {
+            showToast(data.message, 'success');
+          }, 500);
+        }
+
+      } catch (error) {
+        console.error('旋转失败:', error);
+        showToast('旋转失败', 'error');
+      } finally {
+        isSpinning = false;
+        // 恢复按钮状态
+        if (slotUserData.remaining_spins > 0 && slotUserData.quota >= slotConfig.min_quota_required) {
+          spinButton.disabled = false;
+        }
+        if (slotUserData.free_spins > 0) {
+          freeSpinButton.disabled = false;
+        }
+      }
+    }
+
+    // 播放旋转动画（丝滑版本，参考 html5-slot-machine）
+    async function playSpinAnimation(finalSymbols) {
+      const reels = document.querySelectorAll('.slot-reel');
+      const animationPromises = [];
+
+      reels.forEach((reel, idx) => {
+        const promise = animateReel(reel, finalSymbols[idx], idx);
+        animationPromises.push(promise);
+      });
+
+      await Promise.all(animationPromises);
+    }
+
+    // 单个滚轮动画
+    function animateReel(reel, finalSymbol, reelIndex) {
+      return new Promise((resolve) => {
+        const symbolsContainer = reel.querySelector('.slot-symbols');
+        const symbolHeight = 180; // 单个符号高度（包括padding）
+        
+        // 清空现有符号
+        symbolsContainer.innerHTML = '';
+
+        // 计算动画参数（每个滚轮递延停止，更有真实感）
+        const baseDuration = 2000; // 基础时长2秒
+        const delayPerReel = 300; // 每个滚轮延迟300ms
+        const duration = baseDuration + (reelIndex * delayPerReel);
+
+        // 生成符号序列（随机符号 + 最终符号）
+        const symbolCount = 30; // 旋转30个符号
+        for (let i = 0; i < symbolCount; i++) {
+          const symbol = i === symbolCount - 1 
+            ? finalSymbol 
+            : SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
+          symbolsContainer.appendChild(createSymbolElement(symbol));
+        }
+
+        // 使用 Web Animations API 实现丝滑动画
+        const animation = symbolsContainer.animate([
+          { 
+            transform: 'translateY(0px)',
+            filter: 'blur(0px)'
+          },
+          { 
+            transform: 'translateY(-20px)',
+            filter: 'blur(3px)',
+            offset: 0.1
+          },
+          { 
+            transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
+            filter: 'blur(0px)'
+          }
+        ], {
+          duration: duration,
+          easing: 'cubic-bezier(0.32, 0.64, 0.45, 1)', // 缓动函数，模拟物理减速
+          fill: 'forwards'
+        });
+
+        // 动画结束后
+        animation.onfinish = () => {
+          // 只保留最后一个符号
+          symbolsContainer.innerHTML = '';
+          symbolsContainer.appendChild(createSymbolElement(finalSymbol));
+          symbolsContainer.style.transform = 'translateY(0)';
+          resolve();
+        };
+      });
+    }
+
+    // 显示游戏记录
+    async function showSlotRecords() {
+      try {
+        const res = await fetch('/api/slot/records');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast(data.message, 'error');
+          return;
+        }
+
+        const records = data.data;
+        const container = document.getElementById('slotRecordsContent');
+
+        if (records.length === 0) {
+          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无游戏记录</p>';
+        } else {
+          container.innerHTML = records.map((r, idx) => {
+            const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
+            const bgClass = r.win_amount > 0 ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200';
+            const symbolsHTML = r.result_symbols.map(s => {
+              const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
+              return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-12 h-12 object-contain border border-slate-300 rounded">`;
+            }).join('');
+
+            return `
+              <div class="border ${bgClass} rounded-lg p-4 mb-3">
+                <div class="flex items-center justify-between mb-3">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm text-slate-600">#${records.length - idx}</span>
+                    <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN')}</span>
+                    ${r.is_free_spin ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">免费</span>' : ''}
+                  </div>
+                  <span class="font-semibold ${winClass}">
+                    ${r.win_type_name} ${r.multiplier}x
+                  </span>
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex gap-2">
+                    ${symbolsHTML}
+                  </div>
+                  <div class="text-right">
+                    <p class="text-sm text-slate-600">投注: <span class="font-semibold">$${(r.bet_amount / 500000).toFixed(2)}</span></p>
+                    <p class="text-sm ${winClass}">赢得: <span class="font-bold text-lg">$${(r.win_amount / 500000).toFixed(2)}</span></p>
+                    ${r.free_spin_awarded ? '<p class="text-xs text-purple-600 font-semibold">🎁 获得免费次数</p>' : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        document.getElementById('slotRecordsModal').classList.remove('hidden');
+      } catch (error) {
+        console.error('获取游戏记录失败:', error);
+        showToast('获取游戏记录失败', 'error');
+      }
+    }
+
+    // 关闭游戏记录
+    function closeSlotRecords() {
+      document.getElementById('slotRecordsModal').classList.add('hidden');
+    }
+
+    // 显示游戏规则
+    function showSlotRules() {
+      document.getElementById('slotRulesModal').classList.remove('hidden');
+    }
+
+    // 关闭游戏规则
+    function closeSlotRules() {
+      document.getElementById('slotRulesModal').classList.add('hidden');
+    }
+
+    // 显示排行榜
+    async function showLeaderboard() {
+      try {
+        const res = await fetch('/api/slot/leaderboard?limit=100');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast(data.message, 'error');
+          return;
+        }
+
+        const { leaderboard, userStats, userRank } = data.data;
+
+        // 更新用户统计
+        document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
+        document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
+        document.getElementById('myTotalBet').textContent = `$${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myBiggestWin').textContent = `$${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
+        
+        const winTypeLabels = {
+          'super_jackpot': '(🏆 超级大奖)',
+          'special_combo': '(💎 特殊组合)',
+          'quad': '(🎰 四连)',
+          'triple': '(✨ 三连)',
+          'double': '(🎁 双连)',
+          'punishment': '(⚡ 惩罚)',
+          'none': ''
+        };
+        document.getElementById('myBiggestWinType').textContent = winTypeLabels[userStats.biggest_win_type] || '';
+
+        // 渲染排行榜
+        const container = document.getElementById('leaderboardContent');
+        
+        if (leaderboard.length === 0) {
+          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无排行数据</p>';
+        } else {
+          container.innerHTML = `
+            <div class="space-y-3">
+              ${leaderboard.map((user, index) => {
+                const rank = index + 1;
+                let rankBadge = '';
+                let bgClass = 'bg-white hover:bg-slate-50';
+                
+                if (rank === 1) {
+                  rankBadge = '<span class="text-4xl">🥇</span>';
+                  bgClass = 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400';
+                } else if (rank === 2) {
+                  rankBadge = '<span class="text-4xl">🥈</span>';
+                  bgClass = 'bg-gradient-to-r from-gray-50 to-slate-100 border-2 border-gray-400';
+                } else if (rank === 3) {
+                  rankBadge = '<span class="text-4xl">🥉</span>';
+                  bgClass = 'bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-400';
+                } else {
+                  rankBadge = `<span class="text-2xl font-bold text-slate-600">#${rank}</span>`;
+                }
+
+                const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
+
+                return `
+                  <div class="p-4 rounded-lg border border-slate-200 ${bgClass} transition-all">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-4">
+                        <div class="w-16 text-center">${rankBadge}</div>
+                        <div>
+                          <p class="font-bold text-lg text-slate-900">${user.username || user.linux_do_id}</p>
+                          <p class="text-sm text-slate-600">游玩 ${user.total_spins} 次</p>
+                        </div>
+                      </div>
+                      <div class="text-right">
+                        <p class="text-xs text-slate-500">总获奖</p>
+                        <p class="text-2xl font-bold text-green-600">$${(user.total_win / 500000).toFixed(2)}</p>
+                        <p class="text-xs text-slate-500 mt-1">最大奖金: $${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        }
+
+        document.getElementById('leaderboardModal').classList.remove('hidden');
+      } catch (error) {
+        console.error('获取排行榜失败:', error);
+        showToast('获取排行榜失败', 'error');
+      }
+    }
+
+    // 关闭排行榜
+    function closeLeaderboard() {
+      document.getElementById('leaderboardModal').classList.add('hidden');
+    }
+
+    // ========== 结束：老虎机相关功能 ==========
 
     window.onload = async () => {
       const isOAuthCallback = document.referrer.includes('connect.linux.do') || sessionStorage.getItem('oauth_loading');

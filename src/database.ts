@@ -6,6 +6,9 @@ import type {
     DonateRecord,
     AdminConfig,
     SessionData,
+    SlotMachineConfig,
+    SlotMachineRecord,
+    UserFreeSpin,
 } from './types';
 
 // 创建数据库连接
@@ -207,6 +210,73 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
+    // 老虎机配置表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS slot_machine_config (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      bet_amount INTEGER DEFAULT 10000000,
+      max_daily_spins INTEGER DEFAULT 5,
+      min_quota_required INTEGER DEFAULT 10000000,
+      enabled INTEGER DEFAULT 1,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 插入默认老虎机配置
+    db.exec(`
+    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, updated_at)
+    VALUES (1, 10000000, 5, 10000000, 1, ${Date.now()})
+  `);
+
+    // 老虎机游戏记录表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS slot_machine_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      bet_amount INTEGER NOT NULL,
+      result_symbols TEXT NOT NULL,
+      win_type TEXT NOT NULL,
+      win_multiplier REAL NOT NULL,
+      win_amount INTEGER NOT NULL,
+      free_spin_awarded INTEGER DEFAULT 0,
+      is_free_spin INTEGER DEFAULT 0,
+      timestamp INTEGER NOT NULL,
+      date TEXT NOT NULL
+    )
+  `);
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_slot_linux_do_id ON slot_machine_records(linux_do_id)'
+    );
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_date ON slot_machine_records(date)');
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_slot_timestamp ON slot_machine_records(timestamp)'
+    );
+
+    // 用户免费次数表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_free_spins (
+      linux_do_id TEXT PRIMARY KEY,
+      free_spins INTEGER DEFAULT 0,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 用户老虎机统计表（用于排行榜）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_slot_stats (
+      linux_do_id TEXT PRIMARY KEY,
+      username TEXT NOT NULL,
+      total_spins INTEGER DEFAULT 0,
+      total_bet INTEGER DEFAULT 0,
+      total_win INTEGER DEFAULT 0,
+      biggest_win INTEGER DEFAULT 0,
+      biggest_win_type TEXT,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
+
     console.log('✅ 数据库初始化完成');
 
     // 初始化预编译查询语句
@@ -222,6 +292,7 @@ export let donateQueries: any;
 export let keyQueries: any;
 export let sessionQueries: any;
 export let adminQueries: any;
+export let slotQueries: any;
 
 /**
  * 初始化预编译查询语句
@@ -334,6 +405,68 @@ function initQueries() {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
             'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
+        ),
+    };
+
+    // 老虎机相关
+    slotQueries = {
+        // 配置
+        getConfig: db.query<SlotMachineConfig, never>(
+            'SELECT * FROM slot_machine_config WHERE id = 1'
+        ),
+        updateConfig: db.query(
+            'UPDATE slot_machine_config SET bet_amount = ?, max_daily_spins = ?, min_quota_required = ?, enabled = ?, updated_at = ? WHERE id = 1'
+        ),
+
+        // 游戏记录
+        insertRecord: db.query(
+            'INSERT INTO slot_machine_records (linux_do_id, username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getRecordsByUser: db.query<SlotMachineRecord, string>(
+            'SELECT * FROM slot_machine_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllRecords: db.query<SlotMachineRecord, never>(
+            'SELECT * FROM slot_machine_records ORDER BY timestamp DESC'
+        ),
+        getAllRecordsPaginated: db.query<SlotMachineRecord, [number, number]>(
+            'SELECT * FROM slot_machine_records ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+        ),
+        countRecords: db.query<{ count: number }, never>(
+            'SELECT COUNT(*) as count FROM slot_machine_records'
+        ),
+        getTodaySpins: db.query<{ count: number }, [string, string]>(
+            'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ?'
+        ),
+        getTodayStats: db.query<{ total_bet: number; total_win: number; count: number }, [string, string]>(
+            'SELECT COALESCE(SUM(bet_amount), 0) as total_bet, COALESCE(SUM(win_amount), 0) as total_win, COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ?'
+        ),
+
+        // 免费次数
+        getFreeSpin: db.query<UserFreeSpin, string>(
+            'SELECT * FROM user_free_spins WHERE linux_do_id = ?'
+        ),
+        setFreeSpin: db.query(
+            'INSERT OR REPLACE INTO user_free_spins (linux_do_id, free_spins, updated_at) VALUES (?, ?, ?)'
+        ),
+        incrementFreeSpin: db.query(
+            'INSERT INTO user_free_spins (linux_do_id, free_spins, updated_at) VALUES (?, 1, ?) ON CONFLICT(linux_do_id) DO UPDATE SET free_spins = free_spins + 1, updated_at = ?'
+        ),
+        decrementFreeSpin: db.query(
+            'UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ? WHERE linux_do_id = ? AND free_spins > 0'
+        ),
+
+        // 用户统计
+        getUserStats: db.query<any, string>(
+            'SELECT * FROM user_slot_stats WHERE linux_do_id = ?'
+        ),
+        updateUserStats: db.query(
+            'INSERT OR REPLACE INTO user_slot_stats (linux_do_id, username, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getLeaderboard: db.query<any, number>(
+            'SELECT linux_do_id, username, total_spins, total_bet, total_win, biggest_win, biggest_win_type FROM user_slot_stats ORDER BY total_win DESC LIMIT ?'
+        ),
+        getUserRank: db.query<{ rank: number }, [number, string]>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE total_win > (SELECT total_win FROM user_slot_stats WHERE linux_do_id = ?)'
         ),
     };
 

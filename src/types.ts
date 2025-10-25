@@ -65,3 +65,36 @@ export interface CacheStats {
     memoryUsage: number;
 }
 
+// 老虎机配置
+export interface SlotMachineConfig {
+    id: number;
+    bet_amount: number;
+    max_daily_spins: number;
+    min_quota_required: number;
+    enabled: number;
+    updated_at: number;
+}
+
+// 老虎机游戏记录
+export interface SlotMachineRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    bet_amount: number;
+    result_symbols: string;  // JSON 数组
+    win_type: string;
+    win_multiplier: number;
+    win_amount: number;
+    free_spin_awarded: number;
+    is_free_spin: number;
+    timestamp: number;
+    date: string;
+}
+
+// 用户免费次数
+export interface UserFreeSpin {
+    linux_do_id: string;
+    free_spins: number;
+    updated_at: number;
+}
+
