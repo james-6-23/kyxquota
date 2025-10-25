@@ -267,9 +267,18 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS user_free_spins (
       linux_do_id TEXT PRIMARY KEY,
       free_spins INTEGER DEFAULT 0,
+      banned_until INTEGER DEFAULT 0,
       updated_at INTEGER NOT NULL
     )
   `);
+
+    // 添加 banned_until 字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE user_free_spins ADD COLUMN banned_until INTEGER DEFAULT 0');
+        console.log('✅ 已添加 banned_until 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 用户老虎机统计表（用于排行榜）
     db.exec(`
@@ -463,13 +472,16 @@ function initQueries() {
             'SELECT * FROM user_free_spins WHERE linux_do_id = ?'
         ),
         setFreeSpin: db.query(
-            'INSERT OR REPLACE INTO user_free_spins (linux_do_id, free_spins, updated_at) VALUES (?, ?, ?)'
+            'INSERT OR REPLACE INTO user_free_spins (linux_do_id, free_spins, banned_until, updated_at) VALUES (?, ?, ?, ?)'
         ),
         incrementFreeSpin: db.query(
             'INSERT INTO user_free_spins (linux_do_id, free_spins, updated_at) VALUES (?, 1, ?) ON CONFLICT(linux_do_id) DO UPDATE SET free_spins = free_spins + 1, updated_at = ?'
         ),
         decrementFreeSpin: db.query(
             'UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ? WHERE linux_do_id = ? AND free_spins > 0'
+        ),
+        setBannedUntil: db.query(
+            'INSERT INTO user_free_spins (linux_do_id, free_spins, banned_until, updated_at) VALUES (?, 0, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET banned_until = ?, updated_at = ?'
         ),
 
         // 用户统计

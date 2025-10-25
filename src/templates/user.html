@@ -436,7 +436,7 @@
       <!-- Donate Cards Container -->
       <div class="bg-white rounded-2xl shadow-lg p-6 animate-in card-hover">
         <h3 class="text-2xl font-bold text-slate-900 mb-6 text-center">💝 投喂 API Keys</h3>
-        <p id="donateDescription" class="text-sm text-slate-600 mb-6 text-center">每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 1 个</p>
+        <p id="donateDescription" class="text-sm text-slate-600 mb-6 text-center">每个有效的 API Key 可为您增加 $50 额度并且获得一次免费抽奖机会 · 每种类型每天可投喂 1 个</p>
         
         <!-- 两列布局 -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -626,10 +626,10 @@
     </nav>
 
     <!-- 老虎机主体 -->
-    <div class="relative h-[calc(100vh-160px)]">
+    <div class="relative h-[calc(100vh-64px)] flex flex-col">
       
-      <!-- 主游戏区（全屏） -->
-      <div class="absolute inset-0 flex flex-col items-center justify-center p-6">
+      <!-- 主游戏区 -->
+      <div class="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
         
         <!-- 标题 -->
         <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
@@ -643,6 +643,14 @@
             <span class="mx-3">|</span>
             免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-2xl">0</span> 次
           </p>
+          <!-- 禁止状态提示 -->
+          <div id="bannedNotice" class="hidden mt-3 p-3 bg-red-500/90 rounded-lg border border-red-300">
+            <p class="text-white text-sm text-center font-semibold">
+              🚫 您已被禁止抽奖
+              <br>
+              <span id="bannedUntilText" class="text-xs">解禁时间：--</span>
+            </p>
+          </div>
         </div>
 
         <!-- 老虎机滚轮容器 (1行4列) -->
@@ -686,11 +694,19 @@
       <!-- 右侧：排行榜（悬浮显示）-->
       <div class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-indigo-900/90 to-blue-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col">
         <div class="p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-b border-white/20">
-          <h2 class="text-lg font-bold text-yellow-400 text-center flex items-center justify-center gap-2">
-            <span>🏆</span>
-            <span>获奖排行榜 TOP 20</span>
-          </h2>
-          <p class="text-xs text-white/70 text-center mt-1">按总获得金额排名</p>
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-bold text-yellow-400 flex items-center gap-2">
+              <span>🏆</span>
+              <span>获奖排行榜 TOP 10</span>
+            </h2>
+            <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新排行榜">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
+          </div>
+          <p class="text-xs text-white/70 text-center">按总获得金额排名</p>
+          <p id="leaderboardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
         </div>
         
         <!-- 用户自己的统计（固定在上方）-->
@@ -715,8 +731,8 @@
 
     </div>
 
-    <!-- 底部统计 -->
-    <div class="bg-black/30 backdrop-blur-md p-4 text-center text-white">
+    <!-- 底部统计（固定底部） -->
+    <div class="bg-black/30 backdrop-blur-md p-4 text-center text-white border-t border-white/10">
       <!-- 今日统计 -->
       <div class="mb-2">
         <p class="text-xs text-white/60 mb-1">📅 今日数据</p>
@@ -856,10 +872,16 @@
                 <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
               </div>
               
-              <div class="p-3 bg-red-50 rounded-lg border border-red-300">
-                <p class="font-bold text-red-700">⚡ 律师函警告（0x20$）</p>
-                <p class="text-sm text-slate-600 mt-1">出现 律师函，奖励清零</p>
-              </div>
+                <div class="p-4 bg-red-50 rounded-lg border-2 border-red-400">
+                  <p class="font-bold text-lg text-red-700">⚡ 律师函警告（梯度惩罚）</p>
+                  <div class="text-sm text-slate-600 mt-2 space-y-1">
+                    <p>• 出现 <strong>1个</strong> 律师函：扣除 <strong class="text-red-600">1倍</strong> 投注（如$20）</p>
+                    <p>• 出现 <strong>2个</strong> 律师函：扣除 <strong class="text-red-600">2倍</strong> 投注（如$40）</p>
+                    <p>• 出现 <strong>3个</strong> 律师函：扣除 <strong class="text-red-600">3倍</strong> 投注（如$60）+ <strong class="text-orange-600">禁止抽奖1坤天60小时</strong></p>
+                    <p>• 出现 <strong>4个</strong> 律师函：扣除 <strong class="text-red-600">4倍</strong> 投注（如$80）+ <strong class="text-orange-600">禁止抽奖1坤天60小时</strong></p>
+                    <p class="text-xs text-red-500 mt-2">⚠️ 额度不会扣为负数（最多扣到$0）</p>
+                  </div>
+                </div>
               
               <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-300">
                 <p class="text-sm text-slate-700">💰 投注金额：<span id="rulesBetAmount" class="font-bold text-blue-700">$20</span></p>
@@ -1764,9 +1786,9 @@
     let userDataCache = {};
 
     // 加载侧边栏排行榜
-    async function loadSidebarLeaderboard() {
+    async function loadSidebarLeaderboard(forceRefresh = false) {
       try {
-        const res = await fetch('/api/slot/leaderboard?limit=20');
+        const res = await fetch('/api/slot/leaderboard?limit=10');
         const data = await res.json();
 
         if (!data.success) {
@@ -1779,6 +1801,16 @@
         // 更新用户自己的统计
         document.getElementById('sidebarMyRank').textContent = userRank > 0 ? `#${userRank}` : '未上榜';
         document.getElementById('sidebarMyTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
+
+        // 更新刷新时间
+        const now = new Date();
+        const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        document.getElementById('leaderboardLastUpdate').textContent = `最后更新：${timeStr}`;
+        
+        // 如果是手动刷新，显示提示
+        if (forceRefresh) {
+          showToast('排行榜已刷新', 'success');
+        }
 
         // 调试：输出完整的排行榜数据
         console.log('[排行榜数据]', leaderboard);
@@ -1880,6 +1912,18 @@
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
       document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
+
+      // 显示禁止状态
+      const bannedNotice = document.getElementById('bannedNotice');
+      const bannedUntilText = document.getElementById('bannedUntilText');
+      if (slotUserData.is_banned && slotUserData.banned_until > Date.now()) {
+        bannedNotice.classList.remove('hidden');
+        const bannedDate = new Date(slotUserData.banned_until);
+        const remainingHours = Math.ceil((slotUserData.banned_until - Date.now()) / 3600000);
+        bannedUntilText.textContent = `解禁时间：${bannedDate.toLocaleString('zh-CN')} (剩余约${remainingHours}小时)`;
+      } else {
+        bannedNotice.classList.add('hidden');
+      }
 
       // 更新投注金额显示（根据管理员配置）
       const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);

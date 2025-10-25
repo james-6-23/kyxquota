@@ -96,6 +96,7 @@ export interface SlotMachineRecord {
 export interface UserFreeSpin {
     linux_do_id: string;
     free_spins: number;
+    banned_until: number;  // 禁止抽奖截止时间戳
     updated_at: number;
 }
 

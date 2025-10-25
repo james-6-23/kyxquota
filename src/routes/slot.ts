@@ -17,6 +17,8 @@ import {
     getLeaderboard,
     getUserRank,
     getUserTotalStats,
+    isUserBanned,
+    banUserFromSlot,
     WIN_TYPE_NAMES,
     WinType
 } from '../services/slot';
@@ -110,11 +112,14 @@ slot.get('/config', requireAuth, async (c) => {
         // 获取历史总统计
         const totalStats = getUserTotalStats(session.linux_do_id);
 
+        // 检查是否被禁止抽奖
+        const banStatus = isUserBanned(session.linux_do_id);
+
         // 计算剩余次数
         const remainingSpins = Math.max(0, config.max_daily_spins - todaySpins);
 
         // 是否可以游玩
-        const canPlay = (remainingSpins > 0 || freeSpins > 0) && quota >= config.min_quota_required;
+        const canPlay = !banStatus.banned && (remainingSpins > 0 || freeSpins > 0) && quota >= config.min_quota_required;
 
         return c.json({
             success: true,
@@ -137,7 +142,10 @@ slot.get('/config', requireAuth, async (c) => {
                     // 历史总统计
                     total_spins: totalStats?.total_spins || 0,
                     total_bet: totalStats?.total_bet || 0,
-                    total_win: totalStats?.total_win || 0
+                    total_win: totalStats?.total_win || 0,
+                    // 禁止状态
+                    is_banned: banStatus.banned,
+                    banned_until: banStatus.bannedUntil
                 }
             }
         });
@@ -167,6 +175,17 @@ slot.post('/spin', requireAuth, async (c) => {
                 message: '您的账号已被封禁',
                 banned: true,
                 banned_reason: user.banned_reason
+            }, 403);
+        }
+
+        // 检查是否被禁止抽奖（律师函惩罚）
+        const banStatus = isUserBanned(session.linux_do_id);
+        if (banStatus.banned) {
+            const remainingTime = banStatus.bannedUntil - Date.now();
+            const remainingHours = Math.ceil(remainingTime / 3600000);
+            return c.json({
+                success: false,
+                message: `⚡ 您因收到过多律师函，已被禁止抽奖。解禁时间：${new Date(banStatus.bannedUntil).toLocaleString('zh-CN')}（剩余约${remainingHours}小时）`
             }, 403);
         }
 
@@ -253,21 +272,22 @@ slot.post('/spin', requireAuth, async (c) => {
         // 计算中奖结果
         const result = calculateWin(symbols);
 
-        // 计算中奖金额
-        const winAmount = Math.floor(betAmount * result.multiplier);
-
         // 获取管理员配置（用于更新额度）
         const adminConfigForWin = adminQueries.get.get();
         if (!adminConfigForWin) {
             return c.json({ success: false, message: '系统配置未找到' }, 500);
         }
 
-        // 如果中奖，增加额度
-        if (winAmount > 0) {
-            // 获取当前额度
+        // 处理中奖或惩罚金额
+        let winAmount = 0;
+
+        if (result.multiplier > 0) {
+            // 正常中奖
+            winAmount = Math.floor(betAmount * result.multiplier);
+
+            // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
             if (currentKyxUser.success && currentKyxUser.user) {
-                // 计算新额度 = 当前额度 + 中奖金额
                 const newQuotaAfterWin = currentKyxUser.user.quota + winAmount;
                 await updateKyxUserQuota(
                     user.kyx_user_id,
@@ -277,6 +297,38 @@ slot.post('/spin', requireAuth, async (c) => {
                     user.username,
                     currentKyxUser.user.group || 'default'
                 );
+            }
+        } else if (result.multiplier < 0) {
+            // 惩罚扣除（负倍率）
+            const punishmentAmount = Math.floor(betAmount * Math.abs(result.multiplier));
+
+            // 获取当前额度
+            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
+            if (currentKyxUser.success && currentKyxUser.user) {
+                // 计算扣除后的额度，确保不会为负数
+                const currentQuota = currentKyxUser.user.quota;
+                const actualDeduction = Math.min(punishmentAmount, currentQuota);  // 最多扣到0
+                const newQuotaAfterPunishment = currentQuota - actualDeduction;
+
+                await updateKyxUserQuota(
+                    user.kyx_user_id,
+                    newQuotaAfterPunishment,
+                    adminConfigForWin.session,
+                    adminConfigForWin.new_api_user,
+                    user.username,
+                    currentKyxUser.user.group || 'default'
+                );
+
+                // winAmount 设为负数，用于记录
+                winAmount = -actualDeduction;
+
+                console.log(`[老虎机] ⚡ 惩罚触发 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
+            }
+
+            // 如果是严重惩罚（3个及以上），禁止抽奖2.5天
+            if (result.shouldBan) {
+                banUserFromSlot(session.linux_do_id, 60);  // 60小时 = 2.5天
+                console.log(`[老虎机] 🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖60小时（2.5天）`);
             }
         }
 
@@ -319,12 +371,24 @@ slot.post('/spin', requireAuth, async (c) => {
         const remainingSpinsAfter = Math.max(0, config.max_daily_spins - todaySpinsAfter);
 
         // 构造响应消息
-        let message = WIN_TYPE_NAMES[result.winType];
-        if (result.multiplier > 0) {
-            message += ` ${result.multiplier}倍！赢得 $${(winAmount / 500000).toFixed(2)}`;
-        }
-        if (result.freeSpinAwarded) {
-            message += ' | 🎁 获得1次免费机会！';
+        let message = '';
+
+        if (result.winType === WinType.PUNISHMENT) {
+            // 惩罚消息
+            const deductedAmount = Math.abs(winAmount);
+            message = `⚡ 律师函警告！收到 ${result.punishmentCount} 份律师函，扣除 $${(deductedAmount / 500000).toFixed(2)} 额度`;
+            if (result.shouldBan) {
+                message += ' | 🚫 已被禁止抽奖60小时（2.5天）';
+            }
+        } else {
+            // 正常中奖消息
+            message = WIN_TYPE_NAMES[result.winType];
+            if (result.multiplier > 0) {
+                message += ` ${result.multiplier}倍！赢得 $${(winAmount / 500000).toFixed(2)}`;
+            }
+            if (result.freeSpinAwarded) {
+                message += ' | 🎁 获得1次免费机会！';
+            }
         }
 
         return c.json({

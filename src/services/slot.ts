@@ -18,7 +18,7 @@ const SYMBOL_WEIGHTS: Record<string, number> = {
     'bj': 100,
     'zft': 100,
     'bdk': 100,
-    'lsh': 10  // 惩罚符号权重较低
+    'lsh': 25  // 中度概率，约2.94%每个位置，至少1个约11.3%
 };
 
 // 中奖类型
@@ -104,13 +104,20 @@ export function calculateWin(symbols: string[]): {
     winType: WinType;
     multiplier: number;
     freeSpinAwarded: boolean;
+    punishmentCount?: number;  // 律师函数量
+    shouldBan?: boolean;       // 是否需要禁止抽奖
 } {
     // 1. 惩罚规则（最高优先级）
-    if (symbols.includes(SYMBOLS.PUNISHMENT)) {
+    const punishmentCount = symbols.filter(s => s === SYMBOLS.PUNISHMENT).length;
+
+    if (punishmentCount > 0) {
+        // 梯度惩罚：1个扣1倍，2个扣2倍，3个扣3倍，4个扣4倍
         return {
             winType: WinType.PUNISHMENT,
-            multiplier: 0,
-            freeSpinAwarded: false
+            multiplier: -punishmentCount,  // 负数倍率表示扣除
+            freeSpinAwarded: false,
+            punishmentCount: punishmentCount,
+            shouldBan: punishmentCount >= 3  // 3个及以上禁止抽奖
         };
     }
 
@@ -210,11 +217,34 @@ export function getUserTodaySpins(linuxDoId: string): number {
 }
 
 /**
- * 获取用户免费次数
+ * 获取用户免费次数和禁止状态
  */
 export function getUserFreeSpins(linuxDoId: string): number {
     const result = slotQueries.getFreeSpin.get(linuxDoId);
     return result?.free_spins || 0;
+}
+
+/**
+ * 检查用户是否被禁止抽奖
+ */
+export function isUserBanned(linuxDoId: string): { banned: boolean; bannedUntil: number } {
+    const result = slotQueries.getFreeSpin.get(linuxDoId);
+    const now = Date.now();
+    const bannedUntil = result?.banned_until || 0;
+    return {
+        banned: bannedUntil > now,
+        bannedUntil: bannedUntil
+    };
+}
+
+/**
+ * 设置用户禁止抽奖
+ */
+export function banUserFromSlot(linuxDoId: string, hours: number) {
+    const now = Date.now();
+    const bannedUntil = now + (hours * 3600000); // 转换为毫秒
+    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, now, bannedUntil, now);
+    console.log(`[惩罚] 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')}`);
 }
 
 /**

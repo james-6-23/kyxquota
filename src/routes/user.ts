@@ -8,6 +8,7 @@ import {
     getKyxUserById,
 } from '../services/kyx-api';
 import { validateAndDonateKeys } from '../services/keys';
+import { addUserFreeSpins } from '../services/slot';
 import { CONFIG } from '../config';
 import type { User } from '../types';
 
@@ -518,7 +519,11 @@ app.post('/donate/validate', requireAuth, async (c) => {
     if (result.success) {
         // 清除额度缓存，确保前端能获取到最新额度
         cacheManager.clear(`kyx_user:${user.kyx_user_id}`);
-        console.log(`[用户操作] 🎁 ModelScope 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}`);
+
+        // 投喂成功后增加一次免费抽奖次数
+        addUserFreeSpins(user.linux_do_id, 1);
+
+        console.log(`[用户操作] 🎁 ModelScope 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
     } else {
         console.log(`[用户操作] ❌ ModelScope 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
     }
@@ -556,7 +561,11 @@ app.post('/donate/iflow', requireAuth, async (c) => {
     if (result.success) {
         // 清除额度缓存，确保前端能获取到最新额度
         cacheManager.clear(`kyx_user:${user.kyx_user_id}`);
-        console.log(`[用户操作] ✨ iFlow 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}`);
+
+        // 投喂成功后增加一次免费抽奖次数
+        addUserFreeSpins(user.linux_do_id, 1);
+
+        console.log(`[用户操作] ✨ iFlow 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
     } else {
         console.log(`[用户操作] ❌ iFlow 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
     }
