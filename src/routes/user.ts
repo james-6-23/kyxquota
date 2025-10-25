@@ -139,22 +139,24 @@ app.post('/auth/bind', requireAuth, async (c) => {
     const existingUser = userQueries.get.get(session.linux_do_id);
     const isFirstBind = !existingUser;
 
-    // 保存绑定信息
+    // 保存绑定信息（同时保存LinuxDo用户名）
     if (isFirstBind) {
         userQueries.insert.run(
             session.linux_do_id,
             kyxUser.username,
+            session.username || '',
             kyxUser.id,
             Date.now()
         );
-        console.log(`[用户操作] ✅ 新用户绑定 - 用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}, KYX ID: ${kyxUser.id}`);
+        console.log(`[用户操作] ✅ 新用户绑定 - LinuxDo用户: ${session.username}, 公益站用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}, KYX ID: ${kyxUser.id}`);
     } else {
         userQueries.update.run(
             kyxUser.username,
+            session.username || '',
             kyxUser.id,
             session.linux_do_id
         );
-        console.log(`[用户操作] 🔄 重新绑定 - 用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}`);
+        console.log(`[用户操作] 🔄 重新绑定 - LinuxDo用户: ${session.username}, 公益站用户: ${kyxUser.username}, Linux Do ID: ${session.linux_do_id}`);
     }
 
     // 清除缓存
@@ -324,6 +326,7 @@ app.get('/user/quota', requireAuth, async (c) => {
             username: kyxUser.username,
             display_name: kyxUser.display_name,
             linux_do_id: user.linux_do_id,
+            linux_do_username: session.username || '',
             avatar_url: session.avatar_url || '',
             name: session.name || kyxUser.username,
             quota: kyxUser.quota,

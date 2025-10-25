@@ -641,10 +641,10 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">
-                  投注金额 (单位: 聪，500000 = $1)
+                  投注金额 (单位: $, 500000 = $1)
                 </label>
-                <input type="number" id="slotBetAmount" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="10000000">
-                <p class="text-xs text-slate-500 mt-1">当前：<span id="slotBetAmountDisplay">$20</span></p>
+                <input type="number" step="0.01" id="slotBetAmountUSD" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="20">
+                <p class="text-xs text-slate-500 mt-1">当前：$<span id="slotBetAmountDisplay">20.00</span></p>
               </div>
               
               <div>
@@ -657,10 +657,10 @@
               
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">
-                  最低额度要求 (单位: 聪)
+                  最低额度要求 (单位: $)
                 </label>
-                <input type="number" id="slotMinQuota" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="10000000">
-                <p class="text-xs text-slate-500 mt-1">当前：<span id="slotMinQuotaDisplay">$20</span></p>
+                <input type="number" step="0.01" id="slotMinQuotaUSD" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="20">
+                <p class="text-xs text-slate-500 mt-1">当前：$<span id="slotMinQuotaDisplay">20.00</span></p>
               </div>
               
               <div>
@@ -2035,14 +2035,18 @@
 
         if (data.success) {
           const config = data.data;
-          document.getElementById('slotBetAmount').value = config.bet_amount;
+          // 将聪转换为美元显示
+          const betAmountUSD = (config.bet_amount / 500000).toFixed(2);
+          const minQuotaUSD = (config.min_quota_required / 500000).toFixed(2);
+          
+          document.getElementById('slotBetAmountUSD').value = betAmountUSD;
           document.getElementById('slotMaxDailySpins').value = config.max_daily_spins;
-          document.getElementById('slotMinQuota').value = config.min_quota_required;
+          document.getElementById('slotMinQuotaUSD').value = minQuotaUSD;
           document.getElementById('slotEnabled').value = config.enabled;
 
           // 更新显示
-          document.getElementById('slotBetAmountDisplay').textContent = `$${(config.bet_amount / 500000).toFixed(2)}`;
-          document.getElementById('slotMinQuotaDisplay').textContent = `$${(config.min_quota_required / 500000).toFixed(2)}`;
+          document.getElementById('slotBetAmountDisplay').textContent = betAmountUSD;
+          document.getElementById('slotMinQuotaDisplay').textContent = minQuotaUSD;
         }
       } catch (error) {
         console.error('加载老虎机配置失败:', error);
@@ -2052,12 +2056,12 @@
 
     async function updateSlotConfig() {
       try {
-        const betAmount = parseInt(document.getElementById('slotBetAmount').value);
+        const betAmountUSD = parseFloat(document.getElementById('slotBetAmountUSD').value);
         const maxDailySpins = parseInt(document.getElementById('slotMaxDailySpins').value);
-        const minQuota = parseInt(document.getElementById('slotMinQuota').value);
+        const minQuotaUSD = parseFloat(document.getElementById('slotMinQuotaUSD').value);
         const enabled = parseInt(document.getElementById('slotEnabled').value);
 
-        if (isNaN(betAmount) || betAmount < 0) {
+        if (isNaN(betAmountUSD) || betAmountUSD < 0) {
           showMessage('请输入有效的投注金额', 'error');
           return;
         }
@@ -2065,10 +2069,14 @@
           showMessage('请输入有效的每日次数', 'error');
           return;
         }
-        if (isNaN(minQuota) || minQuota < 0) {
+        if (isNaN(minQuotaUSD) || minQuotaUSD < 0) {
           showMessage('请输入有效的最低额度', 'error');
           return;
         }
+
+        // 将美元转换为聪
+        const betAmount = Math.floor(betAmountUSD * 500000);
+        const minQuota = Math.floor(minQuotaUSD * 500000);
 
         const res = await fetch('/api/admin/slot/config', {
           method: 'POST',

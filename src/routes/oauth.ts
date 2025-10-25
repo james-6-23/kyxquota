@@ -92,19 +92,25 @@ app.get('/callback', async (c) => {
         const userInfo = await getLinuxDoUserInfo(tokenData.access_token);
 
         console.log('[OAuth] User authenticated:', userInfo.username);
+        console.log('[OAuth] User info full:', JSON.stringify(userInfo, null, 2));
 
         const sessionId = generateSessionId();
 
         // 处理头像URL
         let avatarUrl = '';
         if (userInfo.avatar_template) {
+            console.log('[OAuth] Original avatar_template:', userInfo.avatar_template);
+            // 替换 {size} 为实际尺寸
             avatarUrl = userInfo.avatar_template.replace('{size}', '120');
+            console.log('[OAuth] After size replacement:', avatarUrl);
             // 如果是相对路径，添加域名
             if (avatarUrl.startsWith('/')) {
                 avatarUrl = `https://linux.do${avatarUrl}`;
             }
+            console.log('[OAuth] Final avatar URL:', avatarUrl);
+        } else {
+            console.log('[OAuth] No avatar_template in userInfo');
         }
-        console.log('[OAuth] Avatar URL:', avatarUrl);
 
         await saveSession(sessionId, {
             linux_do_id: userInfo.id.toString(),

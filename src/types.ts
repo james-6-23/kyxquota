@@ -2,6 +2,7 @@
 export interface User {
     linux_do_id: string;
     username: string;
+    linux_do_username?: string;  // LinuxDo用户名
     kyx_user_id: number;
     is_banned: number;  // 0: 正常, 1: 已封禁
     banned_at?: number;

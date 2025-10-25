@@ -32,6 +32,7 @@ export function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       linux_do_id TEXT UNIQUE NOT NULL,
       username TEXT NOT NULL,
+      linux_do_username TEXT,
       kyx_user_id INTEGER NOT NULL,
       is_banned INTEGER DEFAULT 0,
       banned_at INTEGER,
@@ -53,6 +54,14 @@ export function initDatabase() {
     }
     try {
         db.exec('ALTER TABLE users ADD COLUMN banned_reason TEXT');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 添加LinuxDo用户名字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN linux_do_username TEXT');
+        console.log('✅ 已添加 linux_do_username 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -311,10 +320,10 @@ function initQueries() {
     userQueries = {
         get: db.query<User, string>('SELECT * FROM users WHERE linux_do_id = ?'),
         insert: db.query(
-            'INSERT INTO users (linux_do_id, username, kyx_user_id, created_at) VALUES (?, ?, ?, ?)'
+            'INSERT INTO users (linux_do_id, username, linux_do_username, kyx_user_id, created_at) VALUES (?, ?, ?, ?, ?)'
         ),
         update: db.query(
-            'UPDATE users SET username = ?, kyx_user_id = ? WHERE linux_do_id = ?'
+            'UPDATE users SET username = ?, linux_do_username = ?, kyx_user_id = ? WHERE linux_do_id = ?'
         ),
         getAll: db.query<User, never>('SELECT * FROM users'),
         ban: db.query(
@@ -471,7 +480,19 @@ function initQueries() {
             'INSERT OR REPLACE INTO user_slot_stats (linux_do_id, username, avatar_url, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getLeaderboard: db.query<any, number>(
-            'SELECT linux_do_id, username, avatar_url, total_spins, total_bet, total_win, biggest_win, biggest_win_type FROM user_slot_stats ORDER BY total_win DESC LIMIT ?'
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.username, s.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type 
+            FROM user_slot_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            ORDER BY s.total_win DESC 
+            LIMIT ?`
         ),
         getUserRank: db.query<{ rank: number }, [number, string]>(
             'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE total_win > (SELECT total_win FROM user_slot_stats WHERE linux_do_id = ?)'

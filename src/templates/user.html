@@ -175,6 +175,52 @@
       }
     }
 
+    /* 界面切换过渡动画 */
+    .fade-enter {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    
+    .fade-enter-active {
+      opacity: 1;
+      transform: scale(1);
+      transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+    }
+    
+    .fade-exit {
+      opacity: 1;
+      transform: scale(1);
+    }
+    
+    .fade-exit-active {
+      opacity: 0;
+      transform: scale(0.95);
+      transition: opacity 0.2s ease-in, transform 0.2s ease-in;
+    }
+    
+    /* Loading遮罩 */
+    .slot-loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #8b5cf6 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes fadeOut {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
     /* 自定义滚动条 */
     .scrollbar-thin::-webkit-scrollbar {
       width: 6px;
@@ -318,9 +364,10 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+            <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
               <div class="px-4 py-3 border-b border-slate-200">
-                <p id="userName" class="font-semibold text-slate-900">用户名</p>
+                <p id="linuxDoUsername" class="font-semibold text-slate-900 text-sm">@用户名</p>
+                <p id="userName" class="text-sm text-slate-600">公益站: 用户名</p>
                 <p id="userId" class="text-xs text-slate-500">ID: xxx</p>
               </div>
               <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
@@ -478,7 +525,7 @@
   </div>
 
   <!-- Records Modal -->
-  <div id="recordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+  <div id="recordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl animate-in">
       <div class="flex justify-between items-center p-6 border-b border-slate-200">
         <h2 class="text-2xl font-bold text-slate-900">我的记录</h2>
@@ -501,6 +548,19 @@
 
   <!-- 老虎机全屏界面 -->
   <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800">
+    
+    <!-- Loading遮罩 -->
+    <div id="slotLoadingOverlay" class="slot-loading-overlay hidden">
+      <div class="relative">
+        <div class="spinner"></div>
+      </div>
+      <p class="text-white text-xl font-semibold mt-6 tracking-wide">加载娱乐站...</p>
+      <div class="flex gap-2 mt-3">
+        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0s"></div>
+        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+        <div class="w-2 h-2 bg-white rounded-full animate-bounce" style="animation-delay: 0.4s"></div>
+      </div>
+    </div>
     
     <!-- 顶部导航栏（与主界面一致）-->
     <nav class="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
@@ -544,10 +604,11 @@
                 </svg>
               </button>
               <div id="slotDropdownMenu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
-                <div class="px-4 py-3 border-b border-slate-200">
-                  <p id="slotUserName" class="font-semibold text-slate-900">用户名</p>
-                  <p id="slotUserId" class="text-xs text-slate-500">ID: xxx</p>
-                </div>
+              <div class="px-4 py-3 border-b border-slate-200">
+                <p id="slotLinuxDoUsername" class="font-semibold text-slate-900 text-sm">@用户名</p>
+                <p id="slotUserName" class="text-sm text-slate-600">公益站: 用户名</p>
+                <p id="slotUserId" class="text-xs text-slate-500">ID: xxx</p>
+              </div>
                 <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
                   <span>🎰</span> 游戏记录
                 </button>
@@ -604,7 +665,7 @@
                          text-white text-3xl font-bold rounded-xl shadow-lg 
                          hover:scale-105 transform transition-all duration-200
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-            🎰 spin ($20)
+            <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
           </button>
           
           <button id="freeSpinButton" onclick="spinSlot(true)" 
@@ -740,45 +801,50 @@
         <div class="space-y-6">
           <div>
             <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
-            <ul class="list-disc list-inside space-y-2 text-slate-700">
-              <li>每次旋转投注 <strong>$20</strong></li>
-              <li>每天有 <strong>5次</strong> 免费游玩机会</li>
-              <li>最低额度要求：<strong>$20</strong></li>
+            <ul class="list-disc list-inside space-y-2 text-slate-700" id="basicRules">
+              <li>每次旋转投注 <strong id="basicRulesBetAmount">$20</strong></li>
+              <li>每天有 <strong id="basicRulesMaxSpins">5次</strong> 免费游玩机会</li>
+              <li>最低额度要求：<strong id="basicRulesMinQuota">$20</strong></li>
               <li>1行4列布局，共9种符号</li>
             </ul>
           </div>
 
           <div>
             <h3 class="text-xl font-bold text-slate-900 mb-3">💰 中奖规则</h3>
-            <div class="space-y-3">
+            <div class="space-y-3" id="slotRulesContent">
               <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
-                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256倍 = $5,120）</p>
+                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256倍）</p>
                 <p class="text-sm text-slate-600 mt-1">鸡→你→太→美 按顺序排列 或 偶像练习生背景→中分头→背带裤→篮球 按顺序排列</p>
               </div>
               
               <div class="p-3 bg-purple-50 rounded-lg border border-purple-300">
-                <p class="font-bold text-purple-700">💎 特殊组合（32倍 = $640）</p>
+                <p class="font-bold text-purple-700">💎 特殊组合（32倍）</p>
                 <p class="text-sm text-slate-600 mt-1">包含 鸡你太美 全部（不按顺序）或 偶像练习生背景、中分头、背带裤、篮球 全部（不按顺序）</p>
               </div>
               
               <div class="p-3 bg-blue-50 rounded-lg border border-blue-300">
-                <p class="font-bold text-blue-700">🎰 四连🐔（16倍 = $320）+ 🎁 免费1次</p>
+                <p class="font-bold text-blue-700">🎰 四连🐔（16倍）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">4个相同符号</p>
               </div>
               
               <div class="p-3 bg-green-50 rounded-lg border border-green-300">
-                <p class="font-bold text-green-700">✨ 三连🐔（8倍 = $160）+ 🎁 免费1次</p>
+                <p class="font-bold text-green-700">✨ 三连🐔（8倍）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">3个相同符号</p>
               </div>
               
               <div class="p-3 bg-teal-50 rounded-lg border border-teal-300">
-                <p class="font-bold text-teal-700">🎁 双🐔（4倍 = $80）</p>
+                <p class="font-bold text-teal-700">🎁 双🐔（4倍）</p>
                 <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
               </div>
               
               <div class="p-3 bg-red-50 rounded-lg border border-red-300">
                 <p class="font-bold text-red-700">⚡ 律师函警告（0倍）</p>
                 <p class="text-sm text-slate-600 mt-1">出现 律师函，奖励清零</p>
+              </div>
+              
+              <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-300">
+                <p class="text-sm text-slate-700">💰 投注金额：<span id="rulesBetAmount" class="font-bold text-blue-700">$20</span></p>
+                <p class="text-xs text-slate-500 mt-1">以上金额基于当前投注金额计算</p>
               </div>
             </div>
           </div>
@@ -812,7 +878,7 @@
     let currentMode = 'refuel'; // 'refuel' or 'entertain'
 
     // 切换到加油站模式
-    function switchToRefuel() {
+    async function switchToRefuel() {
       if (currentMode === 'refuel') return;
       
       currentMode = 'refuel';
@@ -820,9 +886,31 @@
       // 更新主界面的切换按钮
       updateSwitchButtons('refuel');
       
-      // 关闭老虎机，显示主界面
-      document.getElementById('slotMachineModal').classList.add('hidden');
-      document.getElementById('mainSection').classList.remove('hidden');
+      const mainSection = document.getElementById('mainSection');
+      const slotModal = document.getElementById('slotMachineModal');
+      
+      // 添加退出动画
+      slotModal.classList.add('fade-exit');
+      
+      // 等待动画完成
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // 切换显示
+      slotModal.classList.add('hidden');
+      slotModal.classList.remove('fade-exit');
+      
+      mainSection.classList.remove('hidden');
+      mainSection.classList.add('fade-enter');
+      
+      // 触发进入动画
+      requestAnimationFrame(() => {
+        mainSection.classList.add('fade-enter-active');
+      });
+      
+      // 完成动画后清理
+      setTimeout(() => {
+        mainSection.classList.remove('fade-enter', 'fade-enter-active');
+      }, 300);
       
       // 刷新额度
       loadQuota();
@@ -1059,21 +1147,52 @@
         }
 
         if (data.success) {
-          const { quota, used_quota, total, username, linux_do_id, avatar_url } = data.data;
+          const { quota, used_quota, total, username, linux_do_id, linux_do_username, avatar_url } = data.data;
 
-          document.getElementById('userName').textContent = username;
+          // 显示LinuxDo用户名和公益站用户名
+          document.getElementById('linuxDoUsername').textContent = `@${linux_do_username || username}`;
+          document.getElementById('userName').textContent = `公益站: ${username}`;
           document.getElementById('userId').textContent = 'ID: ' + linux_do_id;
-          document.getElementById('userInitial').textContent = username[0].toUpperCase();
+          document.getElementById('userInitial').textContent = (linux_do_username || username)[0].toUpperCase();
 
-          console.log('[加载用户信息] 用户名:', username, '头像URL:', avatar_url);
+          console.log('[加载用户信息] LinuxDo用户名:', linux_do_username, '公益站用户名:', username, '头像URL:', avatar_url);
 
           // 设置用户头像
           if (avatar_url && avatar_url.trim()) {
             const userAvatar = document.getElementById('userAvatar');
-            userAvatar.style.backgroundImage = `url(${avatar_url})`;
-            userAvatar.style.backgroundSize = 'cover';
-            userAvatar.style.backgroundPosition = 'center';
-            document.getElementById('userInitial').textContent = '';
+            console.log('[设置头像] URL:', avatar_url);
+            
+            // 使用Image对象预加载，确保图片能正常加载
+            const img = new Image();
+            img.onload = function() {
+              console.log('[头像加载] 成功:', avatar_url);
+              userAvatar.style.backgroundImage = `url(${avatar_url})`;
+              userAvatar.style.backgroundSize = 'cover';
+              userAvatar.style.backgroundPosition = 'center';
+              document.getElementById('userInitial').textContent = '';
+            };
+            img.onerror = function() {
+              console.error('[头像加载] 失败:', avatar_url);
+              // 如果加载失败，尝试使用LinuxDo的默认头像格式
+              const fallbackUrl = `https://linux.do/user_avatar/linux.do/${linux_do_username}/120/1_2.png`;
+              console.log('[头像加载] 尝试fallback URL:', fallbackUrl);
+              const fallbackImg = new Image();
+              fallbackImg.onload = function() {
+                console.log('[头像加载] Fallback成功');
+                userAvatar.style.backgroundImage = `url(${fallbackUrl})`;
+                userAvatar.style.backgroundSize = 'cover';
+                userAvatar.style.backgroundPosition = 'center';
+                document.getElementById('userInitial').textContent = '';
+              };
+              fallbackImg.onerror = function() {
+                console.error('[头像加载] Fallback也失败，保留首字母');
+                // 保留首字母显示
+              };
+              fallbackImg.src = fallbackUrl;
+            };
+            img.src = avatar_url;
+          } else {
+            console.log('[设置头像] 无头像URL，使用首字母');
           }
 
           const quotaUSD = (quota / 500000).toFixed(2);
@@ -1493,12 +1612,39 @@
     // 打开老虎机
     async function showSlotMachine() {
       try {
-        // 加载老虎机配置
-        const res = await fetch('/api/slot/config');
-        const data = await res.json();
+        const mainSection = document.getElementById('mainSection');
+        const slotModal = document.getElementById('slotMachineModal');
+        const loadingOverlay = document.getElementById('slotLoadingOverlay');
 
-        if (!data.success) {
-          showToast(data.message, 'error');
+        // 1. 立即显示老虎机界面（带loading遮罩）- 提供即时反馈
+        mainSection.classList.add('fade-exit');
+        
+        // 等待退出动画完成
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
+        mainSection.classList.add('hidden');
+        mainSection.classList.remove('fade-exit');
+        
+        // 显示老虎机界面和loading
+        slotModal.classList.remove('hidden');
+        loadingOverlay.classList.remove('hidden');
+        slotModal.classList.add('fade-enter');
+        
+        // 触发进入动画
+        requestAnimationFrame(() => {
+          slotModal.classList.add('fade-enter-active');
+        });
+
+        // 2. 异步加载配置数据（不阻塞界面显示）
+        const [configData] = await Promise.all([
+          fetch('/api/slot/config').then(res => res.json()),
+          // 添加一个最小延迟，确保动画流畅
+          new Promise(resolve => setTimeout(resolve, 300))
+        ]);
+
+        if (!configData.success) {
+          loadingOverlay.classList.add('hidden');
+          showToast(configData.message, 'error');
           // 如果未登录或其他错误，切换回加油站模式
           if (currentMode === 'entertain') {
             switchToRefuel();
@@ -1506,26 +1652,30 @@
           return;
         }
 
-        slotConfig = data.data.config;
-        slotUserData = data.data.user;
+        slotConfig = configData.data.config;
+        slotUserData = configData.data.user;
 
-        // 初始化滚轮
+        // 3. 初始化UI（快速操作）
         initSlotReels();
-
-        // 更新界面数据
         updateSlotUI();
-
-        // 同步用户信息到老虎机界面
         syncUserInfoToSlot();
 
-        // 加载排行榜（显示在侧边栏）
-        loadSidebarLeaderboard();
+        // 4. 隐藏loading遮罩
+        loadingOverlay.style.animation = 'fadeOut 0.3s ease-in forwards';
+        await new Promise(resolve => setTimeout(resolve, 300));
+        loadingOverlay.classList.add('hidden');
+        loadingOverlay.style.animation = '';
 
-        // 隐藏主界面，显示老虎机界面
-        document.getElementById('mainSection').classList.add('hidden');
-        document.getElementById('slotMachineModal').classList.remove('hidden');
+        // 5. 异步加载排行榜（不阻塞主界面，延迟加载）
+        setTimeout(() => {
+          loadSidebarLeaderboard();
+        }, 100);
+
+        // 完成动画
+        slotModal.classList.remove('fade-enter', 'fade-enter-active');
       } catch (error) {
         console.error('打开老虎机失败:', error);
+        document.getElementById('slotLoadingOverlay').classList.add('hidden');
         showToast('打开老虎机失败', 'error');
         // 出错时切换回加油站模式
         if (currentMode === 'entertain') {
@@ -1537,13 +1687,15 @@
     // 同步用户信息到老虎机界面
     function syncUserInfoToSlot() {
       // 从主界面复制用户信息到老虎机界面
+      const linuxDoUsername = document.getElementById('linuxDoUsername')?.textContent;
       const userName = document.getElementById('userName')?.textContent;
       const userId = document.getElementById('userId')?.textContent;
       const userAvatar = document.getElementById('userAvatar');
       const userInitial = document.getElementById('userInitial')?.textContent;
       
-      console.log('[同步用户信息] 用户名:', userName, '头像元素:', userAvatar);
+      console.log('[同步用户信息] LinuxDo用户名:', linuxDoUsername, '公益站用户名:', userName, '头像元素:', userAvatar);
       
+      if (linuxDoUsername) document.getElementById('slotLinuxDoUsername').textContent = linuxDoUsername;
       if (userName) document.getElementById('slotUserName').textContent = userName;
       if (userId) document.getElementById('slotUserId').textContent = userId;
       if (userInitial && !userAvatar?.style.backgroundImage) {
@@ -1590,6 +1742,9 @@
         document.getElementById('sidebarMyRank').textContent = userRank > 0 ? `#${userRank}` : '未上榜';
         document.getElementById('sidebarMyTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
 
+        // 调试：输出完整的排行榜数据
+        console.log('[排行榜数据]', leaderboard);
+
         // 渲染排行榜
         const container = document.getElementById('sidebarLeaderboard');
         
@@ -1616,9 +1771,12 @@
 
             // 构建头像HTML
             const username = user.username || user.linux_do_id;
-            const avatarUrl = user.avatar_url || `https://linux.do/user_avatar/linux.do/${username}/48/1_2.png`;
+            // 优先使用数据库中的avatar_url，如果没有则使用LinuxDo默认头像
+            const avatarUrl = user.avatar_url && user.avatar_url.trim() 
+                            ? user.avatar_url 
+                            : `https://linux.do/user_avatar/linux.do/${username}/48/1_2.png`;
             
-            console.log('排行榜用户:', username, '头像URL:', avatarUrl);
+            console.log(`[排行榜#${rank}] 用户: ${username}, 头像URL: ${avatarUrl}`);
 
             return `
               <div class="p-2 rounded-lg ${bgClass} transition-all">
@@ -1626,8 +1784,9 @@
                   <div class="w-8 text-center flex-shrink-0">${rankDisplay}</div>
                   <img src="${avatarUrl}" 
                        alt="${username}" 
-                       class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 bg-gradient-to-r from-indigo-500 to-purple-500"
-                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                       class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 object-cover"
+                       onerror="console.log('头像加载失败:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                       onload="console.log('头像加载成功:', this.src);">
                   <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold border border-white/30 flex-shrink-0" style="display:none;">
                     ${username.charAt(0).toUpperCase()}
                   </div>
@@ -1650,14 +1809,14 @@
     }
 
     // 关闭老虎机
-    function closeSlotMachine() {
+    async function closeSlotMachine() {
       // 切换回加油站模式
-      switchToRefuel();
+      await switchToRefuel();
     }
 
     // 更新老虎机界面数据
     function updateSlotUI() {
-      if (!slotUserData) return;
+      if (!slotUserData || !slotConfig) return;
 
       document.getElementById('slotQuota').textContent = `$${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins;
@@ -1665,6 +1824,13 @@
       document.getElementById('todayPlayed').textContent = slotUserData.today_count;
       document.getElementById('todayBet').textContent = `$${(slotUserData.today_bet / 500000).toFixed(2)}`;
       document.getElementById('todayWon').textContent = `$${(slotUserData.today_win / 500000).toFixed(2)}`;
+
+      // 更新投注金额显示（根据管理员配置）
+      const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
+      const spinButtonPrice = document.getElementById('spinButtonPrice');
+      if (spinButtonPrice) {
+        spinButtonPrice.textContent = `($${betAmountUSD})`;
+      }
 
       // 更新按钮状态
       const spinButton = document.getElementById('spinButton');
@@ -1963,6 +2129,26 @@
 
     // 显示游戏规则
     function showSlotRules() {
+      // 更新规则中的动态配置显示
+      if (slotConfig) {
+        const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
+        const minQuotaUSD = (slotConfig.min_quota_required / 500000).toFixed(2);
+        const maxSpins = slotConfig.max_daily_spins;
+        
+        // 更新基本规则
+        const basicRulesBetAmount = document.getElementById('basicRulesBetAmount');
+        if (basicRulesBetAmount) basicRulesBetAmount.textContent = `$${betAmountUSD}`;
+        
+        const basicRulesMaxSpins = document.getElementById('basicRulesMaxSpins');
+        if (basicRulesMaxSpins) basicRulesMaxSpins.textContent = `${maxSpins}次`;
+        
+        const basicRulesMinQuota = document.getElementById('basicRulesMinQuota');
+        if (basicRulesMinQuota) basicRulesMinQuota.textContent = `$${minQuotaUSD}`;
+        
+        // 更新投注金额说明
+        const rulesBetAmount = document.getElementById('rulesBetAmount');
+        if (rulesBetAmount) rulesBetAmount.textContent = `$${betAmountUSD}`;
+      }
       document.getElementById('slotRulesModal').classList.remove('hidden');
     }
 
