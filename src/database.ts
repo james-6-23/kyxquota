@@ -237,6 +237,29 @@ export function initDatabase() {
     VALUES (1, 10000000, 5, 10000000, 1, ${Date.now()})
   `);
 
+    // 符号权重配置表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS slot_symbol_weights (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      weight_m INTEGER DEFAULT 100,
+      weight_t INTEGER DEFAULT 100,
+      weight_n INTEGER DEFAULT 100,
+      weight_j INTEGER DEFAULT 100,
+      weight_lq INTEGER DEFAULT 100,
+      weight_bj INTEGER DEFAULT 100,
+      weight_zft INTEGER DEFAULT 100,
+      weight_bdk INTEGER DEFAULT 100,
+      weight_lsh INTEGER DEFAULT 25,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 插入默认符号权重配置
+    db.exec(`
+    INSERT OR IGNORE INTO slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, updated_at)
+    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, ${Date.now()})
+  `);
+
     // 老虎机游戏记录表
     db.exec(`
     CREATE TABLE IF NOT EXISTS slot_machine_records (
@@ -444,6 +467,14 @@ function initQueries() {
             'UPDATE slot_machine_config SET bet_amount = ?, max_daily_spins = ?, min_quota_required = ?, enabled = ?, updated_at = ? WHERE id = 1'
         ),
 
+        // 符号权重配置
+        getWeights: db.query<any, never>(
+            'SELECT * FROM slot_symbol_weights WHERE id = 1'
+        ),
+        updateWeights: db.query(
+            'UPDATE slot_symbol_weights SET weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, updated_at = ? WHERE id = 1'
+        ),
+
         // 游戏记录
         insertRecord: db.query(
             'INSERT INTO slot_machine_records (linux_do_id, username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
@@ -494,7 +525,7 @@ function initQueries() {
         getLeaderboard: db.query<any, number>(
             `SELECT 
                 s.linux_do_id, 
-                COALESCE(u.username, s.username) as username,
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
                 s.avatar_url, 
                 s.total_spins, 
                 s.total_bet, 

@@ -8,8 +8,8 @@ const SYMBOLS = {
     ALL: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh']
 };
 
-// 符号权重配置（控制概率）
-const SYMBOL_WEIGHTS: Record<string, number> = {
+// 默认符号权重配置（控制概率）
+const DEFAULT_SYMBOL_WEIGHTS: Record<string, number> = {
     'm': 100,
     't': 100,
     'n': 100,
@@ -20,6 +20,29 @@ const SYMBOL_WEIGHTS: Record<string, number> = {
     'bdk': 100,
     'lsh': 25  // 中度概率，约2.94%每个位置，至少1个约11.3%
 };
+
+// 从数据库获取符号权重
+export function getSymbolWeights(): Record<string, number> {
+    try {
+        const weights = slotQueries.getWeights.get();
+        if (weights) {
+            return {
+                'm': weights.weight_m,
+                't': weights.weight_t,
+                'n': weights.weight_n,
+                'j': weights.weight_j,
+                'lq': weights.weight_lq,
+                'bj': weights.weight_bj,
+                'zft': weights.weight_zft,
+                'bdk': weights.weight_bdk,
+                'lsh': weights.weight_lsh
+            };
+        }
+    } catch (error) {
+        console.error('获取符号权重失败，使用默认值:', error);
+    }
+    return DEFAULT_SYMBOL_WEIGHTS;
+}
 
 // 中奖类型
 export enum WinType {
@@ -47,6 +70,7 @@ export const WIN_TYPE_NAMES: Record<WinType, string> = {
  * 加权随机抽取符号
  */
 function getRandomSymbol(): string {
+    const SYMBOL_WEIGHTS = getSymbolWeights(); // 每次从数据库获取最新权重
     const totalWeight = Object.values(SYMBOL_WEIGHTS).reduce((a, b) => a + b, 0);
     let random = Math.random() * totalWeight;
 

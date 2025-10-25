@@ -351,8 +351,8 @@ slot.post('/spin', requireAuth, async (c) => {
         );
 
         // 更新用户总统计（用于排行榜）
-        // 使用LinuxDo用户名，如果不存在则使用公益站用户名
-        const displayUsername = user.linux_do_username || session.username || user.username;
+        // 优先使用session中的LinuxDo用户名（最新），其次使用数据库中的，最后使用公益站用户名
+        const displayUsername = session.username || user.linux_do_username || user.username;
         updateUserTotalStats(
             session.linux_do_id,
             displayUsername,

@@ -1191,12 +1191,14 @@
           const { quota, used_quota, total, username, linux_do_id, linux_do_username, avatar_url } = data.data;
 
           // 显示LinuxDo用户名和公益站用户名
-          document.getElementById('linuxDoUsername').textContent = `@${linux_do_username || username}`;
+          // 优先显示 LinuxDo 用户名，如果为空则显示公益站用户名
+          const displayName = linux_do_username && linux_do_username.trim() ? linux_do_username : username;
+          document.getElementById('linuxDoUsername').textContent = `@${displayName}`;
           document.getElementById('userName').textContent = `公益站: ${username}`;
           document.getElementById('userId').textContent = 'ID: ' + linux_do_id;
-          document.getElementById('userInitial').textContent = (linux_do_username || username)[0].toUpperCase();
+          document.getElementById('userInitial').textContent = displayName[0].toUpperCase();
 
-          console.log('[加载用户信息] LinuxDo用户名:', linux_do_username, '公益站用户名:', username, '头像URL:', avatar_url);
+          console.log('[加载用户信息] LinuxDo用户名:', linux_do_username, '公益站用户名:', username, '显示名称:', displayName, '头像URL:', avatar_url);
 
           // 设置用户头像
           if (avatar_url && avatar_url.trim()) {
@@ -1264,9 +1266,9 @@
           const maxModelscope = data.data.max_daily_donate_modelscope || 1;
           const maxIflow = data.data.max_daily_donate_iflow || 1;
           if (maxModelscope === maxIflow) {
-            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度 · 每种类型每天可投喂 ${maxModelscope} 个`;
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度并获得1次免费抽奖 · 每种类型每天可投喂 ${maxModelscope} 个`;
           } else {
-            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度 · ModelScope 每天可投喂 ${maxModelscope} 个，iFlow 每天可投喂 ${maxIflow} 个`;
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度并获得1次免费抽奖 · ModelScope 每天可投喂 ${maxModelscope} 个，iFlow 每天可投喂 ${maxIflow} 个`;
           }
 
           // 更新领取次数信息
@@ -1753,9 +1755,13 @@
       const userAvatar = document.getElementById('userAvatar');
       const userInitial = document.getElementById('userInitial')?.textContent;
       
-      console.log('[同步用户信息] LinuxDo用户名:', linuxDoUsername, '公益站用户名:', userName, '头像元素:', userAvatar);
+      console.log('[同步用户信息] LinuxDo用户名:', linuxDoUsername, '公益站用户名:', userName, 'ID:', userId, '头像元素:', userAvatar);
       
-      if (linuxDoUsername) document.getElementById('slotLinuxDoUsername').textContent = linuxDoUsername;
+      // 确保显示正确的用户名
+      if (linuxDoUsername) {
+        document.getElementById('slotLinuxDoUsername').textContent = linuxDoUsername;
+        console.log('[同步] 设置老虎机LinuxDo用户名为:', linuxDoUsername);
+      }
       if (userName) document.getElementById('slotUserName').textContent = userName;
       if (userId) document.getElementById('slotUserId').textContent = userId;
       if (userInitial && !userAvatar?.style.backgroundImage) {

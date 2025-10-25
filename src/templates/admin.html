@@ -143,6 +143,9 @@
           <button onclick="showSection('slotConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>⚙️</span> 老虎机配置
           </button>
+          <button onclick="showSection('slotAnalytics')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>📈</span> 抽奖分析
+          </button>
           <button onclick="showSection('users')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>👥</span> 用户列表
           </button>
@@ -685,6 +688,131 @@
             </div>
           </div>
           
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">🎲 符号出现概率配置</h3>
+              <button onclick="calculateProbabilities()" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
+                📊 计算概率
+              </button>
+            </div>
+            
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+              <p class="text-sm text-blue-800 mb-2">
+                <strong>💡 权重说明：</strong>权重决定符号出现的概率。权重越高，出现概率越大。
+              </p>
+              <p class="text-xs text-blue-700">
+                • 单个位置概率 = 符号权重 / 总权重<br>
+                • 建议范围：1-1000（普通符号推荐50-150，律师函推荐10-50）<br>
+                • 修改后立即生效，无需重启服务器
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <!-- 美 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  🎵 美 (m) 权重
+                </label>
+                <input type="number" id="weight_m" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_m" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 太 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  ⚡ 太 (t) 权重
+                </label>
+                <input type="number" id="weight_t" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_t" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 你 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  👀 你 (n) 权重
+                </label>
+                <input type="number" id="weight_n" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_n" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 鸡 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  🐔 鸡 (j) 权重
+                </label>
+                <input type="number" id="weight_j" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_j" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 篮球 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  🏀 篮球 (lq) 权重
+                </label>
+                <input type="number" id="weight_lq" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_lq" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 背景 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  🎬 背景 (bj) 权重
+                </label>
+                <input type="number" id="weight_bj" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_bj" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 中分头 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  💇 中分头 (zft) 权重
+                </label>
+                <input type="number" id="weight_zft" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_zft" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 背带裤 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">
+                  👖 背带裤 (bdk) 权重
+                </label>
+                <input type="number" id="weight_bdk" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
+                <p id="prob_bdk" class="text-xs text-slate-500 mt-1">概率: --</p>
+              </div>
+
+              <!-- 律师函 -->
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-red-700 mb-1">
+                  ⚖️ 律师函 (lsh) 权重 <span class="text-xs text-red-600">(惩罚符号)</span>
+                </label>
+                <div class="flex gap-4 items-center">
+                  <input type="number" id="weight_lsh" min="1" max="1000" class="flex-1 px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 bg-red-50" placeholder="25">
+                  <div class="flex-1">
+                    <p id="prob_lsh" class="text-sm font-medium text-red-700">概率: --</p>
+                    <p id="prob_lsh_appear" class="text-xs text-red-600">4个位置至少出现1次: --</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-slate-50 rounded-lg p-4 mb-4">
+              <p class="text-sm font-semibold text-slate-700 mb-2">📊 当前总权重: <span id="totalWeight" class="text-indigo-600">--</span></p>
+              <p class="text-xs text-slate-600">总权重 = 所有符号权重之和</p>
+            </div>
+
+            <div class="flex gap-3">
+              <button onclick="updateSymbolWeights()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
+                保存权重配置
+              </button>
+              <button onclick="loadSymbolWeights()" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
+                重置
+              </button>
+              <button onclick="resetToDefault()" class="px-6 py-2 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 transition-colors">
+                恢复默认值
+              </button>
+            </div>
+          </div>
+
           <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
             <div class="flex items-start">
               <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -695,10 +823,116 @@
                 <ul class="text-sm text-yellow-700 space-y-1">
                   <li>• 修改配置会立即生效，影响所有用户</li>
                   <li>• 投注金额建议不要设置过高，避免用户损失过大</li>
-                  <li>• 中奖倍率在代码中设置，需要修改后端代码</li>
+                  <li>• 符号权重调整会改变中奖概率，请谨慎操作</li>
+                  <li>• 律师函权重建议保持在10-50之间，过高会影响游戏体验</li>
                   <li>• 500000 聪 = $1 USD</li>
                 </ul>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slot Analytics Section -->
+        <div id="slotAnalyticsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🎰 抽奖数据分析</h2>
+            <button onclick="loadSlotAnalytics()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              <svg id="analyticsRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新数据
+            </button>
+          </div>
+
+          <!-- 概览统计 -->
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-slate-600">总游戏次数</h3>
+                <span class="text-2xl">🎰</span>
+              </div>
+              <p id="analyticsTotal" class="text-3xl font-bold text-slate-900">0</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-slate-600">中奖率</h3>
+                <span class="text-2xl">🎯</span>
+              </div>
+              <p id="analyticsWinRate" class="text-3xl font-bold text-green-600">0%</p>
+              <p class="text-xs text-slate-500 mt-1">中奖 <span id="analyticsWinCount">0</span> 次</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-slate-600">总投注</h3>
+                <span class="text-2xl">💰</span>
+              </div>
+              <p id="analyticsTotalBet" class="text-3xl font-bold text-red-600">$0</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-slate-600">净盈亏</h3>
+                <span class="text-2xl">📊</span>
+              </div>
+              <p id="analyticsNetProfit" class="text-3xl font-bold">$0</p>
+              <p class="text-xs text-slate-500 mt-1">总赢得 <span id="analyticsTotalWin">$0</span></p>
+            </div>
+          </div>
+
+          <!-- 中奖类型分布 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">🎁 中奖类型分布</h3>
+            <div class="space-y-3" id="winTypesDistribution">
+              <!-- 将通过JS填充 -->
+            </div>
+          </div>
+
+          <!-- 每日统计 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">📅 最近7天统计</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">日期</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">游戏次数</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总投注</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总赢得</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">净盈亏</th>
+                  </tr>
+                </thead>
+                <tbody id="dailyStatsBody" class="divide-y divide-slate-100">
+                  <!-- 将通过JS填充 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 用户排行 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">🏆 用户获奖排行 TOP 20</h3>
+              <button onclick="fixUsernamesInLeaderboard()" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium hover:bg-orange-200 transition-colors text-sm">
+                🔧 修复用户名显示
+              </button>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">排名</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">用户名</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">游戏次数</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总投注</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总获奖</th>
+                  </tr>
+                </thead>
+                <tbody id="userRankingBody" class="divide-y divide-slate-100">
+                  <!-- 将通过JS填充 -->
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -2017,14 +2251,18 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'users'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'users'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
 
       if (section === 'users') loadUsersList(1);
       if (section === 'slotRecords') loadSlotRecords(1);
-      if (section === 'slotConfig') loadSlotConfig();
+      if (section === 'slotConfig') {
+        loadSlotConfig();
+        loadSymbolWeights();
+      }
+      if (section === 'slotAnalytics') loadSlotAnalytics();
     }
 
     // 老虎机配置管理
@@ -2186,6 +2424,262 @@
     function changeSlotPageSize() {
       slotPageSize = parseInt(document.getElementById('slotPageSize').value);
       loadSlotRecords(1);
+    }
+
+    // 符号权重配置管理
+    async function loadSymbolWeights() {
+      try {
+        const res = await fetch('/api/admin/slot/weights');
+        const data = await res.json();
+
+        if (data.success) {
+          const weights = data.data;
+          
+          // 填充表单
+          document.getElementById('weight_m').value = weights.weight_m;
+          document.getElementById('weight_t').value = weights.weight_t;
+          document.getElementById('weight_n').value = weights.weight_n;
+          document.getElementById('weight_j').value = weights.weight_j;
+          document.getElementById('weight_lq').value = weights.weight_lq;
+          document.getElementById('weight_bj').value = weights.weight_bj;
+          document.getElementById('weight_zft').value = weights.weight_zft;
+          document.getElementById('weight_bdk').value = weights.weight_bdk;
+          document.getElementById('weight_lsh').value = weights.weight_lsh;
+          
+          // 自动计算概率
+          calculateProbabilities();
+        }
+      } catch (error) {
+        console.error('加载符号权重失败:', error);
+        showMessage('加载符号权重失败', 'error');
+      }
+    }
+
+    async function updateSymbolWeights() {
+      try {
+        const weights = {
+          weight_m: parseInt(document.getElementById('weight_m').value),
+          weight_t: parseInt(document.getElementById('weight_t').value),
+          weight_n: parseInt(document.getElementById('weight_n').value),
+          weight_j: parseInt(document.getElementById('weight_j').value),
+          weight_lq: parseInt(document.getElementById('weight_lq').value),
+          weight_bj: parseInt(document.getElementById('weight_bj').value),
+          weight_zft: parseInt(document.getElementById('weight_zft').value),
+          weight_bdk: parseInt(document.getElementById('weight_bdk').value),
+          weight_lsh: parseInt(document.getElementById('weight_lsh').value)
+        };
+
+        // 验证所有权重
+        for (const [key, value] of Object.entries(weights)) {
+          if (isNaN(value) || value < 1 || value > 1000) {
+            showMessage(`${key} 权重必须是1-1000之间的整数`, 'error');
+            return;
+          }
+        }
+
+        const res = await fetch('/api/admin/slot/weights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(weights)
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage('符号权重已更新，已立即生效', 'success');
+          loadSymbolWeights();
+        } else {
+          showMessage(data.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新符号权重失败:', error);
+        showMessage('更新失败', 'error');
+      }
+    }
+
+    function calculateProbabilities() {
+      const symbols = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
+      const weights = {};
+      let totalWeight = 0;
+
+      // 获取所有权重值
+      symbols.forEach(symbol => {
+        const value = parseInt(document.getElementById('weight_' + symbol).value) || 0;
+        weights[symbol] = value;
+        totalWeight += value;
+      });
+
+      // 更新总权重显示
+      document.getElementById('totalWeight').textContent = totalWeight.toLocaleString();
+
+      // 计算并显示每个符号的概率
+      symbols.forEach(symbol => {
+        const weight = weights[symbol];
+        const probability = totalWeight > 0 ? (weight / totalWeight * 100).toFixed(2) : '0.00';
+        document.getElementById('prob_' + symbol).textContent = `概率: ${probability}%`;
+        
+        // 为律师函额外计算4个位置至少出现1次的概率
+        if (symbol === 'lsh') {
+          const singleProb = weight / totalWeight;
+          const atLeastOnce = (1 - Math.pow(1 - singleProb, 4)) * 100;
+          document.getElementById('prob_lsh_appear').textContent = `4个位置至少出现1次: ${atLeastOnce.toFixed(2)}%`;
+        }
+      });
+    }
+
+    function resetToDefault() {
+      if (!confirm('确定要恢复默认权重配置吗？\n\n默认配置：\n普通符号(m,t,n,j,lq,bj,zft,bdk): 100\n律师函(lsh): 25')) {
+        return;
+      }
+
+      // 设置默认值
+      document.getElementById('weight_m').value = 100;
+      document.getElementById('weight_t').value = 100;
+      document.getElementById('weight_n').value = 100;
+      document.getElementById('weight_j').value = 100;
+      document.getElementById('weight_lq').value = 100;
+      document.getElementById('weight_bj').value = 100;
+      document.getElementById('weight_zft').value = 100;
+      document.getElementById('weight_bdk').value = 100;
+      document.getElementById('weight_lsh').value = 25;
+
+      // 计算概率
+      calculateProbabilities();
+    }
+
+    // 修复排行榜用户名
+    async function fixUsernamesInLeaderboard() {
+      if (!confirm('确定要修复所有用户的排行榜用户名显示吗？\n\n这会将所有用户的显示名称更新为LinuxDo用户名。')) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/slot/fix-usernames', {
+          method: 'POST'
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          showMessage('✅ 已修复所有用户名显示，刷新页面查看效果', 'success');
+          // 重新加载分析数据
+          setTimeout(() => loadSlotAnalytics(), 1000);
+        } else {
+          showMessage(data.message || '修复失败', 'error');
+        }
+      } catch (error) {
+        console.error('修复用户名失败:', error);
+        showMessage('修复失败', 'error');
+      }
+    }
+
+    // 老虎机抽奖分析
+    async function loadSlotAnalytics() {
+      try {
+        const res = await fetch('/api/admin/slot/analytics');
+        const data = await res.json();
+
+        if (!data.success) {
+          showMessage('加载分析数据失败', 'error');
+          return;
+        }
+
+        const analytics = data.data;
+        const summary = analytics.summary;
+        const winTypes = analytics.winTypes;
+        const dailyStats = analytics.dailyStats;
+        const userStats = analytics.userStats;
+
+        // 更新概览统计
+        document.getElementById('analyticsTotal').textContent = summary.totalCount.toLocaleString();
+        document.getElementById('analyticsWinRate').textContent = summary.winRate.toFixed(1) + '%';
+        document.getElementById('analyticsWinCount').textContent = summary.winCount.toLocaleString();
+        document.getElementById('analyticsTotalBet').textContent = '$' + (summary.totalBet / 500000).toFixed(2);
+        document.getElementById('analyticsTotalWin').textContent = '$' + (summary.totalWin / 500000).toFixed(2);
+        
+        const netProfit = summary.netProfit;
+        const netProfitElement = document.getElementById('analyticsNetProfit');
+        netProfitElement.textContent = (netProfit >= 0 ? '+' : '') + '$' + (netProfit / 500000).toFixed(2);
+        netProfitElement.className = netProfit >= 0 
+          ? 'text-3xl font-bold text-green-600' 
+          : 'text-3xl font-bold text-red-600';
+
+        // 渲染中奖类型分布
+        const winTypeNames = {
+          'super_jackpot': '🏆 超级大奖 (256x)',
+          'special_combo': '💎 特殊组合 (32x)',
+          'quad': '🎰 四连 (16x)',
+          'triple': '✨ 三连 (8x)',
+          'double': '🎁 双连 (4x)',
+          'punishment': '⚡ 律师函',
+          'none': '❌ 未中奖'
+        };
+
+        const winTypesHtml = Object.entries(winTypes)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([key, data]) => {
+            const percentage = summary.totalCount > 0 ? (data.count / summary.totalCount * 100).toFixed(2) : '0.00';
+            const barWidth = summary.totalCount > 0 ? (data.count / summary.totalCount * 100) : 0;
+            
+            return `
+              <div class="border border-slate-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="font-semibold text-slate-900">${winTypeNames[key]}</span>
+                  <span class="text-sm font-bold text-slate-700">${data.count} 次 (${percentage}%)</span>
+                </div>
+                <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
+                  <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style="width: ${barWidth}%"></div>
+                </div>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                  <span>总${data.totalWin >= 0 ? '赢得' : '扣除'}: $${(Math.abs(data.totalWin) / 500000).toFixed(2)}</span>
+                  <span>平均: $${(Math.abs(data.avgWin) / 500000).toFixed(2)}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        document.getElementById('winTypesDistribution').innerHTML = winTypesHtml;
+
+        // 渲染每日统计
+        const dailyStatsHtml = Object.entries(dailyStats)
+          .sort((a, b) => b[0].localeCompare(a[0])) // 按日期倒序排序
+          .map(([date, stats]) => {
+            const profitColor = stats.profit >= 0 ? 'text-green-600' : 'text-red-600';
+            return `
+              <tr>
+                <td class="px-4 py-3 text-sm text-slate-900">${date}</td>
+                <td class="px-4 py-3 text-sm text-slate-900 text-right">${stats.count}</td>
+                <td class="px-4 py-3 text-sm text-red-600 text-right">$${(stats.bet / 500000).toFixed(2)}</td>
+                <td class="px-4 py-3 text-sm text-green-600 text-right">$${(stats.win / 500000).toFixed(2)}</td>
+                <td class="px-4 py-3 text-sm ${profitColor} text-right font-semibold">${stats.profit >= 0 ? '+' : ''}$${(stats.profit / 500000).toFixed(2)}</td>
+              </tr>
+            `;
+          }).join('');
+        document.getElementById('dailyStatsBody').innerHTML = dailyStatsHtml || '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+
+        // 渲染用户排行
+        const userRankingHtml = userStats.map((user, index) => {
+          const rank = index + 1;
+          let rankBadge = `<span class="text-slate-600">#${rank}</span>`;
+          if (rank === 1) rankBadge = '<span class="text-2xl">🥇</span>';
+          else if (rank === 2) rankBadge = '<span class="text-2xl">🥈</span>';
+          else if (rank === 3) rankBadge = '<span class="text-2xl">🥉</span>';
+
+          return `
+            <tr>
+              <td class="px-4 py-3 text-sm text-center">${rankBadge}</td>
+              <td class="px-4 py-3 text-sm text-slate-900">${user.username || user.linux_do_id}</td>
+              <td class="px-4 py-3 text-sm text-slate-900 text-right">${user.total_spins}</td>
+              <td class="px-4 py-3 text-sm text-red-600 text-right">$${(user.total_bet / 500000).toFixed(2)}</td>
+              <td class="px-4 py-3 text-sm text-green-600 text-right font-semibold">$${(user.total_win / 500000).toFixed(2)}</td>
+            </tr>
+          `;
+        }).join('');
+        document.getElementById('userRankingBody').innerHTML = userRankingHtml || '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+
+        showMessage('分析数据已更新', 'success');
+      } catch (error) {
+        console.error('加载抽奖分析失败:', error);
+        showMessage('加载分析数据失败', 'error');
+      }
     }
 
     window.onload = async () => {

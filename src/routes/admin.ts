@@ -541,6 +541,205 @@ app.post('/slot/config', requireAdmin, async (c) => {
 });
 
 /**
+ * 获取符号权重配置
+ */
+app.get('/slot/weights', requireAdmin, async (c) => {
+    try {
+        const weights = slotQueries.getWeights.get();
+        return c.json({
+            success: true,
+            data: weights || {
+                weight_m: 100,
+                weight_t: 100,
+                weight_n: 100,
+                weight_j: 100,
+                weight_lq: 100,
+                weight_bj: 100,
+                weight_zft: 100,
+                weight_bdk: 100,
+                weight_lsh: 25
+            }
+        });
+    } catch (error: any) {
+        console.error('获取符号权重失败:', error);
+        return c.json({ success: false, message: '获取符号权重失败' }, 500);
+    }
+});
+
+/**
+ * 更新符号权重配置
+ */
+app.post('/slot/weights', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh } = body;
+
+        // 验证所有权重都是正整数
+        const weights = [weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh];
+        for (const weight of weights) {
+            if (weight !== undefined && (typeof weight !== 'number' || weight < 1 || weight > 1000)) {
+                return c.json({ success: false, message: '权重必须是1-1000之间的整数' }, 400);
+            }
+        }
+
+        const now = Date.now();
+        const currentWeights = slotQueries.getWeights.get();
+
+        slotQueries.updateWeights.run(
+            weight_m !== undefined ? weight_m : currentWeights!.weight_m,
+            weight_t !== undefined ? weight_t : currentWeights!.weight_t,
+            weight_n !== undefined ? weight_n : currentWeights!.weight_n,
+            weight_j !== undefined ? weight_j : currentWeights!.weight_j,
+            weight_lq !== undefined ? weight_lq : currentWeights!.weight_lq,
+            weight_bj !== undefined ? weight_bj : currentWeights!.weight_bj,
+            weight_zft !== undefined ? weight_zft : currentWeights!.weight_zft,
+            weight_bdk !== undefined ? weight_bdk : currentWeights!.weight_bdk,
+            weight_lsh !== undefined ? weight_lsh : currentWeights!.weight_lsh,
+            now
+        );
+
+        console.log('[管理员] 符号权重已更新:', body);
+
+        return c.json({
+            success: true,
+            message: '符号权重已更新',
+            data: slotQueries.getWeights.get()
+        });
+    } catch (error: any) {
+        console.error('更新符号权重失败:', error);
+        return c.json({ success: false, message: '更新失败' }, 500);
+    }
+});
+
+/**
+ * 修复排行榜用户名（使用LinuxDo用户名）
+ */
+app.post('/slot/fix-usernames', requireAdmin, async (c) => {
+    try {
+        const { db } = await import('../database');
+
+        // 更新所有用户的统计表，使用 users 表中的 linux_do_username
+        const result = db.exec(`
+            UPDATE user_slot_stats 
+            SET username = (
+                SELECT COALESCE(u.linux_do_username, u.username) 
+                FROM users u 
+                WHERE u.linux_do_id = user_slot_stats.linux_do_id
+            )
+            WHERE EXISTS (
+                SELECT 1 FROM users u 
+                WHERE u.linux_do_id = user_slot_stats.linux_do_id
+            )
+        `);
+
+        console.log('[管理员] 已修复排行榜用户名');
+
+        return c.json({
+            success: true,
+            message: '已修复所有用户的排行榜用户名'
+        });
+    } catch (error: any) {
+        console.error('修复用户名失败:', error);
+        return c.json({ success: false, message: '修复失败' }, 500);
+    }
+});
+
+/**
+ * 获取老虎机抽奖分析数据
+ */
+app.get('/slot/analytics', requireAdmin, async (c) => {
+    try {
+        // 获取所有老虎机记录
+        const allRecords = slotQueries.getAllRecords.all();
+
+        // 基础统计
+        const totalCount = allRecords.length;
+        const totalBet = allRecords.reduce((sum, r) => sum + r.bet_amount, 0);
+        const totalWin = allRecords.reduce((sum, r) => sum + r.win_amount, 0);
+        const netProfit = totalWin - totalBet;
+
+        // 按中奖类型统计
+        const winTypes: Record<string, { count: number; totalWin: number; avgWin: number }> = {
+            'super_jackpot': { count: 0, totalWin: 0, avgWin: 0 },
+            'special_combo': { count: 0, totalWin: 0, avgWin: 0 },
+            'quad': { count: 0, totalWin: 0, avgWin: 0 },
+            'triple': { count: 0, totalWin: 0, avgWin: 0 },
+            'double': { count: 0, totalWin: 0, avgWin: 0 },
+            'punishment': { count: 0, totalWin: 0, avgWin: 0 },
+            'none': { count: 0, totalWin: 0, avgWin: 0 }
+        };
+
+        allRecords.forEach(r => {
+            if (winTypes[r.win_type]) {
+                winTypes[r.win_type].count++;
+                winTypes[r.win_type].totalWin += r.win_amount;
+            }
+        });
+
+        // 计算平均值和概率
+        Object.keys(winTypes).forEach(key => {
+            const type = winTypes[key];
+            type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
+        });
+
+        const winCount = allRecords.filter(r => r.win_amount > 0).length;
+        const winRate = totalCount > 0 ? (winCount / totalCount) * 100 : 0;
+
+        // 获取最近的游戏记录（最多100条）
+        const recentRecords = allRecords.slice(0, 100).map(r => ({
+            ...r,
+            result_symbols: JSON.parse(r.result_symbols),
+            timestamp: r.timestamp,
+            date: r.date
+        }));
+
+        // 按用户统计
+        const userStats = slotQueries.getLeaderboard.all(100);
+
+        // 每日统计（最近7天）
+        const dailyStats: Record<string, { count: number; bet: number; win: number; profit: number }> = {};
+        const today = new Date();
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            dailyStats[dateStr] = { count: 0, bet: 0, win: 0, profit: 0 };
+        }
+
+        allRecords.forEach(r => {
+            if (dailyStats[r.date]) {
+                dailyStats[r.date].count++;
+                dailyStats[r.date].bet += r.bet_amount;
+                dailyStats[r.date].win += r.win_amount;
+                dailyStats[r.date].profit = dailyStats[r.date].win - dailyStats[r.date].bet;
+            }
+        });
+
+        return c.json({
+            success: true,
+            data: {
+                summary: {
+                    totalCount,
+                    totalBet,
+                    totalWin,
+                    netProfit,
+                    winCount,
+                    winRate
+                },
+                winTypes,
+                recentRecords,
+                userStats: userStats.slice(0, 20), // 前20名
+                dailyStats
+            }
+        });
+    } catch (error: any) {
+        console.error('获取抽奖分析数据失败:', error);
+        return c.json({ success: false, message: '获取分析数据失败' }, 500);
+    }
+});
+
+/**
  * 导出所有 Keys
  */
 app.get('/keys/export', requireAdmin, async (c) => {
