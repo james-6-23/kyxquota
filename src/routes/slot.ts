@@ -107,6 +107,9 @@ slot.get('/config', requireAuth, async (c) => {
         // 获取今日统计
         const todayStats = getUserTodayStats(session.linux_do_id);
 
+        // 获取历史总统计
+        const totalStats = getUserTotalStats(session.linux_do_id);
+
         // 计算剩余次数
         const remainingSpins = Math.max(0, config.max_daily_spins - todaySpins);
 
@@ -130,7 +133,11 @@ slot.get('/config', requireAuth, async (c) => {
                     can_play: canPlay,
                     today_bet: todayStats.totalBet,
                     today_win: todayStats.totalWin,
-                    today_count: todayStats.count
+                    today_count: todayStats.count,
+                    // 历史总统计
+                    total_spins: totalStats?.total_spins || 0,
+                    total_bet: totalStats?.total_bet || 0,
+                    total_win: totalStats?.total_win || 0
                 }
             }
         });

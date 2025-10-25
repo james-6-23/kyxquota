@@ -690,6 +690,7 @@
             <span>🏆</span>
             <span>获奖排行榜 TOP 20</span>
           </h2>
+          <p class="text-xs text-white/70 text-center mt-1">按总获得金额排名</p>
         </div>
         
         <!-- 用户自己的统计（固定在上方）-->
@@ -716,13 +717,28 @@
 
     <!-- 底部统计 -->
     <div class="bg-black/30 backdrop-blur-md p-4 text-center text-white">
-      <p class="text-lg">
-        今日已玩 <span id="todayPlayed" class="font-bold text-yellow-400">0</span> 次 
-        <span class="mx-2">|</span> 
-        今日投注 <span id="todayBet" class="font-bold text-red-400">$0</span>
-        <span class="mx-2">|</span>
-        今日赢得 <span id="todayWon" class="font-bold text-green-400">$0</span>
-      </p>
+      <!-- 今日统计 -->
+      <div class="mb-2">
+        <p class="text-xs text-white/60 mb-1">📅 今日数据</p>
+        <p class="text-base">
+          已玩 <span id="todayPlayed" class="font-bold text-yellow-400">0</span> 次 
+          <span class="mx-2 text-white/40">|</span> 
+          投注 <span id="todayBet" class="font-bold text-red-400">$0</span>
+          <span class="mx-2 text-white/40">|</span>
+          赢得 <span id="todayWon" class="font-bold text-green-400">$0</span>
+        </p>
+      </div>
+      <!-- 历史总计 -->
+      <div class="pt-2 border-t border-white/20">
+        <p class="text-xs text-white/60 mb-1">📊 历史总计</p>
+        <p class="text-base">
+          总次数 <span id="totalPlayed" class="font-bold text-yellow-300">0</span> 次
+          <span class="mx-2 text-white/40">|</span>
+          总投注 <span id="totalBet" class="font-bold text-red-300">$0</span>
+          <span class="mx-2 text-white/40">|</span>
+          总获得 <span id="totalWon" class="font-bold text-green-300">$0</span>
+        </p>
+      </div>
     </div>
   </div>
 
@@ -747,7 +763,10 @@
   <div id="leaderboardModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-yellow-500 to-orange-600">
-        <h2 class="text-2xl font-bold text-white">🏆 获奖总额排行榜</h2>
+        <div>
+          <h2 class="text-2xl font-bold text-white">🏆 获奖总额排行榜</h2>
+          <p class="text-sm text-white/90 mt-1">按历史总获得金额排名</p>
+        </div>
         <button onclick="closeLeaderboard()" class="text-white hover:text-gray-200 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -802,7 +821,7 @@
           <div>
             <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
             <ul class="list-disc list-inside space-y-2 text-slate-700" id="basicRules">
-              <li>每次旋转投注 <strong id="basicRulesBetAmount">$20</strong></li>
+              <li>假如每次旋转投注 <strong id="basicRulesBetAmount">$20</strong></li>
               <li>每天有 <strong id="basicRulesMaxSpins">5次</strong> 免费游玩机会</li>
               <li>最低额度要求：<strong id="basicRulesMinQuota">$20</strong></li>
               <li>1行4列布局，共9种符号</li>
@@ -813,32 +832,32 @@
             <h3 class="text-xl font-bold text-slate-900 mb-3">💰 中奖规则</h3>
             <div class="space-y-3" id="slotRulesContent">
               <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
-                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256倍）</p>
+                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256x20$）</p>
                 <p class="text-sm text-slate-600 mt-1">鸡→你→太→美 按顺序排列 或 偶像练习生背景→中分头→背带裤→篮球 按顺序排列</p>
               </div>
               
               <div class="p-3 bg-purple-50 rounded-lg border border-purple-300">
-                <p class="font-bold text-purple-700">💎 特殊组合（32倍）</p>
+                <p class="font-bold text-purple-700">💎 特殊组合（32x20$）</p>
                 <p class="text-sm text-slate-600 mt-1">包含 鸡你太美 全部（不按顺序）或 偶像练习生背景、中分头、背带裤、篮球 全部（不按顺序）</p>
               </div>
               
               <div class="p-3 bg-blue-50 rounded-lg border border-blue-300">
-                <p class="font-bold text-blue-700">🎰 四连🐔（16倍）+ 🎁 免费1次</p>
+                <p class="font-bold text-blue-700">🎰 四连🐔（16x20$）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">4个相同符号</p>
               </div>
               
               <div class="p-3 bg-green-50 rounded-lg border border-green-300">
-                <p class="font-bold text-green-700">✨ 三连🐔（8倍）+ 🎁 免费1次</p>
+                <p class="font-bold text-green-700">✨ 三连🐔（8x20$）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">3个相同符号</p>
               </div>
               
               <div class="p-3 bg-teal-50 rounded-lg border border-teal-300">
-                <p class="font-bold text-teal-700">🎁 双🐔（4倍）</p>
+                <p class="font-bold text-teal-700">🎁 双🐔（4x20$）</p>
                 <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
               </div>
               
               <div class="p-3 bg-red-50 rounded-lg border border-red-300">
-                <p class="font-bold text-red-700">⚡ 律师函警告（0倍）</p>
+                <p class="font-bold text-red-700">⚡ 律师函警告（0x20$）</p>
                 <p class="text-sm text-slate-600 mt-1">出现 律师函，奖励清零</p>
               </div>
               
@@ -1851,9 +1870,16 @@
       document.getElementById('slotQuota').textContent = `$${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins;
       document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins;
+      
+      // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count;
       document.getElementById('todayBet').textContent = `$${(slotUserData.today_bet / 500000).toFixed(2)}`;
       document.getElementById('todayWon').textContent = `$${(slotUserData.today_win / 500000).toFixed(2)}`;
+      
+      // 历史总计
+      document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
+      document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
 
       // 更新投注金额显示（根据管理员配置）
       const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
@@ -2111,15 +2137,133 @@
         if (records.length === 0) {
           container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无抽奖记录</p>';
         } else {
-          // 添加记录条数提示
-          const totalCount = data.data.length;
-          const headerHtml = totalCount > 5 
-            ? `<div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
-                <p class="text-sm text-blue-800">📊 显示最近 5 条记录，共 ${totalCount} 条</p>
-               </div>`
-            : '';
+          // 计算统计数据（基于所有记录）
+          const allRecords = data.data;
+          const totalCount = allRecords.length;
+          const winCount = allRecords.filter(r => r.win_amount > 0).length;
+          const winRate = totalCount > 0 ? ((winCount / totalCount) * 100).toFixed(1) : '0.0';
           
-          container.innerHTML = headerHtml + records.map((r, idx) => {
+          // 统计各种奖项
+          const winTypes = {
+            'super_jackpot': { name: '🏆 超级大奖', count: 0, color: 'text-yellow-600' },
+            'special_combo': { name: '💎 特殊组合', count: 0, color: 'text-purple-600' },
+            'quad': { name: '🎰 四连', count: 0, color: 'text-blue-600' },
+            'triple': { name: '✨ 三连', count: 0, color: 'text-green-600' },
+            'double': { name: '🎁 双连', count: 0, color: 'text-teal-600' },
+            'punishment': { name: '⚡ 律师函', count: 0, color: 'text-red-600' },
+            'none': { name: '❌ 未中奖', count: 0, color: 'text-slate-500' }
+          };
+          
+          allRecords.forEach(r => {
+            if (winTypes[r.win_type]) {
+              winTypes[r.win_type].count++;
+            }
+          });
+          
+          // 计算总投注和总赢得
+          const totalBet = allRecords.reduce((sum, r) => sum + r.bet_amount, 0);
+          const totalWin = allRecords.reduce((sum, r) => sum + r.win_amount, 0);
+          const netProfit = totalWin - totalBet;
+          
+          // 构建统计卡片
+          const statsHtml = `
+            <div class="mb-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl p-6 border-2 border-purple-200 shadow-lg">
+              <div class="flex items-center justify-between mb-5">
+                <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-2">
+                  <span>📊</span>
+                  <span>中奖概率统计</span>
+                </h3>
+                <span class="px-3 py-1 bg-white rounded-full text-sm font-semibold text-purple-600 shadow-sm">
+                  共 ${totalCount} 次
+                </span>
+              </div>
+              
+              <!-- 核心数据卡片 -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                <!-- 中奖率 -->
+                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-purple-100">
+                  <div class="flex justify-center mb-2">
+                    <div class="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
+                      ${winRate}%
+                    </div>
+                  </div>
+                  <p class="text-xs text-slate-600 mb-1">中奖率</p>
+                  <p class="text-sm font-semibold text-slate-700">${winCount}/${totalCount} 次</p>
+                </div>
+                
+                <!-- 总投注 -->
+                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-red-100">
+                  <div class="text-2xl font-bold text-red-600 mb-1">
+                    $${(totalBet / 500000).toFixed(2)}
+                  </div>
+                  <p class="text-xs text-slate-600 mb-1">总投注</p>
+                  <p class="text-sm font-semibold text-slate-700">${totalCount} 次</p>
+                </div>
+                
+                <!-- 总赢得 -->
+                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-green-100">
+                  <div class="text-2xl font-bold text-green-600 mb-1">
+                    $${(totalWin / 500000).toFixed(2)}
+                  </div>
+                  <p class="text-xs text-slate-600 mb-1">总赢得</p>
+                  <p class="text-sm font-semibold text-slate-700">${winCount} 次</p>
+                </div>
+                
+                <!-- 盈亏 -->
+                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
+                  <div class="text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'} mb-1">
+                    ${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}
+                  </div>
+                  <p class="text-xs text-slate-600 mb-1">净盈亏</p>
+                  <p class="text-sm font-semibold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${netProfit >= 0 ? '📈 盈利' : '📉 亏损'}
+                  </p>
+                </div>
+              </div>
+              
+              <!-- 奖项分布 -->
+              <div class="bg-white rounded-xl p-5 shadow-md border border-slate-200">
+                <div class="flex items-center justify-between mb-4">
+                  <p class="text-sm font-bold text-slate-700">🎁 奖项分布</p>
+                  <p class="text-xs text-slate-500">各奖项获得次数及概率</p>
+                </div>
+                <div class="space-y-2">
+                  ${Object.entries(winTypes)
+                    .sort((a, b) => b[1].count - a[1].count)
+                    .map(([key, data]) => {
+                      const percentage = totalCount > 0 ? ((data.count / totalCount) * 100).toFixed(1) : '0.0';
+                      const barWidth = totalCount > 0 ? (data.count / totalCount) * 100 : 0;
+                      return `
+                        <div class="relative">
+                          <div class="flex items-center justify-between text-xs mb-1">
+                            <span class="font-medium ${data.color}">${data.name}</span>
+                            <div>
+                              <span class="font-bold text-slate-900">${data.count}</span>
+                              <span class="text-slate-500 ml-1">(${percentage}%)</span>
+                            </div>
+                          </div>
+                          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full transition-all duration-500" 
+                                 style="width: ${barWidth}%"></div>
+                          </div>
+                        </div>
+                      `;
+                    }).join('')}
+                </div>
+              </div>
+              
+              ${totalCount > 5 ? `
+                <div class="mt-5 text-center">
+                  <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-purple-200">
+                    <span class="text-purple-600">👇</span>
+                    <span class="text-sm font-medium text-purple-700">以下显示最近 5 条记录</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+          
+          container.innerHTML = statsHtml + records.map((r, idx) => {
             const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
             const bgClass = r.win_amount > 0 ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200';
             const symbolsHTML = r.result_symbols.map(s => {
