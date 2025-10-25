@@ -398,6 +398,13 @@ slot.get('/leaderboard', requireAuth, async (c) => {
         const limit = parseInt(c.req.query('limit') || '100');
         const leaderboard = getLeaderboard(limit);
 
+        // 调试：检查排行榜数据
+        console.log('[排行榜] 前3名数据:', leaderboard.slice(0, 3).map(u => ({
+            username: u.username,
+            avatar_url: u.avatar_url,
+            total_win: u.total_win
+        })));
+
         // 获取用户自己的排名和统计
         const userStats = getUserTotalStats(session.linux_do_id);
         const userRank = getUserRank(session.linux_do_id);

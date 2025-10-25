@@ -301,6 +301,8 @@ export function updateUserTotalStats(
 ) {
     const now = Date.now();
 
+    console.log('[更新统计] 用户:', username, 'Avatar URL:', avatarUrl);
+
     // 获取现有统计
     const currentStats = slotQueries.getUserStats.get(linuxDoId);
 

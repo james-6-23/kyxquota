@@ -284,27 +284,23 @@
     <!-- Navbar -->
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
+        <div class="flex items-center h-16">
           <!-- Logo -->
-          <h1 class="text-xl font-bold text-slate-900 w-48">KYX API</h1>
-          
-          <!-- 中间：模式切换按钮 -->
-          <div class="absolute left-1/2 transform -translate-x-1/2">
-            <div class="inline-flex bg-slate-100 rounded-xl p-1 gap-1 relative" data-switch-container>
-              <!-- 滑动背景 -->
-              <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
-                   style="width: 120px; left: 4px;"></div>
-              
-              <!-- 加油站按钮 -->
+          <div class="flex items-center gap-8">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">KYX API</h1>
+            
+            <!-- 导航选项卡 -->
+            <div class="flex items-center gap-1" data-switch-container>
+              <!-- 加油站 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
               
-              <!-- 娱乐站按钮 -->
+              <!-- 娱乐站 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
                 <span>🎰</span>
                 <span>娱乐站</span>
               </button>
@@ -312,7 +308,7 @@
           </div>
           
           <!-- 右侧：用户菜单 -->
-          <div class="flex items-center gap-3 w-48 justify-end">
+          <div class="flex items-center gap-3 ml-auto">
             <div class="relative">
               <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
                 <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
@@ -509,29 +505,23 @@
     <!-- 顶部导航栏（与主界面一致）-->
     <nav class="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16">
-          <!-- Logo -->
-          <div class="w-48 flex items-center gap-4">
-            <h1 class="text-xl font-bold text-white">KYX API</h1>
-          </div>
-          
-          <!-- 中间：模式切换按钮 -->
-          <div class="absolute left-1/2 transform -translate-x-1/2">
-            <div class="inline-flex bg-black/20 backdrop-blur-sm rounded-xl p-1 gap-1 relative border border-white/10" data-switch-container>
-              <!-- 滑动背景 -->
-              <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
-                   style="width: 120px; left: 124px;"></div>
-              
-              <!-- 加油站按钮 -->
+        <div class="flex items-center h-16">
+          <!-- Logo和导航 -->
+          <div class="flex items-center gap-8">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">KYX API</h1>
+            
+            <!-- 导航选项卡 -->
+            <div class="flex items-center gap-1" data-switch-container>
+              <!-- 加油站 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
               
-              <!-- 娱乐站按钮 -->
+              <!-- 娱乐站 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center">
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
                 <span>🎰</span>
                 <span>娱乐站</span>
               </button>
@@ -539,7 +529,7 @@
           </div>
           
           <!-- 右侧：用户菜单 -->
-          <div class="flex items-center gap-3 w-48 justify-end">
+          <div class="flex items-center gap-3 ml-auto">
             <div class="text-white text-right">
               <p class="text-xs opacity-75">剩余额度</p>
               <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
@@ -856,41 +846,34 @@
       // 获取所有切换按钮容器
       const containers = document.querySelectorAll('[data-switch-container]');
       
-      containers.forEach((container, idx) => {
+      containers.forEach((container) => {
         const refuelBtn = container.querySelector('[data-btn="refuel"]');
         const entertainBtn = container.querySelector('[data-btn="entertain"]');
-        const switchBg = container.querySelector('[data-switch-bg]');
         
         // 检查是否在老虎机界面（暗色主题）
         const isDarkTheme = container.closest('#slotMachineModal') !== null;
         
         if (mode === 'refuel') {
-          // 加油站模式
+          // 加油站模式激活
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            // 老虎机界面 - 暗色主题
+            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg';
+            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
-            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-          }
-          
-          if (switchBg) {
-            switchBg.style.left = '4px';
-            switchBg.style.background = 'linear-gradient(to right, rgb(59, 130, 246), rgb(79, 70, 229))';
+            // 主界面 - 亮色主题
+            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md';
+            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           }
         } else {
-          // 娱乐站模式
+          // 娱乐站模式激活
           if (isDarkTheme) {
-            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white/70 hover:text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
+            // 老虎机界面 - 暗色主题
+            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg';
           } else {
-            refuelBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-            entertainBtn.className = 'relative z-10 px-4 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2 w-[120px] justify-center';
-          }
-          
-          if (switchBg) {
-            switchBg.style.left = '124px';
-            switchBg.style.background = 'linear-gradient(to right, rgb(234, 179, 8), rgb(249, 115, 22))';
+            // 主界面 - 亮色主题
+            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-md';
           }
         }
       });
@@ -1082,9 +1065,14 @@
           document.getElementById('userId').textContent = 'ID: ' + linux_do_id;
           document.getElementById('userInitial').textContent = username[0].toUpperCase();
 
-          if (avatar_url) {
-            document.getElementById('userAvatar').style.backgroundImage = `url(${avatar_url})`;
-            document.getElementById('userAvatar').style.backgroundSize = 'cover';
+          console.log('[加载用户信息] 用户名:', username, '头像URL:', avatar_url);
+
+          // 设置用户头像
+          if (avatar_url && avatar_url.trim()) {
+            const userAvatar = document.getElementById('userAvatar');
+            userAvatar.style.backgroundImage = `url(${avatar_url})`;
+            userAvatar.style.backgroundSize = 'cover';
+            userAvatar.style.backgroundPosition = 'center';
             document.getElementById('userInitial').textContent = '';
           }
 
@@ -1554,19 +1542,29 @@
       const userAvatar = document.getElementById('userAvatar');
       const userInitial = document.getElementById('userInitial')?.textContent;
       
+      console.log('[同步用户信息] 用户名:', userName, '头像元素:', userAvatar);
+      
       if (userName) document.getElementById('slotUserName').textContent = userName;
       if (userId) document.getElementById('slotUserId').textContent = userId;
-      if (userInitial) document.getElementById('slotUserInitial').textContent = userInitial;
+      if (userInitial && !userAvatar?.style.backgroundImage) {
+        document.getElementById('slotUserInitial').textContent = userInitial;
+      }
       
       // 复制头像样式
       if (userAvatar) {
         const slotAvatar = document.getElementById('slotUserAvatar');
         if (slotAvatar) {
-          slotAvatar.style.backgroundImage = userAvatar.style.backgroundImage;
-          slotAvatar.style.backgroundSize = 'cover';
-          slotAvatar.style.backgroundPosition = 'center';
-          if (userAvatar.style.backgroundImage) {
+          const bgImage = userAvatar.style.backgroundImage;
+          console.log('[同步头像] 背景图片:', bgImage);
+          
+          if (bgImage) {
+            slotAvatar.style.backgroundImage = bgImage;
+            slotAvatar.style.backgroundSize = 'cover';
+            slotAvatar.style.backgroundPosition = 'center';
             document.getElementById('slotUserInitial').textContent = '';
+          } else if (userInitial) {
+            // 如果没有头像，显示首字母
+            document.getElementById('slotUserInitial').textContent = userInitial;
           }
         }
       }
@@ -1616,16 +1614,22 @@
               rankDisplay = `<span class="text-xs font-bold text-white/50">#${rank}</span>`;
             }
 
-            // 构建头像HTML（使用背景图片方式，与加油站一致）
+            // 构建头像HTML
             const username = user.username || user.linux_do_id;
             const avatarUrl = user.avatar_url || `https://linux.do/user_avatar/linux.do/${username}/48/1_2.png`;
+            
+            console.log('排行榜用户:', username, '头像URL:', avatarUrl);
 
             return `
               <div class="p-2 rounded-lg ${bgClass} transition-all">
                 <div class="flex items-center gap-2">
                   <div class="w-8 text-center flex-shrink-0">${rankDisplay}</div>
-                  <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex-shrink-0 border border-white/30" 
-                       style="background-image: url('${avatarUrl}'); background-size: cover; background-position: center;">
+                  <img src="${avatarUrl}" 
+                       alt="${username}" 
+                       class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 bg-gradient-to-r from-indigo-500 to-purple-500"
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold border border-white/30 flex-shrink-0" style="display:none;">
+                    ${username.charAt(0).toUpperCase()}
                   </div>
                   <div class="flex-1 min-w-0">
                     <p class="font-bold text-xs text-white truncate">${username}</p>
@@ -2078,6 +2082,8 @@
           document.getElementById('loadingPage').classList.add('hidden');
           document.getElementById('mainSection').classList.remove('hidden');
           await loadQuota();
+          // 初始化切换按钮样式
+          updateSwitchButtons('refuel');
           if (isOAuthCallback) {
             showToast('登录成功', 'success');
             sessionStorage.removeItem('oauth_loading');
