@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { userQueries, slotQueries, adminQueries } from '../database';
 import type { SessionData } from '../types';
+import { getCookie, getSession } from '../utils';
 import {
     getSlotConfig,
     getUserTodaySpins,
@@ -23,8 +24,36 @@ import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 
 const slot = new Hono();
 
+/**
+ * 中间件：验证用户登录（共享加油站session）
+ */
+async function requireAuth(c: any, next: any) {
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.json({ success: false, message: '未登录' }, 401);
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.json({ success: false, message: '会话无效' }, 401);
+    }
+
+    // 检查用户是否被封禁
+    const user = userQueries.get.get(session.linux_do_id);
+    if (user && user.is_banned) {
+        return c.json({
+            success: false,
+            message: `您的账号已被封禁${user.banned_reason ? '，原因：' + user.banned_reason : ''}`,
+            banned: true
+        }, 403);
+    }
+
+    c.set('session', session);
+    await next();
+}
+
 // 获取老虎机配置和用户状态
-slot.get('/config', async (c) => {
+slot.get('/config', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -112,7 +141,7 @@ slot.get('/config', async (c) => {
 });
 
 // 旋转老虎机
-slot.post('/spin', async (c) => {
+slot.post('/spin', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -300,7 +329,7 @@ slot.post('/spin', async (c) => {
 });
 
 // 获取游戏记录
-slot.get('/records', async (c) => {
+slot.get('/records', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -327,7 +356,7 @@ slot.get('/records', async (c) => {
 });
 
 // 获取今日统计
-slot.get('/stats', async (c) => {
+slot.get('/stats', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -347,7 +376,7 @@ slot.get('/stats', async (c) => {
 });
 
 // 获取排行榜
-slot.get('/leaderboard', async (c) => {
+slot.get('/leaderboard', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {

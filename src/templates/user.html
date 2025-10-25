@@ -267,17 +267,34 @@
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
-          <h1 class="text-xl font-bold text-slate-900">KYX API 加油站</h1>
-          <div class="flex items-center gap-3">
-            <!-- 老虎机入口按钮 -->
-            <button onclick="showSlotMachine()" 
-                    class="px-4 py-2 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 
-                           text-white rounded-lg font-bold shadow-lg hover:scale-105 
-                           transform transition-all duration-200">
-              <span class="text-lg">🎰</span>
-              <span class="ml-1">娱乐模式</span>
-            </button>
-            
+          <!-- Logo -->
+          <h1 class="text-xl font-bold text-slate-900 w-48">KYX API</h1>
+          
+          <!-- 中间：模式切换按钮 -->
+          <div class="absolute left-1/2 transform -translate-x-1/2">
+            <div class="inline-flex bg-slate-100 rounded-xl p-1 relative" data-switch-container>
+              <!-- 滑动背景 -->
+              <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
+                   style="width: 120px; left: 4px;"></div>
+              
+              <!-- 加油站按钮 -->
+              <button data-btn="refuel" onclick="switchToRefuel()" 
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2">
+                <span>⛽</span>
+                <span>加油站</span>
+              </button>
+              
+              <!-- 娱乐站按钮 -->
+              <button data-btn="entertain" onclick="switchToEntertain()" 
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 transition-all duration-300 flex items-center gap-2">
+                <span>🎰</span>
+                <span>娱乐站</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 右侧：用户菜单 -->
+          <div class="flex items-center gap-3 w-48 justify-end">
             <div class="relative">
               <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
                 <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
@@ -468,24 +485,54 @@
   <!-- 老虎机全屏界面 -->
   <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-purple-900 via-indigo-900 to-blue-900">
     
-    <!-- 顶部栏 -->
-    <div class="bg-black/30 backdrop-blur-md p-4 flex justify-between items-center">
-      <button onclick="closeSlotMachine()" class="text-white text-lg hover:text-yellow-400 transition-colors">
-        ← 返回主页
-      </button>
-      <div class="text-white text-center">
-        <p class="text-sm">剩余额度</p>
-        <p id="slotQuota" class="text-2xl font-bold text-yellow-400">$0.00</p>
+    <!-- 顶部导航栏（与主界面一致）-->
+    <nav class="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16">
+          <!-- Logo -->
+          <div class="w-48 flex items-center gap-4">
+            <h1 class="text-xl font-bold text-white">KYX API</h1>
+          </div>
+          
+          <!-- 中间：模式切换按钮 -->
+          <div class="absolute left-1/2 transform -translate-x-1/2">
+            <div class="inline-flex bg-white/10 backdrop-blur-sm rounded-xl p-1 relative border border-white/20" data-switch-container>
+              <!-- 滑动背景 -->
+              <div data-switch-bg class="absolute h-10 bg-gradient-to-r from-yellow-500 to-orange-600 rounded-lg transition-all duration-300 ease-in-out shadow-lg" 
+                   style="width: 120px; left: 132px;"></div>
+              
+              <!-- 加油站按钮 -->
+              <button data-btn="refuel" onclick="switchToRefuel()" 
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2">
+                <span>⛽</span>
+                <span>加油站</span>
+              </button>
+              
+              <!-- 娱乐站按钮 -->
+              <button data-btn="entertain" onclick="switchToEntertain()" 
+                      class="relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2">
+                <span>🎰</span>
+                <span>娱乐站</span>
+              </button>
+            </div>
+          </div>
+          
+          <!-- 右侧：额度显示和功能按钮 -->
+          <div class="flex items-center gap-4 w-48 justify-end">
+            <div class="text-white text-right">
+              <p class="text-xs opacity-75">剩余额度</p>
+              <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
+            </div>
+            <button onclick="showSlotRecords()" class="text-white hover:text-yellow-400 transition-colors p-2" title="游戏记录">
+              📊
+            </button>
+            <button onclick="showLeaderboard()" class="text-white hover:text-yellow-400 transition-colors p-2" title="排行榜">
+              🏆
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="flex items-center gap-4">
-        <button onclick="showSlotRecords()" class="text-white text-lg hover:text-yellow-400 transition-colors">
-          📊 记录
-        </button>
-        <button onclick="showLeaderboard()" class="text-white text-lg hover:text-yellow-400 transition-colors">
-          🏆 排行榜
-        </button>
-      </div>
-    </div>
+    </nav>
 
     <!-- 老虎机主体 -->
     <div class="max-w-5xl mx-auto p-6 flex flex-col items-center justify-center" style="height: calc(100vh - 200px);">
@@ -698,6 +745,82 @@
     };
 
     let currentUser = null;
+    let currentMode = 'refuel'; // 'refuel' or 'entertain'
+
+    // 切换到加油站模式
+    function switchToRefuel() {
+      if (currentMode === 'refuel') return;
+      
+      currentMode = 'refuel';
+      
+      // 更新主界面的切换按钮
+      updateSwitchButtons('refuel');
+      
+      // 关闭老虎机，显示主界面
+      document.getElementById('slotMachineModal').classList.add('hidden');
+      document.getElementById('mainSection').classList.remove('hidden');
+      
+      // 刷新额度
+      loadQuota();
+    }
+
+    // 切换到娱乐站模式
+    function switchToEntertain() {
+      if (currentMode === 'entertain') return;
+      
+      currentMode = 'entertain';
+      
+      // 更新主界面的切换按钮
+      updateSwitchButtons('entertain');
+      
+      // 打开老虎机
+      showSlotMachine();
+    }
+
+    // 更新所有切换按钮的样式（主界面和老虎机界面同步）
+    function updateSwitchButtons(mode) {
+      // 获取所有切换按钮容器
+      const containers = document.querySelectorAll('[data-switch-container]');
+      
+      containers.forEach((container, idx) => {
+        const refuelBtn = container.querySelector('[data-btn="refuel"]');
+        const entertainBtn = container.querySelector('[data-btn="entertain"]');
+        const switchBg = container.querySelector('[data-switch-bg]');
+        
+        // 检查是否在老虎机界面（暗色主题）
+        const isDarkTheme = container.closest('#slotMachineModal') !== null;
+        
+        if (mode === 'refuel') {
+          // 加油站模式
+          if (isDarkTheme) {
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2';
+          } else {
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2';
+          }
+          
+          if (switchBg) {
+            switchBg.style.left = '4px';
+            switchBg.style.background = 'linear-gradient(to right, rgb(59, 130, 246), rgb(79, 70, 229))';
+          }
+        } else {
+          // 娱乐站模式
+          if (isDarkTheme) {
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white/60 hover:text-white transition-all duration-300 flex items-center gap-2';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
+          } else {
+            refuelBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-slate-600 hover:text-slate-800 transition-all duration-300 flex items-center gap-2';
+            entertainBtn.className = 'relative z-10 px-6 py-2 rounded-lg font-semibold text-white transition-all duration-300 flex items-center gap-2';
+          }
+          
+          if (switchBg) {
+            switchBg.style.left = '132px';
+            switchBg.style.background = 'linear-gradient(to right, rgb(234, 179, 8), rgb(249, 115, 22))';
+          }
+        }
+      });
+    }
 
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -1287,6 +1410,10 @@
 
         if (!data.success) {
           showToast(data.message, 'error');
+          // 如果未登录或其他错误，切换回加油站模式
+          if (currentMode === 'entertain') {
+            switchToRefuel();
+          }
           return;
         }
 
@@ -1299,19 +1426,23 @@
         // 更新界面数据
         updateSlotUI();
 
-        // 显示老虎机界面
+        // 隐藏主界面，显示老虎机界面
+        document.getElementById('mainSection').classList.add('hidden');
         document.getElementById('slotMachineModal').classList.remove('hidden');
       } catch (error) {
         console.error('打开老虎机失败:', error);
         showToast('打开老虎机失败', 'error');
+        // 出错时切换回加油站模式
+        if (currentMode === 'entertain') {
+          switchToRefuel();
+        }
       }
     }
 
     // 关闭老虎机
     function closeSlotMachine() {
-      document.getElementById('slotMachineModal').classList.add('hidden');
-      // 刷新主页额度
-      loadQuota();
+      // 切换回加油站模式
+      switchToRefuel();
     }
 
     // 更新老虎机界面数据
