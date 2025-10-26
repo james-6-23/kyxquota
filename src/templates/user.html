@@ -180,8 +180,9 @@
         max-height: 100%;
       }
       
-      /* 隐藏侧边栏排行榜 */
-      #slotSidebarLeaderboard {
+      /* 隐藏侧边栏排行榜和盈亏榜 */
+      #slotSidebarLeaderboard,
+      #slotSidebarProfitBoard {
         display: none !important;
       }
       
@@ -742,13 +743,51 @@
         </button>
       </div>
 
-      <!-- 右侧：排行榜（悬浮显示）- 移动端隐藏 -->
+      <!-- 左侧：亏损榜（悬浮显示）- 移动端隐藏 -->
+      <div id="slotSidebarProfitBoard" class="absolute top-4 left-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-red-950/90 to-rose-950/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-500/30 overflow-hidden flex flex-col">
+        <div class="p-4 bg-gradient-to-r from-red-600/30 to-rose-600/30 border-b border-red-500/30">
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-bold text-red-400 flex items-center gap-2">
+              <span>📉</span>
+              <span>亏损榜 TOP 20</span>
+            </h2>
+            <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新">
+              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+            </button>
+          </div>
+          <p class="text-xs text-white/70 text-center">最亏损用户（倒数前10）</p>
+          <p id="profitBoardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
+        </div>
+        
+        <!-- 用户自己的盈亏（固定在上方）-->
+        <div class="px-4 py-3 bg-gradient-to-r from-red-600/20 to-rose-600/20 border-b border-red-500/20">
+          <div class="text-white text-sm space-y-1">
+            <div class="flex justify-between items-center">
+              <span class="opacity-90">我的亏损排名：</span>
+              <span id="profitBoardMyRank" class="font-bold text-yellow-300">-</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="opacity-90">我的盈亏：</span>
+              <span id="profitBoardMyProfit" class="font-bold">$0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 盈亏榜列表（可滚动）-->
+        <div id="profitBoardList" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
+          <div class="text-center text-white/50 py-8">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 右侧：盈亏排行榜（悬浮显示）- 移动端隐藏 -->
       <div id="slotSidebarLeaderboard" class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-indigo-900/90 to-blue-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col">
         <div class="p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-b border-white/20">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-bold text-yellow-400 flex items-center gap-2">
               <span>🏆</span>
-              <span>获奖排行榜 TOP 10</span>
+              <span>盈亏排行榜 TOP 10</span>
             </h2>
             <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新排行榜">
               <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -756,7 +795,7 @@
               </svg>
             </button>
           </div>
-          <p class="text-xs text-white/70 text-center">按总获得金额排名</p>
+          <p class="text-xs text-white/70 text-center">按总盈亏排名（总赢得 - 总投注）</p>
           <p id="leaderboardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
         </div>
         
@@ -768,8 +807,8 @@
               <span id="sidebarMyRank" class="font-bold text-yellow-300">-</span>
             </div>
             <div class="flex justify-between items-center">
-              <span class="opacity-90">总获奖：</span>
-              <span id="sidebarMyTotalWin" class="font-bold text-green-300">$0</span>
+              <span class="opacity-90">总盈亏：</span>
+              <span id="sidebarMyProfit" class="font-bold">$0</span>
             </div>
           </div>
         </div>
@@ -811,7 +850,8 @@
 
   <!-- 老虎机记录弹窗 -->
   <div id="slotRecordsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
-    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      <!-- 标题栏 -->
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-purple-600 to-indigo-600">
         <h2 class="text-2xl font-bold text-white">🎰 我的抽奖记录</h2>
         <button onclick="closeSlotRecords()" class="text-white hover:text-yellow-300 transition-colors">
@@ -820,7 +860,59 @@
           </svg>
         </button>
       </div>
-      <div id="slotRecordsContent" class="p-6 overflow-y-auto max-h-[calc(90vh-100px)]">
+      
+      <!-- 搜索和筛选栏 -->
+      <div class="p-4 border-b border-slate-200 bg-slate-50">
+        <div class="flex flex-col sm:flex-row gap-3">
+          <!-- 搜索框 -->
+          <div class="flex-1">
+            <div class="relative">
+              <input 
+                type="text" 
+                id="recordSearchInput" 
+                placeholder="搜索用户名..." 
+                class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                onkeyup="filterSlotRecords()"
+              >
+              <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
+          </div>
+          
+          <!-- 中奖类型筛选 -->
+          <div class="sm:w-64">
+            <select 
+              id="winTypeFilter" 
+              class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onchange="filterSlotRecords()"
+            >
+              <option value="all">全部类型</option>
+              <option value="super_jackpot">🏆 超级大奖</option>
+              <option value="special_combo">💎 特殊组合</option>
+              <option value="quad">🎰 四连</option>
+              <option value="triple">✨ 三连</option>
+              <option value="double">🎁 双连</option>
+              <option value="punishment">⚡ 律师函</option>
+              <option value="none">❌ 未中奖</option>
+            </select>
+          </div>
+          
+          <!-- 清除筛选按钮 -->
+          <button 
+            onclick="clearRecordFilters()" 
+            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors whitespace-nowrap"
+          >
+            🔄 重置
+          </button>
+        </div>
+        
+        <!-- 筛选结果提示 -->
+        <div id="filterResultHint" class="mt-2 text-sm text-slate-600 hidden"></div>
+      </div>
+      
+      <!-- 记录内容 -->
+      <div id="slotRecordsContent" class="p-6 overflow-y-auto flex-1">
         <!-- 记录将通过 JavaScript 加载 -->
       </div>
     </div>
@@ -831,8 +923,8 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-yellow-500 to-orange-600">
         <div>
-          <h2 class="text-2xl font-bold text-white">🏆 获奖总额排行榜</h2>
-          <p class="text-sm text-white/90 mt-1">按历史总获得金额排名</p>
+          <h2 class="text-2xl font-bold text-white">🏆 盈亏排行榜</h2>
+          <p class="text-sm text-white/90 mt-1">按总盈亏排名（总赢得 - 总投注）</p>
         </div>
         <button onclick="closeLeaderboard()" class="text-white hover:text-gray-200 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -857,8 +949,8 @@
             <p id="myTotalBet" class="text-2xl font-bold text-red-600">$0</p>
           </div>
           <div class="text-center">
-            <p class="text-sm text-slate-600 mb-1">总获奖</p>
-            <p id="myTotalWin" class="text-2xl font-bold text-green-600">$0</p>
+            <p class="text-sm text-slate-600 mb-1">总盈亏</p>
+            <p id="myTotalProfit" class="text-2xl font-bold">$0</p>
           </div>
         </div>
         <div class="mt-4 text-center">
@@ -866,8 +958,17 @@
         </div>
       </div>
 
-      <div id="leaderboardContent" class="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
-        <!-- 排行榜内容 -->
+      <!-- 排行榜内容区 -->
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+        <!-- 盈利排行榜 -->
+        <div id="leaderboardContent" class="mb-6">
+          <!-- 排行榜内容 -->
+        </div>
+        
+        <!-- 亏损排行榜 -->
+        <div id="lossLeaderboardContent">
+          <!-- 亏损榜内容 -->
+        </div>
       </div>
     </div>
   </div>
@@ -1885,19 +1986,34 @@
 
         if (!data.success) {
           document.getElementById('sidebarLeaderboard').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
+          document.getElementById('profitBoardList').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
           return;
         }
 
-        const { leaderboard, userStats, userRank } = data.data;
+        const { leaderboard, lossLeaderboard, userStats, userRank, userLossRank } = data.data;
 
-        // 更新用户自己的统计
+        // 计算用户盈亏
+        const userProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
+        const userProfitText = `${userProfit >= 0 ? '+' : ''}$${(userProfit / 500000).toFixed(2)}`;
+        const userProfitColor = userProfit >= 0 ? 'text-green-300' : 'text-red-300';
+
+        // 更新右侧排行榜的用户统计
         document.getElementById('sidebarMyRank').textContent = userRank > 0 ? `#${userRank}` : '未上榜';
-        document.getElementById('sidebarMyTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
+        const sidebarMyProfit = document.getElementById('sidebarMyProfit');
+        sidebarMyProfit.textContent = userProfitText;
+        sidebarMyProfit.className = `font-bold ${userProfitColor}`;
+
+        // 更新左侧亏损榜的用户统计
+        document.getElementById('profitBoardMyRank').textContent = userLossRank > 0 ? `#${userLossRank}` : '未上榜';
+        const profitBoardMyProfit = document.getElementById('profitBoardMyProfit');
+        profitBoardMyProfit.textContent = userProfitText;
+        profitBoardMyProfit.className = `font-bold ${userProfitColor}`;
 
         // 更新刷新时间
         const now = new Date();
         const timeStr = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         document.getElementById('leaderboardLastUpdate').textContent = `最后更新：${timeStr}`;
+        document.getElementById('profitBoardLastUpdate').textContent = `最后更新：${timeStr}`;
         
         // 如果是手动刷新，显示提示
         if (forceRefresh) {
@@ -1905,76 +2021,87 @@
         }
 
         // 调试：输出完整的排行榜数据
-        console.log('[排行榜数据]', leaderboard);
+        console.log('[盈亏排行榜数据]', leaderboard);
 
-        // 渲染排行榜
-        const container = document.getElementById('sidebarLeaderboard');
-        
-        if (leaderboard.length === 0) {
-          container.innerHTML = '<div class="text-center text-white/50 py-4 text-sm">暂无排行数据</div>';
-        } else {
-          container.innerHTML = leaderboard.map((user, index) => {
-            const rank = index + 1;
-            let rankDisplay = '';
-            let bgClass = 'bg-white/5 hover:bg-white/10';
-            
-            if (rank === 1) {
-              rankDisplay = '<span class="text-xl">🥇</span>';
-              bgClass = 'bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border border-yellow-400/50 shadow-lg';
-            } else if (rank === 2) {
-              rankDisplay = '<span class="text-xl">🥈</span>';
-              bgClass = 'bg-gradient-to-r from-gray-400/30 to-slate-400/30 border border-gray-300/50 shadow-lg';
-            } else if (rank === 3) {
-              rankDisplay = '<span class="text-xl">🥉</span>';
-              bgClass = 'bg-gradient-to-r from-orange-500/30 to-amber-600/30 border border-orange-400/50 shadow-lg';
-            } else {
-              rankDisplay = `<span class="text-xs font-bold text-white/50">#${rank}</span>`;
-            }
+        // 渲染排行榜的通用函数
+        const renderLeaderboardItem = (user, index) => {
+          const rank = index + 1;
+          let rankDisplay = '';
+          let bgClass = 'bg-white/5 hover:bg-white/10';
+          
+          if (rank === 1) {
+            rankDisplay = '<span class="text-xl">🥇</span>';
+            bgClass = 'bg-gradient-to-r from-yellow-500/30 to-amber-500/30 border border-yellow-400/50 shadow-lg';
+          } else if (rank === 2) {
+            rankDisplay = '<span class="text-xl">🥈</span>';
+            bgClass = 'bg-gradient-to-r from-gray-400/30 to-slate-400/30 border border-gray-300/50 shadow-lg';
+          } else if (rank === 3) {
+            rankDisplay = '<span class="text-xl">🥉</span>';
+            bgClass = 'bg-gradient-to-r from-orange-500/30 to-amber-600/30 border border-orange-400/50 shadow-lg';
+          } else {
+            rankDisplay = `<span class="text-xs font-bold text-white/50">#${rank}</span>`;
+          }
 
-            // 构建头像HTML
-            const username = user.username || user.linux_do_id;
-            
-            // 头像URL构建策略：
-            // 1. 如果有avatar_url且不为空，使用它
-            // 2. 否则使用LinuxDo的letter_avatar格式（字母头像）
-            let avatarUrl = '';
-            if (user.avatar_url && user.avatar_url.trim()) {
-              avatarUrl = user.avatar_url;
-            } else {
-              // 使用LinuxDo的letter_avatar格式，这是一个通用的字母头像
-              // 格式：https://linux.do/letter_avatar_proxy/v4/letter/用户名首字母/颜色代码/48.png
-              const firstLetter = username.charAt(0).toLowerCase();
-              // 使用用户名生成一个简单的颜色代码（基于字母）
-              const colorCode = firstLetter.charCodeAt(0) % 10;
-              avatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/48.png`;
-            }
-            
-            return `
-              <div class="p-2 rounded-lg ${bgClass} transition-all">
-                <div class="flex items-center gap-2">
-                  <div class="w-8 text-center flex-shrink-0">${rankDisplay}</div>
-                  <img src="${avatarUrl}" 
-                       alt="${username}" 
-                       class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 object-cover"
-                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                  <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold border border-white/30 flex-shrink-0" style="display:none;">
-                    ${username.charAt(0).toUpperCase()}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="font-bold text-xs text-white truncate">${username}</p>
-                    <p class="text-xs text-white/50">${user.total_spins} 次</p>
-                  </div>
-                  <div class="text-right flex-shrink-0">
-                    <p class="text-xs font-bold text-green-300">$${(user.total_win / 500000).toFixed(2)}</p>
-                  </div>
+          // 构建头像HTML
+          const username = user.username || user.linux_do_id;
+          
+          let avatarUrl = '';
+          if (user.avatar_url && user.avatar_url.trim()) {
+            avatarUrl = user.avatar_url;
+          } else {
+            const firstLetter = username.charAt(0).toLowerCase();
+            const colorCode = firstLetter.charCodeAt(0) % 10;
+            avatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/48.png`;
+          }
+          
+          // 计算盈亏
+          const profit = (user.total_win || 0) - (user.total_bet || 0);
+          const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+          const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
+          
+          return `
+            <div class="p-2 rounded-lg ${bgClass} transition-all">
+              <div class="flex items-center gap-2">
+                <div class="w-8 text-center flex-shrink-0">${rankDisplay}</div>
+                <img src="${avatarUrl}" 
+                     alt="${username}" 
+                     class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 object-cover"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold border border-white/30 flex-shrink-0" style="display:none;">
+                  ${username.charAt(0).toUpperCase()}
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-bold text-xs text-white truncate">${username}</p>
+                  <p class="text-xs text-white/50">${user.total_spins} 次</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="text-xs font-bold ${profitColor}">${profitText}</p>
                 </div>
               </div>
-            `;
-          }).join('');
+            </div>
+          `;
+        };
+
+        // 渲染右侧排行榜（盈利榜 - 按盈亏降序）
+        const rightContainer = document.getElementById('sidebarLeaderboard');
+        if (leaderboard.length === 0) {
+          rightContainer.innerHTML = '<div class="text-center text-white/50 py-4 text-sm">暂无排行数据</div>';
+        } else {
+          rightContainer.innerHTML = leaderboard.map(renderLeaderboardItem).join('');
         }
+
+        // 渲染左侧亏损榜（使用后端返回的lossLeaderboard）
+        const leftContainer = document.getElementById('profitBoardList');
+        if (!lossLeaderboard || lossLeaderboard.length === 0) {
+          leftContainer.innerHTML = '<div class="text-center text-white/50 py-4 text-sm">暂无数据</div>';
+        } else {
+          leftContainer.innerHTML = lossLeaderboard.map(renderLeaderboardItem).join('');
+        }
+
       } catch (error) {
         console.error('加载排行榜失败:', error);
         document.getElementById('sidebarLeaderboard').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
+        document.getElementById('profitBoardList').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
       }
     }
 
@@ -2248,6 +2375,9 @@
     }
 
     // 显示游戏记录
+    // 全局存储所有记录（用于筛选）
+    let allSlotRecords = [];
+    
     async function showSlotRecords() {
       // 关闭所有下拉菜单
       const dropdownMenu = document.getElementById('dropdownMenu');
@@ -2264,15 +2394,31 @@
           return;
         }
 
-        // 只显示最近5条记录
-        const records = data.data.slice(0, 5);
-        const container = document.getElementById('slotRecordsContent');
+        // 保存所有记录到全局变量
+        allSlotRecords = data.data;
+        
+        // 显示模态框
+        document.getElementById('slotRecordsModal').classList.remove('hidden');
+        
+        // 渲染记录（不带筛选）
+        renderSlotRecords(allSlotRecords);
+      } catch (error) {
+        console.error('获取抽奖记录失败:', error);
+        showToast('获取抽奖记录失败', 'error');
+      }
+    }
+
+    // 渲染老虎机记录
+    function renderSlotRecords(records) {
+      const container = document.getElementById('slotRecordsContent');
 
         if (records.length === 0) {
-          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无抽奖记录</p>';
-        } else {
-          // 计算统计数据（基于所有记录）
-          const allRecords = data.data;
+          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无符合条件的记录</p>';
+          return;
+        }
+        
+        // 计算统计数据（基于筛选后的记录）
+        const allRecords = records;
           const totalCount = allRecords.length;
           const winCount = allRecords.filter(r => r.win_amount > 0).length;
           const winRate = totalCount > 0 ? ((winCount / totalCount) * 100).toFixed(1) : '0.0';
@@ -2386,18 +2532,21 @@
                 </div>
               </div>
               
-              ${totalCount > 5 ? `
+              ${totalCount > 10 ? `
                 <div class="mt-5 text-center">
                   <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-purple-200">
                     <span class="text-purple-600">👇</span>
-                    <span class="text-sm font-medium text-purple-700">以下显示最近 5 条记录</span>
+                    <span class="text-sm font-medium text-purple-700">以下显示最近 10 条记录</span>
                   </div>
                 </div>
               ` : ''}
             </div>
           `;
           
-          container.innerHTML = statsHtml + records.map((r, idx) => {
+          // 只显示最近10条
+          const displayRecords = records.slice(0, 10);
+          
+          container.innerHTML = statsHtml + displayRecords.map((r, idx) => {
             const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
             const bgClass = r.win_amount > 0 ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200';
             const symbolsHTML = r.result_symbols.map(s => {
@@ -2412,7 +2561,7 @@
               <div class="border ${bgClass} rounded-lg p-4 mb-3">
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-slate-600">#${records.length - idx}</span>
+                    <span class="text-sm text-slate-600">#${displayRecords.length - idx}</span>
                     <span class="text-xs font-medium text-indigo-600">@${displayName}</span>
                     <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN')}</span>
                     ${r.is_free_spin ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">免费</span>' : ''}
@@ -2434,13 +2583,47 @@
               </div>
             `;
           }).join('');
-        }
+    }
 
-        document.getElementById('slotRecordsModal').classList.remove('hidden');
-      } catch (error) {
-        console.error('获取抽奖记录失败:', error);
-        showToast('获取抽奖记录失败', 'error');
+    // 筛选老虎机记录
+    function filterSlotRecords() {
+      const searchInput = document.getElementById('recordSearchInput').value.toLowerCase();
+      const winTypeFilter = document.getElementById('winTypeFilter').value;
+      
+      let filteredRecords = allSlotRecords;
+      
+      // 按用户名筛选
+      if (searchInput) {
+        filteredRecords = filteredRecords.filter(r => {
+          const username = (r.linux_do_username || r.username || '').toLowerCase();
+          return username.includes(searchInput);
+        });
       }
+      
+      // 按中奖类型筛选
+      if (winTypeFilter !== 'all') {
+        filteredRecords = filteredRecords.filter(r => r.win_type === winTypeFilter);
+      }
+      
+      // 显示筛选结果提示
+      const hintEl = document.getElementById('filterResultHint');
+      if (searchInput || winTypeFilter !== 'all') {
+        hintEl.textContent = `找到 ${filteredRecords.length} 条记录`;
+        hintEl.classList.remove('hidden');
+      } else {
+        hintEl.classList.add('hidden');
+      }
+      
+      // 渲染筛选后的记录
+      renderSlotRecords(filteredRecords);
+    }
+
+    // 清除筛选
+    function clearRecordFilters() {
+      document.getElementById('recordSearchInput').value = '';
+      document.getElementById('winTypeFilter').value = 'all';
+      document.getElementById('filterResultHint').classList.add('hidden');
+      renderSlotRecords(allSlotRecords);
     }
 
     // 关闭游戏记录
@@ -2489,13 +2672,20 @@
           return;
         }
 
-        const { leaderboard, userStats, userRank } = data.data;
+        const { leaderboard, lossLeaderboard, userStats, userRank, userLossRank } = data.data;
 
         // 更新用户统计
         document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
         document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
         document.getElementById('myTotalBet').textContent = `$${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
-        document.getElementById('myTotalWin').textContent = `$${((userStats.total_win || 0) / 500000).toFixed(2)}`;
+        
+        // 计算并显示用户盈亏
+        const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
+        const myProfitText = `${myProfit >= 0 ? '+' : ''}$${(myProfit / 500000).toFixed(2)}`;
+        const myProfitElement = document.getElementById('myTotalProfit');
+        myProfitElement.textContent = myProfitText;
+        myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+        
         document.getElementById('myBiggestWin').textContent = `$${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
         
         const winTypeLabels = {
@@ -2509,15 +2699,21 @@
         };
         document.getElementById('myBiggestWinType').textContent = winTypeLabels[userStats.biggest_win_type] || '';
 
-        // 渲染排行榜
+        // 渲染盈利排行榜
         const container = document.getElementById('leaderboardContent');
         
         if (leaderboard.length === 0) {
           container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无排行数据</p>';
         } else {
           container.innerHTML = `
-            <div class="space-y-3">
-              ${leaderboard.map((user, index) => {
+            <div class="mb-4">
+              <h3 class="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                <span>🏆</span>
+                <span>盈利排行榜 TOP 100</span>
+                <span class="text-sm font-normal text-slate-500">（赚最多）</span>
+              </h3>
+              <div class="space-y-3">
+                ${leaderboard.map((user, index) => {
                 const rank = index + 1;
                 let rankBadge = '';
                 let bgClass = 'bg-white hover:bg-slate-50';
@@ -2536,6 +2732,11 @@
                 }
 
                 const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
+                
+                // 计算盈亏
+                const profit = (user.total_win || 0) - (user.total_bet || 0);
+                const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+                const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
 
                 return `
                   <div class="p-4 rounded-lg border border-slate-200 ${bgClass} transition-all">
@@ -2548,14 +2749,78 @@
                         </div>
                       </div>
                       <div class="text-right">
-                        <p class="text-xs text-slate-500">总获奖</p>
-                        <p class="text-2xl font-bold text-green-600">$${(user.total_win / 500000).toFixed(2)}</p>
+                        <p class="text-xs text-slate-500">总盈亏</p>
+                        <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
                         <p class="text-xs text-slate-500 mt-1">最大奖金: $${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
                       </div>
                     </div>
                   </div>
                 `;
               }).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        // 渲染亏损排行榜
+        const lossContainer = document.getElementById('lossLeaderboardContent');
+        
+        if (!lossLeaderboard || lossLeaderboard.length === 0) {
+          lossContainer.innerHTML = '';
+        } else {
+          lossContainer.innerHTML = `
+            <div class="mt-8 pt-6 border-t-2 border-red-200">
+              <h3 class="text-xl font-bold text-red-700 mb-4 flex items-center gap-2">
+                <span>📉</span>
+                <span>亏损排行榜 TOP 20</span>
+                <span class="text-sm font-normal text-slate-500">（亏最多）</span>
+              </h3>
+              <div class="space-y-3">
+                ${lossLeaderboard.slice(0, 20).map((user, index) => {
+                  const rank = index + 1;
+                  let rankBadge = '';
+                  let bgClass = 'bg-red-50 hover:bg-red-100 border-red-200';
+                  
+                  if (rank === 1) {
+                    rankBadge = '<span class="text-4xl">😱</span>';
+                    bgClass = 'bg-gradient-to-r from-red-100 to-rose-100 border-2 border-red-500';
+                  } else if (rank === 2) {
+                    rankBadge = '<span class="text-4xl">😭</span>';
+                    bgClass = 'bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400';
+                  } else if (rank === 3) {
+                    rankBadge = '<span class="text-4xl">😢</span>';
+                    bgClass = 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-red-300';
+                  } else {
+                    rankBadge = `<span class="text-2xl font-bold text-red-600">#${rank}</span>`;
+                  }
+
+                  const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
+                  
+                  // 计算盈亏
+                  const profit = (user.total_win || 0) - (user.total_bet || 0);
+                  const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+                  const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
+
+                  return `
+                    <div class="p-4 rounded-lg border ${bgClass} transition-all">
+                      <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                          <div class="w-16 text-center">${rankBadge}</div>
+                          <div>
+                            <p class="font-bold text-lg text-slate-900">${user.username || user.linux_do_id}</p>
+                            <p class="text-sm text-slate-600">游玩 ${user.total_spins} 次</p>
+                          </div>
+                        </div>
+                        <div class="text-right">
+                          <p class="text-xs text-slate-500">总盈亏</p>
+                          <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
+                          <p class="text-xs text-slate-500 mt-1">投注: $${(user.total_bet / 500000).toFixed(2)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+              </div>
             </div>
           `;
         }

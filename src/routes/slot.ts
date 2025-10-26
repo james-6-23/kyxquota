@@ -15,7 +15,9 @@ import {
     getUserTodayStats,
     updateUserTotalStats,
     getLeaderboard,
+    getLossLeaderboard,
     getUserRank,
+    getUserLossRank,
     getUserTotalStats,
     isUserBanned,
     banUserFromSlot,
@@ -553,22 +555,28 @@ slot.get('/leaderboard', requireAuth, async (c) => {
 
         const limit = parseInt(c.req.query('limit') || '100');
         const leaderboard = getLeaderboard(limit);
+        const lossLeaderboard = getLossLeaderboard(20); // 亏损榜取20名
 
         // 调试：检查排行榜数据
-        console.log('[排行榜] 前3名数据:', leaderboard.slice(0, 3).map(u => ({
+        console.log('[盈利榜] 前3名数据:', leaderboard.slice(0, 3).map(u => ({
             username: u.username,
-            avatar_url: u.avatar_url,
-            total_win: u.total_win
+            profit: (u.total_win - u.total_bet) / 500000
+        })));
+        console.log('[亏损榜] 前3名数据:', lossLeaderboard.slice(0, 3).map(u => ({
+            username: u.username,
+            profit: (u.total_win - u.total_bet) / 500000
         })));
 
         // 获取用户自己的排名和统计
         const userStats = getUserTotalStats(session.linux_do_id);
         const userRank = getUserRank(session.linux_do_id);
+        const userLossRank = getUserLossRank(session.linux_do_id);
 
         return c.json({
             success: true,
             data: {
                 leaderboard,
+                lossLeaderboard,
                 userStats: userStats || {
                     linux_do_id: session.linux_do_id,
                     total_spins: 0,
@@ -577,7 +585,8 @@ slot.get('/leaderboard', requireAuth, async (c) => {
                     biggest_win: 0,
                     biggest_win_type: null
                 },
-                userRank
+                userRank,
+                userLossRank
             }
         });
     } catch (error) {

@@ -475,17 +475,32 @@ export function updateUserTotalStats(
 }
 
 /**
- * 获取排行榜
+ * 获取排行榜（按盈亏降序）
  */
 export function getLeaderboard(limit: number = 100) {
     return slotQueries.getLeaderboard.all(limit);
 }
 
 /**
- * 获取用户排名
+ * 获取亏损榜（按盈亏升序，最亏的排第一）
+ */
+export function getLossLeaderboard(limit: number = 10) {
+    return slotQueries.getLossLeaderboard.all(limit);
+}
+
+/**
+ * 获取用户排名（盈利榜）
  */
 export function getUserRank(linuxDoId: string): number {
     const result = slotQueries.getUserRank.get(linuxDoId);
+    return result?.rank || 0;
+}
+
+/**
+ * 获取用户亏损排名
+ */
+export function getUserLossRank(linuxDoId: string): number {
+    const result = slotQueries.getUserLossRank.get(linuxDoId);
     return result?.rank || 0;
 }
 

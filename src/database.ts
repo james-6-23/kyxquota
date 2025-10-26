@@ -540,14 +540,34 @@ function initQueries() {
                 s.total_bet, 
                 s.total_win, 
                 s.biggest_win, 
-                s.biggest_win_type 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
             FROM user_slot_stats s
             LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
-            ORDER BY s.total_win DESC 
+            ORDER BY (s.total_win - s.total_bet) DESC 
             LIMIT ?`
         ),
-        getUserRank: db.query<{ rank: number }, [number, string]>(
-            'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE total_win > (SELECT total_win FROM user_slot_stats WHERE linux_do_id = ?)'
+        getLossLeaderboard: db.query<any, number>(
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
+            FROM user_slot_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            ORDER BY (s.total_win - s.total_bet) ASC 
+            LIMIT ?`
+        ),
+        getUserRank: db.query<{ rank: number }, string>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE (total_win - total_bet) > (SELECT (total_win - total_bet) FROM user_slot_stats WHERE linux_do_id = ?)'
+        ),
+        getUserLossRank: db.query<{ rank: number }, string>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_stats WHERE linux_do_id = ?)'
         ),
     };
 
