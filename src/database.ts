@@ -266,6 +266,7 @@ export function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       linux_do_id TEXT NOT NULL,
       username TEXT NOT NULL,
+      linux_do_username TEXT,
       bet_amount INTEGER NOT NULL,
       result_symbols TEXT NOT NULL,
       win_type TEXT NOT NULL,
@@ -284,6 +285,14 @@ export function initDatabase() {
     db.exec(
         'CREATE INDEX IF NOT EXISTS idx_slot_timestamp ON slot_machine_records(timestamp)'
     );
+
+    // 添加 linux_do_username 字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE slot_machine_records ADD COLUMN linux_do_username TEXT');
+        console.log('✅ 已添加 linux_do_username 字段到 slot_machine_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 用户免费次数表
     db.exec(`
@@ -477,7 +486,7 @@ function initQueries() {
 
         // 游戏记录
         insertRecord: db.query(
-            'INSERT INTO slot_machine_records (linux_do_id, username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO slot_machine_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getRecordsByUser: db.query<SlotMachineRecord, string>(
             'SELECT * FROM slot_machine_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'

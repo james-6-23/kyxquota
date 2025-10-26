@@ -275,9 +275,28 @@ export function banUserFromSlot(linuxDoId: string, hours: number) {
  * 增加用户免费次数
  */
 export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
-    const now = Date.now();
-    for (let i = 0; i < count; i++) {
-        slotQueries.incrementFreeSpin.run(linuxDoId, now, now);
+    try {
+        console.log(`[增加免费次数] ====== 开始增加 ======`);
+        console.log(`[增加免费次数] 用户ID: ${linuxDoId}`);
+        console.log(`[增加免费次数] 增加数量: ${count}`);
+
+        // 查询增加前的状态
+        const beforeRecord = slotQueries.getFreeSpin.get(linuxDoId);
+        console.log(`[增加免费次数] 增加前状态:`, JSON.stringify(beforeRecord, null, 2));
+
+        const now = Date.now();
+        for (let i = 0; i < count; i++) {
+            const result = slotQueries.incrementFreeSpin.run(linuxDoId, now, now);
+            console.log(`[增加免费次数] 第${i + 1}次增加结果:`, JSON.stringify(result, null, 2));
+        }
+
+        // 验证增加后的状态
+        const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
+        console.log(`[增加免费次数] 增加后状态:`, JSON.stringify(afterRecord, null, 2));
+        console.log(`[增加免费次数] ✅ 成功！免费次数从 ${beforeRecord?.free_spins || 0} 增加到 ${afterRecord?.free_spins || 0}`);
+    } catch (error) {
+        console.error(`[增加免费次数] ⚠️ 异常:`, error);
+        console.error(`[增加免费次数] 错误堆栈:`, error instanceof Error ? error.stack : '无堆栈');
     }
 }
 
@@ -338,6 +357,7 @@ export function useUserFreeSpin(linuxDoId: string): boolean {
 export function saveGameRecord(
     linuxDoId: string,
     username: string,
+    linuxDoUsername: string | null | undefined,
     betAmount: number,
     symbols: string[],
     winType: WinType,
@@ -352,6 +372,7 @@ export function saveGameRecord(
     slotQueries.insertRecord.run(
         linuxDoId,
         username,
+        linuxDoUsername || null,
         betAmount,
         JSON.stringify(symbols),
         winType,

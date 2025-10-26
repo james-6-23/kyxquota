@@ -350,9 +350,12 @@ slot.post('/spin', requireAuth, async (c) => {
         }
 
         // 保存游戏记录
+        // 优先使用session中的LinuxDo用户名（最新），其次使用数据库中的
+        const linuxDoUsername = session.username || user.linux_do_username || null;
         saveGameRecord(
             session.linux_do_id,
             user.username,
+            linuxDoUsername,
             betAmount,
             symbols,
             result.winType,

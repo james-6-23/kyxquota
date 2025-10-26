@@ -81,6 +81,7 @@ export interface SlotMachineRecord {
     id?: number;
     linux_do_id: string;
     username: string;
+    linux_do_username?: string;  // LinuxDo用户名
     bet_amount: number;
     result_symbols: string;  // JSON 数组
     win_type: string;

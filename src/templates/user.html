@@ -1198,46 +1198,37 @@
           document.getElementById('userId').textContent = 'ID: ' + linux_do_id;
           document.getElementById('userInitial').textContent = displayName[0].toUpperCase();
 
-          console.log('[加载用户信息] LinuxDo用户名:', linux_do_username, '公益站用户名:', username, '显示名称:', displayName, '头像URL:', avatar_url);
-
           // 设置用户头像
           if (avatar_url && avatar_url.trim()) {
             const userAvatar = document.getElementById('userAvatar');
-            console.log('[设置头像] URL:', avatar_url);
             
             // 使用Image对象预加载，确保图片能正常加载
             const img = new Image();
             img.onload = function() {
-              console.log('[头像加载] 成功:', avatar_url);
               userAvatar.style.backgroundImage = `url(${avatar_url})`;
               userAvatar.style.backgroundSize = 'cover';
               userAvatar.style.backgroundPosition = 'center';
               document.getElementById('userInitial').textContent = '';
             };
             img.onerror = function() {
-              console.error('[头像加载] 失败:', avatar_url);
               // 如果加载失败，使用LinuxDo的letter_avatar（字母头像）
               const firstLetter = (linux_do_username || username).charAt(0).toLowerCase();
               const colorCode = firstLetter.charCodeAt(0) % 10;
               const fallbackUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
-              console.log('[头像加载] 尝试letter avatar:', fallbackUrl);
               const fallbackImg = new Image();
               fallbackImg.onload = function() {
-                console.log('[头像加载] Letter avatar加载成功');
                 userAvatar.style.backgroundImage = `url(${fallbackUrl})`;
                 userAvatar.style.backgroundSize = 'cover';
                 userAvatar.style.backgroundPosition = 'center';
                 document.getElementById('userInitial').textContent = '';
               };
               fallbackImg.onerror = function() {
-                console.error('[头像加载] Letter avatar也失败，保留首字母');
-                // 保留首字母显示
+                console.error('[头像加载失败]', avatar_url);
               };
               fallbackImg.src = fallbackUrl;
             };
             img.src = avatar_url;
           } else {
-            console.log('[设置头像] 无头像URL，尝试使用letter avatar');
             // 如果没有avatar_url，直接使用letter_avatar
             const firstLetter = (linux_do_username || username).charAt(0).toLowerCase();
             const colorCode = firstLetter.charCodeAt(0) % 10;
@@ -1438,6 +1429,28 @@
           }
           document.getElementById('keysInput').value = '';
           await loadQuota();
+          
+          // ✅ 如果投喂成功并返回了免费次数，显示提示
+          if (data.free_spins !== undefined) {
+            setTimeout(() => {
+              showToast(`🎁 投喂成功！获得1次免费抽奖机会（当前共${data.free_spins}次）`, 'success');
+            }, 1500);
+            
+            // 如果老虎机界面已打开，刷新配置
+            const slotModal = document.getElementById('slotModal');
+            if (slotModal && !slotModal.classList.contains('hidden')) {
+              try {
+                const configRes = await fetch('/api/slot/config');
+                const configData = await configRes.json();
+                if (configData.success) {
+                  slotUserData = configData.data.user;
+                  updateSlotUI();
+                }
+              } catch (error) {
+                console.error('[免费次数同步失败]', error);
+              }
+            }
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -1488,6 +1501,28 @@
           }
           document.getElementById('iflowKeysInput').value = '';
           await loadQuota();
+          
+          // ✅ 如果投喂成功并返回了免费次数，显示提示
+          if (data.free_spins !== undefined) {
+            setTimeout(() => {
+              showToast(`🎁 iFlow投喂成功！获得1次免费抽奖机会（当前共${data.free_spins}次）`, 'success');
+            }, 1500);
+            
+            // 如果老虎机界面已打开，刷新配置
+            const slotModal = document.getElementById('slotModal');
+            if (slotModal && !slotModal.classList.contains('hidden')) {
+              try {
+                const configRes = await fetch('/api/slot/config');
+                const configData = await configRes.json();
+                if (configData.success) {
+                  slotUserData = configData.data.user;
+                  updateSlotUI();
+                }
+              } catch (error) {
+                console.error('[免费次数同步失败]', error);
+              }
+            }
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -1863,8 +1898,6 @@
               avatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/48.png`;
             }
             
-            console.log(`[排行榜#${rank}] 用户: ${username}, 头像URL: ${avatarUrl}`);
-
             return `
               <div class="p-2 rounded-lg ${bgClass} transition-all">
                 <div class="flex items-center gap-2">
@@ -1872,8 +1905,7 @@
                   <img src="${avatarUrl}" 
                        alt="${username}" 
                        class="w-7 h-7 rounded-full flex-shrink-0 border border-white/30 object-cover"
-                       onerror="console.log('头像加载失败:', this.src); this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                       onload="console.log('头像加载成功:', this.src);">
+                       onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                   <div class="w-7 h-7 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold border border-white/30 flex-shrink-0" style="display:none;">
                     ${username.charAt(0).toUpperCase()}
                   </div>
@@ -1953,13 +1985,9 @@
       if (slotUserData.free_spins > 0 && !slotUserData.is_banned) {
         freeSpinButton.classList.remove('hidden');
         freeSpinButton.disabled = false;
-        console.log('[UI更新] 显示免费次数按钮:', slotUserData.free_spins);
       } else {
         freeSpinButton.classList.add('hidden');
         freeSpinButton.disabled = true;
-        if (slotUserData.free_spins <= 0) {
-          console.log('[UI更新] 隐藏免费次数按钮: 次数不足');
-        }
       }
     }
 
@@ -1973,9 +2001,7 @@
 
       // ✅ 新增：使用免费次数时先检查
       if (useFreeSpinn) {
-        console.log('[前端] 准备使用免费次数，当前免费次数:', slotUserData?.free_spins);
         if (!slotUserData || slotUserData.free_spins <= 0) {
-          console.error('[前端] 检测到免费次数不足，阻止请求');
           showToast('没有免费次数', 'error');
           
           // 重新同步数据
@@ -2002,8 +2028,6 @@
       isSpinning = true;
 
       try {
-        console.log(`[前端] 开始请求 spin，useFreeSpinn=${useFreeSpinn}`);
-        
         // 调用 API
         const res = await fetch('/api/slot/spin', {
           method: 'POST',
@@ -2011,12 +2035,9 @@
           body: JSON.stringify({ useFreeSpinn })
         });
         
-        console.log(`[前端] 收到响应，状态码: ${res.status}`);
         const data = await res.json();
-        console.log(`[前端] 响应数据:`, data);
 
         if (!data.success) {
-          console.error(`[前端] 请求失败: ${data.message}`);
           showToast(data.message, 'error');
           isSpinning = false;
 
@@ -2027,10 +2048,9 @@
             if (configData.success) {
               slotUserData = configData.data.user;
               updateSlotUI();
-              console.log('[同步] 已更新用户数据:', slotUserData);
             }
           } catch (error) {
-            console.error('重新加载配置失败:', error);
+            console.error('[配置同步失败]', error);
           }
 
           // 根据最新数据更新按钮状态（已经调用了 updateSlotUI）
@@ -2040,12 +2060,8 @@
 
         const result = data.data;
 
-        console.log('🎰 旋转结果:', result.symbols, '中奖类型:', result.win_type, '倍率:', result.multiplier);
-
         // 开始动画
         await playSpinAnimation(result.symbols);
-
-        console.log('✅ 动画完成，最终符号应该显示:', result.symbols);
 
         // 更新用户数据
         slotUserData.quota = result.quota_after;
@@ -2331,11 +2347,15 @@
               return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-12 h-12 object-contain border border-slate-300 rounded">`;
             }).join('');
 
+            // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
+            const displayName = r.linux_do_username || r.username;
+            
             return `
               <div class="border ${bgClass} rounded-lg p-4 mb-3">
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center gap-2">
                     <span class="text-sm text-slate-600">#${records.length - idx}</span>
+                    <span class="text-xs font-medium text-indigo-600">@${displayName}</span>
                     <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN')}</span>
                     ${r.is_free_spin ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">免费</span>' : ''}
                   </div>

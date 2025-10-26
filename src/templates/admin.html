@@ -2419,10 +2419,17 @@
               'none': '❌ 未中奖'
             };
             
+            // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
+            const displayName = r.linux_do_username || r.username;
+            const hasLinuxDoUsername = r.linux_do_username && r.linux_do_username !== r.username;
+            
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50">
                 <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
-                <td class="px-4 py-3 font-semibold">${r.username}</td>
+                <td class="px-4 py-3">
+                  <div class="font-semibold text-indigo-600">@${displayName}</div>
+                  ${hasLinuxDoUsername ? `<div class="text-xs text-slate-500">公益站: ${r.username}</div>` : ''}
+                </td>
                 <td class="px-4 py-3 font-mono text-xs text-slate-600">${r.linux_do_id}</td>
                 <td class="px-4 py-3 text-center">${symbolsHTML}</td>
                 <td class="px-4 py-3 text-center text-sm font-semibold">${winTypeLabels[r.win_type] || r.win_type}</td>

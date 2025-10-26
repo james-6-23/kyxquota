@@ -8,7 +8,7 @@ import {
     getKyxUserById,
 } from '../services/kyx-api';
 import { validateAndDonateKeys } from '../services/keys';
-import { addUserFreeSpins } from '../services/slot';
+import { addUserFreeSpins, getUserFreeSpins } from '../services/slot';
 import { CONFIG } from '../config';
 import type { User } from '../types';
 
@@ -524,14 +524,20 @@ app.post('/donate/validate', requireAuth, async (c) => {
         addUserFreeSpins(user.linux_do_id, 1);
 
         console.log(`[用户操作] 🎁 ModelScope 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
+
+        // ✅ 获取更新后的免费次数
+        const freeSpins = getUserFreeSpins(user.linux_do_id);
+        console.log(`[用户操作] 当前免费次数: ${freeSpins}`);
+
+        return c.json({
+            ...result,
+            show_thanks: true,
+            free_spins: freeSpins, // ✅ 返回免费次数给前端
+        }, 200);
     } else {
         console.log(`[用户操作] ❌ ModelScope 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
+        return c.json(result, 400);
     }
-
-    return c.json({
-        ...result,
-        show_thanks: result.success ? true : undefined,
-    }, result.success ? 200 : 400);
 });
 
 /**
@@ -566,14 +572,20 @@ app.post('/donate/iflow', requireAuth, async (c) => {
         addUserFreeSpins(user.linux_do_id, 1);
 
         console.log(`[用户操作] ✨ iFlow 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
+
+        // ✅ 获取更新后的免费次数
+        const freeSpins = getUserFreeSpins(user.linux_do_id);
+        console.log(`[用户操作] 当前免费次数: ${freeSpins}`);
+
+        return c.json({
+            ...result,
+            show_thanks: true,
+            free_spins: freeSpins, // ✅ 返回免费次数给前端
+        }, 200);
     } else {
         console.log(`[用户操作] ❌ iFlow 投喂失败 - 用户: ${user.username}, 原因: ${result.message}`);
+        return c.json(result, 400);
     }
-
-    return c.json({
-        ...result,
-        show_thanks: result.success ? true : undefined,
-    }, result.success ? 200 : 400);
 });
 
 /**
