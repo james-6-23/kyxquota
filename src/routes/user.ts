@@ -211,23 +211,22 @@ app.post('/auth/bind', requireAuth, async (c) => {
             success: true,
             message: `绑定成功！已赠送新手奖励 $${(bonusQuota / 500000).toFixed(2)}`,
             data: {
+                kyx_user: kyxUser,
+                quota_before: kyxUser.quota,
+                quota_after: newQuota,
                 bonus: bonusQuota,
                 bonusCNY: (bonusQuota / 500000).toFixed(2),
             },
         });
     } else {
-        console.log(`[用户操作] ❌ 新手奖励发放失败 - 用户: ${kyxUser.username}, 原因: ${updateResult.message}`);
         return c.json({
             success: true,
-            message: '绑定成功，但奖励发放失败，请联系管理员',
+            message: '重新绑定成功',
+            data: {
+                kyx_user: kyxUser,
+            },
         });
     }
-} else {
-    return c.json({
-        success: true,
-        message: '重新绑定成功',
-    });
-}
 });
 
 /**
