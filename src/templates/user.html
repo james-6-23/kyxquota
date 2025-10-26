@@ -2063,7 +2063,8 @@
         const slotBg = document.querySelector('.slot-machine-bg');
         if (slotBg && slotConfig.background_type) {
           if (slotConfig.background_type === 'gif') {
-            slotBg.style.background = "linear-gradient(135deg, rgba(30, 58, 138, 0.7) 0%, rgba(59, 130, 246, 0.7) 50%, rgba(139, 92, 246, 0.7) 100%), url('/ctrl.gif')";
+            const backgroundAssetUrl = slotConfig.background_asset_url || '/ctrl.gif';
+            slotBg.style.background = `linear-gradient(135deg, rgba(30, 58, 138, 0.7) 0%, rgba(59, 130, 246, 0.7) 50%, rgba(139, 92, 246, 0.7) 100%), url('${backgroundAssetUrl}')`;
             slotBg.style.backgroundSize = 'cover, cover';
             slotBg.style.backgroundPosition = 'center, center';
             slotBg.style.backgroundRepeat = 'no-repeat, no-repeat';
