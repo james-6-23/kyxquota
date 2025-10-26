@@ -287,7 +287,7 @@ export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
         const now = Date.now();
         for (let i = 0; i < count; i++) {
             const result = slotQueries.incrementFreeSpin.run(linuxDoId, now, now);
-            console.log(`[增加免费次数] 第${i + 1}次增加结果:`, JSON.stringify(result, null, 2));
+            console.log(`[增加免费次数] 第${i + 1}次增加结果:`, result || '(undefined)');
         }
 
         // 验证增加后的状态
@@ -329,7 +329,23 @@ export function useUserFreeSpin(linuxDoId: string): boolean {
         console.log(`[扣除免费次数] 执行 SQL: UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ${now} WHERE linux_do_id = '${linuxDoId}' AND free_spins > 0`);
 
         const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
-        console.log(`[扣除免费次数] SQL 执行结果:`, JSON.stringify(result, null, 2));
+        console.log(`[扣除免费次数] SQL 执行结果:`, result);
+
+        // 检查 result 是否存在
+        if (!result) {
+            console.error(`[扣除免费次数] ❌ SQL 返回 undefined`);
+            // 直接查询验证是否扣除成功
+            const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
+            console.log(`[扣除免费次数] 验证查询:`, JSON.stringify(afterRecord, null, 2));
+
+            if (afterRecord && afterRecord.free_spins === currentRecord.free_spins - 1) {
+                console.log(`[扣除免费次数] ✅ 验证成功！用户 ${linuxDoId} 剩余: ${afterRecord.free_spins}`);
+                return true;
+            }
+            console.error(`[扣除免费次数] ❌ 验证失败`);
+            return false;
+        }
+
         console.log(`[扣除免费次数] 受影响行数: ${result.changes}`);
 
         if (result.changes > 0) {
