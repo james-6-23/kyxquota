@@ -46,11 +46,15 @@ app.get('/ctrl.gif', async (c) => {
     console.log(`[静态文件] ctrl.gif 请求 - 文件存在: ${exists}, 路径: public/ctrl.gif`);
 
     if (exists) {
-        return new Response(file, {
+        // 读取文件内容并设置正确的 Content-Type
+        const buffer = await file.arrayBuffer();
+        return new Response(buffer, {
             headers: {
                 'Content-Type': 'image/gif',
-                'Cache-Control': 'public, max-age=31536000',
-                'Access-Control-Allow-Origin': '*'
+                'Content-Length': buffer.byteLength.toString(),
+                'Cache-Control': 'public, max-age=31536000, immutable',
+                'Access-Control-Allow-Origin': '*',
+                'Accept-Ranges': 'bytes'
             }
         });
     }

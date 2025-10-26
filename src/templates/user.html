@@ -1225,11 +1225,31 @@
     let currentUser = null;
     let currentMode = 'refuel'; // 'refuel' or 'entertain'
 
+    // 保存当前模式到 URL hash
+    function saveCurrentMode(mode) {
+      currentMode = mode;
+      // 使用 history.replaceState 避免增加历史记录
+      if (mode === 'entertain') {
+        window.location.hash = 'slot';
+      } else {
+        window.location.hash = '';
+      }
+    }
+
+    // 从 URL hash 恢复模式
+    function restoreMode() {
+      const hash = window.location.hash.slice(1); // 移除 #
+      if (hash === 'slot') {
+        return 'entertain';
+      }
+      return 'refuel';
+    }
+
     // 切换到加油站模式
     async function switchToRefuel() {
       if (currentMode === 'refuel') return;
       
-      currentMode = 'refuel';
+      saveCurrentMode('refuel');
       
       // 更新主界面的切换按钮
       updateSwitchButtons('refuel');
@@ -1268,7 +1288,7 @@
     function switchToEntertain() {
       if (currentMode === 'entertain') return;
       
-      currentMode = 'entertain';
+      saveCurrentMode('entertain');
       
       // 更新主界面的切换按钮
       updateSwitchButtons('entertain');
@@ -3146,10 +3166,24 @@
         
         if (res.ok) {
           document.getElementById('loadingPage').classList.add('hidden');
-          document.getElementById('mainSection').classList.remove('hidden');
-          await loadQuota();
-          // 初始化切换按钮样式
-          updateSwitchButtons('refuel');
+          
+          // 恢复之前的模式
+          const restoredMode = restoreMode();
+          currentMode = restoredMode;
+          
+          if (restoredMode === 'entertain') {
+            // 如果之前在老虎机页面，直接打开老虎机
+            document.getElementById('mainSection').classList.add('hidden');
+            await loadQuota();
+            updateSwitchButtons('entertain');
+            showSlotMachine();
+          } else {
+            // 默认显示加油站
+            document.getElementById('mainSection').classList.remove('hidden');
+            await loadQuota();
+            updateSwitchButtons('refuel');
+          }
+          
           if (isOAuthCallback) {
             showToast('登录成功', 'success');
             sessionStorage.removeItem('oauth_loading');
