@@ -146,6 +146,9 @@
           <button onclick="showSection('slotAnalytics')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>📈</span> 抽奖分析
           </button>
+          <button onclick="showSection('slotLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🏆</span> 用户获奖排行
+          </button>
           <button onclick="showSection('users')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>👥</span> 用户列表
           </button>
@@ -910,27 +913,51 @@
             </div>
           </div>
 
-          <!-- 用户排行 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-slate-900">🏆 用户获奖排行 TOP 20</h3>
-              <button onclick="fixUsernamesInLeaderboard()" class="px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-medium hover:bg-orange-200 transition-colors text-sm">
-                🔧 修复用户名显示
-              </button>
-            </div>
+        </div>
+
+        <!-- Slot Leaderboard Section -->
+        <div id="slotLeaderboardSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🏆 用户获奖排行</h2>
+            <button onclick="loadSlotLeaderboard()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              <svg id="leaderboardRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新排行
+            </button>
+          </div>
+
+          <!-- 排行榜说明 -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <p class="text-sm text-blue-800 mb-2">
+              <strong>📊 排行依据：</strong>按用户历史总获奖金额排序
+            </p>
+            <p class="text-xs text-blue-700">
+              • 统计所有游戏的累计获奖金额（不扣除投注）<br>
+              • 实时更新，每次游戏后自动刷新<br>
+              • 只显示玩过老虎机的用户
+            </p>
+          </div>
+
+          <!-- 排行榜表格 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead class="bg-slate-50 border-b border-slate-200">
                   <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">排名</th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">用户名</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">游戏次数</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总投注</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总获奖</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase">排名</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700 uppercase">LinuxDo 用户名</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-slate-700 uppercase">游戏次数</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">总投注</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">总获奖</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">净盈亏</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">最大单次奖金</th>
                   </tr>
                 </thead>
-                <tbody id="userRankingBody" class="divide-y divide-slate-100">
-                  <!-- 将通过JS填充 -->
+                <tbody id="leaderboardTableBody" class="divide-y divide-slate-100">
+                  <tr>
+                    <td colspan="7" class="px-4 py-8 text-center text-slate-500">加载中...</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -2251,7 +2278,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'users'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'slotLeaderboard', 'users'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -2263,6 +2290,7 @@
         loadSymbolWeights();
       }
       if (section === 'slotAnalytics') loadSlotAnalytics();
+      if (section === 'slotLeaderboard') loadSlotLeaderboard();
     }
 
     // 老虎机配置管理
@@ -2547,31 +2575,6 @@
       calculateProbabilities();
     }
 
-    // 修复排行榜用户名
-    async function fixUsernamesInLeaderboard() {
-      if (!confirm('确定要修复所有用户的排行榜用户名显示吗？\n\n这会将所有用户的显示名称更新为LinuxDo用户名。')) {
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/admin/slot/fix-usernames', {
-          method: 'POST'
-        });
-        const data = await res.json();
-
-        if (data.success) {
-          showMessage('✅ 已修复所有用户名显示，刷新页面查看效果', 'success');
-          // 重新加载分析数据
-          setTimeout(() => loadSlotAnalytics(), 1000);
-        } else {
-          showMessage(data.message || '修复失败', 'error');
-        }
-      } catch (error) {
-        console.error('修复用户名失败:', error);
-        showMessage('修复失败', 'error');
-      }
-    }
-
     // 老虎机抽奖分析
     async function loadSlotAnalytics() {
       try {
@@ -2655,30 +2658,81 @@
           }).join('');
         document.getElementById('dailyStatsBody').innerHTML = dailyStatsHtml || '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
 
-        // 渲染用户排行
-        const userRankingHtml = userStats.map((user, index) => {
-          const rank = index + 1;
-          let rankBadge = `<span class="text-slate-600">#${rank}</span>`;
-          if (rank === 1) rankBadge = '<span class="text-2xl">🥇</span>';
-          else if (rank === 2) rankBadge = '<span class="text-2xl">🥈</span>';
-          else if (rank === 3) rankBadge = '<span class="text-2xl">🥉</span>';
-
-          return `
-            <tr>
-              <td class="px-4 py-3 text-sm text-center">${rankBadge}</td>
-              <td class="px-4 py-3 text-sm text-slate-900">${user.username || user.linux_do_id}</td>
-              <td class="px-4 py-3 text-sm text-slate-900 text-right">${user.total_spins}</td>
-              <td class="px-4 py-3 text-sm text-red-600 text-right">$${(user.total_bet / 500000).toFixed(2)}</td>
-              <td class="px-4 py-3 text-sm text-green-600 text-right font-semibold">$${(user.total_win / 500000).toFixed(2)}</td>
-            </tr>
-          `;
-        }).join('');
-        document.getElementById('userRankingBody').innerHTML = userRankingHtml || '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
-
         showMessage('分析数据已更新', 'success');
       } catch (error) {
         console.error('加载抽奖分析失败:', error);
         showMessage('加载分析数据失败', 'error');
+      }
+    }
+
+    // 用户获奖排行榜
+    async function loadSlotLeaderboard() {
+      try {
+        const res = await fetch('/api/admin/slot/analytics');
+        const data = await res.json();
+
+        if (!data.success) {
+          showMessage('加载排行榜失败', 'error');
+          return;
+        }
+
+        const userStats = data.data.userStats;
+
+        // 中奖类型标签
+        const winTypeLabels = {
+          'super_jackpot': '🏆 超级大奖',
+          'special_combo': '💎 特殊组合',
+          'quad': '🎰 四连',
+          'triple': '✨ 三连',
+          'double': '🎁 双连',
+          'punishment': '⚡ 律师函',
+          'none': '❌ 未中奖'
+        };
+
+        // 渲染排行榜
+        const leaderboardHtml = userStats.map((user, index) => {
+          const rank = index + 1;
+          let rankBadge = `<span class="text-slate-600 font-semibold">#${rank}</span>`;
+          let rowClass = '';
+          
+          if (rank === 1) {
+            rankBadge = '<span class="text-3xl">🥇</span>';
+            rowClass = 'bg-gradient-to-r from-yellow-50 to-amber-50';
+          } else if (rank === 2) {
+            rankBadge = '<span class="text-3xl">🥈</span>';
+            rowClass = 'bg-gradient-to-r from-gray-50 to-slate-50';
+          } else if (rank === 3) {
+            rankBadge = '<span class="text-3xl">🥉</span>';
+            rowClass = 'bg-gradient-to-r from-orange-50 to-amber-50';
+          }
+
+          const netProfit = user.total_win - user.total_bet;
+          const profitColor = netProfit >= 0 ? 'text-green-600' : 'text-red-600';
+
+          return `
+            <tr class="${rowClass}">
+              <td class="px-4 py-4 text-center">${rankBadge}</td>
+              <td class="px-4 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="font-semibold text-slate-900">${user.username || user.linux_do_id}</span>
+                  ${user.biggest_win_type ? `<span class="text-xs px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full">${winTypeLabels[user.biggest_win_type] || ''}</span>` : ''}
+                </div>
+              </td>
+              <td class="px-4 py-4 text-center text-slate-900">${user.total_spins}</td>
+              <td class="px-4 py-4 text-right text-red-600 font-medium">$${(user.total_bet / 500000).toFixed(2)}</td>
+              <td class="px-4 py-4 text-right text-green-600 font-bold text-lg">$${(user.total_win / 500000).toFixed(2)}</td>
+              <td class="px-4 py-4 text-right ${profitColor} font-semibold">${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}</td>
+              <td class="px-4 py-4 text-right text-orange-600 font-medium">$${(user.biggest_win / 500000).toFixed(2)}</td>
+            </tr>
+          `;
+        }).join('');
+
+        document.getElementById('leaderboardTableBody').innerHTML = leaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+
+        showMessage('排行榜已更新', 'success');
+      } catch (error) {
+        console.error('加载排行榜失败:', error);
+        showMessage('加载排行榜失败', 'error');
       }
     }
 

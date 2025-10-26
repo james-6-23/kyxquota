@@ -285,9 +285,21 @@ export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
  * 减少用户免费次数
  */
 export function useUserFreeSpin(linuxDoId: string): boolean {
-    const now = Date.now();
-    const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
-    return result.changes > 0;
+    try {
+        const now = Date.now();
+
+        // 先检查当前免费次数
+        const currentRecord = slotQueries.getFreeSpin.get(linuxDoId);
+        console.log(`[扣除免费次数] 用户 ${linuxDoId} 当前记录:`, currentRecord);
+
+        const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
+        console.log(`[扣除免费次数] 更新结果: changes=${result.changes}`);
+
+        return result.changes > 0;
+    } catch (error) {
+        console.error(`[扣除免费次数] 异常:`, error);
+        return false;
+    }
 }
 
 /**

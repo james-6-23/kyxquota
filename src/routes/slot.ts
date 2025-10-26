@@ -195,7 +195,7 @@ slot.post('/spin', requireAuth, async (c) => {
         }
 
         // 解析请求参数
-        const body = await c.req.json();
+        const body = await c.req.json().catch(() => ({}));
         const useFreeSpinn = body.useFreeSpinn === true;
 
         let isFreeSpin = false;
@@ -204,16 +204,23 @@ slot.post('/spin', requireAuth, async (c) => {
         if (useFreeSpinn) {
             // 使用免费次数
             const freeSpins = getUserFreeSpins(session.linux_do_id);
+            console.log(`[免费次数] 用户 ${user.username} (${session.linux_do_id}) 当前免费次数: ${freeSpins}`);
+
             if (freeSpins <= 0) {
+                console.log(`[免费次数] 用户 ${user.username} 免费次数不足，拒绝游戏`);
                 return c.json({ success: false, message: '没有免费次数' }, 400);
             }
 
             // 扣除免费次数
             const used = useUserFreeSpin(session.linux_do_id);
+            console.log(`[免费次数] 扣除免费次数结果: ${used}`);
+
             if (!used) {
-                return c.json({ success: false, message: '扣除免费次数失败' }, 500);
+                console.error(`[免费次数] 扣除失败 - 用户: ${user.username}, 当前次数: ${freeSpins}`);
+                return c.json({ success: false, message: `扣除免费次数失败（当前: ${freeSpins}）` }, 500);
             }
 
+            console.log(`[免费次数] 用户 ${user.username} 使用了1次免费机会`);
             isFreeSpin = true;
             betAmount = 0; // 免费游戏不扣费
         } else {
@@ -409,7 +416,12 @@ slot.post('/spin', requireAuth, async (c) => {
         });
     } catch (error) {
         console.error('旋转老虎机失败:', error);
-        return c.json({ success: false, message: '服务器错误' }, 500);
+        console.error('错误堆栈:', error instanceof Error ? error.stack : '无堆栈信息');
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        return c.json({
+            success: false,
+            message: `服务器错误: ${errorMessage}`
+        }, 500);
     }
 });
 

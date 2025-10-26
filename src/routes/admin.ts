@@ -612,39 +612,6 @@ app.post('/slot/weights', requireAdmin, async (c) => {
 });
 
 /**
- * 修复排行榜用户名（使用LinuxDo用户名）
- */
-app.post('/slot/fix-usernames', requireAdmin, async (c) => {
-    try {
-        const { db } = await import('../database');
-
-        // 更新所有用户的统计表，使用 users 表中的 linux_do_username
-        const result = db.exec(`
-            UPDATE user_slot_stats 
-            SET username = (
-                SELECT COALESCE(u.linux_do_username, u.username) 
-                FROM users u 
-                WHERE u.linux_do_id = user_slot_stats.linux_do_id
-            )
-            WHERE EXISTS (
-                SELECT 1 FROM users u 
-                WHERE u.linux_do_id = user_slot_stats.linux_do_id
-            )
-        `);
-
-        console.log('[管理员] 已修复排行榜用户名');
-
-        return c.json({
-            success: true,
-            message: '已修复所有用户的排行榜用户名'
-        });
-    } catch (error: any) {
-        console.error('修复用户名失败:', error);
-        return c.json({ success: false, message: '修复失败' }, 500);
-    }
-});
-
-/**
  * 获取老虎机抽奖分析数据
  */
 app.get('/slot/analytics', requireAdmin, async (c) => {

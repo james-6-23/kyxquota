@@ -1982,9 +1982,14 @@
             }
             // 更新本地数据为最新值
             slotUserData.free_spins = actualFreeSpins;
+          } else {
+            showToast('验证免费次数失败: ' + (verifyData.message || '未知错误'), 'error');
+            return;
           }
         } catch (error) {
           console.error('验证免费次数失败:', error);
+          showToast('验证免费次数失败，请稍后重试', 'error');
+          return;
         }
       }
 
