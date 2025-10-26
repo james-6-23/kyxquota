@@ -41,14 +41,21 @@ app.get('/slot-symbols/:filename', async (c) => {
 // 静态文件服务（老虎机背景GIF）
 app.get('/ctrl.gif', async (c) => {
     const file = Bun.file('public/ctrl.gif');
-    if (await file.exists()) {
+    const exists = await file.exists();
+
+    console.log(`[静态文件] ctrl.gif 请求 - 文件存在: ${exists}, 路径: public/ctrl.gif`);
+
+    if (exists) {
         return new Response(file, {
             headers: {
                 'Content-Type': 'image/gif',
-                'Cache-Control': 'public, max-age=31536000'
+                'Cache-Control': 'public, max-age=31536000',
+                'Access-Control-Allow-Origin': '*'
             }
         });
     }
+
+    console.error('[静态文件] ❌ ctrl.gif 文件不存在！');
     return c.notFound();
 });
 
@@ -101,14 +108,47 @@ process.on('SIGINT', async () => {
     process.exit(0);
 });
 
-// 启动服务器
-Bun.serve({
-    port: CONFIG.PORT,
-    hostname: CONFIG.HOST,
-    fetch: app.fetch,
-});
+// 启动前检查关键文件
+async function checkCriticalFiles() {
+    const criticalFiles = [
+        { path: 'public/ctrl.gif', desc: 'GIF 背景文件' },
+        { path: 'public/slot-symbols/bdk.jpg', desc: '老虎机符号' },
+        { path: 'src/templates/user.html', desc: '用户页面模板' },
+        { path: 'src/templates/admin.html', desc: '管理页面模板' }
+    ];
 
-console.log(`
+    console.log('\n🔍 检查关键文件...');
+    let allExists = true;
+
+    for (const { path, desc } of criticalFiles) {
+        const file = Bun.file(path);
+        const exists = await file.exists();
+        const status = exists ? '✅' : '❌';
+        console.log(`   ${status} ${desc}: ${path}`);
+        if (!exists) allExists = false;
+    }
+
+    if (!allExists) {
+        console.error('\n⚠️  警告：部分关键文件缺失，可能影响功能！\n');
+    } else {
+        console.log('   ✅ 所有关键文件检查通过\n');
+    }
+
+    return allExists;
+}
+
+// 启动服务器
+async function startServer() {
+    // 检查文件
+    await checkCriticalFiles();
+
+    Bun.serve({
+        port: CONFIG.PORT,
+        hostname: CONFIG.HOST,
+        fetch: app.fetch,
+    });
+
+    console.log(`
 🚀 KYX API Refueling Station is running!
 
    URL: http://${CONFIG.HOST}:${CONFIG.PORT}
@@ -117,4 +157,7 @@ console.log(`
    Database: ${CONFIG.DATABASE_PATH}
    Environment: ${process.env.NODE_ENV || 'development'}
 `);
+}
+
+startServer();
 

@@ -128,3 +128,7 @@ BACKGROUND_CONFIG_FIX.md
 ADMIN_LEADERBOARD_SEPARATION.md
 BUILD_AND_PUSH.md
 QUICK_FIX_CTRL_GIF.md
+build-and-deploy.sh
+rebuild-deploy.md
+GIF_LOADING_FIX_AND_OPTIMIZATION.md
+deploy-optimized.sh
