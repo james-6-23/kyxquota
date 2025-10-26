@@ -130,7 +130,8 @@ slot.get('/config', requireAuth, async (c) => {
                     bet_amount: config.bet_amount,
                     max_daily_spins: config.max_daily_spins,
                     min_quota_required: config.min_quota_required,
-                    enabled: config.enabled
+                    enabled: config.enabled,
+                    background_type: config.background_type || 'default'
                 },
                 user: {
                     quota,

@@ -146,8 +146,11 @@
           <button onclick="showSection('slotAnalytics')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>📈</span> 抽奖分析
           </button>
-          <button onclick="showSection('slotLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🏆</span> 用户获奖排行
+          <button onclick="showSection('profitLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🏆</span> 盈利排行榜
+          </button>
+          <button onclick="showSection('lossLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>📉</span> 亏损排行榜
           </button>
           <button onclick="showSection('users')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>👥</span> 用户列表
@@ -926,12 +929,12 @@
 
         </div>
 
-        <!-- Slot Leaderboard Section -->
-        <div id="slotLeaderboardSection" class="hidden">
+        <!-- Profit Leaderboard Section -->
+        <div id="profitLeaderboardSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-slate-900">🏆 用户获奖排行</h2>
-            <button onclick="loadSlotLeaderboard()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
-              <svg id="leaderboardRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <h2 class="text-2xl font-bold text-slate-900">🏆 盈利排行榜</h2>
+            <button onclick="loadProfitLeaderboard()" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors">
+              <svg id="profitLeaderboardRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
               </svg>
               刷新排行
@@ -939,19 +942,18 @@
           </div>
 
           <!-- 排行榜说明 -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <p class="text-sm text-blue-800 mb-2">
+          <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+            <p class="text-sm text-green-800 mb-2">
               <strong>📊 排行依据：</strong>按用户总盈亏排序（总赢得 - 总投注）
             </p>
-            <p class="text-xs text-blue-700">
-              • 盈利榜：显示赚最多的用户<br>
-              • 亏损榜：显示亏最多的用户（警示作用）<br>
+            <p class="text-xs text-green-700">
+              • 显示赚钱最多的用户 TOP 20<br>
               • 实时更新，每次游戏后自动刷新
             </p>
           </div>
 
           <!-- 盈利排行榜表格 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden mb-6">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="bg-gradient-to-r from-yellow-500 to-orange-500 px-4 py-3">
               <h3 class="text-lg font-bold text-white flex items-center gap-2">
                 <span>🏆</span>
@@ -972,13 +974,37 @@
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700 uppercase">最大单次奖金</th>
                   </tr>
                 </thead>
-                <tbody id="leaderboardTableBody" class="divide-y divide-slate-100">
+                <tbody id="profitLeaderboardTableBody" class="divide-y divide-slate-100">
                   <tr>
                     <td colspan="7" class="px-4 py-8 text-center text-slate-500">加载中...</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+
+        <!-- Loss Leaderboard Section -->
+        <div id="lossLeaderboardSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">📉 亏损排行榜</h2>
+            <button onclick="loadLossLeaderboard()" class="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+              <svg id="lossLeaderboardRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新排行
+            </button>
+          </div>
+
+          <!-- 排行榜说明 -->
+          <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p class="text-sm text-red-800 mb-2">
+              <strong>📊 排行依据：</strong>按用户总盈亏排序（总赢得 - 总投注）
+            </p>
+            <p class="text-xs text-red-700">
+              • 显示亏损最多的用户 TOP 20（警示作用）<br>
+              • 实时更新，每次游戏后自动刷新
+            </p>
           </div>
           
           <!-- 亏损排行榜表格 -->
@@ -2386,7 +2412,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'slotLeaderboard', 'users'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -2398,7 +2424,8 @@
         loadSymbolWeights();
       }
       if (section === 'slotAnalytics') loadSlotAnalytics();
-      if (section === 'slotLeaderboard') loadSlotLeaderboard();
+      if (section === 'profitLeaderboard') loadProfitLeaderboard();
+      if (section === 'lossLeaderboard') loadLossLeaderboard();
     }
 
     // 老虎机配置管理
@@ -2923,14 +2950,14 @@
       }
     }
 
-    // 用户获奖排行榜
-    async function loadSlotLeaderboard() {
+    // 盈利排行榜
+    async function loadProfitLeaderboard() {
       try {
         const res = await fetch('/api/admin/slot/analytics');
         const data = await res.json();
 
         if (!data.success) {
-          showMessage('加载排行榜失败', 'error');
+          showMessage('加载盈利排行榜失败', 'error');
           return;
         }
 
@@ -2995,7 +3022,27 @@
           `;
         }).join('');
 
-        document.getElementById('leaderboardTableBody').innerHTML = leaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+        document.getElementById('profitLeaderboardTableBody').innerHTML = leaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">暂无盈利用户</td></tr>';
+
+        showMessage('盈利排行榜已更新', 'success');
+      } catch (error) {
+        console.error('加载盈利排行榜失败:', error);
+        showMessage('加载盈利排行榜失败', 'error');
+      }
+    }
+
+    // 亏损排行榜
+    async function loadLossLeaderboard() {
+      try {
+        const res = await fetch('/api/admin/slot/analytics');
+        const data = await res.json();
+
+        if (!data.success) {
+          showMessage('加载亏损排行榜失败', 'error');
+          return;
+        }
+
+        const userStats = data.data.userStats;
 
         // 亏损榜：只显示亏损的用户（profit < 0），按盈亏升序
         const lossLeaderboard = [...userStats]
@@ -3044,10 +3091,10 @@
 
         document.getElementById('lossLeaderboardTableBody').innerHTML = lossLeaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-green-600 font-semibold">🎉 暂无亏损用户，所有玩家都在盈利！</td></tr>';
 
-        showMessage('排行榜已更新', 'success');
+        showMessage('亏损排行榜已更新', 'success');
       } catch (error) {
-        console.error('加载排行榜失败:', error);
-        showMessage('加载排行榜失败', 'error');
+        console.error('加载亏损排行榜失败:', error);
+        showMessage('加载亏损排行榜失败', 'error');
       }
     }
 
