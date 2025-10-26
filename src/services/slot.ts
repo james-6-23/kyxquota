@@ -326,26 +326,26 @@ export function useUserFreeSpin(linuxDoId: string): boolean {
         }
 
         console.log(`[扣除免费次数] ✓ 检查通过，当前有 ${currentRecord.free_spins} 次免费机会`);
-        console.log(`[扣除免费次数] 执行 SQL: UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ${now} WHERE linux_do_id = '${linuxDoId}' AND free_spins > 0`);
 
         const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
-        console.log(`[扣除免费次数] SQL 执行结果:`, result);
 
-        // 检查 result 是否存在
-        if (!result) {
-            console.error(`[扣除免费次数] ❌ SQL 返回 undefined`);
-            // 直接查询验证是否扣除成功
+        // UPDATE 语句可能不返回结果对象（这是正常的）
+        // 通过验证查询来确认是否扣除成功
+        if (!result || typeof result.changes === 'undefined') {
+            console.log(`[扣除免费次数] ℹ️ UPDATE 执行完成，验证扣除结果...`);
+            
+            // 查询验证是否扣除成功
             const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
-            console.log(`[扣除免费次数] 验证查询:`, JSON.stringify(afterRecord, null, 2));
 
             if (afterRecord && afterRecord.free_spins === currentRecord.free_spins - 1) {
                 console.log(`[扣除免费次数] ✅ 验证成功！用户 ${linuxDoId} 剩余: ${afterRecord.free_spins}`);
                 return true;
             }
-            console.error(`[扣除免费次数] ❌ 验证失败`);
+            console.error(`[扣除免费次数] ❌ 验证失败 - 期望剩余: ${currentRecord.free_spins - 1}, 实际: ${afterRecord?.free_spins ?? 'null'}`);
             return false;
         }
 
+        // 如果 result.changes 存在，直接使用
         console.log(`[扣除免费次数] 受影响行数: ${result.changes}`);
 
         if (result.changes > 0) {
