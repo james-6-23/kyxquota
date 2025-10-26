@@ -200,6 +200,7 @@ slot.post('/spin', requireAuth, async (c) => {
 
         let isFreeSpin = false;
         let betAmount = config.bet_amount;
+        let calculationBetAmount = config.bet_amount; // 用于计算奖金的金额
 
         if (useFreeSpinn) {
             console.log(`[免费次数] 开始处理 - 用户: ${user.username} (${session.linux_do_id})`);
@@ -227,7 +228,8 @@ slot.post('/spin', requireAuth, async (c) => {
 
             console.log(`[免费次数] ✅ 用户 ${user.username} 成功使用1次免费机会`);
             isFreeSpin = true;
-            betAmount = 0; // 免费游戏不扣费
+            betAmount = 0; // 免费游戏不扣费（用于记录）
+            // calculationBetAmount 保持为 config.bet_amount（用于计算奖金）
         } else {
             // 检查今日次数
             const todaySpins = getUserTodaySpins(session.linux_do_id);
@@ -294,8 +296,8 @@ slot.post('/spin', requireAuth, async (c) => {
         let winAmount = 0;
 
         if (result.multiplier > 0) {
-            // 正常中奖
-            winAmount = Math.floor(betAmount * result.multiplier);
+            // 正常中奖 - 使用 calculationBetAmount 计算奖金
+            winAmount = Math.floor(calculationBetAmount * result.multiplier);
 
             // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
@@ -311,8 +313,8 @@ slot.post('/spin', requireAuth, async (c) => {
                 );
             }
         } else if (result.multiplier < 0) {
-            // 惩罚扣除（负倍率）
-            const punishmentAmount = Math.floor(betAmount * Math.abs(result.multiplier));
+            // 惩罚扣除（负倍率）- 使用 calculationBetAmount 计算惩罚金额
+            const punishmentAmount = Math.floor(calculationBetAmount * Math.abs(result.multiplier));
 
             // 获取当前额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
