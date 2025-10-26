@@ -696,7 +696,8 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
                 },
                 winTypes,
                 recentRecords,
-                userStats: userStats.slice(0, 20), // 前20名
+                userStats: userStats.slice(0, 100), // 增加到100名用于排行榜
+                allRecords, // 添加所有记录（用于筛选）
                 dailyStats
             }
         });

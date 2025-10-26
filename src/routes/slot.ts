@@ -554,7 +554,7 @@ slot.get('/leaderboard', requireAuth, async (c) => {
         }
 
         const limit = parseInt(c.req.query('limit') || '100');
-        const leaderboard = getLeaderboard(limit);
+        const leaderboard = getLeaderboard(20); // 盈利榜也取20名（侧边栏）
         const lossLeaderboard = getLossLeaderboard(20); // 亏损榜取20名
 
         // 调试：检查排行榜数据
