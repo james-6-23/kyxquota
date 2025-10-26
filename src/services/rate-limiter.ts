@@ -8,18 +8,18 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（平衡并发与限流，避免频繁触发429）
-    private readonly maxConcurrent = 5; // 最大并发请求数（平衡性能与限流）
-    private readonly minInterval = 300; // 最小请求间隔（毫秒，避免429）
+    // 配置（保守策略，优先避免429而不是追求速度）
+    private readonly maxConcurrent = 3; // 最大并发请求数（保守策略）
+    private readonly minInterval = 500; // 最小请求间隔（毫秒，留有余地）
     private readonly maxQueueSize = 500; // 最大队列长度（通过队列缓冲峰值）
 
     // 统计
     private totalRequests = 0;
     private failedRequests = 0;
     private rateLimitHits = 0;
-
+    
     // 动态速率调整
-    private currentInterval = 300; // 当前实际间隔（可动态调整）
+    private currentInterval = 500; // 当前实际间隔（可动态调整）
     private adaptiveMode = true; // 启用自适应模式
 
     /**
