@@ -132,3 +132,4 @@ build-and-deploy.sh
 rebuild-deploy.md
 GIF_LOADING_FIX_AND_OPTIMIZATION.md
 deploy-optimized.sh
+nginx-quota-optimized.conf
