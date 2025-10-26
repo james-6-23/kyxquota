@@ -18,7 +18,7 @@ export interface SearchResult {
 }
 
 /**
- * 搜索公益站用户
+ * 搜索公益站用户（带限流）
  */
 export async function searchKyxUser(
     username: string,
@@ -27,16 +27,18 @@ export async function searchKyxUser(
     page: number = 1,
     pageSize: number = 100
 ): Promise<any> {
-    const url = `${CONFIG.KYX_API_BASE}/api/user/search?keyword=${encodeURIComponent(username)}&p=${page}&page_size=${pageSize}`;
+    return await kyxApiLimiter.execute(async () => {
+        const url = `${CONFIG.KYX_API_BASE}/api/user/search?keyword=${encodeURIComponent(username)}&p=${page}&page_size=${pageSize}`;
 
-    const response = await fetch(url, {
-        headers: {
-            Cookie: `session=${session}`,
-            'new-api-user': newApiUser,
-        },
+        const response = await fetch(url, {
+            headers: {
+                Cookie: `session=${session}`,
+                'new-api-user': newApiUser,
+            },
+        });
+
+        return await response.json();
     });
-
-    return await response.json();
 }
 
 /**
@@ -145,31 +147,98 @@ export async function searchAndFindExactUser(
 }
 
 /**
- * 通过 ID 直接查询用户信息
+ * 通过 ID 直接查询用户信息（带限流和重试）
  */
 export async function getKyxUserById(
     userId: number,
     session: string,
-    newApiUser: string = '1'
+    newApiUser: string = '1',
+    maxRetries: number = 3
 ): Promise<SearchResult> {
-    try {
-        const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/${userId}`, {
-            headers: {
-                Cookie: `session=${session}`,
-                'new-api-user': newApiUser,
-            },
-        });
+    const context = `[查询用户] 用户ID: ${userId}`;
 
-        const result = await response.json();
+    return await kyxApiLimiter.execute(async () => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 1) {
+                    console.log(`${context} - 第${attempt}次尝试`);
+                }
 
-        if (!result.success || !result.data) {
-            return { success: false, message: result.message || '查询失败', user: null };
+                const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/${userId}`, {
+                    headers: {
+                        Cookie: `session=${session}`,
+                        'new-api-user': newApiUser,
+                    },
+                    signal: AbortSignal.timeout(10000), // 10秒超时
+                });
+
+                // 处理 429 错误（快速重试策略）
+                if (response.status === 429) {
+                    kyxApiLimiter.recordRateLimit();
+                    const waitTime = Math.min(2000 * attempt, 8000); // 2s, 4s, 6s（最多8s，快速重试）
+                    console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
+
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        message: '查询失败: 服务繁忙，请稍后再试',
+                        user: null
+                    };
+                }
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`${context} - HTTP错误: ${response.status}, 响应: ${errorText}`);
+
+                    if (attempt < maxRetries) {
+                        const backoffTime = 1000 * Math.pow(2, attempt - 1);
+                        await new Promise(resolve => setTimeout(resolve, backoffTime));
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        message: `查询失败: HTTP ${response.status}`,
+                        user: null
+                    };
+                }
+
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                        continue;
+                    }
+                    return { success: false, message: result.message || '查询失败', user: null };
+                }
+
+                return { success: true, user: result.data };
+            } catch (error: any) {
+                const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
+                const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
+
+                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+
+                if (attempt === maxRetries) {
+                    return {
+                        success: false,
+                        message: '查询请求失败: ' + errorMsg,
+                        user: null
+                    };
+                }
+
+                const backoffTime = 1000 * Math.pow(2, attempt - 1);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
+            }
         }
 
-        return { success: true, user: result.data };
-    } catch (error: any) {
-        return { success: false, message: '查询请求失败: ' + (error.message || '未知错误'), user: null };
-    }
+        return { success: false, message: '查询失败: 已达到最大重试次数', user: null };
+    });
 }
 
 /**
@@ -217,7 +286,7 @@ export async function updateKyxUserQuota(
                         kyxApiLimiter.recordRateLimit();
                         const waitTime = Math.min(5000 * attempt, 30000); // 最多等待30秒
                         console.warn(`${context} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
-                        
+
                         if (attempt < maxRetries) {
                             await new Promise(resolve => setTimeout(resolve, waitTime));
                             continue;
@@ -285,48 +354,102 @@ export async function updateKyxUserQuota(
 }
 
 /**
- * 推送 Keys 到分组
+ * 推送 Keys 到分组（带限流和重试）
  */
 export async function pushKeysToGroup(
     keys: string[],
     apiUrl: string,
     authorization: string,
-    groupId: number
+    groupId: number,
+    maxRetries: number = 3
 ): Promise<{ success: boolean; message?: string; failedKeys?: string[] }> {
-    try {
-        const keysText = keys.join('\n');
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${authorization}`,
-            },
-            body: JSON.stringify({
-                group_id: groupId,
-                keys_text: keysText,
-            }),
-        });
+    const context = `[推送Keys] 数量: ${keys.length}, 分组: ${groupId}`;
 
-        const result = await response.json();
+    return await kyxApiLimiter.execute(async () => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                if (attempt > 1) {
+                    console.log(`${context} - 第${attempt}次尝试`);
+                }
 
-        if (!response.ok) {
-            return {
-                success: false,
-                message: result.message || '推送失败',
-                failedKeys: keys,
-            };
+                const keysText = keys.join('\n');
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${authorization}`,
+                    },
+                    body: JSON.stringify({
+                        group_id: groupId,
+                        keys_text: keysText,
+                    }),
+                    signal: AbortSignal.timeout(15000), // 15秒超时（推送可能较慢）
+                });
+
+                // 处理 429 错误（快速重试策略）
+                if (response.status === 429) {
+                    kyxApiLimiter.recordRateLimit();
+                    const waitTime = Math.min(2000 * attempt, 8000); // 2s, 4s, 6s（最多8s，快速重试）
+                    console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
+
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        message: '推送失败: 服务繁忙，请稍后再试',
+                        failedKeys: keys,
+                    };
+                }
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    console.error(`${context} - HTTP错误: ${response.status}, 消息: ${result.message || '无'}`);
+
+                    if (attempt < maxRetries) {
+                        const backoffTime = 1000 * Math.pow(2, attempt - 1);
+                        await new Promise(resolve => setTimeout(resolve, backoffTime));
+                        continue;
+                    }
+
+                    return {
+                        success: false,
+                        message: result.message || '推送失败',
+                        failedKeys: keys,
+                    };
+                }
+
+                return {
+                    success: true,
+                    message: '推送成功',
+                };
+            } catch (error: any) {
+                const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
+                const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
+
+                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+
+                if (attempt === maxRetries) {
+                    return {
+                        success: false,
+                        message: '推送请求失败: ' + errorMsg,
+                        failedKeys: keys,
+                    };
+                }
+
+                const backoffTime = 1000 * Math.pow(2, attempt - 1);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
+            }
         }
 
         return {
-            success: true,
-            message: '推送成功',
-        };
-    } catch (error: any) {
-        return {
             success: false,
-            message: '推送请求失败: ' + (error.message || '未知错误'),
+            message: '推送失败: 已达到最大重试次数',
             failedKeys: keys,
         };
-    }
+    });
 }
 
