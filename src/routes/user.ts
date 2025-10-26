@@ -180,40 +180,54 @@ app.post('/auth/bind', requireAuth, async (c) => {
             kyxUser.group || 'default'
         );
 
-        if (updateResult.success) {
-            // 保存绑定奖励记录到领取记录表
-            const today = new Date().toISOString().split('T')[0];
-            const timestamp = Date.now();
-            claimQueries.insert.run(
-                session.linux_do_id,
-                kyxUser.username,
-                bonusQuota,
-                timestamp,
-                today
-            );
-            console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
-
+        if (!updateResult || !updateResult.success) {
+            console.error(`[绑定] ❌ 发放新手奖励失败 - 用户: ${kyxUser.username}, 错误: ${updateResult?.message || '未知错误'}`);
+            // 绑定成功但奖励发放失败，告知用户
             return c.json({
                 success: true,
-                message: `绑定成功！已赠送新手奖励 $${(bonusQuota / 500000).toFixed(2)}`,
+                message: `绑定成功！但新手奖励发放失败（${updateResult?.message || '未知错误'}），请联系管理员补发`,
                 data: {
-                    bonus: bonusQuota,
-                    bonusCNY: (bonusQuota / 500000).toFixed(2),
-                },
-            });
-        } else {
-            console.log(`[用户操作] ❌ 新手奖励发放失败 - 用户: ${kyxUser.username}, 原因: ${updateResult.message}`);
-            return c.json({
-                success: true,
-                message: '绑定成功，但奖励发放失败，请联系管理员',
+                    kyx_user: kyxUser,
+                    quota_before: kyxUser.quota,
+                    bonus_quota: bonusQuota,
+                    bonus_failed: true
+                }
             });
         }
-    } else {
+
+        // 保存绑定奖励记录到领取记录表
+        const today = new Date().toISOString().split('T')[0];
+        const timestamp = Date.now();
+        claimQueries.insert.run(
+            session.linux_do_id,
+            kyxUser.username,
+            bonusQuota,
+            timestamp,
+            today
+        );
+        console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
+
         return c.json({
             success: true,
-            message: '重新绑定成功',
+            message: `绑定成功！已赠送新手奖励 $${(bonusQuota / 500000).toFixed(2)}`,
+            data: {
+                bonus: bonusQuota,
+                bonusCNY: (bonusQuota / 500000).toFixed(2),
+            },
+        });
+    } else {
+        console.log(`[用户操作] ❌ 新手奖励发放失败 - 用户: ${kyxUser.username}, 原因: ${updateResult.message}`);
+        return c.json({
+            success: true,
+            message: '绑定成功，但奖励发放失败，请联系管理员',
         });
     }
+} else {
+    return c.json({
+        success: true,
+        message: '重新绑定成功',
+    });
+}
 });
 
 /**

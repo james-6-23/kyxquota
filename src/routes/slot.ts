@@ -267,6 +267,9 @@ slot.post('/spin', requireAuth, async (c) => {
 
             // 扣除投注额度（计算新额度 = 当前额度 - 投注金额）
             const newQuotaAfterBet = currentQuota - betAmount;
+
+            console.log(`[老虎机] 准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+
             const deductResult = await updateKyxUserQuota(
                 user.kyx_user_id,
                 newQuotaAfterBet,
@@ -275,9 +278,16 @@ slot.post('/spin', requireAuth, async (c) => {
                 user.username,
                 kyxUserResult.user.group || 'default'
             );
+
             if (!deductResult || !deductResult.success) {
-                return c.json({ success: false, message: '扣除额度失败' }, 500);
+                console.error(`[老虎机] ❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+                return c.json({
+                    success: false,
+                    message: `扣除投注额度失败: ${deductResult?.message || '未知错误'}，请稍后重试`
+                }, 500);
             }
+
+            console.log(`[老虎机] ✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
         }
 
         // 生成随机符号
@@ -294,16 +304,28 @@ slot.post('/spin', requireAuth, async (c) => {
 
         // 处理中奖或惩罚金额
         let winAmount = 0;
+        let quotaUpdateFailed = false;
+        let quotaUpdateError = '';
 
         if (result.multiplier > 0) {
             // 正常中奖 - 使用 calculationBetAmount 计算奖金
             winAmount = Math.floor(calculationBetAmount * result.multiplier);
 
+            console.log(`[老虎机] 💰 中奖 - 用户: ${user.username}, 类型: ${WIN_TYPE_NAMES[result.winType]}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
+
             // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-            if (currentKyxUser.success && currentKyxUser.user) {
-                const newQuotaAfterWin = currentKyxUser.user.quota + winAmount;
-                await updateKyxUserQuota(
+            if (!currentKyxUser.success || !currentKyxUser.user) {
+                console.error(`[老虎机] ❌ 中奖后获取用户信息失败 - 用户: ${user.username}`);
+                quotaUpdateFailed = true;
+                quotaUpdateError = '获取用户信息失败，请联系管理员补发奖金';
+            } else {
+                const quotaBeforeWin = currentKyxUser.user.quota;
+                const newQuotaAfterWin = quotaBeforeWin + winAmount;
+
+                console.log(`[老虎机] 准备添加额度 - 当前: ${quotaBeforeWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
+
+                const updateResult = await updateKyxUserQuota(
                     user.kyx_user_id,
                     newQuotaAfterWin,
                     adminConfigForWin.session,
@@ -311,6 +333,27 @@ slot.post('/spin', requireAuth, async (c) => {
                     user.username,
                     currentKyxUser.user.group || 'default'
                 );
+
+                // 【关键】检查更新结果
+                if (!updateResult || !updateResult.success) {
+                    console.error(`[老虎机] ❌ 添加额度失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+                    quotaUpdateFailed = true;
+                    quotaUpdateError = '额度添加失败，请联系管理员补发奖金';
+                } else {
+                    // 验证额度是否真的更新了
+                    const verifyUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
+                    if (verifyUser.success && verifyUser.user) {
+                        const actualQuota = verifyUser.user.quota;
+                        console.log(`[老虎机] ✅ 验证额度 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}`);
+
+                        // 允许小范围误差（可能有其他操作）
+                        if (Math.abs(actualQuota - newQuotaAfterWin) > winAmount) {
+                            console.error(`[老虎机] ⚠️ 额度验证异常 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}, 差异过大`);
+                            quotaUpdateFailed = true;
+                            quotaUpdateError = '额度验证失败，请联系管理员';
+                        }
+                    }
+                }
             }
         } else if (result.multiplier < 0) {
             // 惩罚扣除（负倍率）- 使用 calculationBetAmount 计算惩罚金额
@@ -318,13 +361,18 @@ slot.post('/spin', requireAuth, async (c) => {
 
             // 获取当前额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-            if (currentKyxUser.success && currentKyxUser.user) {
+            if (!currentKyxUser.success || !currentKyxUser.user) {
+                console.error(`[老虎机] ❌ 惩罚时获取用户信息失败 - 用户: ${user.username}`);
+                // 惩罚失败不阻止游戏继续
+            } else {
                 // 计算扣除后的额度，确保不会为负数
                 const currentQuota = currentKyxUser.user.quota;
                 const actualDeduction = Math.min(punishmentAmount, currentQuota);  // 最多扣到0
                 const newQuotaAfterPunishment = currentQuota - actualDeduction;
 
-                await updateKyxUserQuota(
+                console.log(`[老虎机] ⚡ 准备扣除惩罚 - 当前: ${currentQuota}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
+
+                const updateResult = await updateKyxUserQuota(
                     user.kyx_user_id,
                     newQuotaAfterPunishment,
                     adminConfigForWin.session,
@@ -333,10 +381,16 @@ slot.post('/spin', requireAuth, async (c) => {
                     currentKyxUser.user.group || 'default'
                 );
 
-                // winAmount 设为负数，用于记录
-                winAmount = -actualDeduction;
-
-                console.log(`[老虎机] ⚡ 惩罚触发 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
+                // 检查惩罚扣除结果
+                if (!updateResult || !updateResult.success) {
+                    console.error(`[老虎机] ❌ 惩罚扣除失败 - 用户: ${user.username}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+                    // 惩罚失败，记录为0
+                    winAmount = 0;
+                } else {
+                    // winAmount 设为负数，用于记录
+                    winAmount = -actualDeduction;
+                    console.log(`[老虎机] ⚡ 惩罚成功 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
+                }
             }
 
             // 如果是严重惩罚（3个及以上），禁止抽奖2.5天
@@ -402,6 +456,11 @@ slot.post('/spin', requireAuth, async (c) => {
             message = WIN_TYPE_NAMES[result.winType];
             if (result.multiplier > 0) {
                 message += ` ${result.multiplier}倍！赢得 $${(winAmount / 500000).toFixed(2)}`;
+
+                // 【关键】如果额度更新失败，明确告知用户
+                if (quotaUpdateFailed) {
+                    message += ` | ⚠️ ${quotaUpdateError}`;
+                }
             }
             if (result.freeSpinAwarded) {
                 message += ' | 🎁 获得1次免费机会！';
@@ -420,9 +479,11 @@ slot.post('/spin', requireAuth, async (c) => {
                 free_spin_awarded: result.freeSpinAwarded,
                 quota_after: quotaAfter,
                 spins_remaining: remainingSpinsAfter,
-                free_spins_remaining: freeSpinsAfter
+                free_spins_remaining: freeSpinsAfter,
+                quota_update_failed: quotaUpdateFailed  // 新增：标记额度更新是否失败
             },
-            message
+            message,
+            warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 新增：警告信息
         });
     } catch (error) {
         console.error('旋转老虎机失败:', error);

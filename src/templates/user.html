@@ -162,16 +162,58 @@
       }
     }
 
-    /* 响应式调整 */
+    /* 响应式调整 - 移动端优化 */
     @media only screen and (max-width: 768px) {
+      /* 老虎机滚轮 */
       .slot-reel-container {
-        width: 140px;
-        height: 140px;
+        width: 70px;
+        height: 70px;
       }
       
       .slot-symbol {
-        height: 140px;
-        padding: 10px;
+        height: 70px;
+        padding: 5px;
+      }
+      
+      .slot-symbol img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      
+      /* 隐藏侧边栏排行榜 */
+      #slotSidebarLeaderboard {
+        display: none !important;
+      }
+      
+      /* Toast消息位置调整 */
+      .toast {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: calc(100vw - 20px);
+      }
+      
+      /* 模态框内边距调整 */
+      .modal-content {
+        padding: 1rem;
+      }
+    }
+    
+    /* 平板端适配 */
+    @media only screen and (min-width: 769px) and (max-width: 1024px) {
+      .slot-reel-container {
+        width: 100px;
+        height: 100px;
+      }
+      
+      .slot-symbol {
+        height: 100px;
+        padding: 8px;
+      }
+      
+      /* 排行榜窄一些 */
+      #slotSidebarLeaderboard {
+        width: 280px !important;
       }
     }
 
@@ -566,33 +608,42 @@
     <nav class="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center h-16">
-          <!-- Logo和导航 -->
-          <div class="flex items-center gap-8">
-            <h1 class="text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">KYX API</h1>
+          <!-- Logo和导航 - 响应式 -->
+          <div class="flex items-center gap-2 sm:gap-4 md:gap-8">
+            <h1 class="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-yellow-400 to-orange-400 bg-clip-text text-transparent">KYX API</h1>
             
-            <!-- 导航选项卡 -->
+            <!-- 导航选项卡 - 响应式 -->
             <div class="flex items-center gap-1" data-switch-container>
               <!-- 加油站 -->
               <button data-btn="refuel" onclick="switchToRefuel()" 
-                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
-                <span>⛽</span>
-                <span>加油站</span>
+                      class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
+                <span class="text-base sm:text-lg">⛽</span>
+                <span class="hidden sm:inline">加油站</span>
               </button>
               
               <!-- 娱乐站 -->
               <button data-btn="entertain" onclick="switchToEntertain()" 
-                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
-                <span>🎰</span>
-                <span>娱乐站</span>
+                      class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
+                <span class="text-base sm:text-lg">🎰</span>
+                <span class="hidden sm:inline">娱乐站</span>
               </button>
             </div>
           </div>
           
           <!-- 右侧：用户菜单 -->
-          <div class="flex items-center gap-3 ml-auto">
-            <div class="text-white text-right">
+          <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+            <!-- 移动端排行榜按钮 -->
+            <button onclick="showLeaderboard()" class="md:hidden p-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 transition-colors" title="查看排行榜">
+              <span class="text-xl">🏆</span>
+            </button>
+            
+            <div class="text-white text-right hidden sm:block">
               <p class="text-xs opacity-75">剩余额度</p>
               <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
+            </div>
+            <!-- 移动端简化显示 -->
+            <div class="text-white text-right sm:hidden">
+              <p id="slotQuotaMobile" class="text-sm font-bold text-yellow-400">$0.00</p>
             </div>
             <div class="relative">
               <button onclick="toggleSlotDropdown()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
@@ -631,17 +682,17 @@
       <!-- 主游戏区 -->
       <div class="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
         
-        <!-- 标题 -->
-        <h1 class="text-6xl font-bold text-yellow-400 mb-4 drop-shadow-lg animate-pulse">
+        <!-- 标题 - 响应式字体 -->
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
           🎰 KYX-Slot-Machine
         </h1>
         
-        <!-- 次数显示 -->
-        <div class="bg-white/10 backdrop-blur-md rounded-lg px-8 py-3 mb-6">
-          <p class="text-white text-center text-lg">
-            今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-2xl">5</span> 次
-            <span class="mx-3">|</span>
-            免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-2xl">0</span> 次
+        <!-- 次数显示 - 响应式 -->
+        <div class="bg-white/10 backdrop-blur-md rounded-lg px-4 sm:px-8 py-2 sm:py-3 mb-4 sm:mb-6">
+          <p class="text-white text-center text-sm sm:text-base md:text-lg">
+            今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-lg sm:text-xl md:text-2xl">5</span> 次
+            <span class="mx-2 sm:mx-3">|</span>
+            免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-lg sm:text-xl md:text-2xl">0</span> 次
           </p>
           <!-- 禁止状态提示 -->
           <div id="bannedNotice" class="hidden mt-3 p-3 bg-red-500/90 rounded-lg border border-red-300">
@@ -653,46 +704,46 @@
           </div>
         </div>
 
-        <!-- 老虎机滚轮容器 (1行4列) -->
-        <div id="slotReelsContainer" class="bg-black/50 rounded-3xl p-10 shadow-2xl mb-8">
-          <div id="slotReels" class="flex gap-6 justify-center">
+        <!-- 老虎机滚轮容器 (1行4列) - 响应式 -->
+        <div id="slotReelsContainer" class="bg-black/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl mb-4 sm:mb-6 md:mb-8">
+          <div id="slotReels" class="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
             <!-- 滚轮将通过 JavaScript 动态生成 -->
           </div>
         </div>
 
-        <!-- 结果显示 -->
+        <!-- 结果显示 - 响应式 -->
         <div id="slotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
-                                         rounded-xl px-10 py-5 mb-6 shadow-xl">
-          <p id="slotResultText" class="text-white text-3xl font-bold text-center drop-shadow-lg"></p>
+                                         rounded-lg sm:rounded-xl px-4 sm:px-6 md:px-10 py-3 sm:py-4 md:py-5 mb-4 sm:mb-6 shadow-xl">
+          <p id="slotResultText" class="text-white text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-center drop-shadow-lg"></p>
         </div>
 
-        <!-- 控制按钮 -->
-        <div class="flex gap-6">
+        <!-- 控制按钮 - 响应式 -->
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto px-4 sm:px-0">
           <button id="spinButton" onclick="spinSlot(false)" 
-                  class="px-16 py-5 bg-gradient-to-r from-green-500 to-emerald-600 
-                         text-white text-3xl font-bold rounded-xl shadow-lg 
+                  class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600 
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
                          hover:scale-105 transform transition-all duration-200
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
             <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
           </button>
           
           <button id="freeSpinButton" onclick="spinSlot(true)" 
-                  class="hidden px-16 py-5 bg-gradient-to-r from-purple-500 to-pink-600 
-                         text-white text-3xl font-bold rounded-xl shadow-lg 
+                  class="hidden px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-purple-500 to-pink-600 
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
                          hover:scale-105 transform transition-all duration-200
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
             ✨ free spin
           </button>
         </div>
 
-        <!-- 规则说明按钮 -->
-        <button onclick="showSlotRules()" class="mt-6 text-white/70 hover:text-white text-base transition-colors">
+        <!-- 规则说明按钮 - 响应式 -->
+        <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
           📖 查看游戏规则
         </button>
       </div>
 
-      <!-- 右侧：排行榜（悬浮显示）-->
-      <div class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-indigo-900/90 to-blue-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col">
+      <!-- 右侧：排行榜（悬浮显示）- 移动端隐藏 -->
+      <div id="slotSidebarLeaderboard" class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-indigo-900/90 to-blue-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 overflow-hidden flex flex-col">
         <div class="p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border-b border-white/20">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-bold text-yellow-400 flex items-center gap-2">
@@ -731,27 +782,27 @@
 
     </div>
 
-    <!-- 底部统计（固定底部） -->
-    <div class="bg-black/30 backdrop-blur-md p-4 text-center text-white border-t border-white/10">
+    <!-- 底部统计（固定底部）- 响应式 -->
+    <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
       <!-- 今日统计 -->
-      <div class="mb-2">
-        <p class="text-xs text-white/60 mb-1">📅 今日数据</p>
-        <p class="text-base">
+      <div class="mb-1 sm:mb-2">
+        <p class="text-xs text-white/60 mb-0.5 sm:mb-1">📅 今日数据</p>
+        <p class="text-xs sm:text-sm md:text-base">
           已玩 <span id="todayPlayed" class="font-bold text-yellow-400">0</span> 次 
-          <span class="mx-2 text-white/40">|</span> 
+          <span class="mx-1 sm:mx-2 text-white/40">|</span> 
           投注 <span id="todayBet" class="font-bold text-red-400">$0</span>
-          <span class="mx-2 text-white/40">|</span>
+          <span class="mx-1 sm:mx-2 text-white/40">|</span>
           赢得 <span id="todayWon" class="font-bold text-green-400">$0</span>
         </p>
       </div>
       <!-- 历史总计 -->
-      <div class="pt-2 border-t border-white/20">
-        <p class="text-xs text-white/60 mb-1">📊 历史总计</p>
-        <p class="text-base">
+      <div class="pt-1 sm:pt-2 border-t border-white/20">
+        <p class="text-xs text-white/60 mb-0.5 sm:mb-1">📊 历史总计</p>
+        <p class="text-xs sm:text-sm md:text-base">
           总次数 <span id="totalPlayed" class="font-bold text-yellow-300">0</span> 次
-          <span class="mx-2 text-white/40">|</span>
+          <span class="mx-1 sm:mx-2 text-white/40">|</span>
           总投注 <span id="totalBet" class="font-bold text-red-300">$0</span>
-          <span class="mx-2 text-white/40">|</span>
+          <span class="mx-1 sm:mx-2 text-white/40">|</span>
           总获得 <span id="totalWon" class="font-bold text-green-300">$0</span>
         </p>
       </div>
@@ -1937,7 +1988,14 @@
     function updateSlotUI() {
       if (!slotUserData || !slotConfig) return;
 
-      document.getElementById('slotQuota').textContent = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+      const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+      document.getElementById('slotQuota').textContent = quotaText;
+      // 同步更新移动端额度显示
+      const slotQuotaMobile = document.getElementById('slotQuotaMobile');
+      if (slotQuotaMobile) {
+        slotQuotaMobile.textContent = quotaText;
+      }
+      
       document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins;
       document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins;
       
