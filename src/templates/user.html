@@ -254,13 +254,12 @@
       animation: fadeIn 0.3s ease-out;
     }
     
-    /* 老虎机背景 - GIF动图 */
+    /* 老虎机背景 - 默认渐变（可通过配置切换为GIF） */
     .slot-machine-bg {
-      background: linear-gradient(135deg, rgba(30, 58, 138, 0.7) 0%, rgba(59, 130, 246, 0.7) 50%, rgba(139, 92, 246, 0.7) 100%), 
-                  url('/ctrl.gif');
-      background-size: cover, cover;
-      background-position: center, center;
-      background-repeat: no-repeat, no-repeat;
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.9) 50%, rgba(139, 92, 246, 0.9) 100%);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
     }
     
     /* 确保背景在所有子元素后面 */
@@ -943,8 +942,8 @@
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-emerald-500 to-green-600">
         <div>
-          <h2 class="text-2xl font-bold text-white">🏆 盈亏双榜</h2>
-          <p class="text-sm text-white/90 mt-1">盈利榜 vs 亏损榜（总赢得 - 总投注）</p>
+          <h2 class="text-2xl font-bold text-white">🏆 排行榜</h2>
+          <p class="text-sm text-white/90 mt-1">查看盈利榜和亏损榜（总赢得 - 总投注）</p>
         </div>
         <button onclick="closeLeaderboard()" class="text-white hover:text-gray-200 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -953,6 +952,16 @@
         </button>
       </div>
       
+      <!-- 标签页切换 -->
+      <div class="flex border-b border-slate-200 bg-slate-50">
+        <button id="profitTabBtn" onclick="switchLeaderboardTab('profit')" class="flex-1 px-6 py-4 text-center font-semibold transition-all border-b-2 border-green-500 bg-white text-green-600">
+          🏆 盈利排行榜
+        </button>
+        <button id="lossTabBtn" onclick="switchLeaderboardTab('loss')" class="flex-1 px-6 py-4 text-center font-semibold transition-all border-b-2 border-transparent text-slate-600 hover:text-slate-900">
+          📉 亏损排行榜
+        </button>
+      </div>
+
       <!-- 用户统计卡片 -->
       <div class="p-6 bg-gradient-to-r from-purple-50 to-indigo-50 border-b border-slate-200">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -979,14 +988,14 @@
       </div>
 
       <!-- 排行榜内容区 -->
-      <div class="p-6 overflow-y-auto max-h-[calc(90vh-300px)]">
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-350px)]">
         <!-- 盈利排行榜 -->
-        <div id="leaderboardContent" class="mb-6">
+        <div id="leaderboardContent">
           <!-- 排行榜内容 -->
         </div>
         
         <!-- 亏损排行榜 -->
-        <div id="lossLeaderboardContent">
+        <div id="lossLeaderboardContent" class="hidden">
           <!-- 亏损榜内容 -->
         </div>
       </div>
@@ -2050,6 +2059,22 @@
         slotConfig = configData.data.config;
         slotUserData = configData.data.user;
 
+        // 应用背景配置
+        const slotBg = document.querySelector('.slot-machine-bg');
+        if (slotBg && slotConfig.background_type) {
+          if (slotConfig.background_type === 'gif') {
+            slotBg.style.background = "linear-gradient(135deg, rgba(30, 58, 138, 0.7) 0%, rgba(59, 130, 246, 0.7) 50%, rgba(139, 92, 246, 0.7) 100%), url('/ctrl.gif')";
+            slotBg.style.backgroundSize = 'cover, cover';
+            slotBg.style.backgroundPosition = 'center, center';
+            slotBg.style.backgroundRepeat = 'no-repeat, no-repeat';
+          } else {
+            slotBg.style.background = 'linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.9) 50%, rgba(139, 92, 246, 0.9) 100%)';
+            slotBg.style.backgroundSize = 'cover';
+            slotBg.style.backgroundPosition = 'center';
+            slotBg.style.backgroundRepeat = 'no-repeat';
+          }
+        }
+
         // 3. 初始化UI（快速操作）
         initSlotReels();
         updateSlotUI();
@@ -3062,6 +3087,8 @@
         }
 
         document.getElementById('leaderboardModal').classList.remove('hidden');
+        // 默认显示盈利榜
+        switchLeaderboardTab('profit');
       } catch (error) {
         console.error('获取排行榜失败:', error);
         showToast('获取排行榜失败', 'error');
@@ -3071,6 +3098,36 @@
     // 关闭排行榜
     function closeLeaderboard() {
       document.getElementById('leaderboardModal').classList.add('hidden');
+    }
+
+    // 切换排行榜标签页
+    function switchLeaderboardTab(tab) {
+      const profitTab = document.getElementById('profitTabBtn');
+      const lossTab = document.getElementById('lossTabBtn');
+      const profitContent = document.getElementById('leaderboardContent');
+      const lossContent = document.getElementById('lossLeaderboardContent');
+
+      if (tab === 'profit') {
+        // 激活盈利榜标签
+        profitTab.classList.add('border-green-500', 'bg-white', 'text-green-600');
+        profitTab.classList.remove('border-transparent', 'text-slate-600');
+        lossTab.classList.remove('border-red-500', 'bg-white', 'text-red-600');
+        lossTab.classList.add('border-transparent', 'text-slate-600');
+        
+        // 显示盈利榜内容
+        profitContent.classList.remove('hidden');
+        lossContent.classList.add('hidden');
+      } else if (tab === 'loss') {
+        // 激活亏损榜标签
+        lossTab.classList.add('border-red-500', 'bg-white', 'text-red-600');
+        lossTab.classList.remove('border-transparent', 'text-slate-600');
+        profitTab.classList.remove('border-green-500', 'bg-white', 'text-green-600');
+        profitTab.classList.add('border-transparent', 'text-slate-600');
+        
+        // 显示亏损榜内容
+        lossContent.classList.remove('hidden');
+        profitContent.classList.add('hidden');
+      }
     }
 
     // ========== 结束：老虎机相关功能 ==========

@@ -38,6 +38,20 @@ app.get('/slot-symbols/:filename', async (c) => {
     return c.notFound();
 });
 
+// 静态文件服务（老虎机背景GIF）
+app.get('/ctrl.gif', async (c) => {
+    const file = Bun.file('public/ctrl.gif');
+    if (await file.exists()) {
+        return new Response(file, {
+            headers: {
+                'Content-Type': 'image/gif',
+                'Cache-Control': 'public, max-age=31536000'
+            }
+        });
+    }
+    return c.notFound();
+});
+
 // 首页
 app.get('/', async (c) => {
     let html = await Bun.file('src/templates/user.html').text();

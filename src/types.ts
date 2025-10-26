@@ -73,6 +73,7 @@ export interface SlotMachineConfig {
     max_daily_spins: number;
     min_quota_required: number;
     enabled: number;
+    background_type: string;  // 'default' 或 'gif'
     updated_at: number;
 }
 

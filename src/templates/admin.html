@@ -679,6 +679,17 @@
                 </select>
                 <p class="text-xs text-slate-500 mt-1">禁用后用户无法访问老虎机</p>
               </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  背景类型
+                </label>
+                <select id="slotBackgroundType" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                  <option value="default">默认渐变</option>
+                  <option value="gif">动态GIF</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">选择老虎机界面的背景样式</p>
+              </div>
             </div>
             
             <div class="mt-6 flex gap-3">
@@ -2406,6 +2417,7 @@
           document.getElementById('slotMaxDailySpins').value = config.max_daily_spins;
           document.getElementById('slotMinQuotaUSD').value = minQuotaUSD;
           document.getElementById('slotEnabled').value = config.enabled;
+          document.getElementById('slotBackgroundType').value = config.background_type || 'default';
 
           // 更新显示
           document.getElementById('slotBetAmountDisplay').textContent = betAmountUSD;
@@ -2423,6 +2435,7 @@
         const maxDailySpins = parseInt(document.getElementById('slotMaxDailySpins').value);
         const minQuotaUSD = parseFloat(document.getElementById('slotMinQuotaUSD').value);
         const enabled = parseInt(document.getElementById('slotEnabled').value);
+        const backgroundType = document.getElementById('slotBackgroundType').value;
 
         if (isNaN(betAmountUSD) || betAmountUSD < 0) {
           showMessage('请输入有效的投注金额', 'error');
@@ -2448,7 +2461,8 @@
             bet_amount: betAmount,
             max_daily_spins: maxDailySpins,
             min_quota_required: minQuota,
-            enabled: enabled
+            enabled: enabled,
+            background_type: backgroundType
           })
         });
 

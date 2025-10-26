@@ -502,7 +502,7 @@ app.get('/slot/config', requireAdmin, async (c) => {
 app.post('/slot/config', requireAdmin, async (c) => {
     try {
         const body = await c.req.json();
-        const { bet_amount, max_daily_spins, min_quota_required, enabled } = body;
+        const { bet_amount, max_daily_spins, min_quota_required, enabled, background_type } = body;
 
         // 验证参数
         if (bet_amount !== undefined && (typeof bet_amount !== 'number' || bet_amount < 0)) {
@@ -517,6 +517,9 @@ app.post('/slot/config', requireAdmin, async (c) => {
         if (enabled !== undefined && typeof enabled !== 'number') {
             return c.json({ success: false, message: '启用状态必须是数字' }, 400);
         }
+        if (background_type !== undefined && !['default', 'gif'].includes(background_type)) {
+            return c.json({ success: false, message: '背景类型必须是 default 或 gif' }, 400);
+        }
 
         const now = Date.now();
         const currentConfig = slotQueries.getConfig.get();
@@ -526,6 +529,7 @@ app.post('/slot/config', requireAdmin, async (c) => {
             max_daily_spins !== undefined ? max_daily_spins : currentConfig!.max_daily_spins,
             min_quota_required !== undefined ? min_quota_required : currentConfig!.min_quota_required,
             enabled !== undefined ? enabled : currentConfig!.enabled,
+            background_type !== undefined ? background_type : currentConfig!.background_type,
             now
         );
 
