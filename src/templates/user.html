@@ -254,6 +254,21 @@
       animation: fadeIn 0.3s ease-out;
     }
     
+    /* 老虎机背景 - GIF动图 */
+    .slot-machine-bg {
+      background: linear-gradient(135deg, rgba(30, 58, 138, 0.7) 0%, rgba(59, 130, 246, 0.7) 50%, rgba(139, 92, 246, 0.7) 100%), 
+                  url('/ctrl.gif');
+      background-size: cover, cover;
+      background-position: center, center;
+      background-repeat: no-repeat, no-repeat;
+    }
+    
+    /* 确保背景在所有子元素后面 */
+    .slot-machine-bg > * {
+      position: relative;
+      z-index: 1;
+    }
+    
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -590,7 +605,7 @@
   </div>
 
   <!-- 老虎机全屏界面 -->
-  <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800" style="background-image: url('/ctrl.gif'); background-size: cover; background-position: center; background-repeat: no-repeat; background-blend-mode: overlay;">
+  <div id="slotMachineModal" class="hidden fixed inset-0 z-50 slot-machine-bg">
     
     <!-- Loading遮罩 -->
     <div id="slotLoadingOverlay" class="slot-loading-overlay hidden">
@@ -633,6 +648,11 @@
           
           <!-- 右侧：用户菜单 -->
           <div class="flex items-center gap-2 sm:gap-3 ml-auto">
+            <!-- 音效控制按钮 -->
+            <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="音效开关">
+              <span id="soundIcon" class="text-xl">🔊</span>
+            </button>
+            
             <!-- 移动端排行榜按钮 -->
             <button onclick="showLeaderboard()" class="md:hidden p-2 rounded-lg bg-yellow-500/20 hover:bg-yellow-500/30 transition-colors" title="查看排行榜">
               <span class="text-xl">🏆</span>
@@ -1061,6 +1081,132 @@
   </div>
 
   <script>
+    // ========== 音效系统 ==========
+    
+    // 音效管理器
+    class SoundManager {
+      constructor() {
+        this.sounds = {};
+        this.muted = localStorage.getItem('slotSoundMuted') === 'true';
+        this.volume = parseFloat(localStorage.getItem('slotSoundVolume') || '0.5');
+        this.initialized = false;
+      }
+      
+      // 初始化音效
+      init() {
+        if (this.initialized) return;
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        this.initialized = true;
+        console.log('🔊 音效系统已初始化');
+      }
+      
+      // 播放音调
+      playTone(frequency, duration, type = 'sine') {
+        if (this.muted || !this.initialized) return;
+        
+        try {
+          const oscillator = this.audioContext.createOscillator();
+          const gainNode = this.audioContext.createGain();
+          
+          oscillator.connect(gainNode);
+          gainNode.connect(this.audioContext.destination);
+          
+          oscillator.frequency.value = frequency;
+          oscillator.type = type;
+          
+          gainNode.gain.setValueAtTime(this.volume * 0.3, this.audioContext.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+          
+          oscillator.start(this.audioContext.currentTime);
+          oscillator.stop(this.audioContext.currentTime + duration);
+        } catch (e) {
+          console.error('播放音效失败:', e);
+        }
+      }
+      
+      // 旋转音效
+      playSpin() {
+        this.init();
+        setTimeout(() => this.playTone(200, 0.1, 'sawtooth'), 0);
+        setTimeout(() => this.playTone(300, 0.1, 'sawtooth'), 100);
+        setTimeout(() => this.playTone(400, 0.15, 'sawtooth'), 200);
+      }
+      
+      // 中奖音效
+      playWin(multiplier) {
+        this.init();
+        
+        if (multiplier >= 256) {
+          this.playJackpot();
+        } else if (multiplier >= 32) {
+          setTimeout(() => this.playTone(523, 0.2, 'sine'), 0);
+          setTimeout(() => this.playTone(659, 0.2, 'sine'), 150);
+          setTimeout(() => this.playTone(784, 0.3, 'sine'), 300);
+        } else if (multiplier >= 8) {
+          setTimeout(() => this.playTone(440, 0.2, 'sine'), 0);
+          setTimeout(() => this.playTone(554, 0.3, 'sine'), 150);
+        } else if (multiplier > 0) {
+          this.playTone(440, 0.2, 'sine');
+        }
+      }
+      
+      // 超级大奖音效
+      playJackpot() {
+        const notes = [262, 330, 392, 523, 659, 784, 1047];
+        notes.forEach((freq, i) => {
+          setTimeout(() => this.playTone(freq, 0.15, 'sine'), i * 100);
+        });
+      }
+      
+      // 未中奖音效
+      playLose() {
+        this.init();
+        setTimeout(() => this.playTone(300, 0.15, 'sine'), 0);
+        setTimeout(() => this.playTone(200, 0.2, 'sine'), 100);
+      }
+      
+      // 惩罚音效
+      playPunishment() {
+        this.init();
+        setTimeout(() => this.playTone(400, 0.1, 'square'), 0);
+        setTimeout(() => this.playTone(300, 0.1, 'square'), 120);
+        setTimeout(() => this.playTone(400, 0.1, 'square'), 240);
+        setTimeout(() => this.playTone(300, 0.15, 'square'), 360);
+      }
+      
+      // 按钮点击音效
+      playClick() {
+        this.init();
+        this.playTone(600, 0.05, 'sine');
+      }
+      
+      // 切换静音
+      toggleMute() {
+        this.muted = !this.muted;
+        localStorage.setItem('slotSoundMuted', this.muted);
+        return this.muted;
+      }
+      
+      // 设置音量
+      setVolume(vol) {
+        this.volume = Math.max(0, Math.min(1, vol));
+        localStorage.setItem('slotSoundVolume', this.volume);
+      }
+    }
+    
+    // 创建全局音效管理器
+    const soundManager = new SoundManager();
+    
+    // 音效控制函数
+    function toggleSound() {
+      const muted = soundManager.toggleMute();
+      const icon = document.getElementById('soundIcon');
+      icon.textContent = muted ? '🔇' : '🔊';
+      showToast(muted ? '音效已关闭' : '音效已开启', 'success');
+    }
+    
+    // ========== 配置 ==========
+    
     const CONFIG = {
       LINUX_DO_AUTH_URL: 'https://connect.linux.do/oauth2/authorize',
       LINUX_DO_CLIENT_ID: '',
@@ -2266,6 +2412,9 @@
       // 隐藏上次结果
       resultDiv.classList.add('hidden');
 
+      // 播放旋转音效
+      soundManager.playSpin();
+      
       // 禁用按钮
       spinButton.disabled = true;
       freeSpinButton.disabled = true;
@@ -2324,6 +2473,18 @@
           setTimeout(() => loadSidebarLeaderboard(), 1000);
         }
 
+        // 播放结果音效
+        if (result.multiplier < 0) {
+          // 惩罚音效
+          soundManager.playPunishment();
+        } else if (result.multiplier > 0) {
+          // 中奖音效
+          soundManager.playWin(result.multiplier);
+        } else {
+          // 未中奖音效
+          soundManager.playLose();
+        }
+        
         // 显示结果
         document.getElementById('slotResultText').textContent = data.message;
         resultDiv.classList.remove('hidden');
