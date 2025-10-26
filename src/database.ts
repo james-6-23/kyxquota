@@ -232,19 +232,19 @@ export function initDatabase() {
     )
   `);
 
-    // 插入默认老虎机配置
-    db.exec(`
-    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, updated_at)
-    VALUES (1, 10000000, 5, 10000000, 1, 'default', ${Date.now()})
-  `);
-
-    // 兼容旧数据：添加 background_type 字段
+    // 兼容旧数据：添加 background_type 字段（必须在 INSERT 之前）
     try {
         db.exec('ALTER TABLE slot_machine_config ADD COLUMN background_type TEXT DEFAULT \'default\'');
         console.log('✅ 已添加 background_type 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
+
+    // 插入默认老虎机配置
+    db.exec(`
+    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, updated_at)
+    VALUES (1, 10000000, 5, 10000000, 1, 'default', ${Date.now()})
+  `);
 
     // 符号权重配置表
     db.exec(`
