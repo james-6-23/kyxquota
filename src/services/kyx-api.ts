@@ -1,4 +1,5 @@
 import { CONFIG } from '../config';
+import { kyxApiLimiter } from './rate-limiter';
 
 export interface KyxUser {
     id: number;
@@ -172,7 +173,7 @@ export async function getKyxUserById(
 }
 
 /**
- * 更新用户额度（带重试和详细日志）
+ * 更新用户额度（带限流、重试和详细日志）
  */
 export async function updateKyxUserQuota(
     userId: number,
@@ -185,85 +186,102 @@ export async function updateKyxUserQuota(
 ): Promise<any> {
     const context = `[更新额度] 用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username}`;
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-        try {
-            console.log(`${context} - 第${attempt}次尝试`);
+    // 使用限流器执行请求
+    return await kyxApiLimiter.execute(async () => {
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`${context} - 第${attempt}次尝试`);
 
-            const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Cookie: `session=${session}`,
-                    'new-api-user': newApiUser,
-                },
-                body: JSON.stringify({
-                    id: userId,
-                    quota: newQuota,
-                    username: username,
-                    group: group,
-                }),
-                signal: AbortSignal.timeout(10000), // 10秒超时
-            });
+                const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Cookie: `session=${session}`,
+                        'new-api-user': newApiUser,
+                    },
+                    body: JSON.stringify({
+                        id: userId,
+                        quota: newQuota,
+                        username: username,
+                        group: group,
+                    }),
+                    signal: AbortSignal.timeout(10000), // 10秒超时
+                });
 
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`${context} - HTTP错误: ${response.status} ${response.statusText}, 响应: ${errorText}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`${context} - HTTP错误: ${response.status} ${response.statusText}, 响应: ${errorText}`);
 
-                // 如果是最后一次尝试，返回失败
+                    // 特殊处理 429 错误
+                    if (response.status === 429) {
+                        kyxApiLimiter.recordRateLimit();
+                        const waitTime = Math.min(5000 * attempt, 30000); // 最多等待30秒
+                        console.warn(`${context} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
+                        
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, waitTime));
+                            continue;
+                        }
+                    }
+
+                    // 如果是最后一次尝试，返回失败
+                    if (attempt === maxRetries) {
+                        return {
+                            success: false,
+                            message: `更新额度失败: HTTP ${response.status}`,
+                            httpStatus: response.status
+                        };
+                    }
+
+                    // 其他错误：指数退避
+                    const backoffTime = 1000 * Math.pow(2, attempt - 1); // 1s, 2s, 4s...
+                    await new Promise(resolve => setTimeout(resolve, backoffTime));
+                    continue;
+                }
+
+                const result = await response.json();
+
+                // 验证返回结果
+                if (result.success) {
+                    console.log(`${context} - ✅ 成功更新额度`);
+                    return result;
+                } else {
+                    console.error(`${context} - 返回success=false: ${result.message || '无错误信息'}`);
+
+                    if (attempt === maxRetries) {
+                        return result;
+                    }
+
+                    // 等待后重试
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                    continue;
+                }
+            } catch (error: any) {
+                const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
+                const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
+
+                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+
                 if (attempt === maxRetries) {
                     return {
                         success: false,
-                        message: `更新额度失败: HTTP ${response.status}`,
-                        httpStatus: response.status
+                        message: `更新额度失败: ${errorMsg}`,
+                        error: errorMsg
                     };
                 }
 
-                // 等待后重试
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                continue;
+                // 等待后重试（指数退避）
+                const backoffTime = 1000 * Math.pow(2, attempt - 1);
+                await new Promise(resolve => setTimeout(resolve, backoffTime));
             }
-
-            const result = await response.json();
-
-            // 验证返回结果
-            if (result.success) {
-                console.log(`${context} - ✅ 成功更新额度`);
-                return result;
-            } else {
-                console.error(`${context} - 返回success=false: ${result.message || '无错误信息'}`);
-
-                if (attempt === maxRetries) {
-                    return result;
-                }
-
-                // 等待后重试
-                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
-                continue;
-            }
-        } catch (error: any) {
-            const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
-            const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
-
-            console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
-
-            if (attempt === maxRetries) {
-                return {
-                    success: false,
-                    message: `更新额度失败: ${errorMsg}`,
-                    error: errorMsg
-                };
-            }
-
-            // 等待后重试（指数退避）
-            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
         }
-    }
 
-    // 理论上不会到这里
-    return {
-        success: false,
-        message: '更新额度失败: 已达到最大重试次数'
-    };
+        // 理论上不会到这里
+        return {
+            success: false,
+            message: '更新额度失败: 已达到最大重试次数'
+        };
+    });
 }
 
 /**
