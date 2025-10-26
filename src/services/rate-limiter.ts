@@ -8,9 +8,9 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（保守策略，优先避免429而不是追求速度）
-    private readonly maxConcurrent = 3; // 最大并发请求数（保守策略）
-    private readonly minInterval = 500; // 最小请求间隔（毫秒，留有余地）
+    // 配置（高性能配置，KYX API RPM=1000，配合缓存可以支持大量用户）
+    private readonly maxConcurrent = 8; // 最大并发请求数（充分利用API容量）
+    private readonly minInterval = 150; // 最小请求间隔（毫秒，流畅体验）
     private readonly maxQueueSize = 500; // 最大队列长度（通过队列缓冲峰值）
 
     // 统计
@@ -19,8 +19,8 @@ class RateLimiter {
     private rateLimitHits = 0;
     
     // 动态速率调整
-    private currentInterval = 500; // 当前实际间隔（可动态调整）
-    private adaptiveMode = true; // 启用自适应模式
+    private currentInterval = 150; // 当前实际间隔（可动态调整）
+    private adaptiveMode = true; // 启用自适应模式（仅在触发429时才调整）
 
     /**
      * 执行受限的异步操作
@@ -55,11 +55,11 @@ class RateLimiter {
 
                     this.lastRequestTime = Date.now();
                     const result = await fn();
-
-                    // 成功后缓慢恢复正常速率（避免立即再次触发429）
+                    
+                    // 成功后快速恢复正常速率（有高RPM支持，可以快速恢复）
                     if (this.adaptiveMode && this.currentInterval > this.minInterval) {
-                        // 每次只减少 50ms，更稳健的恢复策略
-                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 50);
+                        // 每次减少 100ms，快速恢复到正常速率
+                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 100);
                     }
 
                     resolve(result);
@@ -96,12 +96,12 @@ class RateLimiter {
     recordRateLimit() {
         this.rateLimitHits++;
 
-        // 自适应调整：快速增加请求间隔以避免持续触发429
+        // 自适应调整：温和增加请求间隔（有高RPM支持，不需要太激进）
         if (this.adaptiveMode) {
             const oldInterval = this.currentInterval;
-            // 激进增加：每次增加 300ms，最多到 1.5 秒
-            this.currentInterval = Math.min(this.currentInterval + 300, 1500);
-
+            // 温和增加：每次增加 150ms，最多到 800ms（保持响应速度）
+            this.currentInterval = Math.min(this.currentInterval + 150, 800);
+            
             // 只在间隔变化时才输出日志（避免日志过多）
             if (oldInterval !== this.currentInterval) {
                 console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms`);

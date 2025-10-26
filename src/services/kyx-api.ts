@@ -31,14 +31,14 @@ export async function searchKyxUser(
     maxRetries: number = 3
 ): Promise<any> {
     const context = `[搜索用户] 关键词: ${username}, 页码: ${page}`;
-    
+
     // 先尝试从缓存获取
     const cachedResult = searchCache.get(username, page);
     if (cachedResult) {
         console.log(`${context} - ✨ 命中搜索缓存`);
         return cachedResult;
     }
-    
+
     return await kyxApiLimiter.execute(async () => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -90,11 +90,11 @@ export async function searchKyxUser(
                 }
 
                 const result = await response.json();
-                
+
                 // 成功后存入缓存
                 searchCache.set(username, page, result);
                 console.log(`${context} - ✅ 搜索成功并缓存`);
-                
+
                 return result;
             } catch (error: any) {
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
@@ -262,10 +262,10 @@ export async function getKyxUserById(
                     signal: AbortSignal.timeout(10000), // 10秒超时
                 });
 
-                // 处理 429 错误（保守重试策略）
+                // 处理 429 错误（快速重试，因为已有缓存+高RPM）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(5000 * attempt, 20000); // 5s, 10s, 15s（最多20s）
+                    const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（最多6s）
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
@@ -482,10 +482,10 @@ export async function pushKeysToGroup(
                     signal: AbortSignal.timeout(15000), // 15秒超时（推送可能较慢）
                 });
 
-                // 处理 429 错误（保守重试策略）
+                // 处理 429 错误（快速重试，因为已有缓存+高RPM）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(5000 * attempt, 20000); // 5s, 10s, 15s（最多20s）
+                    const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（最多6s）
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
