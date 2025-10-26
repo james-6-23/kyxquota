@@ -1966,33 +1966,6 @@
       const freeSpinButton = document.getElementById('freeSpinButton');
       const resultDiv = document.getElementById('slotResult');
 
-      // 如果使用免费次数，先从服务器验证是否真的有免费次数（防止数据不同步）
-      if (useFreeSpinn) {
-        try {
-          const verifyRes = await fetch('/api/slot/config');
-          const verifyData = await verifyRes.json();
-          if (verifyData.success) {
-            const actualFreeSpins = verifyData.data.user.free_spins;
-            if (actualFreeSpins <= 0) {
-              showToast('没有免费次数', 'error');
-              // 更新本地数据
-              slotUserData.free_spins = actualFreeSpins;
-              updateSlotUI();
-              return;
-            }
-            // 更新本地数据为最新值
-            slotUserData.free_spins = actualFreeSpins;
-          } else {
-            showToast('验证免费次数失败: ' + (verifyData.message || '未知错误'), 'error');
-            return;
-          }
-        } catch (error) {
-          console.error('验证免费次数失败:', error);
-          showToast('验证免费次数失败，请稍后重试', 'error');
-          return;
-        }
-      }
-
       // 隐藏上次结果
       resultDiv.classList.add('hidden');
 
@@ -2014,18 +1987,17 @@
           showToast(data.message, 'error');
           isSpinning = false;
 
-          // 如果是免费次数相关错误，重新加载配置以同步最新数据
-          if (data.message && (data.message.includes('免费次数') || data.message.includes('扣除免费次数失败'))) {
-            try {
-              const configRes = await fetch('/api/slot/config');
-              const configData = await configRes.json();
-              if (configData.success) {
-                slotUserData = configData.data.user;
-                updateSlotUI();
-              }
-            } catch (error) {
-              console.error('重新加载配置失败:', error);
+          // 任何错误都重新加载配置以同步最新数据
+          try {
+            const configRes = await fetch('/api/slot/config');
+            const configData = await configRes.json();
+            if (configData.success) {
+              slotUserData = configData.data.user;
+              updateSlotUI();
+              console.log('[同步] 已更新用户数据:', slotUserData);
             }
+          } catch (error) {
+            console.error('重新加载配置失败:', error);
           }
 
           spinButton.disabled = false;

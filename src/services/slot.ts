@@ -292,10 +292,26 @@ export function useUserFreeSpin(linuxDoId: string): boolean {
         const currentRecord = slotQueries.getFreeSpin.get(linuxDoId);
         console.log(`[扣除免费次数] 用户 ${linuxDoId} 当前记录:`, currentRecord);
 
+        if (!currentRecord) {
+            console.error(`[扣除免费次数] 用户 ${linuxDoId} 没有免费次数记录`);
+            return false;
+        }
+
+        if (currentRecord.free_spins <= 0) {
+            console.error(`[扣除免费次数] 用户 ${linuxDoId} 免费次数不足: ${currentRecord.free_spins}`);
+            return false;
+        }
+
         const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
         console.log(`[扣除免费次数] 更新结果: changes=${result.changes}`);
 
-        return result.changes > 0;
+        if (result.changes > 0) {
+            console.log(`[扣除免费次数] 成功！用户 ${linuxDoId} 剩余: ${currentRecord.free_spins - 1}`);
+            return true;
+        }
+
+        console.error(`[扣除免费次数] UPDATE 失败，changes=0`);
+        return false;
     } catch (error) {
         console.error(`[扣除免费次数] 异常:`, error);
         return false;
