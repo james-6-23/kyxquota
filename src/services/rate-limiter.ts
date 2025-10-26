@@ -8,10 +8,10 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（针对几百用户的高并发场景优化）
-    private readonly maxConcurrent = 8; // 最大并发请求数（支持几百用户同时操作）
-    private readonly minInterval = 200; // 最小请求间隔（毫秒，保持流畅）
-    private readonly maxQueueSize = 500; // 最大队列长度（足够的缓冲）
+    // 配置（平衡并发与限流，避免频繁触发429）
+    private readonly maxConcurrent = 5; // 最大并发请求数（平衡性能与限流）
+    private readonly minInterval = 300; // 最小请求间隔（毫秒，避免429）
+    private readonly maxQueueSize = 500; // 最大队列长度（通过队列缓冲峰值）
 
     // 统计
     private totalRequests = 0;
@@ -19,8 +19,8 @@ class RateLimiter {
     private rateLimitHits = 0;
 
     // 动态速率调整
-    private currentInterval = 200; // 当前实际间隔（可动态调整）
-    private adaptiveMode = true; // 启用自适应模式（仅在触发429时调整）
+    private currentInterval = 300; // 当前实际间隔（可动态调整）
+    private adaptiveMode = true; // 启用自适应模式
 
     /**
      * 执行受限的异步操作
@@ -56,9 +56,10 @@ class RateLimiter {
                     this.lastRequestTime = Date.now();
                     const result = await fn();
 
-                    // 成功后逐渐恢复正常速率（更快恢复）
+                    // 成功后缓慢恢复正常速率（避免立即再次触发429）
                     if (this.adaptiveMode && this.currentInterval > this.minInterval) {
-                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 100);
+                        // 每次只减少 50ms，更稳健的恢复策略
+                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 50);
                     }
 
                     resolve(result);
@@ -95,14 +96,21 @@ class RateLimiter {
     recordRateLimit() {
         this.rateLimitHits++;
 
-        // 自适应调整：温和增加请求间隔（不要太激进）
+        // 自适应调整：快速增加请求间隔以避免持续触发429
         if (this.adaptiveMode) {
             const oldInterval = this.currentInterval;
-            // 每次增加200ms，最多到1秒（保持用户体验）
-            this.currentInterval = Math.min(this.currentInterval + 200, 1000);
-            console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms`);
+            // 激进增加：每次增加 300ms，最多到 1.5 秒
+            this.currentInterval = Math.min(this.currentInterval + 300, 1500);
+
+            // 只在间隔变化时才输出日志（避免日志过多）
+            if (oldInterval !== this.currentInterval) {
+                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms`);
+            }
         } else {
-            console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次)`);
+            // 每10次才输出一次（减少日志）
+            if (this.rateLimitHits % 10 === 0) {
+                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次)`);
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 import { CONFIG } from '../config';
 import { kyxApiLimiter } from './rate-limiter';
+import { userCache } from './user-cache';
 
 export interface KyxUser {
     id: number;
@@ -213,16 +214,26 @@ export async function searchAndFindExactUser(
 }
 
 /**
- * 通过 ID 直接查询用户信息（带限流和重试）
+ * 通过 ID 直接查询用户信息（带缓存、限流和重试）
  */
 export async function getKyxUserById(
     userId: number,
     session: string,
     newApiUser: string = '1',
-    maxRetries: number = 3
+    maxRetries: number = 3,
+    skipCache: boolean = false // 是否跳过缓存（需要最新数据时使用）
 ): Promise<SearchResult> {
     const context = `[查询用户] 用户ID: ${userId}`;
-
+    
+    // 先尝试从缓存获取（除非明确跳过）
+    if (!skipCache) {
+        const cachedUser = userCache.get(userId);
+        if (cachedUser) {
+            console.log(`${context} - ✨ 命中缓存`);
+            return { success: true, user: cachedUser };
+        }
+    }
+    
     return await kyxApiLimiter.execute(async () => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -238,10 +249,10 @@ export async function getKyxUserById(
                     signal: AbortSignal.timeout(10000), // 10秒超时
                 });
 
-                // 处理 429 错误（快速重试策略）
+                // 处理 429 错误（温和重试，主要靠限流器调整速率）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(2000 * attempt, 8000); // 2s, 4s, 6s（最多8s，快速重试）
+                    const waitTime = Math.min(1000 * attempt, 4000); // 1s, 2s, 3s（最多4s）
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
@@ -283,6 +294,10 @@ export async function getKyxUserById(
                     return { success: false, message: result.message || '查询失败', user: null };
                 }
 
+                // 成功后存入缓存
+                userCache.set(userId, result.data);
+                console.log(`${context} - ✅ 查询成功并缓存`);
+                
                 return { success: true, user: result.data };
             } catch (error: any) {
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
@@ -378,7 +393,9 @@ export async function updateKyxUserQuota(
 
                 // 验证返回结果
                 if (result.success) {
-                    console.log(`${context} - ✅ 成功更新额度`);
+                    // 更新成功后，同步更新缓存
+                    userCache.updateQuota(userId, newQuota);
+                    console.log(`${context} - ✅ 成功更新额度并同步缓存`);
                     return result;
                 } else {
                     console.error(`${context} - 返回success=false: ${result.message || '无错误信息'}`);
@@ -452,10 +469,10 @@ export async function pushKeysToGroup(
                     signal: AbortSignal.timeout(15000), // 15秒超时（推送可能较慢）
                 });
 
-                // 处理 429 错误（快速重试策略）
+                // 处理 429 错误（温和重试，主要靠限流器调整速率）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(2000 * attempt, 8000); // 2s, 4s, 6s（最多8s，快速重试）
+                    const waitTime = Math.min(1000 * attempt, 4000); // 1s, 2s, 3s（最多4s）
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
