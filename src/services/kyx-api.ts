@@ -29,7 +29,7 @@ export async function searchKyxUser(
     maxRetries: number = 3
 ): Promise<any> {
     const context = `[搜索用户] 关键词: ${username}, 页码: ${page}`;
-    
+
     return await kyxApiLimiter.execute(async () => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
@@ -52,12 +52,12 @@ export async function searchKyxUser(
                     kyxApiLimiter.recordRateLimit();
                     const waitTime = Math.min(2000 * attempt, 8000);
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
-                    
+
                     if (attempt < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, waitTime));
                         continue;
                     }
-                    
+
                     return {
                         success: false,
                         message: '搜索失败: 服务繁忙，请稍后再试'
@@ -67,13 +67,13 @@ export async function searchKyxUser(
                 if (!response.ok) {
                     const errorText = await response.text();
                     console.error(`${context} - HTTP错误: ${response.status}, 响应: ${errorText}`);
-                    
+
                     if (attempt < maxRetries) {
                         const backoffTime = 1000 * Math.pow(2, attempt - 1);
                         await new Promise(resolve => setTimeout(resolve, backoffTime));
                         continue;
                     }
-                    
+
                     return {
                         success: false,
                         message: `搜索失败: HTTP ${response.status}`
@@ -85,21 +85,21 @@ export async function searchKyxUser(
             } catch (error: any) {
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
                 const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
-                
+
                 console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
-                
+
                 if (attempt === maxRetries) {
                     return {
                         success: false,
                         message: '搜索请求失败: ' + errorMsg
                     };
                 }
-                
+
                 const backoffTime = 1000 * Math.pow(2, attempt - 1);
                 await new Promise(resolve => setTimeout(resolve, backoffTime));
             }
         }
-        
+
         return {
             success: false,
             message: '搜索失败: 已达到最大重试次数'
