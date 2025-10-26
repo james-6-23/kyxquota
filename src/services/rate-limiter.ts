@@ -17,7 +17,7 @@ class RateLimiter {
     private totalRequests = 0;
     private failedRequests = 0;
     private rateLimitHits = 0;
-    
+
     // 动态速率调整
     private currentInterval = 200; // 当前实际间隔（可动态调整）
     private adaptiveMode = true; // 启用自适应模式（仅在触发429时调整）
