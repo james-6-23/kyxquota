@@ -202,6 +202,8 @@ slot.post('/spin', requireAuth, async (c) => {
         let betAmount = config.bet_amount;
 
         if (useFreeSpinn) {
+            console.log(`[免费次数] 开始处理 - 用户: ${user.username} (${session.linux_do_id})`);
+
             // 直接尝试扣除免费次数（原子操作）
             const used = useUserFreeSpin(session.linux_do_id);
             console.log(`[免费次数] 扣除免费次数结果: ${used}`);
@@ -210,13 +212,20 @@ slot.post('/spin', requireAuth, async (c) => {
                 // 扣除失败，重新查询当前免费次数
                 const actualFreeSpins = getUserFreeSpins(session.linux_do_id);
                 console.error(`[免费次数] 扣除失败 - 用户: ${user.username}, 实际免费次数: ${actualFreeSpins}`);
+
+                // 提供更详细的错误信息
+                const errorMsg = actualFreeSpins > 0
+                    ? `扣除免费次数失败，请重试（当前有${actualFreeSpins}次）`
+                    : '没有免费次数';
+
+                console.error(`[免费次数] 返回错误: ${errorMsg}`);
                 return c.json({
                     success: false,
-                    message: actualFreeSpins > 0 ? '扣除免费次数失败，请重试' : '没有免费次数'
+                    message: errorMsg
                 }, 400);
             }
 
-            console.log(`[免费次数] 用户 ${user.username} 成功使用1次免费机会`);
+            console.log(`[免费次数] ✅ 用户 ${user.username} 成功使用1次免费机会`);
             isFreeSpin = true;
             betAmount = 0; // 免费游戏不扣费
         } else {

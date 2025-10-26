@@ -286,34 +286,48 @@ export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
  */
 export function useUserFreeSpin(linuxDoId: string): boolean {
     try {
+        console.log(`[扣除免费次数] ====== 开始扣除 ======`);
+        console.log(`[扣除免费次数] 用户ID: ${linuxDoId}`);
+
         const now = Date.now();
+        console.log(`[扣除免费次数] 时间戳: ${now}`);
 
         // 先检查当前免费次数
         const currentRecord = slotQueries.getFreeSpin.get(linuxDoId);
-        console.log(`[扣除免费次数] 用户 ${linuxDoId} 当前记录:`, currentRecord);
+        console.log(`[扣除免费次数] 数据库查询结果:`, JSON.stringify(currentRecord, null, 2));
 
         if (!currentRecord) {
-            console.error(`[扣除免费次数] 用户 ${linuxDoId} 没有免费次数记录`);
+            console.error(`[扣除免费次数] ❌ 没有记录 - 用户从未获得过免费次数`);
             return false;
         }
 
         if (currentRecord.free_spins <= 0) {
-            console.error(`[扣除免费次数] 用户 ${linuxDoId} 免费次数不足: ${currentRecord.free_spins}`);
+            console.error(`[扣除免费次数] ❌ 次数不足 - 当前: ${currentRecord.free_spins}`);
             return false;
         }
 
+        console.log(`[扣除免费次数] ✓ 检查通过，当前有 ${currentRecord.free_spins} 次免费机会`);
+        console.log(`[扣除免费次数] 执行 SQL: UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ${now} WHERE linux_do_id = '${linuxDoId}' AND free_spins > 0`);
+
         const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
-        console.log(`[扣除免费次数] 更新结果: changes=${result.changes}`);
+        console.log(`[扣除免费次数] SQL 执行结果:`, JSON.stringify(result, null, 2));
+        console.log(`[扣除免费次数] 受影响行数: ${result.changes}`);
 
         if (result.changes > 0) {
-            console.log(`[扣除免费次数] 成功！用户 ${linuxDoId} 剩余: ${currentRecord.free_spins - 1}`);
+            console.log(`[扣除免费次数] ✅ 成功！用户 ${linuxDoId} 剩余: ${currentRecord.free_spins - 1}`);
+
+            // 验证扣除结果
+            const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
+            console.log(`[扣除免费次数] 扣除后验证:`, JSON.stringify(afterRecord, null, 2));
+
             return true;
         }
 
-        console.error(`[扣除免费次数] UPDATE 失败，changes=0`);
+        console.error(`[扣除免费次数] ❌ UPDATE 失败，changes=0 - 可能被其他请求抢先扣除了`);
         return false;
     } catch (error) {
-        console.error(`[扣除免费次数] 异常:`, error);
+        console.error(`[扣除免费次数] ⚠️ 异常发生:`, error);
+        console.error(`[扣除免费次数] 错误堆栈:`, error instanceof Error ? error.stack : '无堆栈');
         return false;
     }
 }

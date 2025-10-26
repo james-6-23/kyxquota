@@ -1950,11 +1950,16 @@
       }
 
       // 免费旋转按钮
-      if (slotUserData.free_spins > 0) {
+      if (slotUserData.free_spins > 0 && !slotUserData.is_banned) {
         freeSpinButton.classList.remove('hidden');
         freeSpinButton.disabled = false;
+        console.log('[UI更新] 显示免费次数按钮:', slotUserData.free_spins);
       } else {
         freeSpinButton.classList.add('hidden');
+        freeSpinButton.disabled = true;
+        if (slotUserData.free_spins <= 0) {
+          console.log('[UI更新] 隐藏免费次数按钮: 次数不足');
+        }
       }
     }
 
@@ -1966,6 +1971,28 @@
       const freeSpinButton = document.getElementById('freeSpinButton');
       const resultDiv = document.getElementById('slotResult');
 
+      // ✅ 新增：使用免费次数时先检查
+      if (useFreeSpinn) {
+        console.log('[前端] 准备使用免费次数，当前免费次数:', slotUserData?.free_spins);
+        if (!slotUserData || slotUserData.free_spins <= 0) {
+          console.error('[前端] 检测到免费次数不足，阻止请求');
+          showToast('没有免费次数', 'error');
+          
+          // 重新同步数据
+          try {
+            const configRes = await fetch('/api/slot/config');
+            const configData = await configRes.json();
+            if (configData.success) {
+              slotUserData = configData.data.user;
+              updateSlotUI();
+            }
+          } catch (error) {
+            console.error('[前端] 同步数据失败:', error);
+          }
+          return;
+        }
+      }
+
       // 隐藏上次结果
       resultDiv.classList.add('hidden');
 
@@ -1975,15 +2002,21 @@
       isSpinning = true;
 
       try {
+        console.log(`[前端] 开始请求 spin，useFreeSpinn=${useFreeSpinn}`);
+        
         // 调用 API
         const res = await fetch('/api/slot/spin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ useFreeSpinn })
         });
+        
+        console.log(`[前端] 收到响应，状态码: ${res.status}`);
         const data = await res.json();
+        console.log(`[前端] 响应数据:`, data);
 
         if (!data.success) {
+          console.error(`[前端] 请求失败: ${data.message}`);
           showToast(data.message, 'error');
           isSpinning = false;
 
@@ -2000,8 +2033,8 @@
             console.error('重新加载配置失败:', error);
           }
 
-          spinButton.disabled = false;
-          if (slotUserData.free_spins > 0) freeSpinButton.disabled = false;
+          // 根据最新数据更新按钮状态（已经调用了 updateSlotUI）
+          // updateSlotUI 会自动处理按钮的显示/隐藏和启用/禁用
           return;
         }
 
