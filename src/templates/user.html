@@ -590,7 +590,7 @@
   </div>
 
   <!-- 老虎机全屏界面 -->
-  <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800">
+  <div id="slotMachineModal" class="hidden fixed inset-0 z-50 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800" style="background-image: url('/ctrl.gif'); background-size: cover; background-position: center; background-repeat: no-repeat; background-blend-mode: overlay;">
     
     <!-- Loading遮罩 -->
     <div id="slotLoadingOverlay" class="slot-loading-overlay hidden">
@@ -2152,7 +2152,7 @@
         // 渲染左侧亏损榜（红色主题，表情图标）
         const leftContainer = document.getElementById('profitBoardList');
         if (!lossLeaderboard || lossLeaderboard.length === 0) {
-          leftContainer.innerHTML = '<div class="text-center text-white/50 py-4 text-sm">暂无数据</div>';
+          leftContainer.innerHTML = '<div class="text-center text-white/50 py-8 text-sm">🎉 暂无亏损用户<br><span class="text-xs opacity-75 mt-1">所有玩家都在盈利！</span></div>';
         } else {
           leftContainer.innerHTML = lossLeaderboard.map(renderLossLeaderboardItem).join('');
         }
@@ -2835,7 +2835,9 @@
                 <span class="text-sm font-normal text-slate-500">（亏最多）</span>
               </h3>
               <div class="space-y-3">
-                ${lossLeaderboard.slice(0, 20).map((user, index) => {
+                ${lossLeaderboard.length === 0 ? 
+                  '<p class="text-center text-green-600 py-8 font-semibold">🎉 暂无亏损用户，所有玩家都在盈利！</p>' :
+                  lossLeaderboard.slice(0, 20).map((user, index) => {
                   const rank = index + 1;
                   let rankBadge = '';
                   let bgClass = 'bg-red-50 hover:bg-red-100 border-red-200';
@@ -2880,6 +2882,20 @@
                   `;
                 }).join('')}
               </div>
+            </div>
+          `;
+        }
+        if (lossLeaderboard.length === 0) {
+          lossContainer.innerHTML = `
+            <div class="mt-8 pt-6 border-t-2 border-green-200">
+              <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
+                <span>🎉</span>
+                <span>太棒了！所有玩家都在盈利</span>
+              </h3>
+              <p class="text-center text-slate-500 py-8 bg-green-50 rounded-lg border border-green-200">
+                暂时没有亏损的用户<br>
+                <span class="text-sm">大家都玩得很好！</span>
+              </p>
             </div>
           `;
         }

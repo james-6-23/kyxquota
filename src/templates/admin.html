@@ -944,7 +944,7 @@
             <div class="bg-gradient-to-r from-yellow-500 to-orange-500 px-4 py-3">
               <h3 class="text-lg font-bold text-white flex items-center gap-2">
                 <span>🏆</span>
-                <span>盈利排行榜 TOP 100</span>
+                <span>盈利排行榜 TOP 20</span>
                 <span class="text-sm font-normal text-white/80">（赚最多）</span>
               </h3>
             </div>
@@ -2933,12 +2933,15 @@
           'none': '❌ 未中奖'
         };
 
-        // 按盈亏排序（盈利榜 - 降序）
-        const profitLeaderboard = [...userStats].sort((a, b) => {
-          const profitA = a.total_win - a.total_bet;
-          const profitB = b.total_win - b.total_bet;
-          return profitB - profitA; // 降序，赚最多在前
-        });
+        // 盈利榜：只显示盈利的用户（profit >= 0），按盈亏降序
+        const profitLeaderboard = [...userStats]
+          .filter(user => (user.total_win - user.total_bet) >= 0)
+          .sort((a, b) => {
+            const profitA = a.total_win - a.total_bet;
+            const profitB = b.total_win - b.total_bet;
+            return profitB - profitA; // 降序，赚最多在前
+          })
+          .slice(0, 20); // 只取前20名
 
         // 渲染盈利排行榜
         const leaderboardHtml = profitLeaderboard.map((user, index) => {
@@ -2980,12 +2983,15 @@
 
         document.getElementById('leaderboardTableBody').innerHTML = leaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
 
-        // 按盈亏排序（亏损榜 - 升序）
-        const lossLeaderboard = [...userStats].sort((a, b) => {
-          const profitA = a.total_win - a.total_bet;
-          const profitB = b.total_win - b.total_bet;
-          return profitA - profitB; // 升序，亏最多在前
-        }).slice(0, 20); // 只取前20名
+        // 亏损榜：只显示亏损的用户（profit < 0），按盈亏升序
+        const lossLeaderboard = [...userStats]
+          .filter(user => (user.total_win - user.total_bet) < 0)
+          .sort((a, b) => {
+            const profitA = a.total_win - a.total_bet;
+            const profitB = b.total_win - b.total_bet;
+            return profitA - profitB; // 升序，亏最多在前
+          })
+          .slice(0, 20); // 只取前20名
 
         // 渲染亏损排行榜
         const lossLeaderboardHtml = lossLeaderboard.map((user, index) => {
@@ -3022,7 +3028,7 @@
           `;
         }).join('');
 
-        document.getElementById('lossLeaderboardTableBody').innerHTML = lossLeaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+        document.getElementById('lossLeaderboardTableBody').innerHTML = lossLeaderboardHtml || '<tr><td colspan="7" class="px-4 py-8 text-center text-green-600 font-semibold">🎉 暂无亏损用户，所有玩家都在盈利！</td></tr>';
 
         showMessage('排行榜已更新', 'success');
       } catch (error) {

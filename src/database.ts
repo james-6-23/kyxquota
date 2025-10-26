@@ -544,6 +544,7 @@ function initQueries() {
                 (s.total_win - s.total_bet) as profit
             FROM user_slot_stats s
             LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE (s.total_win - s.total_bet) >= 0
             ORDER BY (s.total_win - s.total_bet) DESC 
             LIMIT ?`
         ),
@@ -560,6 +561,7 @@ function initQueries() {
                 (s.total_win - s.total_bet) as profit
             FROM user_slot_stats s
             LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE (s.total_win - s.total_bet) < 0
             ORDER BY (s.total_win - s.total_bet) ASC 
             LIMIT ?`
         ),
