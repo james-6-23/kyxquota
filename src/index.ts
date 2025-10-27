@@ -42,6 +42,27 @@ app.get('/slot-symbols/:filename', async (c) => {
     return c.notFound();
 });
 
+// 静态文件服务（音效文件）
+app.get('/sounds/:filename', async (c) => {
+    const filename = c.req.param('filename');
+    const file = Bun.file(`public/sounds/${filename}`);
+    if (await file.exists()) {
+        const ext = filename.split('.').pop()?.toLowerCase();
+        const contentType = ext === 'mp3' ? 'audio/mpeg' :
+                           ext === 'wav' ? 'audio/wav' :
+                           'application/octet-stream';
+
+        return new Response(file, {
+            headers: {
+                'Content-Type': contentType,
+                'Cache-Control': 'public, max-age=31536000, immutable',
+                'Access-Control-Allow-Origin': '*'
+            }
+        });
+    }
+    return c.notFound();
+});
+
 // 静态文件服务（老虎机背景GIF）
 app.get('/ctrl.gif', async (c) => {
     const file = Bun.file('public/ctrl.gif');
@@ -121,6 +142,9 @@ async function checkCriticalFiles() {
     const criticalFiles = [
         { path: 'public/ctrl.gif', desc: 'GIF 背景文件' },
         { path: 'public/slot-symbols/bdk.jpg', desc: '老虎机符号' },
+        { path: 'public/sounds/mixkit-slot-machine-win-1928.wav', desc: '转动音效' },
+        { path: 'public/sounds/mixkit-coin-win-notification-1992.wav', desc: '中奖音效' },
+        { path: 'public/sounds/ngmhhy.mp3', desc: '未中奖音效' },
         { path: 'src/templates/user.html', desc: '用户页面模板' },
         { path: 'src/templates/admin.html', desc: '管理页面模板' }
     ];

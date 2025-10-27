@@ -461,6 +461,9 @@
               <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
                 <span>📊</span> 我的记录
               </button>
+              <button onclick="showPendingRewardsModal()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                <span>💰</span> 待发放记录
+              </button>
               <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
                 <span>🚪</span> 退出登录
               </button>
@@ -2085,15 +2088,16 @@
         const claimContainer = document.getElementById('claimRecords');
         const donateContainer = document.getElementById('donateRecords');
 
+        // 渲染领取记录
         if (claimData.success && claimData.data.length > 0) {
           claimContainer.innerHTML = claimData.data.map(r => {
             const quotaUSD = (r.quota_added / 500000).toFixed(2);
             const isBindingBonus = r.quota_added === 50000000; // 绑定奖励是 $100
-            
-            const typeLabel = isBindingBonus 
+
+            const typeLabel = isBindingBonus
               ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-semibold">🎁 绑定奖励</span>'
               : '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">📅 每日领取</span>';
-            
+
             return `
               <div class="border-b border-slate-200 py-3">
                 <div class="flex items-center justify-between mb-1">
@@ -2108,12 +2112,13 @@
           claimContainer.innerHTML = '<p class="text-center text-slate-500 py-8">暂无领取记录</p>';
         }
 
+        // 渲染投喂记录
         if (donateData.success && donateData.data.length > 0) {
           donateContainer.innerHTML = donateData.data.map(r => {
-            const keyTypeLabel = r.key_type === 'iflow' 
+            const keyTypeLabel = r.key_type === 'iflow'
               ? '<span class="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold">✨ iFlow</span>'
               : '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">🎁 ModelScope</span>';
-            
+
             return `
               <div class="border-b border-slate-200 py-3">
                 <div class="flex items-center justify-between mb-1">
@@ -3614,6 +3619,12 @@
 
     // 显示待发放奖金弹窗
     async function showPendingRewardsModal() {
+      // 关闭所有下拉菜单
+      const dropdownMenu = document.getElementById('dropdownMenu');
+      const slotDropdownMenu = document.getElementById('slotDropdownMenu');
+      if (dropdownMenu) dropdownMenu.classList.add('hidden');
+      if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
+
       document.getElementById('pendingRewardsModal').classList.remove('hidden');
       await loadPendingRewards();
     }
