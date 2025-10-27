@@ -679,12 +679,12 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
         }));
 
         // 计算待发放和已成功的统计
-        const pendingRewards = formattedRewards.filter((r: any) =>
+        const filteredPendingRewards = formattedRewards.filter((r: any) =>
             r.status === 'pending' || r.status === 'processing' || r.status === 'failed'
         );
         const successRewards = formattedRewards.filter((r: any) => r.status === 'success');
 
-        const pendingAmount = pendingRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
+        const pendingAmount = filteredPendingRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
         const successAmount = successRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
 
         // 格式化显示日期
@@ -699,7 +699,7 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
             success: true,
             data: {
                 summary: {
-                    pending_count: pendingRewards.length,
+                    pending_count: filteredPendingRewards.length,
                     pending_amount: pendingAmount,
                     success_count: successRewards.length,
                     success_amount: successAmount,
