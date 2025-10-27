@@ -391,6 +391,11 @@ function initQueries() {
     // 用户相关
     userQueries = {
         get: db.query<User, string>('SELECT * FROM users WHERE linux_do_id = ?'),
+        getByUsername: db.query<User, string>('SELECT * FROM users WHERE username = ?'),
+        getByLinuxDoUsername: db.query<User, string>('SELECT * FROM users WHERE linux_do_username = ?'),
+        searchByUsername: db.query<User, string>(
+            'SELECT * FROM users WHERE username LIKE ? OR linux_do_username LIKE ? LIMIT 50'
+        ),
         insert: db.query(
             'INSERT INTO users (linux_do_id, username, linux_do_username, kyx_user_id, created_at) VALUES (?, ?, ?, ?, ?)'
         ),
@@ -398,6 +403,7 @@ function initQueries() {
             'UPDATE users SET username = ?, linux_do_username = ?, kyx_user_id = ? WHERE linux_do_id = ?'
         ),
         getAll: db.query<User, never>('SELECT * FROM users'),
+        getAllLinuxDoIds: db.query<{ linux_do_id: string }, never>('SELECT linux_do_id FROM users WHERE is_banned = 0'),
         ban: db.query(
             'UPDATE users SET is_banned = 1, banned_at = ?, banned_reason = ? WHERE linux_do_id = ?'
         ),

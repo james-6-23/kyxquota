@@ -1260,9 +1260,12 @@
             <h3 class="text-lg font-semibold text-slate-900 mb-4">单个用户发放</h3>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">用户 Linux Do ID *</label>
-                <input type="text" id="singleLinuxDoId" placeholder="例如: 123456" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
-                <p class="text-xs text-slate-500 mt-1">输入用户的 Linux Do ID</p>
+                <label class="block text-sm font-medium text-slate-700 mb-2">用户标识 *</label>
+                <div class="relative">
+                  <input type="text" id="singleUserIdentifier" placeholder="输入用户名或ID，如: linuxdo_123 或 123456" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" onkeyup="searchUserDebounced()">
+                  <div id="singleUserSearchResults" class="hidden absolute z-10 w-full mt-1 bg-white border border-slate-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">支持用户名（linuxdo_123）或 Linux Do ID（123456）</p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">免费次数 *</label>
@@ -1290,9 +1293,9 @@
             <h3 class="text-lg font-semibold text-slate-900 mb-4">批量发放</h3>
             <div class="grid grid-cols-1 gap-4">
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">用户 Linux Do ID 列表 *</label>
-                <textarea id="batchLinuxDoIds" rows="4" placeholder="输入多个用户ID，每行一个，例如：&#10;123456&#10;789012&#10;345678" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
-                <p class="text-xs text-slate-500 mt-1">每行一个ID，最多100个用户</p>
+                <label class="block text-sm font-medium text-slate-700 mb-2">用户列表 *</label>
+                <textarea id="batchUserIdentifiers" rows="6" placeholder="输入用户名或ID，每行一个，例如：&#10;linuxdo_123&#10;linuxdo_456&#10;123456&#10;789012" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
+                <p class="text-xs text-slate-500 mt-1">支持用户名（linuxdo_xxx）或Linux Do ID，每行一个，最多5000个用户</p>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -1316,12 +1319,41 @@
             </div>
           </div>
 
+          <!-- 全员发放 -->
+          <div class="bg-gradient-to-r from-orange-50 to-red-50 rounded-xl shadow-sm border-2 border-orange-300 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-orange-900 mb-2 flex items-center gap-2">
+              <span>⚠️</span> 
+              <span>全员发放（慎用）</span>
+            </h3>
+            <p class="text-sm text-orange-800 mb-4">此功能将为所有未封禁用户（约2000+）发放免费次数，请谨慎使用！</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">免费次数 *</label>
+                <input type="number" id="allSpins" min="1" max="100" value="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <p class="text-xs text-slate-500 mt-1">每个用户获得的次数</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">发放原因 *</label>
+                <input type="text" id="allReason" placeholder="例如: 系统维护补偿" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                <p class="text-xs text-slate-500 mt-1">必填，记录全员发放原因</p>
+              </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+              <button onclick="grantAllFreeSpin()" class="px-8 py-2 bg-gradient-to-r from-orange-600 to-red-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                ⚠️ 给所有用户发放
+              </button>
+              <button onclick="clearAllForm()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                清空
+              </button>
+            </div>
+          </div>
+
           <!-- 查询用户免费次数 -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">查询用户免费次数</h3>
             <div class="flex gap-3">
               <div class="flex-1">
-                <input type="text" id="queryLinuxDoId" placeholder="输入用户 Linux Do ID" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <input type="text" id="queryUserIdentifier" placeholder="输入用户名（linuxdo_123）或Linux Do ID" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
               </div>
               <button onclick="queryUserFreeSpins()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                 查询
@@ -3338,6 +3370,63 @@
 
     // ========== 发放免费次数功能 ==========
 
+    // 用户搜索（防抖）
+    let searchTimeout = null;
+    function searchUserDebounced() {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => searchUser(), 300);
+    }
+
+    // 搜索用户
+    async function searchUser() {
+      const keyword = document.getElementById('singleUserIdentifier').value.trim();
+      const resultsDiv = document.getElementById('singleUserSearchResults');
+      
+      if (keyword.length < 2) {
+        resultsDiv.classList.add('hidden');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/search-users?keyword=${encodeURIComponent(keyword)}`);
+        const data = await res.json();
+
+        if (data.success && data.data.length > 0) {
+          resultsDiv.innerHTML = data.data.map(user => {
+            const displayName = user.linux_do_username || user.username;
+            const isBanned = user.is_banned === 1;
+            return `
+              <div onclick="selectUser('${user.linux_do_username || user.username}', '${user.linux_do_id}')" 
+                   class="px-4 py-2 hover:bg-indigo-50 cursor-pointer border-b border-slate-100 ${isBanned ? 'opacity-50' : ''}">
+                <div class="font-semibold text-slate-900">${displayName}</div>
+                <div class="text-xs text-slate-500">ID: ${user.linux_do_id} ${isBanned ? '(已封禁)' : ''}</div>
+              </div>
+            `;
+          }).join('');
+          resultsDiv.classList.remove('hidden');
+        } else {
+          resultsDiv.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('搜索用户失败:', error);
+      }
+    }
+
+    // 选择搜索结果中的用户
+    function selectUser(username, linuxDoId) {
+      document.getElementById('singleUserIdentifier').value = username;
+      document.getElementById('singleUserSearchResults').classList.add('hidden');
+    }
+
+    // 点击页面其他地方关闭搜索结果
+    document.addEventListener('click', (e) => {
+      const searchInput = document.getElementById('singleUserIdentifier');
+      const resultsDiv = document.getElementById('singleUserSearchResults');
+      if (searchInput && resultsDiv && !searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+        resultsDiv.classList.add('hidden');
+      }
+    });
+
     // 显示发放免费次数的模态框
     function showGrantFreeSpinsModal(linuxDoId, username) {
       document.getElementById('modalLinuxDoId').value = linuxDoId;
@@ -3391,12 +3480,12 @@
 
     // 单个用户发放
     async function grantSingleFreeSpin() {
-      const linuxDoId = document.getElementById('singleLinuxDoId').value.trim();
+      const identifier = document.getElementById('singleUserIdentifier').value.trim();
       const spins = parseInt(document.getElementById('singleSpins').value);
       const reason = document.getElementById('singleReason').value.trim();
 
-      if (!linuxDoId) {
-        showToast('请输入用户 Linux Do ID', 'error');
+      if (!identifier) {
+        showToast('请输入用户标识（用户名或ID）', 'error');
         return;
       }
 
@@ -3414,7 +3503,7 @@
         const res = await fetch('/api/admin/grant-free-spins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ linux_do_id: linuxDoId, spins, reason })
+          body: JSON.stringify({ identifier, spins, reason })
         });
 
         const data = await res.json();
@@ -3433,12 +3522,12 @@
 
     // 批量发放
     async function grantBatchFreeSpin() {
-      const idsText = document.getElementById('batchLinuxDoIds').value.trim();
+      const idsText = document.getElementById('batchUserIdentifiers').value.trim();
       const spins = parseInt(document.getElementById('batchSpins').value);
       const reason = document.getElementById('batchReason').value.trim();
 
       if (!idsText) {
-        showToast('请输入用户 Linux Do ID 列表', 'error');
+        showToast('请输入用户列表', 'error');
         return;
       }
 
@@ -3452,22 +3541,22 @@
         return;
       }
 
-      // 解析 ID 列表
-      const userIds = idsText.split('\n')
+      // 解析用户列表（支持用户名和ID）
+      const identifiers = idsText.split('\n')
         .map(id => id.trim())
         .filter(id => id.length > 0);
 
-      if (userIds.length === 0) {
-        showToast('请输入至少一个用户 ID', 'error');
+      if (identifiers.length === 0) {
+        showToast('请输入至少一个用户', 'error');
         return;
       }
 
-      if (userIds.length > 100) {
-        showToast('单次批量发放用户不能超过100个', 'error');
+      if (identifiers.length > 5000) {
+        showToast('单次批量发放用户不能超过5000个', 'error');
         return;
       }
 
-      if (!confirm(`确认为 ${userIds.length} 个用户各发放 ${spins} 次免费抽奖机会吗？`)) {
+      if (!confirm(`确认为 ${identifiers.length} 个用户各发放 ${spins} 次免费抽奖机会吗？\n\n支持用户名和Linux Do ID混合输入`)) {
         return;
       }
 
@@ -3475,7 +3564,7 @@
         const res = await fetch('/api/admin/grant-free-spins-batch', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_ids: userIds, spins, reason })
+          body: JSON.stringify({ identifiers, spins, reason })
         });
 
         const data = await res.json();
@@ -3485,13 +3574,18 @@
           showToast(`✅ ${data.message}`, 'success');
           
           // 显示详细结果
-          if (results.failed > 0) {
+          if (results.failed > 0 || results.skipped > 0) {
+            console.log(`批量发放结果统计:\n总数: ${results.total}\n成功: ${results.success}\n失败: ${results.failed}\n跳过: ${results.skipped}`);
+            
             const failedDetails = results.details
               .filter(d => !d.success)
-              .map(d => `${d.linux_do_id}: ${d.message}`)
+              .slice(0, 20)
+              .map(d => `${d.identifier}: ${d.message}`)
               .join('\n');
             
-            console.log('批量发放失败详情:\n' + failedDetails);
+            if (failedDetails) {
+              console.log('失败/跳过详情（前20条）:\n' + failedDetails);
+            }
           }
           
           clearBatchForm();
@@ -3504,23 +3598,77 @@
       }
     }
 
-    // 查询用户免费次数
-    async function queryUserFreeSpins() {
-      const linuxDoId = document.getElementById('queryLinuxDoId').value.trim();
+    // 全员发放
+    async function grantAllFreeSpin() {
+      const spins = parseInt(document.getElementById('allSpins').value);
+      const reason = document.getElementById('allReason').value.trim();
 
-      if (!linuxDoId) {
-        showToast('请输入用户 Linux Do ID', 'error');
+      if (!reason) {
+        showToast('全员发放必须填写原因', 'error');
+        return;
+      }
+
+      if (!spins || spins <= 0) {
+        showToast('请输入有效的免费次数', 'error');
+        return;
+      }
+
+      if (spins > 100) {
+        showToast('单次发放次数不能超过100次', 'error');
+        return;
+      }
+
+      if (!confirm(`⚠️ 警告：确认给所有用户（约2000+）各发放 ${spins} 次免费抽奖机会吗？\n\n原因：${reason}\n\n此操作不可撤销，请谨慎确认！`)) {
+        return;
+      }
+
+      // 二次确认
+      if (!confirm(`最后确认：真的要给所有用户发放 ${spins} 次吗？\n\n这将花费一些时间来处理。`)) {
         return;
       }
 
       try {
-        const res = await fetch(`/api/admin/users/${linuxDoId}/free-spins`);
+        showToast('⏳ 正在处理，请稍候...', 'success');
+        
+        const res = await fetch('/api/admin/grant-free-spins-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ spins, reason })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          const results = data.data;
+          showToast(`✅ ${data.message}\n总数: ${results.total}, 成功: ${results.success}, 失败: ${results.failed}`, 'success');
+          clearAllForm();
+        } else {
+          showToast(`❌ ${data.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('全员发放失败:', error);
+        showToast('全员发放失败，请重试', 'error');
+      }
+    }
+
+    // 查询用户免费次数
+    async function queryUserFreeSpins() {
+      const identifier = document.getElementById('queryUserIdentifier').value.trim();
+
+      if (!identifier) {
+        showToast('请输入用户标识（用户名或ID）', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${encodeURIComponent(identifier)}/free-spins`);
         const data = await res.json();
         
         if (data.success) {
           const info = data.data;
           
-          document.getElementById('queryUsername').textContent = info.username || '--';
+          const displayName = info.linux_do_username || info.username;
+          document.getElementById('queryUsername').textContent = displayName || '--';
           document.getElementById('queryFreeSpins').textContent = info.free_spins;
           
           const bannedUntil = info.banned_until;
@@ -3554,16 +3702,23 @@
 
     // 清空单个用户发放表单
     function clearSingleForm() {
-      document.getElementById('singleLinuxDoId').value = '';
+      document.getElementById('singleUserIdentifier').value = '';
       document.getElementById('singleSpins').value = 5;
       document.getElementById('singleReason').value = '';
+      document.getElementById('singleUserSearchResults').classList.add('hidden');
     }
 
     // 清空批量发放表单
     function clearBatchForm() {
-      document.getElementById('batchLinuxDoIds').value = '';
+      document.getElementById('batchUserIdentifiers').value = '';
       document.getElementById('batchSpins').value = 5;
       document.getElementById('batchReason').value = '';
+    }
+
+    // 清空全员发放表单
+    function clearAllForm() {
+      document.getElementById('allSpins').value = 5;
+      document.getElementById('allReason').value = '';
     }
 
     // ========== 待发放奖金管理功能 ==========

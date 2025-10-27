@@ -864,6 +864,92 @@
           总获得 <span id="totalWon" class="font-bold text-green-300">$0</span>
         </p>
       </div>
+      <!-- 当前余额和待发放 -->
+      <div class="pt-1 sm:pt-2 border-t border-white/20">
+        <p class="text-xs text-white/60 mb-0.5 sm:mb-1">💰 账户信息</p>
+        <p class="text-xs sm:text-sm md:text-base">
+          当前余额 <span id="currentBalance" class="font-bold text-blue-300">$0</span>
+          <span class="mx-1 sm:mx-2 text-white/40">|</span>
+          待发放 <span id="pendingRewardsCount" class="font-bold text-orange-300">0</span> 条 (<span id="pendingRewardsAmount" class="font-bold text-orange-300">$0</span>)
+          <button onclick="showPendingRewardsModal()" class="ml-2 px-2 py-0.5 bg-orange-500/30 hover:bg-orange-500/50 rounded text-xs transition-colors">
+            查看详情
+          </button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 待发放奖金弹窗 -->
+  <div id="pendingRewardsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
+      <!-- 标题栏 -->
+      <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-orange-600 to-amber-600">
+        <div>
+          <h2 class="text-2xl font-bold text-white">💰 待发放奖金记录</h2>
+          <p class="text-sm text-white/90 mt-1">查看您的奖金发放状态</p>
+        </div>
+        <button onclick="closePendingRewards()" class="text-white hover:text-yellow-300 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- 统计卡片 -->
+      <div class="p-6 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-slate-200">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">当前余额</p>
+            <p id="modalCurrentBalance" class="text-2xl font-bold text-blue-600">$0</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">待发放总数</p>
+            <p id="modalPendingCount" class="text-2xl font-bold text-orange-600">0</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">待发放金额</p>
+            <p id="modalPendingAmount" class="text-2xl font-bold text-green-600">$0</p>
+          </div>
+          <div class="text-center">
+            <p class="text-sm text-slate-600 mb-1">已发放金额</p>
+            <p id="modalSuccessAmount" class="text-2xl font-bold text-purple-600">$0</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 说明 -->
+      <div class="px-6 py-3 bg-blue-50 border-b border-blue-200">
+        <div class="flex items-start gap-2 text-sm text-blue-800">
+          <span>ℹ️</span>
+          <div>
+            <p><strong>说明：</strong>奖金发放失败时会记录到待发放列表，系统每60秒自动重试一次。</p>
+            <p class="mt-1">• <strong>待处理</strong>：系统正在自动处理中</p>
+            <p>• <strong>处理中</strong>：当前正在发放</p>
+            <p>• <strong>成功</strong>：已成功发放到您的账户</p>
+            <p>• <strong>失败</strong>：多次重试失败，请联系管理员</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 记录列表 -->
+      <div class="p-6 overflow-y-auto flex-1">
+        <div id="pendingRewardsList">
+          <div class="text-center text-slate-500 py-8">加载中...</div>
+        </div>
+      </div>
+
+      <!-- 底部按钮 -->
+      <div class="p-4 border-t border-slate-200 bg-slate-50 flex justify-between items-center">
+        <button onclick="refreshPendingRewards()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+          刷新
+        </button>
+        <button onclick="closePendingRewards()" class="px-6 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors">
+          关闭
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2519,6 +2605,9 @@
           setTimeout(() => loadSidebarLeaderboard(), 1000);
         }
 
+        // 更新待发放记录和余额
+        setTimeout(() => loadPendingRewardsSummary(), 500);
+
         // 播放结果音效
         if (result.multiplier < 0) {
           // 惩罚音效
@@ -3151,6 +3240,141 @@
       }
     }
 
+    // ========== 待发放奖金功能 ==========
+
+    // 显示待发放奖金弹窗
+    async function showPendingRewardsModal() {
+      document.getElementById('pendingRewardsModal').classList.remove('hidden');
+      await loadPendingRewards();
+    }
+
+    // 关闭待发放奖金弹窗
+    function closePendingRewards() {
+      document.getElementById('pendingRewardsModal').classList.add('hidden');
+    }
+
+    // 加载待发放奖金记录
+    async function loadPendingRewards() {
+      try {
+        const res = await fetch('/api/slot/pending-rewards');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast(data.message, 'error');
+          return;
+        }
+
+        const { summary, rewards } = data.data;
+        
+        // 更新统计信息（模态框内）
+        document.getElementById('modalPendingCount').textContent = summary.pending_count;
+        document.getElementById('modalPendingAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
+        document.getElementById('modalSuccessAmount').textContent = `$${(summary.success_amount / 500000).toFixed(2)}`;
+        
+        // 获取当前用户信息（包含余额）
+        const userRes = await fetch('/api/user/info');
+        const userData = await userRes.json();
+        if (userData.success && userData.data) {
+          const currentQuota = userData.data.quota || 0;
+          document.getElementById('modalCurrentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+          
+          // 同时更新底部的当前余额显示
+          document.getElementById('currentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+        }
+        
+        // 更新底部统计栏的待发放信息
+        document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
+        document.getElementById('pendingRewardsAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
+
+        // 渲染记录列表
+        const container = document.getElementById('pendingRewardsList');
+        
+        if (rewards.length === 0) {
+          container.innerHTML = '<div class="text-center text-slate-500 py-8"><p class="text-xl">🎉</p><p class="mt-2">暂无待发放记录</p></div>';
+          return;
+        }
+
+        // 状态标签
+        const statusLabels = {
+          'pending': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 待处理</span>',
+          'processing': '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">⚙️ 处理中</span>',
+          'success': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 成功</span>',
+          'failed': '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">❌ 失败</span>'
+        };
+
+        container.innerHTML = `
+          <div class="space-y-3">
+            ${rewards.map(reward => {
+              const statusBadge = statusLabels[reward.status] || statusLabels['pending'];
+              const amountClass = reward.status === 'success' ? 'text-green-600' : 
+                                 reward.status === 'failed' ? 'text-red-600' : 'text-orange-600';
+              
+              return `
+                <div class="bg-slate-50 rounded-lg p-4 border border-slate-200 hover:border-slate-300 transition-colors">
+                  <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-2">
+                        <span class="font-semibold text-${amountClass} text-lg">$${reward.amount.toFixed(2)}</span>
+                        ${statusBadge}
+                      </div>
+                      <p class="text-sm text-slate-700 mb-1">
+                        <span class="font-medium">原因：</span>${reward.reason}
+                      </p>
+                      <p class="text-xs text-slate-500">
+                        创建时间：${reward.created_date}
+                        ${reward.retry_count > 0 ? `<span class="ml-2 text-orange-600">• 重试 ${reward.retry_count} 次</span>` : ''}
+                      </p>
+                      ${reward.error_message ? `
+                        <p class="text-xs text-red-600 mt-1">
+                          ⚠️ ${reward.error_message}
+                        </p>
+                      ` : ''}
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+
+      } catch (error) {
+        console.error('加载待发放记录失败:', error);
+        showToast('加载待发放记录失败', 'error');
+        document.getElementById('pendingRewardsList').innerHTML = 
+          '<div class="text-center text-red-500 py-8"><p>加载失败，请重试</p></div>';
+      }
+    }
+
+    // 刷新待发放记录
+    async function refreshPendingRewards() {
+      await loadPendingRewards();
+      showToast('已刷新', 'success');
+    }
+
+    // 初始化时加载待发放统计（不打开弹窗）
+    async function loadPendingRewardsSummary() {
+      try {
+        const res = await fetch('/api/slot/pending-rewards');
+        const data = await res.json();
+
+        if (data.success && data.data) {
+          const { summary } = data.data;
+          document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
+          document.getElementById('pendingRewardsAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
+        }
+        
+        // 同时获取当前余额
+        const userRes = await fetch('/api/user/info');
+        const userData = await userRes.json();
+        if (userData.success && userData.data) {
+          const currentQuota = userData.data.quota || 0;
+          document.getElementById('currentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+        }
+      } catch (error) {
+        console.error('加载待发放统计失败:', error);
+      }
+    }
+
     // ========== 结束：老虎机相关功能 ==========
 
     window.onload = async () => {
@@ -3177,11 +3401,15 @@
             await loadQuota();
             updateSwitchButtons('entertain');
             showSlotMachine();
+            // 加载待发放记录统计
+            loadPendingRewardsSummary();
           } else {
             // 默认显示加油站
             document.getElementById('mainSection').classList.remove('hidden');
             await loadQuota();
             updateSwitchButtons('refuel');
+            // 加载待发放记录统计
+            loadPendingRewardsSummary();
           }
           
           if (isOAuthCallback) {

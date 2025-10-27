@@ -7,6 +7,7 @@ import {
     keyQueries,
     userQueries,
     slotQueries,
+    db,
 } from '../database';
 import { cacheManager } from '../cache';
 import { CONFIG } from '../config';
@@ -1127,13 +1128,54 @@ app.post('/users/:linuxDoId/unbind', requireAdmin, async (c) => {
 });
 
 /**
- * 发放免费次数
+ * 搜索用户（支持用户名和Linux Do ID）
+ */
+app.get('/search-users', requireAdmin, async (c) => {
+    const keyword = c.req.query('keyword') || '';
+    
+    if (!keyword || keyword.length < 2) {
+        return c.json({ success: false, message: '搜索关键词至少2个字符' }, 400);
+    }
+    
+    try {
+        let users: any[] = [];
+        
+        // 如果是纯数字，按 Linux Do ID 搜索
+        if (/^\d+$/.test(keyword)) {
+            const user = userQueries.get.get(keyword);
+            if (user) {
+                users = [user];
+            }
+        } else {
+            // 按用户名模糊搜索
+            const searchPattern = `%${keyword}%`;
+            users = userQueries.searchByUsername.all(searchPattern, searchPattern);
+        }
+        
+        return c.json({
+            success: true,
+            data: users.map(u => ({
+                linux_do_id: u.linux_do_id,
+                username: u.username,
+                linux_do_username: u.linux_do_username,
+                kyx_user_id: u.kyx_user_id,
+                is_banned: u.is_banned
+            }))
+        });
+    } catch (e: any) {
+        console.error('[管理员] ❌ 搜索用户失败:', e);
+        return c.json({ success: false, message: `搜索失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 发放免费次数（支持用户名或Linux Do ID）
  */
 app.post('/grant-free-spins', requireAdmin, async (c) => {
-    const { linux_do_id, spins, reason } = await c.req.json();
+    const { identifier, spins, reason } = await c.req.json();
 
-    if (!linux_do_id || !spins || typeof spins !== 'number' || spins <= 0) {
-        return c.json({ success: false, message: '参数错误：请提供有效的用户ID和免费次数' }, 400);
+    if (!identifier || !spins || typeof spins !== 'number' || spins <= 0) {
+        return c.json({ success: false, message: '参数错误：请提供有效的用户标识和免费次数' }, 400);
     }
 
     if (spins > 100) {
@@ -1141,33 +1183,45 @@ app.post('/grant-free-spins', requireAdmin, async (c) => {
     }
 
     try {
-        // 验证用户是否存在
-        const user = userQueries.get.get(linux_do_id);
+        // 根据identifier类型查找用户
+        let user = null;
+        
+        if (/^\d+$/.test(identifier)) {
+            // 纯数字，按 Linux Do ID 查找
+            user = userQueries.get.get(identifier);
+        } else {
+            // 按用户名查找（优先 linux_do_username，其次 username）
+            user = userQueries.getByLinuxDoUsername.get(identifier);
+            if (!user) {
+                user = userQueries.getByUsername.get(identifier);
+            }
+        }
+        
         if (!user) {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
         // 获取当前免费次数
-        const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
+        const currentFreeSpin = slotQueries.getFreeSpin.get(user.linux_do_id);
         const currentSpins = currentFreeSpin?.free_spins || 0;
         const now = Date.now();
 
         // 增加免费次数
         const newSpins = currentSpins + spins;
         slotQueries.setFreeSpin.run(
-            linux_do_id,
+            user.linux_do_id,
             newSpins,
             currentFreeSpin?.banned_until || 0,
             now
         );
 
-        console.log(`[管理员] 🎁 发放免费次数 - 用户: ${user.username} (${linux_do_id}), 发放次数: ${spins}, 原次数: ${currentSpins}, 新次数: ${newSpins}, 原因: ${reason || '管理员发放'}`);
+        console.log(`[管理员] 🎁 发放免费次数 - 用户: ${user.username} (${user.linux_do_id}), 发放次数: ${spins}, 原次数: ${currentSpins}, 新次数: ${newSpins}, 原因: ${reason || '管理员发放'}`);
 
         return c.json({
             success: true,
             message: `成功为用户 ${user.username} 发放 ${spins} 次免费抽奖机会`,
             data: {
-                linux_do_id,
+                linux_do_id: user.linux_do_id,
                 username: user.username,
                 granted_spins: spins,
                 previous_spins: currentSpins,
@@ -1176,19 +1230,19 @@ app.post('/grant-free-spins', requireAdmin, async (c) => {
             }
         });
     } catch (e: any) {
-        console.error(`[管理员] ❌ 发放免费次数失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
+        console.error(`[管理员] ❌ 发放免费次数失败 - 标识: ${identifier}, 错误:`, e);
         return c.json({ success: false, message: `发放失败: ${e.message}` }, 500);
     }
 });
 
 /**
- * 批量发放免费次数
+ * 批量发放免费次数（优化版，支持大批量）
  */
 app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
-    const { user_ids, spins, reason } = await c.req.json();
+    const { identifiers, spins, reason } = await c.req.json();
 
-    if (!Array.isArray(user_ids) || user_ids.length === 0) {
-        return c.json({ success: false, message: '请提供有效的用户ID列表' }, 400);
+    if (!Array.isArray(identifiers) || identifiers.length === 0) {
+        return c.json({ success: false, message: '请提供有效的用户列表' }, 400);
     }
 
     if (!spins || typeof spins !== 'number' || spins <= 0) {
@@ -1199,101 +1253,263 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
         return c.json({ success: false, message: '单次发放次数不能超过100次' }, 400);
     }
 
-    if (user_ids.length > 100) {
-        return c.json({ success: false, message: '单次批量发放用户不能超过100个' }, 400);
+    if (identifiers.length > 5000) {
+        return c.json({ success: false, message: '单次批量发放用户不能超过5000个' }, 400);
     }
 
     const results = {
         success: 0,
         failed: 0,
+        skipped: 0,
         details: [] as any[]
     };
 
-    for (const linux_do_id of user_ids) {
-        try {
-            // 验证用户是否存在
-            const user = userQueries.get.get(linux_do_id);
-            if (!user) {
-                results.failed++;
-                results.details.push({
-                    linux_do_id,
-                    success: false,
-                    message: '用户不存在'
-                });
-                continue;
+    const now = Date.now();
+    const batchSize = 100; // 每100个用户使用一次事务
+    
+    try {
+        // 分批处理，避免单个事务太大
+        for (let i = 0; i < identifiers.length; i += batchSize) {
+            const batch = identifiers.slice(i, i + batchSize);
+            
+            // 使用事务批量处理
+            db.exec('BEGIN TRANSACTION');
+            
+            try {
+                for (const identifier of batch) {
+                    try {
+                        // 根据identifier类型查找用户
+                        let user = null;
+                        
+                        if (/^\d+$/.test(identifier)) {
+                            // 纯数字，按 Linux Do ID 查找
+                            user = userQueries.get.get(identifier);
+                        } else {
+                            // 按用户名查找
+                            user = userQueries.getByLinuxDoUsername.get(identifier);
+                            if (!user) {
+                                user = userQueries.getByUsername.get(identifier);
+                            }
+                        }
+                        
+                        if (!user) {
+                            results.failed++;
+                            results.details.push({
+                                identifier,
+                                success: false,
+                                message: '用户不存在'
+                            });
+                            continue;
+                        }
+
+                        // 跳过已封禁用户
+                        if (user.is_banned === 1) {
+                            results.skipped++;
+                            results.details.push({
+                                identifier,
+                                linux_do_id: user.linux_do_id,
+                                username: user.username,
+                                success: false,
+                                message: '用户已封禁，跳过'
+                            });
+                            continue;
+                        }
+
+                        // 获取当前免费次数
+                        const currentFreeSpin = slotQueries.getFreeSpin.get(user.linux_do_id);
+                        const currentSpins = currentFreeSpin?.free_spins || 0;
+
+                        // 增加免费次数
+                        const newSpins = currentSpins + spins;
+                        slotQueries.setFreeSpin.run(
+                            user.linux_do_id,
+                            newSpins,
+                            currentFreeSpin?.banned_until || 0,
+                            now
+                        );
+
+                        results.success++;
+                        
+                        // 只保存前100条详细信息（避免返回数据过大）
+                        if (results.details.length < 100) {
+                            results.details.push({
+                                identifier,
+                                linux_do_id: user.linux_do_id,
+                                username: user.username,
+                                success: true,
+                                granted_spins: spins,
+                                previous_spins: currentSpins,
+                                total_spins: newSpins
+                            });
+                        }
+
+                    } catch (e: any) {
+                        results.failed++;
+                        if (results.details.length < 100) {
+                            results.details.push({
+                                identifier,
+                                success: false,
+                                message: e.message
+                            });
+                        }
+                    }
+                }
+                
+                db.exec('COMMIT');
+                
+                // 每批处理后输出进度
+                const progress = Math.min(i + batchSize, identifiers.length);
+                console.log(`[管理员] 🎁 批量发放进度: ${progress}/${identifiers.length} (${((progress/identifiers.length)*100).toFixed(1)}%)`);
+                
+            } catch (e: any) {
+                db.exec('ROLLBACK');
+                console.error('[管理员] ❌ 批量发放事务失败:', e);
             }
-
-            // 获取当前免费次数
-            const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
-            const currentSpins = currentFreeSpin?.free_spins || 0;
-            const now = Date.now();
-
-            // 增加免费次数
-            const newSpins = currentSpins + spins;
-            slotQueries.setFreeSpin.run(
-                linux_do_id,
-                newSpins,
-                currentFreeSpin?.banned_until || 0,
-                now
-            );
-
-            results.success++;
-            results.details.push({
-                linux_do_id,
-                username: user.username,
-                success: true,
-                granted_spins: spins,
-                previous_spins: currentSpins,
-                total_spins: newSpins
-            });
-
-            console.log(`[管理员] 🎁 批量发放免费次数 - 用户: ${user.username} (${linux_do_id}), 发放次数: ${spins}, 原次数: ${currentSpins}, 新次数: ${newSpins}`);
-        } catch (e: any) {
-            results.failed++;
-            results.details.push({
-                linux_do_id,
-                success: false,
-                message: e.message
-            });
-            console.error(`[管理员] ❌ 批量发放免费次数失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
         }
+        
+        console.log(`[管理员] 📊 批量发放免费次数完成 - 成功: ${results.success}, 失败: ${results.failed}, 跳过: ${results.skipped}, 原因: ${reason || '管理员批量发放'}`);
+
+        return c.json({
+            success: true,
+            message: `批量发放完成：成功 ${results.success} 个，失败 ${results.failed} 个，跳过 ${results.skipped} 个`,
+            data: {
+                ...results,
+                total: identifiers.length,
+                details: results.details.length < identifiers.length 
+                    ? results.details.concat([{ message: `...还有 ${identifiers.length - results.details.length} 条记录未显示` }])
+                    : results.details
+            }
+        });
+    } catch (e: any) {
+        console.error('[管理员] ❌ 批量发放免费次数失败:', e);
+        return c.json({ success: false, message: `批量发放失败: ${e.message}` }, 500);
     }
-
-    console.log(`[管理员] 📊 批量发放免费次数完成 - 成功: ${results.success}, 失败: ${results.failed}, 原因: ${reason || '管理员批量发放'}`);
-
-    return c.json({
-        success: true,
-        message: `批量发放完成：成功 ${results.success} 个，失败 ${results.failed} 个`,
-        data: results
-    });
 });
 
 /**
- * 查询用户免费次数
+ * 给所有用户发放免费次数
  */
-app.get('/users/:linuxDoId/free-spins', requireAdmin, async (c) => {
-    const linuxDoId = c.req.param('linuxDoId');
+app.post('/grant-free-spins-all', requireAdmin, async (c) => {
+    const { spins, reason } = await c.req.json();
+
+    if (!spins || typeof spins !== 'number' || spins <= 0) {
+        return c.json({ success: false, message: '请提供有效的免费次数' }, 400);
+    }
+
+    if (spins > 100) {
+        return c.json({ success: false, message: '单次发放次数不能超过100次' }, 400);
+    }
 
     try {
-        const user = userQueries.get.get(linuxDoId);
+        // 获取所有未封禁用户的 Linux Do ID
+        const allUsers = userQueries.getAllLinuxDoIds.all();
+        
+        if (allUsers.length === 0) {
+            return c.json({ success: false, message: '没有可发放的用户' }, 404);
+        }
+
+        console.log(`[管理员] 🎁 开始给所有用户发放免费次数 - 用户数: ${allUsers.length}, 每人次数: ${spins}, 原因: ${reason || '全员发放'}`);
+
+        const results = {
+            success: 0,
+            failed: 0,
+            total: allUsers.length
+        };
+
+        const now = Date.now();
+        const batchSize = 200; // 每200个用户一个事务
+        
+        // 分批处理
+        for (let i = 0; i < allUsers.length; i += batchSize) {
+            const batch = allUsers.slice(i, i + batchSize);
+            
+            db.exec('BEGIN TRANSACTION');
+            
+            try {
+                for (const { linux_do_id } of batch) {
+                    try {
+                        const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
+                        const currentSpins = currentFreeSpin?.free_spins || 0;
+                        const newSpins = currentSpins + spins;
+                        
+                        slotQueries.setFreeSpin.run(
+                            linux_do_id,
+                            newSpins,
+                            currentFreeSpin?.banned_until || 0,
+                            now
+                        );
+                        
+                        results.success++;
+                    } catch (e: any) {
+                        results.failed++;
+                        console.error(`[管理员] ❌ 发放失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
+                    }
+                }
+                
+                db.exec('COMMIT');
+                
+                // 输出进度
+                const progress = Math.min(i + batchSize, allUsers.length);
+                const percentage = ((progress / allUsers.length) * 100).toFixed(1);
+                console.log(`[管理员] 🎁 全员发放进度: ${progress}/${allUsers.length} (${percentage}%)`);
+                
+            } catch (e: any) {
+                db.exec('ROLLBACK');
+                console.error('[管理员] ❌ 批量事务失败:', e);
+            }
+        }
+
+        console.log(`[管理员] ✅ 全员发放完成 - 总数: ${results.total}, 成功: ${results.success}, 失败: ${results.failed}`);
+
+        return c.json({
+            success: true,
+            message: `全员发放完成：成功 ${results.success} 个，失败 ${results.failed} 个`,
+            data: results
+        });
+    } catch (e: any) {
+        console.error('[管理员] ❌ 全员发放免费次数失败:', e);
+        return c.json({ success: false, message: `全员发放失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 查询用户免费次数（支持用户名或Linux Do ID）
+ */
+app.get('/users/:identifier/free-spins', requireAdmin, async (c) => {
+    const identifier = c.req.param('identifier');
+
+    try {
+        // 根据identifier类型查找用户
+        let user = null;
+        
+        if (/^\d+$/.test(identifier)) {
+            user = userQueries.get.get(identifier);
+        } else {
+            user = userQueries.getByLinuxDoUsername.get(identifier);
+            if (!user) {
+                user = userQueries.getByUsername.get(identifier);
+            }
+        }
+        
         if (!user) {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
-        const freeSpin = slotQueries.getFreeSpin.get(linuxDoId);
-
+        const freeSpin = slotQueries.getFreeSpin.get(user.linux_do_id);
+        
         return c.json({
             success: true,
             data: {
-                linux_do_id: linuxDoId,
+                linux_do_id: user.linux_do_id,
                 username: user.username,
+                linux_do_username: user.linux_do_username,
                 free_spins: freeSpin?.free_spins || 0,
                 banned_until: freeSpin?.banned_until || 0,
                 updated_at: freeSpin?.updated_at || 0
             }
         });
     } catch (e: any) {
-        console.error(`[管理员] ❌ 查询用户免费次数失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
+        console.error(`[管理员] ❌ 查询用户免费次数失败 - 标识: ${identifier}, 错误:`, e);
         return c.json({ success: false, message: `查询失败: ${e.message}` }, 500);
     }
 });
