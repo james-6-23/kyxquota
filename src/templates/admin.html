@@ -3535,20 +3535,11 @@
           return;
         }
 
-        const userStats = data.data.userStats;
-
-        // 亏损榜：只显示亏损的用户（profit < 0），按盈亏升序
-        const lossLeaderboard = [...userStats]
-          .filter(user => (user.total_win - user.total_bet) < 0)
-          .sort((a, b) => {
-            const profitA = a.total_win - a.total_bet;
-            const profitB = b.total_win - b.total_bet;
-            return profitA - profitB; // 升序，亏最多在前
-          })
-          .slice(0, 20); // 只取前20名
+        // 直接使用后端返回的亏损榜数据
+        const lossLeaderboard = data.data.lossStats || [];
 
         // 渲染亏损排行榜
-        const lossLeaderboardHtml = lossLeaderboard.map((user, index) => {
+        const lossLeaderboardHtml = lossLeaderboard.slice(0, 20).map((user, index) => {
           const rank = index + 1;
           let rankBadge = `<span class="text-red-600 font-bold">#${rank}</span>`;
           let rowClass = 'bg-red-50';

@@ -730,8 +730,9 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             date: r.date
         }));
 
-        // 按用户统计
+        // 按用户统计（盈利榜和亏损榜）
         const userStats = slotQueries.getLeaderboard.all(100);
+        const lossStats = slotQueries.getLossLeaderboard.all(100);
 
         // 每日统计（最近7天）
         const dailyStats: Record<string, { count: number; bet: number; win: number; profit: number }> = {};
@@ -766,7 +767,8 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
                 },
                 winTypes,
                 recentRecords,
-                userStats: userStats.slice(0, 100), // 增加到100名用于排行榜
+                userStats: userStats.slice(0, 100), // 盈利排行榜
+                lossStats: lossStats.slice(0, 100), // 亏损排行榜
                 allRecords, // 添加所有记录（用于筛选）
                 dailyStats
             }
