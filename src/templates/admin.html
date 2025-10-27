@@ -700,6 +700,49 @@
                 <p class="text-xs text-slate-500 mt-1">选择老虎机界面的背景样式</p>
               </div>
             </div>
+
+            <!-- 购买次数配置 -->
+            <div class="mt-6 p-4 bg-orange-50 border-2 border-orange-200 rounded-lg">
+              <h4 class="text-md font-semibold text-orange-800 mb-3 flex items-center gap-2">
+                <span>💰</span>
+                <span>购买抽奖次数功能</span>
+              </h4>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">
+                    功能开关
+                  </label>
+                  <select id="buySpinsEnabled" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500">
+                    <option value="0">关闭</option>
+                    <option value="1">开启</option>
+                  </select>
+                  <p class="text-xs text-slate-500 mt-1">开启后用户可以购买抽奖次数</p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">
+                    购买价格 (单位: $)
+                  </label>
+                  <input type="number" step="0.01" id="buySpinsPriceUSD" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="40">
+                  <p class="text-xs text-slate-500 mt-1">当前：$<span id="buySpinsPriceDisplay">40.00</span></p>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">
+                    每日最大购买次数
+                  </label>
+                  <input type="number" id="maxDailyBuySpins" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500" placeholder="5">
+                  <p class="text-xs text-slate-500 mt-1">用户每天最多可购买的次数</p>
+                </div>
+
+                <div class="flex items-end">
+                  <div class="w-full p-3 bg-white rounded-lg border border-orange-200">
+                    <p class="text-xs text-orange-700 font-medium mb-1">说明</p>
+                    <p class="text-xs text-slate-600">购买的次数会增加到免费次数中，购买后仍需投注才能抽奖</p>
+                  </div>
+                </div>
+              </div>
+            </div>
             
             <div class="mt-6 flex gap-3">
               <button onclick="updateSlotConfig()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
@@ -2830,16 +2873,23 @@
           // 将聪转换为美元显示
           const betAmountUSD = (config.bet_amount / 500000).toFixed(2);
           const minQuotaUSD = (config.min_quota_required / 500000).toFixed(2);
-          
+          const buySpinsPriceUSD = ((config.buy_spins_price || 20000000) / 500000).toFixed(2);
+
           document.getElementById('slotBetAmountUSD').value = betAmountUSD;
           document.getElementById('slotMaxDailySpins').value = config.max_daily_spins;
           document.getElementById('slotMinQuotaUSD').value = minQuotaUSD;
           document.getElementById('slotEnabled').value = config.enabled;
           document.getElementById('slotBackgroundType').value = config.background_type || 'default';
 
+          // 购买次数配置
+          document.getElementById('buySpinsEnabled').value = config.buy_spins_enabled || 0;
+          document.getElementById('buySpinsPriceUSD').value = buySpinsPriceUSD;
+          document.getElementById('maxDailyBuySpins').value = config.max_daily_buy_spins || 5;
+
           // 更新显示
           document.getElementById('slotBetAmountDisplay').textContent = betAmountUSD;
           document.getElementById('slotMinQuotaDisplay').textContent = minQuotaUSD;
+          document.getElementById('buySpinsPriceDisplay').textContent = buySpinsPriceUSD;
         }
       } catch (error) {
         console.error('加载老虎机配置失败:', error);
@@ -2855,6 +2905,11 @@
         const enabled = parseInt(document.getElementById('slotEnabled').value);
         const backgroundType = document.getElementById('slotBackgroundType').value;
 
+        // 购买次数配置
+        const buySpinsEnabled = parseInt(document.getElementById('buySpinsEnabled').value);
+        const buySpinsPriceUSD = parseFloat(document.getElementById('buySpinsPriceUSD').value);
+        const maxDailyBuySpins = parseInt(document.getElementById('maxDailyBuySpins').value);
+
         if (isNaN(betAmountUSD) || betAmountUSD < 0) {
           showMessage('请输入有效的投注金额', 'error');
           return;
@@ -2867,10 +2922,19 @@
           showMessage('请输入有效的最低额度', 'error');
           return;
         }
+        if (isNaN(buySpinsPriceUSD) || buySpinsPriceUSD < 0) {
+          showMessage('请输入有效的购买价格', 'error');
+          return;
+        }
+        if (isNaN(maxDailyBuySpins) || maxDailyBuySpins < 0) {
+          showMessage('请输入有效的每日最大购买次数', 'error');
+          return;
+        }
 
         // 将美元转换为聪
         const betAmount = Math.floor(betAmountUSD * 500000);
         const minQuota = Math.floor(minQuotaUSD * 500000);
+        const buySpinsPrice = Math.floor(buySpinsPriceUSD * 500000);
 
         const res = await fetch('/api/admin/slot/config', {
           method: 'POST',
@@ -2880,7 +2944,10 @@
             max_daily_spins: maxDailySpins,
             min_quota_required: minQuota,
             enabled: enabled,
-            background_type: backgroundType
+            background_type: backgroundType,
+            buy_spins_enabled: buySpinsEnabled,
+            buy_spins_price: buySpinsPrice,
+            max_daily_buy_spins: maxDailyBuySpins
           })
         });
 

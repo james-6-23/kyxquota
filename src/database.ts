@@ -228,6 +228,9 @@ export function initDatabase() {
       min_quota_required INTEGER DEFAULT 10000000,
       enabled INTEGER DEFAULT 1,
       background_type TEXT DEFAULT 'default',
+      buy_spins_enabled INTEGER DEFAULT 0,
+      buy_spins_price INTEGER DEFAULT 20000000,
+      max_daily_buy_spins INTEGER DEFAULT 5,
       updated_at INTEGER NOT NULL
     )
   `);
@@ -240,10 +243,30 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
+    // 兼容旧数据：添加购买次数相关字段
+    try {
+        db.exec('ALTER TABLE slot_machine_config ADD COLUMN buy_spins_enabled INTEGER DEFAULT 0');
+        console.log('✅ 已添加 buy_spins_enabled 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_machine_config ADD COLUMN buy_spins_price INTEGER DEFAULT 20000000');
+        console.log('✅ 已添加 buy_spins_price 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_machine_config ADD COLUMN max_daily_buy_spins INTEGER DEFAULT 5');
+        console.log('✅ 已添加 max_daily_buy_spins 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 插入默认老虎机配置
     db.exec(`
-    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, updated_at)
-    VALUES (1, 10000000, 5, 10000000, 1, 'default', ${Date.now()})
+    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, buy_spins_enabled, buy_spins_price, max_daily_buy_spins, updated_at)
+    VALUES (1, 10000000, 5, 10000000, 1, 'default', 0, 20000000, 5, ${Date.now()})
   `);
 
     // 符号权重配置表
@@ -362,6 +385,27 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
+
+    // 购买抽奖次数记录表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS buy_spins_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      linux_do_username TEXT,
+      spins_count INTEGER NOT NULL,
+      price_paid INTEGER NOT NULL,
+      timestamp INTEGER NOT NULL,
+      date TEXT NOT NULL
+    )
+  `);
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_buy_spins_linux_do_id ON buy_spins_records(linux_do_id)'
+    );
+    db.exec('CREATE INDEX IF NOT EXISTS idx_buy_spins_date ON buy_spins_records(date)');
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_buy_spins_timestamp ON buy_spins_records(timestamp)'
+    );
 
     // 待发放奖金表（用于失败重试）
     db.exec(`
@@ -529,7 +573,7 @@ function initQueries() {
             'SELECT * FROM slot_machine_config WHERE id = 1'
         ),
         updateConfig: db.query(
-            'UPDATE slot_machine_config SET bet_amount = ?, max_daily_spins = ?, min_quota_required = ?, enabled = ?, background_type = ?, updated_at = ? WHERE id = 1'
+            'UPDATE slot_machine_config SET bet_amount = ?, max_daily_spins = ?, min_quota_required = ?, enabled = ?, background_type = ?, buy_spins_enabled = ?, buy_spins_price = ?, max_daily_buy_spins = ?, updated_at = ? WHERE id = 1'
         ),
 
         // 符号权重配置
@@ -634,6 +678,20 @@ function initQueries() {
         ),
         getUserLossRank: db.query<{ rank: number }, string>(
             'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_stats WHERE linux_do_id = ?)'
+        ),
+
+        // 购买次数记录
+        insertBuySpinsRecord: db.query(
+            'INSERT INTO buy_spins_records (linux_do_id, username, linux_do_username, spins_count, price_paid, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getTodayBuySpinsCount: db.query<{ total: number }, [string, string]>(
+            'SELECT COALESCE(SUM(spins_count), 0) as total FROM buy_spins_records WHERE linux_do_id = ? AND date = ?'
+        ),
+        getBuySpinsRecordsByUser: db.query<any, string>(
+            'SELECT * FROM buy_spins_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllBuySpinsRecords: db.query<any, never>(
+            'SELECT * FROM buy_spins_records ORDER BY timestamp DESC'
         ),
     };
 

@@ -141,6 +141,17 @@ slot.get('/config', requireAuth, async (c) => {
         // 获取奖励倍数配置
         const multipliers = getRewardMultipliers();
 
+        // 获取今日已购买次数
+        const today = new Date().toISOString().split('T')[0];
+        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+        const boughtToday = todayBought?.total || 0;
+
+        // 重新计算剩余次数（包含购买的次数）
+        const actualRemainingSpins = Math.max(0, config.max_daily_spins + boughtToday - todaySpins);
+
+        // 是否可以游玩（更新为包含购买次数的判断）
+        const actualCanPlay = !banStatus.banned && (actualRemainingSpins > 0 || freeSpins > 0) && quota >= config.min_quota_required;
+
         return c.json({
             success: true,
             data: {
@@ -151,14 +162,17 @@ slot.get('/config', requireAuth, async (c) => {
                     enabled: config.enabled,
                     background_type: config.background_type || 'default',
                     background_asset_url: backgroundAssetUrl,
-                    multipliers: multipliers  // 添加倍率配置
+                    multipliers: multipliers,  // 添加倍率配置
+                    buy_spins_enabled: config.buy_spins_enabled || 0,  // 购买次数功能开关
+                    buy_spins_price: config.buy_spins_price || 20000000,  // 购买价格
+                    max_daily_buy_spins: config.max_daily_buy_spins || 5  // 每日最大购买次数
                 },
                 user: {
                     quota,
                     today_spins: todaySpins,
                     free_spins: freeSpins,
-                    remaining_spins: remainingSpins,
-                    can_play: canPlay,
+                    remaining_spins: actualRemainingSpins,  // 包含购买次数的剩余次数
+                    can_play: actualCanPlay,
                     today_bet: todayStats.totalBet,
                     today_win: todayStats.totalWin,
                     today_count: todayStats.count,
@@ -168,7 +182,9 @@ slot.get('/config', requireAuth, async (c) => {
                     total_win: totalStats?.total_win || 0,
                     // 禁止状态
                     is_banned: banStatus.banned,
-                    banned_until: banStatus.bannedUntil
+                    banned_until: banStatus.bannedUntil,
+                    // 购买次数
+                    bought_today: boughtToday
                 }
             }
         });
@@ -882,6 +898,140 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
         });
     } catch (error) {
         console.error('获取待发放奖金失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 购买抽奖次数
+ */
+slot.post('/buy-spins', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+        if (!session?.linux_do_id) {
+            return c.json({ success: false, message: '未登录' }, 401);
+        }
+
+        const user = userQueries.get.get(session.linux_do_id);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        // 检查是否被封禁
+        if (user.is_banned) {
+            return c.json({
+                success: false,
+                message: '您的账号已被封禁',
+                banned: true,
+                banned_reason: user.banned_reason
+            }, 403);
+        }
+
+        // 获取老虎机配置
+        const config = getSlotConfig();
+        if (!config) {
+            return c.json({ success: false, message: '老虎机配置未找到' }, 500);
+        }
+
+        // 检查购买功能是否开启
+        if (!config.buy_spins_enabled) {
+            return c.json({ success: false, message: '购买抽奖次数功能未开启' }, 403);
+        }
+
+        // 获取管理员配置
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({ success: false, message: '系统配置未找到' }, 500);
+        }
+
+        // 检查用户额度
+        const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+        if (!kyxUserResult.success || !kyxUserResult.user) {
+            return c.json({ success: false, message: '获取额度失败' }, 500);
+        }
+
+        const currentQuota = kyxUserResult.user.quota;
+        const buyPrice = config.buy_spins_price;
+
+        // 检查额度是否足够
+        if (currentQuota < buyPrice) {
+            return c.json({
+                success: false,
+                message: `额度不足，购买一次需要 $${(buyPrice / 500000).toFixed(2)}`
+            }, 400);
+        }
+
+        // 检查今日已购买次数
+        const today = new Date().toISOString().split('T')[0];
+        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+        const totalBoughtToday = todayBought?.total || 0;
+
+        if (totalBoughtToday >= config.max_daily_buy_spins) {
+            return c.json({
+                success: false,
+                message: `今日购买次数已达上限（${config.max_daily_buy_spins}次）`
+            }, 400);
+        }
+
+        // 扣除购买费用
+        const newQuota = currentQuota - buyPrice;
+        console.log(`[购买次数] 准备扣除费用 - 用户: ${user.username}, 当前: ${currentQuota}, 费用: ${buyPrice}, 目标: ${newQuota}`);
+
+        const deductResult = await updateKyxUserQuota(
+            user.kyx_user_id,
+            newQuota,
+            adminConfig.session,
+            adminConfig.new_api_user,
+            user.username,
+            kyxUserResult.user.group || 'default'
+        );
+
+        if (!deductResult || !deductResult.success) {
+            console.error(`[购买次数] ❌ 扣除费用失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+            return c.json({
+                success: false,
+                message: `扣除费用失败: ${deductResult?.message || '未知错误'}，请稍后重试`
+            }, 500);
+        }
+
+        console.log(`[购买次数] ✅ 扣除费用成功 - 用户: ${user.username}, 剩余: ${newQuota}`);
+
+        // 记录购买（购买的是今日抽奖次数，不是免费次数）
+        const now = Date.now();
+        const linuxDoUsername = session.username || user.linux_do_username || null;
+
+        slotQueries.insertBuySpinsRecord.run(
+            session.linux_do_id,
+            user.username,
+            linuxDoUsername,
+            1, // 购买1次
+            buyPrice,
+            now,
+            today
+        );
+
+        console.log(`[购买次数] 💰 购买成功 - 用户: ${user.username}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${totalBoughtToday + 1}/${config.max_daily_buy_spins}`);
+
+        // 重新计算剩余次数（包含购买的次数）
+        const todaySpins = getUserTodaySpins(session.linux_do_id);
+        const newBoughtToday = totalBoughtToday + 1;
+        const newRemainingSpins = Math.max(0, config.max_daily_spins + newBoughtToday - todaySpins);
+
+        // 返回新的额度和购买信息
+        return c.json({
+            success: true,
+            message: `购买成功！+1次抽奖机会，花费 $${(buyPrice / 500000).toFixed(2)}`,
+            data: {
+                quota_after: newQuota,
+                remaining_spins: newRemainingSpins,
+                bought_today: newBoughtToday,
+                max_daily_buy: config.max_daily_buy_spins,
+                price: buyPrice
+            }
+        });
+
+    } catch (error) {
+        console.error('购买抽奖次数失败:', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });

@@ -745,6 +745,23 @@
             <span class="mx-2 sm:mx-3">|</span>
             免费次数：<span id="freeSpinsCount" class="text-green-400 font-bold text-lg sm:text-xl md:text-2xl">0</span> 次
           </p>
+
+          <!-- 购买次数功能区 -->
+          <div id="buySpinsSection" class="hidden mt-3 p-3 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-lg border border-orange-400/30">
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div class="text-white text-sm text-center sm:text-left">
+                <span>💰 购买抽奖次数：<span id="buySpinsPrice" class="text-orange-300 font-bold">$40</span>/次</span>
+                <span class="ml-2 text-white/70">今日已购：<span id="buySpinsToday" class="text-orange-300">0</span>/<span id="buySpinsMax" class="text-orange-300">5</span></span>
+              </div>
+              <button id="buySpinsButton" onclick="buySpins()"
+                      class="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600
+                             text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200
+                             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
+                🛒 购买1次 (+$<span id="buySpinsBtnPrice">40</span>)
+              </button>
+            </div>
+          </div>
+
           <!-- 禁止状态提示 -->
           <div id="bannedNotice" class="hidden mt-3 p-3 bg-red-500/90 rounded-lg border border-red-300">
             <p class="text-white text-sm text-center font-semibold">
@@ -2692,6 +2709,96 @@
       } else {
         freeSpinButton.classList.add('hidden');
         freeSpinButton.disabled = true;
+      }
+
+      // 购买次数功能区
+      const buySpinsSection = document.getElementById('buySpinsSection');
+      const buySpinsButton = document.getElementById('buySpinsButton');
+
+      if (slotConfig.buy_spins_enabled && !slotUserData.is_banned) {
+        // 显示购买区域
+        buySpinsSection.classList.remove('hidden');
+
+        // 更新价格显示
+        const buyPriceUSD = (slotConfig.buy_spins_price / 500000).toFixed(2);
+        document.getElementById('buySpinsPrice').textContent = `$${buyPriceUSD}`;
+        document.getElementById('buySpinsBtnPrice').textContent = buyPriceUSD;
+
+        // 更新已购次数
+        document.getElementById('buySpinsToday').textContent = slotUserData.bought_today || 0;
+        document.getElementById('buySpinsMax').textContent = slotConfig.max_daily_buy_spins;
+
+        // 更新按钮状态
+        const boughtToday = slotUserData.bought_today || 0;
+        if (boughtToday >= slotConfig.max_daily_buy_spins) {
+          buySpinsButton.disabled = true;
+        } else if (slotUserData.quota < slotConfig.buy_spins_price) {
+          buySpinsButton.disabled = true;
+        } else {
+          buySpinsButton.disabled = false;
+        }
+      } else {
+        // 隐藏购买区域
+        buySpinsSection.classList.add('hidden');
+      }
+    }
+
+    // 购买抽奖次数
+    async function buySpins() {
+      const button = document.getElementById('buySpinsButton');
+      if (button.disabled) return;
+
+      if (!slotConfig || !slotUserData) {
+        showToast('配置加载失败', 'error');
+        return;
+      }
+
+      const buyPrice = slotConfig.buy_spins_price;
+      const buyPriceUSD = (buyPrice / 500000).toFixed(2);
+
+      // 确认购买
+      if (!confirm(`确认购买1次抽奖机会吗？\n\n价格：$${buyPriceUSD}\n购买后今日剩余次数+1（仍需投注）`)) {
+        return;
+      }
+
+      // 禁用按钮
+      button.disabled = true;
+      const originalText = button.innerHTML;
+      button.innerHTML = '⏳ 购买中...';
+
+      try {
+        const res = await fetch('/api/slot/buy-spins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+
+          // 更新用户数据
+          slotUserData.quota = data.data.quota_after;
+          slotUserData.free_spins = data.data.free_spins;
+          slotUserData.bought_today = data.data.bought_today;
+
+          // 更新UI
+          updateSlotUI();
+
+          // 刷新额度显示
+          await loadQuota();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('购买失败:', error);
+        showToast('购买失败，请重试', 'error');
+      } finally {
+        button.innerHTML = originalText;
+        button.disabled = false;
+
+        // 重新更新按钮状态（根据最新数据）
+        setTimeout(() => updateSlotUI(), 100);
       }
     }
 

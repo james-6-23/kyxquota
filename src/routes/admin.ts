@@ -505,7 +505,7 @@ app.get('/slot/config', requireAdmin, async (c) => {
 app.post('/slot/config', requireAdmin, async (c) => {
     try {
         const body = await c.req.json();
-        const { bet_amount, max_daily_spins, min_quota_required, enabled, background_type } = body;
+        const { bet_amount, max_daily_spins, min_quota_required, enabled, background_type, buy_spins_enabled, buy_spins_price, max_daily_buy_spins } = body;
 
         // 验证参数
         if (bet_amount !== undefined && (typeof bet_amount !== 'number' || bet_amount < 0)) {
@@ -523,6 +523,15 @@ app.post('/slot/config', requireAdmin, async (c) => {
         if (background_type !== undefined && !['default', 'gif'].includes(background_type)) {
             return c.json({ success: false, message: '背景类型必须是 default 或 gif' }, 400);
         }
+        if (buy_spins_enabled !== undefined && typeof buy_spins_enabled !== 'number') {
+            return c.json({ success: false, message: '购买次数启用状态必须是数字' }, 400);
+        }
+        if (buy_spins_price !== undefined && (typeof buy_spins_price !== 'number' || buy_spins_price < 0)) {
+            return c.json({ success: false, message: '购买价格必须是非负数' }, 400);
+        }
+        if (max_daily_buy_spins !== undefined && (typeof max_daily_buy_spins !== 'number' || max_daily_buy_spins < 0)) {
+            return c.json({ success: false, message: '每日最大购买次数必须是非负数' }, 400);
+        }
 
         const now = Date.now();
         const currentConfig = slotQueries.getConfig.get();
@@ -533,8 +542,13 @@ app.post('/slot/config', requireAdmin, async (c) => {
             min_quota_required !== undefined ? min_quota_required : currentConfig!.min_quota_required,
             enabled !== undefined ? enabled : currentConfig!.enabled,
             background_type !== undefined ? background_type : currentConfig!.background_type,
+            buy_spins_enabled !== undefined ? buy_spins_enabled : currentConfig!.buy_spins_enabled,
+            buy_spins_price !== undefined ? buy_spins_price : currentConfig!.buy_spins_price,
+            max_daily_buy_spins !== undefined ? max_daily_buy_spins : currentConfig!.max_daily_buy_spins,
             now
         );
+
+        console.log(`[管理员] ✅ 老虎机配置已更新 - 购买次数功能: ${buy_spins_enabled ? '开启' : '关闭'}`);
 
         return c.json({
             success: true,

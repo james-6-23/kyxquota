@@ -74,6 +74,9 @@ export interface SlotMachineConfig {
     min_quota_required: number;
     enabled: number;
     background_type: string;  // 'default' 或 'gif'
+    buy_spins_enabled: number;  // 是否启用购买次数功能
+    buy_spins_price: number;    // 购买一次的价格
+    max_daily_buy_spins: number; // 每日最大购买次数
     updated_at: number;
 }
 
@@ -102,3 +105,14 @@ export interface UserFreeSpin {
     updated_at: number;
 }
 
+// 购买抽奖次数记录
+export interface BuySpinsRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    linux_do_username?: string;
+    spins_count: number;
+    price_paid: number;
+    timestamp: number;
+    date: string;
+}
