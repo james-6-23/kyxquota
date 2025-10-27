@@ -59,7 +59,7 @@ export async function searchKyxUser(
                 // 处理 429 错误（快速重试策略）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(2000 * attempt, 8000);
+                    const waitTime = Math.min(1000 * attempt, 4000); // 1s, 2s, 3s, 4s
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
@@ -262,10 +262,10 @@ export async function getKyxUserById(
                     signal: AbortSignal.timeout(10000), // 10秒超时
                 });
 
-                // 处理 429 错误（快速重试，因为已有缓存+高RPM）
+                // 处理 429 错误（快速重试策略）
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
-                    const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（最多6s）
+                    const waitTime = Math.min(1000 * attempt, 3000); // 1s, 2s, 3s（快速重试）
                     console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
@@ -378,7 +378,7 @@ export async function updateKyxUserQuota(
                     // 特殊处理 429 错误
                     if (response.status === 429) {
                         kyxApiLimiter.recordRateLimit();
-                        const waitTime = Math.min(5000 * attempt, 30000); // 最多等待30秒
+                        const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（快速重试）
                         console.warn(`${context} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
 
                         if (attempt < maxRetries) {
