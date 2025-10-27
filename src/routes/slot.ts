@@ -21,6 +21,7 @@ import {
     getUserTotalStats,
     isUserBanned,
     banUserFromSlot,
+    getRewardMultipliers,
     WIN_TYPE_NAMES,
     WinType
 } from '../services/slot';
@@ -137,6 +138,9 @@ slot.get('/config', requireAuth, async (c) => {
             ? resolveAbsoluteUrl('/ctrl.gif')
             : null;
 
+        // 获取奖励倍数配置
+        const multipliers = getRewardMultipliers();
+
         return c.json({
             success: true,
             data: {
@@ -146,7 +150,8 @@ slot.get('/config', requireAuth, async (c) => {
                     min_quota_required: config.min_quota_required,
                     enabled: config.enabled,
                     background_type: config.background_type || 'default',
-                    background_asset_url: backgroundAssetUrl
+                    background_asset_url: backgroundAssetUrl,
+                    multipliers: multipliers  // 添加倍率配置
                 },
                 user: {
                     quota,

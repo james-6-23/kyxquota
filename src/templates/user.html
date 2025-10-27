@@ -129,6 +129,10 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
+      /* 🎯 优化：启用硬件加速 */
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      perspective: 1000px;
     }
 
     .slot-symbols {
@@ -136,6 +140,10 @@
       width: 100%;
       display: flex;
       flex-direction: column;
+      /* 🎯 优化：启用硬件加速和性能优化 */
+      will-change: transform, filter;
+      transform: translateZ(0);
+      backface-visibility: hidden;
     }
 
     .slot-symbol {
@@ -146,6 +154,8 @@
       justify-content: center;
       padding: 15px;
       flex-shrink: 0;
+      /* 🎯 优化：减少重排和重绘 */
+      contain: layout style paint;
     }
 
     .slot-symbol img {
@@ -153,6 +163,10 @@
       max-height: 100%;
       object-fit: contain;
       filter: drop-shadow(0 4px 12px rgba(0,0,0,0.4));
+      /* 🎯 优化：图片渲染优化 */
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      transform: translateZ(0);
     }
 
     /* 老虎机动画优化 */
@@ -178,6 +192,8 @@
       .slot-symbol img {
         max-width: 100%;
         max-height: 100%;
+        /* 🎯 移动端：降低模糊强度，提升性能 */
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.3));
       }
       
       /* 隐藏侧边栏排行榜和盈亏榜 */
@@ -276,6 +292,18 @@
     @keyframes fadeOut {
       from { opacity: 1; }
       to { opacity: 0; }
+    }
+    
+    /* 🎯 优化：滚轮停止时的脉冲动画 */
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 20px rgba(0, 0, 0, 0.5);
+      }
+      50% {
+        transform: scale(1.05);
+        box-shadow: 0 0 50px rgba(251, 191, 36, 0.9), inset 0 0 20px rgba(0, 0, 0, 0.5), 0 0 80px rgba(251, 191, 36, 0.4);
+      }
     }
 
     /* 自定义滚动条 */
@@ -1017,8 +1045,30 @@
       </div>
       
       <!-- 记录内容 -->
-      <div id="slotRecordsContent" class="p-6 overflow-y-auto flex-1">
-        <!-- 记录将通过 JavaScript 加载 -->
+      <div class="overflow-y-auto flex-1">
+        <!-- 待发放记录区域 -->
+        <div id="pendingRewardsSection" class="hidden bg-gradient-to-r from-yellow-50 to-orange-50 border-b-2 border-orange-200 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-orange-700 flex items-center gap-2">
+              <span>⏳</span>
+              <span>待发放奖金</span>
+            </h3>
+            <button onclick="refreshPendingRewards()" class="text-sm text-orange-600 hover:text-orange-700 font-medium flex items-center gap-1">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+          <div id="pendingRewardsContent">
+            <!-- 待发放记录将通过 JavaScript 加载 -->
+          </div>
+        </div>
+        
+        <!-- 抽奖记录 -->
+        <div id="slotRecordsContent" class="p-6">
+          <!-- 记录将通过 JavaScript 加载 -->
+        </div>
       </div>
     </div>
   </div>
@@ -1115,27 +1165,27 @@
             <h3 class="text-xl font-bold text-slate-900 mb-3">💰 中奖规则</h3>
             <div class="space-y-3" id="slotRulesContent">
               <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
-                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（256x20$）</p>
+                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（<span id="rulesSuperJackpot">256x$20</span>）</p>
                 <p class="text-sm text-slate-600 mt-1">鸡→你→太→美 按顺序排列 或 偶像练习生背景→中分头→背带裤→篮球 按顺序排列</p>
               </div>
               
               <div class="p-3 bg-purple-50 rounded-lg border border-purple-300">
-                <p class="font-bold text-purple-700">💎 特殊组合（32x20$）</p>
+                <p class="font-bold text-purple-700">💎 特殊组合（<span id="rulesSpecialCombo">16x$20</span>）</p>
                 <p class="text-sm text-slate-600 mt-1">包含 鸡你太美 全部（不按顺序）或 偶像练习生背景、中分头、背带裤、篮球 全部（不按顺序）</p>
               </div>
               
               <div class="p-3 bg-blue-50 rounded-lg border border-blue-300">
-                <p class="font-bold text-blue-700">🎰 四连🐔（16x20$）+ 🎁 免费1次</p>
+                <p class="font-bold text-blue-700">🎰 四连🐔（<span id="rulesQuad">32x$20</span>）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">4个相同符号</p>
               </div>
               
               <div class="p-3 bg-green-50 rounded-lg border border-green-300">
-                <p class="font-bold text-green-700">✨ 三连🐔（8x20$）+ 🎁 免费1次</p>
+                <p class="font-bold text-green-700">✨ 三连🐔（<span id="rulesTriple">8x$20</span>）+ 🎁 免费1次</p>
                 <p class="text-sm text-slate-600 mt-1">3个相同符号</p>
               </div>
               
               <div class="p-3 bg-teal-50 rounded-lg border border-teal-300">
-                <p class="font-bold text-teal-700">🎁 双🐔（4x20$）</p>
+                <p class="font-bold text-teal-700">🎁 双🐔（<span id="rulesDouble">4x$20</span>）</p>
                 <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
               </div>
               
@@ -1178,7 +1228,7 @@
   <script>
     // ========== 音效系统 ==========
     
-    // 音效管理器
+    // 🎵 音效管理器（升级版 - 使用真实音频文件）
     class SoundManager {
       constructor() {
         this.sounds = {};
@@ -1190,95 +1240,144 @@
       // 初始化音效
       init() {
         if (this.initialized) return;
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        this.initialized = true;
-        console.log('🔊 音效系统已初始化');
-      }
-      
-      // 播放音调
-      playTone(frequency, duration, type = 'sine') {
-        if (this.muted || !this.initialized) return;
         
         try {
-          const oscillator = this.audioContext.createOscillator();
-          const gainNode = this.audioContext.createGain();
+          // 🎵 加载真实音频文件
+          this.sounds.spin = new Audio('/sounds/mixkit-slot-machine-win-1928.wav');
+          this.sounds.win = new Audio('/sounds/mixkit-coin-win-notification-1992.wav');
+          this.sounds.lose = new Audio('/sounds/ngmhhy.mp3');
           
-          oscillator.connect(gainNode);
-          gainNode.connect(this.audioContext.destination);
+          // 设置音量
+          Object.values(this.sounds).forEach(audio => {
+            audio.volume = this.volume;
+            audio.load(); // 预加载
+          });
           
-          oscillator.frequency.value = frequency;
-          oscillator.type = type;
-          
-          gainNode.gain.setValueAtTime(this.volume * 0.3, this.audioContext.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-          
-          oscillator.start(this.audioContext.currentTime);
-          oscillator.stop(this.audioContext.currentTime + duration);
-        } catch (e) {
-          console.error('播放音效失败:', e);
+          this.initialized = true;
+          console.log('🔊 音效系统已初始化（使用真实音频文件）');
+        } catch (error) {
+          console.error('❌ 音效初始化失败:', error);
         }
       }
       
-      // 旋转音效
+      // 播放指定音效
+      playAudio(soundName, volumeMultiplier = 1.0) {
+        if (this.muted || !this.initialized) return;
+        
+        try {
+          const audio = this.sounds[soundName];
+          if (!audio) {
+            console.warn(`音效 ${soundName} 不存在`);
+            return;
+          }
+          
+          // 重置播放位置
+          audio.pause();
+          audio.currentTime = 0;
+          
+          // 设置音量
+          audio.volume = Math.max(0, Math.min(1, this.volume * volumeMultiplier));
+          
+          // 播放音效
+          audio.play().catch(err => {
+            console.warn('音效播放失败:', err.message);
+          });
+        } catch (error) {
+          console.error('播放音效出错:', error);
+        }
+      }
+      
+      // 停止指定音效
+      stopAudio(soundName) {
+        try {
+          const audio = this.sounds[soundName];
+          if (audio) {
+            audio.pause();
+            audio.currentTime = 0;
+          }
+        } catch (error) {
+          console.error('停止音效出错:', error);
+        }
+      }
+      
+      // 旋转音效（5.5-6秒）
       playSpin() {
         this.init();
-        setTimeout(() => this.playTone(200, 0.1, 'sawtooth'), 0);
-        setTimeout(() => this.playTone(300, 0.1, 'sawtooth'), 100);
-        setTimeout(() => this.playTone(400, 0.15, 'sawtooth'), 200);
+        this.playAudio('spin', 0.6); // 音量稍大，营造氛围
       }
       
       // 中奖音效
       playWin(multiplier) {
         this.init();
         
+        // 🎯 根据倍率调整音量，超级大奖满音量
         if (multiplier >= 256) {
-          this.playJackpot();
+          this.playJackpot(); // 超级大奖特殊处理
         } else if (multiplier >= 32) {
-          setTimeout(() => this.playTone(523, 0.2, 'sine'), 0);
-          setTimeout(() => this.playTone(659, 0.2, 'sine'), 150);
-          setTimeout(() => this.playTone(784, 0.3, 'sine'), 300);
-        } else if (multiplier >= 8) {
-          setTimeout(() => this.playTone(440, 0.2, 'sine'), 0);
-          setTimeout(() => this.playTone(554, 0.3, 'sine'), 150);
-        } else if (multiplier > 0) {
-          this.playTone(440, 0.2, 'sine');
+          this.playAudio('win', 0.9); // 大奖
+        } else {
+          this.playAudio('win', 0.8); // 普通中奖
         }
       }
       
-      // 超级大奖音效
+      // 超级大奖音效（满音量！）
       playJackpot() {
-        const notes = [262, 330, 392, 523, 659, 784, 1047];
-        notes.forEach((freq, i) => {
-          setTimeout(() => this.playTone(freq, 0.15, 'sine'), i * 100);
-        });
+        this.init();
+        this.playAudio('win', 1.0); // 🔥 满音量，最震撼！
       }
       
-      // 未中奖音效
+      // 未中奖/惩罚音效
       playLose() {
         this.init();
-        setTimeout(() => this.playTone(300, 0.15, 'sine'), 0);
-        setTimeout(() => this.playTone(200, 0.2, 'sine'), 100);
+        this.playAudio('lose', 0.7);
       }
       
-      // 惩罚音效
+      // 惩罚音效（与未中奖使用相同音效）
       playPunishment() {
         this.init();
-        setTimeout(() => this.playTone(400, 0.1, 'square'), 0);
-        setTimeout(() => this.playTone(300, 0.1, 'square'), 120);
-        setTimeout(() => this.playTone(400, 0.1, 'square'), 240);
-        setTimeout(() => this.playTone(300, 0.15, 'square'), 360);
+        this.playAudio('lose', 0.8);
       }
       
-      // 按钮点击音效
+      // 按钮点击音效（保留简单音调）
       playClick() {
         this.init();
-        this.playTone(600, 0.05, 'sine');
+        // 使用Web Audio API生成简短的点击音
+        if (!this.muted && this.audioContext) {
+          try {
+            const oscillator = this.audioContext.createOscillator();
+            const gainNode = this.audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioContext.destination);
+            
+            oscillator.frequency.value = 600;
+            oscillator.type = 'sine';
+            
+            gainNode.gain.setValueAtTime(this.volume * 0.3, this.audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.05);
+            
+            oscillator.start(this.audioContext.currentTime);
+            oscillator.stop(this.audioContext.currentTime + 0.05);
+          } catch (e) {
+            console.error('播放点击音失败:', e);
+          }
+        }
       }
       
       // 切换静音
       toggleMute() {
         this.muted = !this.muted;
         localStorage.setItem('slotSoundMuted', this.muted);
+        
+        // 如果静音，停止所有音效
+        if (this.muted) {
+          Object.values(this.sounds).forEach(audio => {
+            if (audio && audio.pause) {
+              audio.pause();
+            }
+          });
+        }
+        
         return this.muted;
       }
       
@@ -1286,6 +1385,13 @@
       setVolume(vol) {
         this.volume = Math.max(0, Math.min(1, vol));
         localStorage.setItem('slotSoundVolume', this.volume);
+        
+        // 更新所有音频的音量
+        Object.values(this.sounds).forEach(audio => {
+          if (audio) {
+            audio.volume = this.volume;
+          }
+        });
       }
     }
     
@@ -2186,6 +2292,9 @@
         initSlotReels();
         updateSlotUI();
         syncUserInfoToSlot();
+        
+        // 🎵 预初始化音效系统（首次播放时自动初始化）
+        soundManager.init();
 
         // 4. 隐藏loading遮罩
         loadingOverlay.style.animation = 'fadeOut 0.3s ease-in forwards';
@@ -2655,12 +2764,14 @@
     async function playSpinAnimation(finalSymbols) {
       const reels = document.querySelectorAll('.slot-reel');
       const animationPromises = [];
-
+      
+      // 🎯 优化：所有滚轮同时启动，但速度递增，营造连贯感
       reels.forEach((reel, idx) => {
         const promise = animateReel(reel, finalSymbols[idx], idx);
         animationPromises.push(promise);
       });
 
+      // 等待所有滚轮动画完成
       await Promise.all(animationPromises);
     }
 
@@ -2668,54 +2779,95 @@
     function animateReel(reel, finalSymbol, reelIndex) {
       return new Promise((resolve) => {
         const symbolsContainer = reel.querySelector('.slot-symbols');
-        const symbolHeight = 180; // 单个符号高度（包括padding）
+        
+        // 🎯 优化：响应式符号高度（根据屏幕大小自适应）
+        const isMobile = window.innerWidth <= 768;
+        const symbolHeight = isMobile ? 70 : (window.innerWidth <= 1024 ? 100 : 180);
         
         // 清空现有符号
         symbolsContainer.innerHTML = '';
         symbolsContainer.style.transform = '';
         symbolsContainer.style.filter = '';
 
-        // 计算动画参数（每个滚轮递延停止，更有真实感）
-        const baseDuration = 2000; // 基础时长2秒
-        const delayPerReel = 300; // 每个滚轮延迟300ms
-        const duration = baseDuration + (reelIndex * delayPerReel);
-
+        // 🎯 优化：使用渐进式速度因子，最后一个滚轮明显更慢，增加悬念
+        // 参考：factor = 1 + Math.pow(idx / 2, 2)
+        // idx=0: 1.0x, idx=1: 1.25x, idx=2: 2.0x, idx=3: 3.25x
+        const speedFactor = 1 + Math.pow(reelIndex / 2, 2);
+        const baseDuration = 1800; // 基础时长1.8秒（稍快一点）
+        const duration = baseDuration * speedFactor; // 根据因子调整时长
+        
+        // 🎯 优化：最后一个滚轮旋转更多符号，增加悬念感
+        const baseSymbolCount = 25;
+        const symbolCount = Math.floor(baseSymbolCount + (reelIndex * 8)); // 递增符号数量
+        
         // 生成符号序列（随机符号 + 最终符号）
-        const symbolCount = 30; // 旋转30个符号
+        const fragment = document.createDocumentFragment();
         for (let i = 0; i < symbolCount; i++) {
           const symbol = i === symbolCount - 1 
             ? finalSymbol 
             : SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
-          symbolsContainer.appendChild(createSymbolElement(symbol));
+          fragment.appendChild(createSymbolElement(symbol));
         }
+        symbolsContainer.appendChild(fragment); // 一次性添加，性能更好
 
-        // 使用 Web Animations API 实现丝滑动画
+        // 🎯 优化：不同缓动函数，最后一个滚轮更平滑减速
+        const easingFunctions = [
+          'cubic-bezier(0.25, 0.46, 0.45, 0.94)',  // reel 0: ease-out-quad
+          'cubic-bezier(0.42, 0, 0.58, 1)',        // reel 1: ease-in-out
+          'cubic-bezier(0.65, 0, 0.35, 1)',        // reel 2: ease-in-out-cubic
+          'cubic-bezier(0.22, 0.61, 0.36, 1)'      // reel 3: ease-out-expo (最平滑)
+        ];
+        const easing = easingFunctions[reelIndex] || easingFunctions[3];
+
+        // 🎯 优化：更丝滑的模糊效果和关键帧
+        const blurIntensity = reelIndex === 3 ? 6 : 5; // 最后一个滚轮模糊更强
         const animation = symbolsContainer.animate([
           { 
             transform: 'translateY(0px)',
-            filter: 'blur(0px)'
+            filter: 'blur(0px)',
+            offset: 0
           },
           { 
-            transform: 'translateY(-50px)',
-            filter: 'blur(4px)',
-            offset: 0.15
+            transform: 'translateY(-80px)',
+            filter: `blur(${blurIntensity}px)`,
+            offset: 0.1  // 快速加速
+          },
+          { 
+            transform: `translateY(-${(symbolCount - 10) * symbolHeight}px)`,
+            filter: `blur(${blurIntensity}px)`,
+            offset: 0.7  // 保持高速
+          },
+          { 
+            transform: `translateY(-${(symbolCount - 3) * symbolHeight}px)`,
+            filter: 'blur(2px)',
+            offset: 0.92  // 开始减速并减少模糊
           },
           { 
             transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
-            filter: 'blur(0px)'
+            filter: 'blur(0px)',
+            offset: 1  // 完全停止，清晰显示
           }
         ], {
           duration: duration,
-          easing: 'cubic-bezier(0.32, 0.64, 0.45, 1)', // 缓动函数，模拟物理减速
+          easing: easing,
           fill: 'forwards'
         });
 
+        // 🎯 优化：添加超时保护，防止动画卡死
+        const timeoutId = setTimeout(() => {
+          if (animation.playState !== 'finished') {
+            animation.finish();
+          }
+        }, duration + 500);
+
         // 动画结束后
         animation.onfinish = () => {
+          clearTimeout(timeoutId);
+          
           // 停止动画
           animation.cancel();
           
-          // 只保留最终符号，清空其他
+          // 只保留最终符号，清空其他，节省内存
           symbolsContainer.innerHTML = '';
           const finalElement = createSymbolElement(finalSymbol);
           symbolsContainer.appendChild(finalElement);
@@ -2723,6 +2875,18 @@
           // 重置transform和filter
           symbolsContainer.style.transform = 'translateY(0)';
           symbolsContainer.style.filter = 'none';
+          
+          // 🎯 优化：最后一个滚轮停止时添加闪烁效果，增强视觉反馈
+          if (reelIndex === 3) {
+            const reelContainer = reel.closest('.slot-reel-container');
+            if (reelContainer) {
+              // 添加脉冲动画
+              reelContainer.style.animation = 'pulse 0.3s ease-in-out 2';
+              setTimeout(() => {
+                reelContainer.style.animation = '';
+              }, 600);
+            }
+          }
           
           resolve();
         };
@@ -2741,26 +2905,192 @@
       if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
       
       try {
-        const res = await fetch('/api/slot/records');
-        const data = await res.json();
+        // 并行获取抽奖记录和待发放记录
+        const [recordsRes, pendingRes] = await Promise.all([
+          fetch('/api/slot/records'),
+          fetch('/api/slot/pending-rewards')
+        ]);
+        
+        const recordsData = await recordsRes.json();
+        const pendingData = await pendingRes.json();
 
-        if (!data.success) {
-          showToast(data.message, 'error');
+        if (!recordsData.success) {
+          showToast(recordsData.message, 'error');
           return;
         }
 
         // 保存所有记录到全局变量
-        allSlotRecords = data.data;
+        allSlotRecords = recordsData.data;
         
         // 显示模态框
         document.getElementById('slotRecordsModal').classList.remove('hidden');
         
         // 渲染记录（不带筛选）
         renderSlotRecords(allSlotRecords);
+        
+        // 渲染待发放记录
+        if (pendingData.success && pendingData.data) {
+          renderPendingRewards(pendingData.data);
+        }
       } catch (error) {
         console.error('获取抽奖记录失败:', error);
         showToast('获取抽奖记录失败', 'error');
       }
+    }
+    
+    // 刷新待发放记录
+    async function refreshPendingRewards() {
+      try {
+        const res = await fetch('/api/slot/pending-rewards');
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          renderPendingRewards(data.data);
+          showToast('待发放记录已更新', 'success');
+        }
+      } catch (error) {
+        console.error('刷新待发放记录失败:', error);
+        showToast('刷新失败', 'error');
+      }
+    }
+    
+    // 渲染待发放记录
+    function renderPendingRewards(data) {
+      const section = document.getElementById('pendingRewardsSection');
+      const container = document.getElementById('pendingRewardsContent');
+      
+      const { summary, rewards } = data;
+      
+      // 如果没有任何记录，隐藏整个区域
+      if (!rewards || rewards.length === 0) {
+        section.classList.add('hidden');
+        return;
+      }
+      
+      // 显示区域
+      section.classList.remove('hidden');
+      
+      // 筛选待发放和已成功的记录
+      const pendingRewards = rewards.filter(r => 
+        r.status === 'pending' || r.status === 'processing' || r.status === 'failed'
+      );
+      const successRewards = rewards.filter(r => r.status === 'success');
+      
+      let html = '';
+      
+      // 汇总卡片
+      html += `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div class="bg-white rounded-lg p-3 border-2 border-orange-200 shadow-sm">
+            <p class="text-xs text-slate-600 mb-1">待发放</p>
+            <p class="text-xl font-bold text-orange-600">$${(summary.pending_amount / 500000).toFixed(2)}</p>
+            <p class="text-xs text-slate-500">${summary.pending_count} 笔</p>
+          </div>
+          <div class="bg-white rounded-lg p-3 border-2 border-green-200 shadow-sm">
+            <p class="text-xs text-slate-600 mb-1">已发放</p>
+            <p class="text-xl font-bold text-green-600">$${(summary.success_amount / 500000).toFixed(2)}</p>
+            <p class="text-xs text-slate-500">${summary.success_count} 笔</p>
+          </div>
+          <div class="bg-white rounded-lg p-3 border-2 border-indigo-200 shadow-sm">
+            <p class="text-xs text-slate-600 mb-1">总笔数</p>
+            <p class="text-xl font-bold text-indigo-600">${summary.total_count}</p>
+            <p class="text-xs text-slate-500">所有记录</p>
+          </div>
+          <div class="bg-white rounded-lg p-3 border-2 border-purple-200 shadow-sm">
+            <p class="text-xs text-slate-600 mb-1">总金额</p>
+            <p class="text-xl font-bold text-purple-600">$${((summary.pending_amount + summary.success_amount) / 500000).toFixed(2)}</p>
+            <p class="text-xs text-slate-500">待发+已发</p>
+          </div>
+        </div>
+      `;
+      
+      // 待发放记录列表
+      if (pendingRewards.length > 0) {
+        html += `
+          <div class="mb-4">
+            <h4 class="text-sm font-semibold text-orange-700 mb-2 flex items-center gap-2">
+              <span>⏳</span>
+              <span>待发放 (${pendingRewards.length})</span>
+            </h4>
+            <div class="space-y-2">
+        `;
+        
+        pendingRewards.forEach(reward => {
+          const statusColor = {
+            'pending': 'bg-yellow-100 text-yellow-700 border-yellow-300',
+            'processing': 'bg-blue-100 text-blue-700 border-blue-300',
+            'failed': 'bg-red-100 text-red-700 border-red-300'
+          }[reward.status] || 'bg-gray-100 text-gray-700 border-gray-300';
+          
+          const statusText = {
+            'pending': '等待发放',
+            'processing': '发放中',
+            'failed': '失败重试'
+          }[reward.status] || reward.status;
+          
+          html += `
+            <div class="bg-white rounded-lg p-3 border border-orange-200 shadow-sm hover:shadow-md transition-shadow">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-slate-900 text-sm mb-1 truncate">${reward.reason}</p>
+                  <p class="text-xs text-slate-500 mb-1">${reward.created_date}</p>
+                  ${reward.error_message ? `<p class="text-xs text-red-600 mt-1">⚠️ ${reward.error_message}</p>` : ''}
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="text-lg font-bold text-orange-600 mb-1">$${reward.amount.toFixed(2)}</p>
+                  <span class="inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusColor}">
+                    ${statusText}
+                  </span>
+                  ${reward.retry_count > 0 ? `<p class="text-xs text-slate-500 mt-1">重试 ${reward.retry_count} 次</p>` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      }
+      
+      // 已成功记录（折叠显示最近5条）
+      if (successRewards.length > 0) {
+        html += `
+          <div>
+            <h4 class="text-sm font-semibold text-green-700 mb-2 flex items-center gap-2">
+              <span>✅</span>
+              <span>已发放 (最近5条)</span>
+            </h4>
+            <div class="space-y-2">
+        `;
+        
+        successRewards.slice(0, 5).forEach(reward => {
+          html += `
+            <div class="bg-white rounded-lg p-3 border border-green-200 shadow-sm opacity-75">
+              <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-slate-700 text-sm mb-1 truncate">${reward.reason}</p>
+                  <p class="text-xs text-slate-500">${reward.created_date}</p>
+                </div>
+                <div class="text-right flex-shrink-0">
+                  <p class="text-lg font-bold text-green-600 mb-1">$${reward.amount.toFixed(2)}</p>
+                  <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-300">
+                    已发放
+                  </span>
+                </div>
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `
+            </div>
+          </div>
+        `;
+      }
+      
+      container.innerHTML = html;
     }
 
     // 渲染老虎机记录
@@ -3007,6 +3337,46 @@
         // 更新投注金额说明
         const rulesBetAmount = document.getElementById('rulesBetAmount');
         if (rulesBetAmount) rulesBetAmount.textContent = `$${betAmountUSD}`;
+        
+        // 更新奖励倍率（从配置中获取）
+        if (slotConfig.multipliers) {
+          const multipliers = slotConfig.multipliers;
+          
+          // 更新超级大奖倍率
+          const rulesSuperJackpot = document.getElementById('rulesSuperJackpot');
+          if (rulesSuperJackpot) {
+            const totalAmount = (multipliers.super_jackpot * slotConfig.bet_amount / 500000).toFixed(2);
+            rulesSuperJackpot.textContent = `${multipliers.super_jackpot}x$${betAmountUSD} ≈ $${totalAmount}`;
+          }
+          
+          // 更新特殊组合倍率
+          const rulesSpecialCombo = document.getElementById('rulesSpecialCombo');
+          if (rulesSpecialCombo) {
+            const totalAmount = (multipliers.special_combo * slotConfig.bet_amount / 500000).toFixed(2);
+            rulesSpecialCombo.textContent = `${multipliers.special_combo}x$${betAmountUSD} ≈ $${totalAmount}`;
+          }
+          
+          // 更新四连倍率
+          const rulesQuad = document.getElementById('rulesQuad');
+          if (rulesQuad) {
+            const totalAmount = (multipliers.quad * slotConfig.bet_amount / 500000).toFixed(2);
+            rulesQuad.textContent = `${multipliers.quad}x$${betAmountUSD} ≈ $${totalAmount}`;
+          }
+          
+          // 更新三连倍率
+          const rulesTriple = document.getElementById('rulesTriple');
+          if (rulesTriple) {
+            const totalAmount = (multipliers.triple * slotConfig.bet_amount / 500000).toFixed(2);
+            rulesTriple.textContent = `${multipliers.triple}x$${betAmountUSD} ≈ $${totalAmount}`;
+          }
+          
+          // 更新双连倍率
+          const rulesDouble = document.getElementById('rulesDouble');
+          if (rulesDouble) {
+            const totalAmount = (multipliers.double * slotConfig.bet_amount / 500000).toFixed(2);
+            rulesDouble.textContent = `${multipliers.double}x$${betAmountUSD} ≈ $${totalAmount}`;
+          }
+        }
       }
       document.getElementById('slotRulesModal').classList.remove('hidden');
     }
