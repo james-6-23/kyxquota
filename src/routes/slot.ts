@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { userQueries, slotQueries, adminQueries } from '../database';
+import { userQueries, slotQueries, adminQueries, pendingRewardQueries } from '../database';
 import type { SessionData } from '../types';
 import { getCookie, getSession } from '../utils';
 import {
@@ -356,7 +356,27 @@ slot.post('/spin', requireAuth, async (c) => {
                 if (!updateResult || !updateResult.success) {
                     console.error(`[老虎机] ❌ 添加额度失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
                     quotaUpdateFailed = true;
-                    quotaUpdateError = '额度添加失败，请联系管理员补发奖金';
+
+                    // 记录到待发放表，系统会自动重试
+                    try {
+                        const now = Date.now();
+                        pendingRewardQueries.insert.run(
+                            session.linux_do_id,
+                            user.kyx_user_id,
+                            user.username,
+                            winAmount,
+                            `老虎机中奖 - ${WIN_TYPE_NAMES[result.winType]} ${result.multiplier}倍`,
+                            'pending',
+                            0,
+                            now,
+                            now
+                        );
+                        console.log(`[老虎机] 📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
+                        quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
+                    } catch (dbError) {
+                        console.error(`[老虎机] ❌ 记录待发放失败:`, dbError);
+                        quotaUpdateError = '额度添加失败，请联系管理员补发奖金';
+                    }
                 } else {
                     // 验证额度是否真的更新了
                     const verifyUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
@@ -368,7 +388,27 @@ slot.post('/spin', requireAuth, async (c) => {
                         if (Math.abs(actualQuota - newQuotaAfterWin) > winAmount) {
                             console.error(`[老虎机] ⚠️ 额度验证异常 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}, 差异过大`);
                             quotaUpdateFailed = true;
-                            quotaUpdateError = '额度验证失败，请联系管理员';
+
+                            // 记录到待发放表，系统会自动重试
+                            try {
+                                const now = Date.now();
+                                pendingRewardQueries.insert.run(
+                                    session.linux_do_id,
+                                    user.kyx_user_id,
+                                    user.username,
+                                    winAmount,
+                                    `老虎机中奖 - ${WIN_TYPE_NAMES[result.winType]} ${result.multiplier}倍 (验证失败)`,
+                                    'pending',
+                                    0,
+                                    now,
+                                    now
+                                );
+                                console.log(`[老虎机] 📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
+                                quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
+                            } catch (dbError) {
+                                console.error(`[老虎机] ❌ 记录待发放失败:`, dbError);
+                                quotaUpdateError = '额度验证失败，请联系管理员';
+                            }
                         }
                     }
                 }
@@ -607,6 +647,49 @@ slot.get('/leaderboard', requireAuth, async (c) => {
         });
     } catch (error) {
         console.error('获取排行榜失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+// 获取用户的待发放奖金
+slot.get('/pending-rewards', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+        if (!session?.linux_do_id) {
+            return c.json({ success: false, message: '未登录' }, 401);
+        }
+
+        // 获取用户的待发放奖金列表
+        const pendingRewards = pendingRewardQueries.getByUser.all(session.linux_do_id);
+
+        // 获取汇总信息
+        const summary = pendingRewardQueries.getUserPendingSummary.get(session.linux_do_id);
+
+        // 格式化数据
+        const formattedRewards = pendingRewards.map((reward: any) => ({
+            id: reward.id,
+            amount: reward.reward_amount,
+            reason: reward.reason,
+            status: reward.status,
+            retry_count: reward.retry_count,
+            error_message: reward.error_message,
+            created_at: reward.created_at,
+            updated_at: reward.updated_at,
+            processed_at: reward.processed_at
+        }));
+
+        return c.json({
+            success: true,
+            data: {
+                rewards: formattedRewards,
+                summary: {
+                    count: summary?.count || 0,
+                    total_amount: summary?.total_amount || 0
+                }
+            }
+        });
+    } catch (error) {
+        console.error('获取待发放奖金失败:', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });

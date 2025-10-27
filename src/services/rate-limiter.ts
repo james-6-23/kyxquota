@@ -9,9 +9,9 @@ class RateLimiter {
     private lastRequestTime = 0;
 
     // 配置（高性能配置，KYX API RPM=1000，配合缓存可以支持大量用户）
-    private readonly maxConcurrent = 8; // 最大并发请求数（充分利用API容量）
-    private readonly minInterval = 150; // 最小请求间隔（毫秒，流畅体验）
-    private readonly maxQueueSize = 500; // 最大队列长度（通过队列缓冲峰值）
+    private readonly maxConcurrent = 50; // 最大并发请求数（提升至50，充分利用API容量）
+    private readonly minInterval = 100; // 最小请求间隔（毫秒，优化为100ms）
+    private readonly maxQueueSize = 2000; // 最大队列长度（提升至2000，更好地缓冲峰值）
 
     // 统计
     private totalRequests = 0;
@@ -19,7 +19,7 @@ class RateLimiter {
     private rateLimitHits = 0;
     
     // 动态速率调整
-    private currentInterval = 150; // 当前实际间隔（可动态调整）
+    private currentInterval = 100; // 当前实际间隔（可动态调整）
     private adaptiveMode = true; // 启用自适应模式（仅在触发429时才调整）
 
     /**

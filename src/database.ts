@@ -344,6 +344,27 @@ export function initDatabase() {
     }
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
 
+    // 待发放奖金表（用于失败重试）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS pending_rewards (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      kyx_user_id INTEGER NOT NULL,
+      username TEXT NOT NULL,
+      reward_amount INTEGER NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT DEFAULT 'pending',
+      retry_count INTEGER DEFAULT 0,
+      error_message TEXT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      processed_at INTEGER
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_pending_rewards_status ON pending_rewards(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_pending_rewards_linux_do_id ON pending_rewards(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_pending_rewards_created_at ON pending_rewards(created_at)');
+
     console.log('✅ 数据库初始化完成');
 
     // 初始化预编译查询语句
@@ -360,6 +381,7 @@ export let keyQueries: any;
 export let sessionQueries: any;
 export let adminQueries: any;
 export let slotQueries: any;
+export let pendingRewardQueries: any;
 
 /**
  * 初始化预编译查询语句
@@ -579,6 +601,42 @@ function initQueries() {
         ),
         getUserLossRank: db.query<{ rank: number }, string>(
             'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_stats WHERE linux_do_id = ?)'
+        ),
+    };
+
+    // 待发放奖金相关
+    pendingRewardQueries = {
+        // 插入新的待发放奖金
+        insert: db.query(
+            'INSERT INTO pending_rewards (linux_do_id, kyx_user_id, username, reward_amount, reason, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        // 获取待发放的奖金（status = pending 或 failed）
+        getPending: db.query<any, never>(
+            "SELECT * FROM pending_rewards WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT 50"
+        ),
+        // 获取用户的待发放奖金
+        getByUser: db.query<any, string>(
+            "SELECT * FROM pending_rewards WHERE linux_do_id = ? ORDER BY created_at DESC"
+        ),
+        // 获取用户的待发放奖金数量和总金额
+        getUserPendingSummary: db.query<{ count: number; total_amount: number }, string>(
+            "SELECT COUNT(*) as count, COALESCE(SUM(reward_amount), 0) as total_amount FROM pending_rewards WHERE linux_do_id = ? AND status IN ('pending', 'processing', 'failed')"
+        ),
+        // 更新奖金状态
+        updateStatus: db.query(
+            'UPDATE pending_rewards SET status = ?, updated_at = ?, error_message = ? WHERE id = ?'
+        ),
+        // 更新为成功
+        markSuccess: db.query(
+            'UPDATE pending_rewards SET status = ?, processed_at = ?, updated_at = ? WHERE id = ?'
+        ),
+        // 增加重试次数
+        incrementRetry: db.query(
+            'UPDATE pending_rewards SET retry_count = retry_count + 1, status = ?, error_message = ?, updated_at = ? WHERE id = ?'
+        ),
+        // 获取单条记录
+        getById: db.query<any, number>(
+            'SELECT * FROM pending_rewards WHERE id = ?'
         ),
     };
 
