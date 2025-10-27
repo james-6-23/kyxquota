@@ -8,12 +8,12 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（大幅优化：提高并发数，减少间隔，提升吞吐量）
+    // 配置（稳定优先：平衡并发和间隔，确保稳定性）
     // KYX API RPM=1000 约等于 16.7 QPS
-    // 100并发 + 50ms间隔 = 理论 20 QPS，足够应对高峰
-    private readonly maxConcurrent = 100; // 最大并发请求数（从50提升到100，提高并发能力）
-    private readonly minInterval = 50; // 最小请求间隔（从200ms降到50ms，加快处理速度）
-    private readonly maxQueueSize = 5000; // 最大队列长度（从2000提升到5000，更好应对峰值）
+    // 采用保守策略：30并发 + 100ms间隔 = 理论 10 QPS（安全范围）
+    private readonly maxConcurrent = 30; // 最大并发请求数（采用保守值，避免瞬时压力）
+    private readonly minInterval = 100; // 最小请求间隔（100ms，平衡速度和稳定性）
+    private readonly maxQueueSize = 5000; // 最大队列长度（保持大容量应对峰值）
 
     // 统计
     private totalRequests = 0;
@@ -21,7 +21,7 @@ class RateLimiter {
     private rateLimitHits = 0;
 
     // 动态速率调整
-    private currentInterval = 50; // 当前实际间隔（从50ms起始）
+    private currentInterval = 100; // 当前实际间隔（从100ms起始）
     private adaptiveMode = true; // 启用自适应模式（触发429时才调整）
 
     /**
@@ -58,10 +58,10 @@ class RateLimiter {
                     this.lastRequestTime = Date.now();
                     const result = await fn();
 
-                    // 成功后快速恢复正常速率（提升吞吐量）
+                    // 成功后缓慢恢复正常速率（优先稳定性）
                     if (this.adaptiveMode && this.currentInterval > this.minInterval) {
-                        // 每次减少 20ms，快速恢复到正常速率
-                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 20);
+                        // 每次减少 10ms，缓慢恢复到正常速率
+                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 10);
                     }
 
                     resolve(result);
@@ -98,11 +98,11 @@ class RateLimiter {
     recordRateLimit() {
         this.rateLimitHits++;
 
-        // 自适应调整：触发429时温和增加间隔
+        // 自适应调整：触发429时快速增加间隔
         if (this.adaptiveMode) {
             const oldInterval = this.currentInterval;
-            // 温和增加：每次增加 100ms，最多到 500ms（快速应对，不过度限制）
-            this.currentInterval = Math.min(this.currentInterval + 100, 500);
+            // 快速增加：每次增加 150ms，最多到 800ms（确保稳定性）
+            this.currentInterval = Math.min(this.currentInterval + 150, 800);
 
             // 只在间隔变化时才输出日志（避免日志过多）
             if (oldInterval !== this.currentInterval) {

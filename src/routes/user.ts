@@ -266,7 +266,7 @@ app.get('/user/quota', requireAuth, async (c) => {
                 adminConfig!.new_api_user
             );
         },
-        30000 // 缓存30秒，确保额度信息较实时
+        120000 // 缓存2分钟，大幅减少查询频率（从30秒提升到2分钟）
     );
 
     if (!kyxUserResult.success || !kyxUserResult.user) {

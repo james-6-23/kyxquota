@@ -3966,7 +3966,7 @@
       setTimeout(() => icon.classList.remove('refresh-spin'), 600);
     }
 
-    // 一键发放全部待发放奖金
+    // 一键发放全部待发放奖金（优化版：异步处理）
     async function processAllPendingRewards() {
       const total = document.getElementById('pendingTotal').textContent;
       const totalAmount = document.getElementById('pendingTotalAmount').textContent;
@@ -3976,14 +3976,14 @@
         return;
       }
 
-      if (!confirm(`确认立即发放全部 ${total} 条待发放奖金（总额 ${totalAmount}）吗？\n\n此操作将立即触发发放流程。`)) {
+      if (!confirm(`确认立即发放全部 ${total} 条待发放奖金（总额 ${totalAmount}）吗？\n\n系统将在后台异步处理，处理完成后自动更新列表。`)) {
         return;
       }
 
       const btn = document.getElementById('processAllBtn');
       const originalText = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = '<span class="animate-spin">⚙️</span> 处理中...';
+      btn.innerHTML = '<span class="animate-spin">⚙️</span> 启动中...';
 
       try {
         const res = await fetch('/api/admin/pending-rewards/process', {
@@ -3994,9 +3994,13 @@
         const data = await res.json();
         
         if (data.success) {
-          showToast(`✅ ${data.message}`, 'success');
-          // 刷新列表
+          showToast(`🚀 ${data.message}`, 'success');
+          
+          // 立即刷新一次，显示"处理中"状态
           await loadPendingRewards();
+          
+          // 启动自动刷新，监控处理进度
+          startAutoRefresh();
         } else {
           showToast(`❌ ${data.message}`, 'error');
         }
@@ -4007,6 +4011,41 @@
         btn.disabled = false;
         btn.innerHTML = originalText;
       }
+    }
+
+    // 自动刷新待发放列表（监控处理进度）
+    let autoRefreshTimer = null;
+    let autoRefreshCount = 0;
+    const MAX_AUTO_REFRESH = 30; // 最多自动刷新30次（约1分钟）
+
+    function startAutoRefresh() {
+      // 清除之前的定时器
+      if (autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+      }
+      
+      autoRefreshCount = 0;
+      
+      // 每2秒刷新一次
+      autoRefreshTimer = setInterval(async () => {
+        autoRefreshCount++;
+        
+        // 刷新列表
+        await loadPendingRewards();
+        
+        // 检查是否还有待处理的记录
+        const pendingCount = parseInt(document.getElementById('pendingProcessing').textContent) || 0;
+        
+        // 如果没有"待处理"和"处理中"的记录，或达到最大刷新次数，停止自动刷新
+        if (pendingCount === 0 || autoRefreshCount >= MAX_AUTO_REFRESH) {
+          clearInterval(autoRefreshTimer);
+          autoRefreshTimer = null;
+          
+          if (pendingCount === 0) {
+            showToast('✅ 所有待发放奖金处理完成', 'success');
+          }
+        }
+      }, 2000);
     }
 
     // 重试单条失败的奖金

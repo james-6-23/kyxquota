@@ -1634,6 +1634,7 @@ app.get('/pending-rewards', requireAdmin, async (c) => {
 
 /**
  * 手动触发发放待发放奖金（一键发放）
+ * 优化版：立即返回，后台异步处理
  */
 app.post('/pending-rewards/process', requireAdmin, async (c) => {
     try {
@@ -1641,11 +1642,19 @@ app.post('/pending-rewards/process', requireAdmin, async (c) => {
 
         const result = await manualProcessRewards();
 
-        console.log(`[管理员] ✅ 待发放奖金处理完成 - 成功: ${result.success}, 失败: ${result.failed}`);
+        if (result.total === 0) {
+            return c.json({
+                success: true,
+                message: '没有待发放的奖金记录',
+                data: result
+            });
+        }
+
+        console.log(`[管理员] ✅ 已触发异步处理 - 总数: ${result.total}`);
 
         return c.json({
             success: true,
-            message: `处理完成：成功 ${result.success} 条，失败 ${result.failed} 条`,
+            message: `已开始处理 ${result.total} 条记录，请稍后刷新查看结果`,
             data: result
         });
     } catch (e: any) {

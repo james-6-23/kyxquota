@@ -12,8 +12,8 @@ interface CacheEntry {
 
 class UserCache {
     private cache: Map<number, CacheEntry> = new Map();
-    private readonly TTL = 5000; // 缓存5秒（足够一次抽奖操作）
-    
+    private readonly TTL = 120000; // 缓存2分钟（大幅减少查询频率，从5秒提升到2分钟）
+
     // 统计
     private hits = 0;
     private misses = 0;
@@ -23,12 +23,12 @@ class UserCache {
      */
     get(userId: number): KyxUser | null {
         const entry = this.cache.get(userId);
-        
+
         if (!entry) {
             this.misses++;
             return null;
         }
-        
+
         // 检查是否过期
         const now = Date.now();
         if (now - entry.timestamp > this.TTL) {
@@ -36,7 +36,7 @@ class UserCache {
             this.misses++;
             return null;
         }
-        
+
         this.hits++;
         return entry.user;
     }
@@ -75,13 +75,13 @@ class UserCache {
     cleanup(): void {
         const now = Date.now();
         const toDelete: number[] = [];
-        
+
         for (const [userId, entry] of this.cache.entries()) {
             if (now - entry.timestamp > this.TTL) {
                 toDelete.push(userId);
             }
         }
-        
+
         toDelete.forEach(userId => this.cache.delete(userId));
     }
 
@@ -91,7 +91,7 @@ class UserCache {
     getStats() {
         const total = this.hits + this.misses;
         const hitRate = total > 0 ? (this.hits / total * 100).toFixed(2) : '0.00';
-        
+
         return {
             size: this.cache.size,
             hits: this.hits,

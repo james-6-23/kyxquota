@@ -171,21 +171,70 @@ export function startRewardProcessor() {
 
 /**
  * 手动触发处理（用于测试或管理后台）
+ * 优化版：异步后台处理，立即返回，避免阻塞
  */
-export async function manualProcessRewards(): Promise<{ success: number; failed: number }> {
+export async function manualProcessRewards(): Promise<{ success: number; failed: number; total: number; async: boolean }> {
     const pendingRewards = pendingRewardQueries.getPending.all();
 
+    if (pendingRewards.length === 0) {
+        return { success: 0, failed: 0, total: 0, async: false };
+    }
+
+    const total = pendingRewards.length;
+    console.log(`[一键发放] 🚀 开始异步处理 ${total} 条待发放记录`);
+
+    // 立即返回，不等待处理完成
+    // 后台异步处理
+    processRewardsAsync(pendingRewards);
+
+    return {
+        success: 0,
+        failed: 0,
+        total,
+        async: true // 标记为异步处理
+    };
+}
+
+/**
+ * 异步处理待发放奖金（后台执行）
+ * 使用并发控制，避免过多API调用
+ */
+async function processRewardsAsync(rewards: any[]) {
     let successCount = 0;
     let failedCount = 0;
+    const startTime = Date.now();
 
-    for (const reward of pendingRewards) {
-        const success = await processPendingReward(reward);
-        if (success) {
-            successCount++;
-        } else {
-            failedCount++;
+    // 并发控制：每次最多处理3个（避免触发限流）
+    const CONCURRENT_LIMIT = 3;
+
+    for (let i = 0; i < rewards.length; i += CONCURRENT_LIMIT) {
+        const batch = rewards.slice(i, i + CONCURRENT_LIMIT);
+
+        // 并发处理这一批
+        const results = await Promise.all(
+            batch.map(reward => processPendingReward(reward))
+        );
+
+        // 统计结果
+        results.forEach(success => {
+            if (success) {
+                successCount++;
+            } else {
+                failedCount++;
+            }
+        });
+
+        // 输出进度
+        const processed = Math.min(i + CONCURRENT_LIMIT, rewards.length);
+        const percentage = ((processed / rewards.length) * 100).toFixed(1);
+        console.log(`[一键发放] 📊 进度: ${processed}/${rewards.length} (${percentage}%) - 成功: ${successCount}, 失败: ${failedCount}`);
+
+        // 批次之间稍微延迟，避免压力过大
+        if (i + CONCURRENT_LIMIT < rewards.length) {
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
     }
 
-    return { success: successCount, failed: failedCount };
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`[一键发放] ✅ 全部处理完成 - 总数: ${rewards.length}, 成功: ${successCount}, 失败: ${failedCount}, 耗时: ${duration}秒`);
 }
