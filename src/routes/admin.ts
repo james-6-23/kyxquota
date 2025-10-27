@@ -1621,8 +1621,8 @@ app.get('/pending-rewards', requireAdmin, async (c) => {
             created_at: r.created_at,
             updated_at: r.updated_at,
             processed_at: r.processed_at,
-            created_date: new Date(r.created_at).toLocaleString('zh-CN'),
-            updated_date: new Date(r.updated_at).toLocaleString('zh-CN'),
+            created_date: new Date(r.created_at).toLocaleString('zh-CN', { hour12: false }),
+            updated_date: new Date(r.updated_at).toLocaleString('zh-CN', { hour12: false }),
         }));
 
         console.log(`[管理员] 📋 查询待发放奖金 - 总数: ${stats.total}, 待处理: ${stats.byStatus.pending + stats.byStatus.processing + stats.byStatus.failed}, 已完成: ${stats.byStatus.success}`);

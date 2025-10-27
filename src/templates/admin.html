@@ -1785,11 +1785,11 @@
             document.getElementById('dashboardKeysAuthStatus').textContent = '未配置';
             document.getElementById('dashboardKeysAuthStatus').className = 'text-xs text-orange-600 mt-1 font-semibold';
           }
-          
+
           // 格式化更新时间
           if (updatedAt) {
             const date = new Date(updatedAt);
-            document.getElementById('dashboardUpdatedAt').textContent = date.toLocaleString('zh-CN');
+            document.getElementById('dashboardUpdatedAt').textContent = date.toLocaleString('zh-CN', { hour12: false });
           }
         }
       } catch (e) {
@@ -2078,7 +2078,7 @@
                 <td class="px-4 py-3 font-mono text-xs align-middle break-all">${item.key}</td>
                 <td class="px-4 py-3 text-center align-middle">${keyTypeTag}</td>
                 <td class="px-4 py-3 align-middle">${item.username || '-'}</td>
-                <td class="px-4 py-3 align-middle whitespace-nowrap">${new Date(item.timestamp).toLocaleString('zh-CN')}</td>
+                <td class="px-4 py-3 align-middle whitespace-nowrap">${new Date(item.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
                 <td class="px-4 py-3 text-center align-middle">
                   <span class="key-status-${index}">-</span>
                 </td>
@@ -2367,10 +2367,10 @@
             const typeLabel = isBindingBonus 
               ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-semibold">🎁 绑定奖励</span>'
               : '<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">📅 每日领取</span>';
-            
+
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                <td class="px-4 py-3">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
                 <td class="px-4 py-3 font-semibold">${r.username}</td>
                 <td class="px-4 py-3 font-mono text-xs">${r.linux_do_id}</td>
                 <td class="px-4 py-3 text-center">${typeLabel}</td>
@@ -2421,10 +2421,10 @@
             const keyTypeTag = r.key_type === 'iflow'
               ? '<span class="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-semibold whitespace-nowrap"><span>✨</span><span>iFlow</span></span>'
               : '<span class="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold whitespace-nowrap"><span>🎁</span><span>ModelScope</span></span>';
-            
+
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 align-middle whitespace-nowrap">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                <td class="px-4 py-3 align-middle whitespace-nowrap">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
                 <td class="px-4 py-3 align-middle">${r.username}</td>
                 <td class="px-4 py-3 text-center align-middle">${keyTypeTag}</td>
                 <td class="px-4 py-3 text-center align-middle">${r.keys_count}</td>
@@ -2973,10 +2973,10 @@
             // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
             const displayName = r.linux_do_username || r.username;
             const hasLinuxDoUsername = r.linux_do_username && r.linux_do_username !== r.username;
-            
+
             return `
               <tr class="border-b border-slate-100 hover:bg-slate-50">
-                <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
                 <td class="px-4 py-3">
                   <div class="font-semibold text-indigo-600">@${displayName}</div>
                   ${hasLinuxDoUsername ? `<div class="text-xs text-slate-500">公益站: ${r.username}</div>` : ''}
@@ -3124,10 +3124,10 @@
         
         const displayName = r.linux_do_username || r.username;
         const hasLinuxDoUsername = r.linux_do_username && r.linux_do_username !== r.username;
-        
+
         return `
           <tr class="border-b border-slate-100 hover:bg-slate-50">
-            <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+            <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
             <td class="px-4 py-3">
               <div class="font-semibold text-indigo-600">@${displayName}</div>
               ${hasLinuxDoUsername ? `<div class="text-xs text-slate-500">公益站: ${r.username}</div>` : ''}
@@ -3892,25 +3892,25 @@
           const displayName = info.linux_do_username || info.username;
           document.getElementById('queryUsername').textContent = displayName || '--';
           document.getElementById('queryFreeSpins').textContent = info.free_spins;
-          
+
           const bannedUntil = info.banned_until;
           if (bannedUntil > 0 && bannedUntil > Date.now()) {
             const bannedDate = new Date(bannedUntil);
-            document.getElementById('queryBannedUntil').textContent = bannedDate.toLocaleString('zh-CN');
+            document.getElementById('queryBannedUntil').textContent = bannedDate.toLocaleString('zh-CN', { hour12: false });
             document.getElementById('queryBannedUntil').className = 'text-lg font-bold text-red-600 mt-1';
           } else {
             document.getElementById('queryBannedUntil').textContent = '无限制';
             document.getElementById('queryBannedUntil').className = 'text-lg font-bold text-green-600 mt-1';
           }
-          
+
           const updatedAt = info.updated_at;
           if (updatedAt > 0) {
             const updatedDate = new Date(updatedAt);
-            document.getElementById('queryUpdatedAt').textContent = updatedDate.toLocaleString('zh-CN');
+            document.getElementById('queryUpdatedAt').textContent = updatedDate.toLocaleString('zh-CN', { hour12: false });
           } else {
             document.getElementById('queryUpdatedAt').textContent = '从未更新';
           }
-          
+
           document.getElementById('queryResult').classList.remove('hidden');
           showToast('查询成功', 'success');
         } else {
@@ -3946,13 +3946,13 @@
     // ========== 待发放奖金管理功能 ==========
 
     // 加载待发放奖金列表
-    async function loadPendingRewards() {
+    async function loadPendingRewards(silent = false) {
       try {
         const res = await fetch('/api/admin/pending-rewards');
         const data = await res.json();
 
         if (!data.success) {
-          showToast('加载待发放奖金失败', 'error');
+          if (!silent) showToast('加载待发放奖金失败', 'error');
           return;
         }
 
@@ -4038,10 +4038,10 @@
           `;
         }).join('');
 
-        showToast('待发放奖金列表已刷新', 'success');
+        if (!silent) showToast('待发放奖金列表已刷新', 'success');
       } catch (error) {
         console.error('加载待发放奖金失败:', error);
-        showToast('加载失败，请重试', 'error');
+        if (!silent) showToast('加载失败，请重试', 'error');
       }
     }
 
@@ -4082,10 +4082,10 @@
         
         if (data.success) {
           showToast(`🚀 ${data.message}`, 'success');
-          
-          // 立即刷新一次，显示"处理中"状态
-          await loadPendingRewards();
-          
+
+          // 立即刷新一次，显示"处理中"状态（静默模式）
+          await loadPendingRewards(true);
+
           // 启动自动刷新，监控处理进度
           startAutoRefresh();
         } else {
@@ -4116,10 +4116,10 @@
       // 每2秒刷新一次
       autoRefreshTimer = setInterval(async () => {
         autoRefreshCount++;
-        
-        // 刷新列表
-        await loadPendingRewards();
-        
+
+        // 刷新列表（静默模式，不显示提示）
+        await loadPendingRewards(true);
+
         // 检查是否还有待处理的记录
         const pendingCount = parseInt(document.getElementById('pendingCount').textContent) || 0;
         const processingCount = parseInt(document.getElementById('pendingTotal').textContent) || 0;

@@ -2135,7 +2135,7 @@
             return `
               <div class="border-b border-slate-200 py-3">
                 <div class="flex items-center justify-between mb-1">
-                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${typeLabel}
                 </div>
                 <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">$${quotaUSD}</span></p>
@@ -2156,7 +2156,7 @@
             return `
               <div class="border-b border-slate-200 py-3">
                 <div class="flex items-center justify-between mb-1">
-                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</p>
+                  <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${keyTypeLabel}
                 </div>
                 <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">$${(r.total_quota_added / 500000).toFixed(2)}</span></p>
@@ -2662,7 +2662,7 @@
         bannedNotice.classList.remove('hidden');
         const bannedDate = new Date(slotUserData.banned_until);
         const remainingHours = Math.ceil((slotUserData.banned_until - Date.now()) / 3600000);
-        bannedUntilText.textContent = `解禁时间：${bannedDate.toLocaleString('zh-CN')} (剩余约${remainingHours}小时)`;
+        bannedUntilText.textContent = `解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`;
       } else {
         bannedNotice.classList.add('hidden');
       }
@@ -3327,14 +3327,14 @@
 
             // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
             const displayName = r.linux_do_username || r.username;
-            
+
             return `
               <div class="border ${bgClass} rounded-lg p-4 mb-3">
                 <div class="flex items-center justify-between mb-3">
                   <div class="flex items-center gap-2">
                     <span class="text-sm text-slate-600">#${displayRecords.length - idx}</span>
                     <span class="text-xs font-medium text-indigo-600">@${displayName}</span>
-                    <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN')}</span>
+                    <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</span>
                     ${r.is_free_spin ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">免费</span>' : ''}
                   </div>
                   <span class="font-semibold ${winClass}">

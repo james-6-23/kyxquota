@@ -863,8 +863,8 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
         const formattedWithDates = formattedRewards.map((r: any) => ({
             ...r,
             amount: r.amount / 500000,  // 转换为美元
-            created_date: new Date(r.created_at).toLocaleString('zh-CN'),
-            updated_date: new Date(r.updated_at).toLocaleString('zh-CN'),
+            created_date: new Date(r.created_at).toLocaleString('zh-CN', { hour12: false }),
+            updated_date: new Date(r.updated_at).toLocaleString('zh-CN', { hour12: false }),
         }));
 
         return c.json({
