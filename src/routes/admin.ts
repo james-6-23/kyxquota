@@ -7,6 +7,7 @@ import {
     keyQueries,
     userQueries,
     slotQueries,
+    pendingRewardQueries,
     db,
 } from '../database';
 import { cacheManager } from '../cache';

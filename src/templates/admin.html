@@ -3444,7 +3444,6 @@
     // 从模态框确认发放
     async function confirmGrantFreeSpin() {
       const linuxDoId = document.getElementById('modalLinuxDoId').value;
-      const username = document.getElementById('modalUsername').value;
       const spins = parseInt(document.getElementById('modalSpins').value);
       const reason = document.getElementById('modalReason').value;
 
@@ -3457,7 +3456,7 @@
         const res = await fetch('/api/admin/grant-free-spins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ linux_do_id: linuxDoId, spins, reason })
+          body: JSON.stringify({ identifier: linuxDoId, spins, reason })
         });
 
         const data = await res.json();
