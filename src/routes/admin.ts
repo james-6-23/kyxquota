@@ -1133,14 +1133,14 @@ app.post('/users/:linuxDoId/unbind', requireAdmin, async (c) => {
  */
 app.get('/search-users', requireAdmin, async (c) => {
     const keyword = c.req.query('keyword') || '';
-    
+
     if (!keyword || keyword.length < 2) {
         return c.json({ success: false, message: '搜索关键词至少2个字符' }, 400);
     }
-    
+
     try {
         let users: any[] = [];
-        
+
         // 如果是纯数字，按 Linux Do ID 搜索
         if (/^\d+$/.test(keyword)) {
             const user = userQueries.get.get(keyword);
@@ -1152,7 +1152,7 @@ app.get('/search-users', requireAdmin, async (c) => {
             const searchPattern = `%${keyword}%`;
             users = userQueries.searchByUsername.all(searchPattern, searchPattern);
         }
-        
+
         return c.json({
             success: true,
             data: users.map(u => ({
@@ -1186,7 +1186,7 @@ app.post('/grant-free-spins', requireAdmin, async (c) => {
     try {
         // 根据identifier类型查找用户
         let user = null;
-        
+
         if (/^\d+$/.test(identifier)) {
             // 纯数字，按 Linux Do ID 查找
             user = userQueries.get.get(identifier);
@@ -1197,7 +1197,7 @@ app.post('/grant-free-spins', requireAdmin, async (c) => {
                 user = userQueries.getByUsername.get(identifier);
             }
         }
-        
+
         if (!user) {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
@@ -1267,21 +1267,21 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
 
     const now = Date.now();
     const batchSize = 100; // 每100个用户使用一次事务
-    
+
     try {
         // 分批处理，避免单个事务太大
         for (let i = 0; i < identifiers.length; i += batchSize) {
             const batch = identifiers.slice(i, i + batchSize);
-            
+
             // 使用事务批量处理
             db.exec('BEGIN TRANSACTION');
-            
+
             try {
                 for (const identifier of batch) {
                     try {
                         // 根据identifier类型查找用户
                         let user = null;
-                        
+
                         if (/^\d+$/.test(identifier)) {
                             // 纯数字，按 Linux Do ID 查找
                             user = userQueries.get.get(identifier);
@@ -1292,7 +1292,7 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
                                 user = userQueries.getByUsername.get(identifier);
                             }
                         }
-                        
+
                         if (!user) {
                             results.failed++;
                             results.details.push({
@@ -1330,7 +1330,7 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
                         );
 
                         results.success++;
-                        
+
                         // 只保存前100条详细信息（避免返回数据过大）
                         if (results.details.length < 100) {
                             results.details.push({
@@ -1355,19 +1355,19 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
                         }
                     }
                 }
-                
+
                 db.exec('COMMIT');
-                
+
                 // 每批处理后输出进度
                 const progress = Math.min(i + batchSize, identifiers.length);
-                console.log(`[管理员] 🎁 批量发放进度: ${progress}/${identifiers.length} (${((progress/identifiers.length)*100).toFixed(1)}%)`);
-                
+                console.log(`[管理员] 🎁 批量发放进度: ${progress}/${identifiers.length} (${((progress / identifiers.length) * 100).toFixed(1)}%)`);
+
             } catch (e: any) {
                 db.exec('ROLLBACK');
                 console.error('[管理员] ❌ 批量发放事务失败:', e);
             }
         }
-        
+
         console.log(`[管理员] 📊 批量发放免费次数完成 - 成功: ${results.success}, 失败: ${results.failed}, 跳过: ${results.skipped}, 原因: ${reason || '管理员批量发放'}`);
 
         return c.json({
@@ -1376,7 +1376,7 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
             data: {
                 ...results,
                 total: identifiers.length,
-                details: results.details.length < identifiers.length 
+                details: results.details.length < identifiers.length
                     ? results.details.concat([{ message: `...还有 ${identifiers.length - results.details.length} 条记录未显示` }])
                     : results.details
             }
@@ -1404,7 +1404,7 @@ app.post('/grant-free-spins-all', requireAdmin, async (c) => {
     try {
         // 获取所有未封禁用户的 Linux Do ID
         const allUsers = userQueries.getAllLinuxDoIds.all();
-        
+
         if (allUsers.length === 0) {
             return c.json({ success: false, message: '没有可发放的用户' }, 404);
         }
@@ -1419,41 +1419,41 @@ app.post('/grant-free-spins-all', requireAdmin, async (c) => {
 
         const now = Date.now();
         const batchSize = 200; // 每200个用户一个事务
-        
+
         // 分批处理
         for (let i = 0; i < allUsers.length; i += batchSize) {
             const batch = allUsers.slice(i, i + batchSize);
-            
+
             db.exec('BEGIN TRANSACTION');
-            
+
             try {
                 for (const { linux_do_id } of batch) {
                     try {
                         const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
                         const currentSpins = currentFreeSpin?.free_spins || 0;
                         const newSpins = currentSpins + spins;
-                        
+
                         slotQueries.setFreeSpin.run(
                             linux_do_id,
                             newSpins,
                             currentFreeSpin?.banned_until || 0,
                             now
                         );
-                        
+
                         results.success++;
                     } catch (e: any) {
                         results.failed++;
                         console.error(`[管理员] ❌ 发放失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
                     }
                 }
-                
+
                 db.exec('COMMIT');
-                
+
                 // 输出进度
                 const progress = Math.min(i + batchSize, allUsers.length);
                 const percentage = ((progress / allUsers.length) * 100).toFixed(1);
                 console.log(`[管理员] 🎁 全员发放进度: ${progress}/${allUsers.length} (${percentage}%)`);
-                
+
             } catch (e: any) {
                 db.exec('ROLLBACK');
                 console.error('[管理员] ❌ 批量事务失败:', e);
@@ -1482,7 +1482,7 @@ app.get('/users/:identifier/free-spins', requireAdmin, async (c) => {
     try {
         // 根据identifier类型查找用户
         let user = null;
-        
+
         if (/^\d+$/.test(identifier)) {
             user = userQueries.get.get(identifier);
         } else {
@@ -1491,13 +1491,13 @@ app.get('/users/:identifier/free-spins', requireAdmin, async (c) => {
                 user = userQueries.getByUsername.get(identifier);
             }
         }
-        
+
         if (!user) {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
         const freeSpin = slotQueries.getFreeSpin.get(user.linux_do_id);
-        
+
         return c.json({
             success: true,
             data: {
@@ -1520,8 +1520,6 @@ app.get('/users/:identifier/free-spins', requireAdmin, async (c) => {
  */
 app.get('/pending-rewards', requireAdmin, async (c) => {
     try {
-        const { pendingRewardQueries } = await import('../database');
-
         // 获取所有待发放的奖金（pending 或 failed 状态）
         const pendingRewards = pendingRewardQueries.getPending.all();
 
@@ -1600,8 +1598,6 @@ app.delete('/pending-rewards/:id', requireAdmin, async (c) => {
     const id = parseInt(c.req.param('id'));
 
     try {
-        const { pendingRewardQueries, db } = await import('../database');
-
         // 获取记录信息
         const reward = pendingRewardQueries.getById.get(id);
         if (!reward) {
@@ -1631,8 +1627,6 @@ app.post('/pending-rewards/:id/retry', requireAdmin, async (c) => {
     const id = parseInt(c.req.param('id'));
 
     try {
-        const { pendingRewardQueries } = await import('../database');
-
         // 获取记录信息
         const reward = pendingRewardQueries.getById.get(id);
         if (!reward) {
