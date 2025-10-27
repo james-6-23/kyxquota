@@ -647,6 +647,10 @@ function initQueries() {
         getPending: db.query<any, never>(
             "SELECT * FROM pending_rewards WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT 50"
         ),
+        // 获取所有奖金记录（包括成功的，用于管理后台查看）
+        getAll: db.query<any, never>(
+            "SELECT * FROM pending_rewards ORDER BY created_at DESC LIMIT 200"
+        ),
         // 获取用户的待发放奖金
         getByUser: db.query<any, string>(
             "SELECT * FROM pending_rewards WHERE linux_do_id = ? ORDER BY created_at DESC"

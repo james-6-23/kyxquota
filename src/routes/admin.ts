@@ -1579,26 +1579,35 @@ app.get('/users/:identifier/free-spins', requireAdmin, async (c) => {
 });
 
 /**
- * 获取所有待发放奖金记录
+ * 获取所有待发放奖金记录（包括历史记录）
  */
 app.get('/pending-rewards', requireAdmin, async (c) => {
     try {
-        // 获取所有待发放的奖金（pending 或 failed 状态）
-        const pendingRewards = pendingRewardQueries.getPending.all();
+        // 获取所有奖金记录（包括成功的）
+        const allRewards = pendingRewardQueries.getAll.all();
 
-        // 统计信息
+        // 统计信息（区分待处理和已完成）
         const stats = {
-            total: pendingRewards.length,
-            totalAmount: pendingRewards.reduce((sum: number, r: any) => sum + r.reward_amount, 0),
+            total: allRewards.length,
+            totalAmount: allRewards.reduce((sum: number, r: any) => sum + r.reward_amount, 0),
             byStatus: {
-                pending: pendingRewards.filter((r: any) => r.status === 'pending').length,
-                failed: pendingRewards.filter((r: any) => r.status === 'failed').length,
-                processing: pendingRewards.filter((r: any) => r.status === 'processing').length,
-            }
+                pending: allRewards.filter((r: any) => r.status === 'pending').length,
+                processing: allRewards.filter((r: any) => r.status === 'processing').length,
+                failed: allRewards.filter((r: any) => r.status === 'failed').length,
+                success: allRewards.filter((r: any) => r.status === 'success').length,
+            },
+            // 待处理金额（pending + processing + failed）
+            pendingAmount: allRewards
+                .filter((r: any) => ['pending', 'processing', 'failed'].includes(r.status))
+                .reduce((sum: number, r: any) => sum + r.reward_amount, 0),
+            // 已发放金额
+            successAmount: allRewards
+                .filter((r: any) => r.status === 'success')
+                .reduce((sum: number, r: any) => sum + r.reward_amount, 0),
         };
 
         // 格式化数据
-        const formattedRewards = pendingRewards.map((r: any) => ({
+        const formattedRewards = allRewards.map((r: any) => ({
             id: r.id,
             linux_do_id: r.linux_do_id,
             kyx_user_id: r.kyx_user_id,
@@ -1616,14 +1625,16 @@ app.get('/pending-rewards', requireAdmin, async (c) => {
             updated_date: new Date(r.updated_at).toLocaleString('zh-CN'),
         }));
 
-        console.log(`[管理员] 📋 查询待发放奖金 - 总数: ${stats.total}, 总金额: $${(stats.totalAmount / 500000).toFixed(2)}`);
+        console.log(`[管理员] 📋 查询待发放奖金 - 总数: ${stats.total}, 待处理: ${stats.byStatus.pending + stats.byStatus.processing + stats.byStatus.failed}, 已完成: ${stats.byStatus.success}`);
 
         return c.json({
             success: true,
             data: formattedRewards,
             stats: {
                 ...stats,
-                totalAmountCny: (stats.totalAmount / 500000).toFixed(2)
+                totalAmountCny: (stats.totalAmount / 500000).toFixed(2),
+                pendingAmountCny: (stats.pendingAmount / 500000).toFixed(2),
+                successAmountCny: (stats.successAmount / 500000).toFixed(2),
             }
         });
     } catch (e: any) {

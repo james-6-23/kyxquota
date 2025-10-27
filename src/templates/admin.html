@@ -1524,6 +1524,28 @@
             </div>
           </div>
 
+          <!-- 已发放统计 -->
+          <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-green-200 rounded-lg flex items-center justify-center text-2xl">✅</div>
+                <div>
+                  <p class="text-sm text-green-700 font-medium">已成功发放（最近200条）</p>
+                </div>
+              </div>
+              <div class="flex gap-6">
+                <div class="text-right">
+                  <p class="text-xs text-green-600">发放次数</p>
+                  <p id="successCount" class="text-2xl font-bold text-green-700">0</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-xs text-green-600">发放金额</p>
+                  <p id="successAmount" class="text-2xl font-bold text-green-700">$0.00</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- 说明提示 -->
           <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div class="flex items-start gap-3">
@@ -1535,6 +1557,7 @@
                   <li>• <strong>一键发放</strong>：管理员可以手动触发立即发放，作为自动发放失败时的补充</li>
                   <li>• <strong>重试机制</strong>：失败的记录可以重置状态，让系统重新尝试</li>
                   <li>• <strong>最大重试</strong>：每条记录最多重试 10 次，超过后标记为失败</li>
+                  <li>• <strong>记录保留</strong>：所有记录包括成功的都保存在数据库中，显示最近200条</li>
                 </ul>
               </div>
             </div>
@@ -3881,10 +3904,14 @@
         const stats = data.stats;
 
         // 更新统计卡片
-        document.getElementById('pendingTotal').textContent = stats.total;
-        document.getElementById('pendingTotalAmount').textContent = '$' + stats.totalAmountCny;
+        document.getElementById('pendingTotal').textContent = stats.byStatus.pending + stats.byStatus.processing + stats.byStatus.failed;
+        document.getElementById('pendingTotalAmount').textContent = '$' + stats.pendingAmountCny;
         document.getElementById('pendingCount').textContent = stats.byStatus.pending;
         document.getElementById('failedCount').textContent = stats.byStatus.failed;
+        
+        // 更新成功发放统计
+        document.getElementById('successCount').textContent = stats.byStatus.success || 0;
+        document.getElementById('successAmount').textContent = '$' + (stats.successAmountCny || '0.00');
 
         // 渲染表格
         const tbody = document.getElementById('pendingRewardsTableBody');
@@ -3919,6 +3946,10 @@
           } else if (reward.status === 'pending' || reward.status === 'processing') {
             actionButtons = `
               <span class="text-slate-400 text-xs">等待处理</span>
+            `;
+          } else if (reward.status === 'success') {
+            actionButtons = `
+              <span class="text-green-600 text-xs font-semibold">已完成</span>
             `;
           }
 
@@ -4034,14 +4065,15 @@
         await loadPendingRewards();
         
         // 检查是否还有待处理的记录
-        const pendingCount = parseInt(document.getElementById('pendingProcessing').textContent) || 0;
+        const pendingCount = parseInt(document.getElementById('pendingCount').textContent) || 0;
+        const processingCount = parseInt(document.getElementById('pendingTotal').textContent) || 0;
         
-        // 如果没有"待处理"和"处理中"的记录，或达到最大刷新次数，停止自动刷新
-        if (pendingCount === 0 || autoRefreshCount >= MAX_AUTO_REFRESH) {
+        // 如果没有待处理的记录，或达到最大刷新次数，停止自动刷新
+        if (processingCount === 0 || autoRefreshCount >= MAX_AUTO_REFRESH) {
           clearInterval(autoRefreshTimer);
           autoRefreshTimer = null;
           
-          if (pendingCount === 0) {
+          if (processingCount === 0) {
             showToast('✅ 所有待发放奖金处理完成', 'success');
           }
         }
