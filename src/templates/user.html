@@ -1026,7 +1026,6 @@
                 id="recordSearchInput" 
                 placeholder="搜索用户名..." 
                 class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                onkeyup="filterSlotRecords()"
               >
               <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -1039,7 +1038,6 @@
             <select 
               id="winTypeFilter" 
               class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              onchange="filterSlotRecords()"
             >
               <option value="all">全部类型</option>
               <option value="super_jackpot">🏆 超级大奖</option>
@@ -1052,13 +1050,31 @@
             </select>
           </div>
           
-          <!-- 清除筛选按钮 -->
-          <button 
-            onclick="clearRecordFilters()" 
-            class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors whitespace-nowrap"
-          >
-            🔄 重置
-          </button>
+          <!-- 操作按钮组 -->
+          <div class="flex gap-2">
+            <button 
+              onclick="filterSlotRecords()" 
+              class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg transition-all whitespace-nowrap font-semibold shadow-md"
+            >
+              🔍 查询
+            </button>
+            <button 
+              onclick="refreshSlotRecordsKeepFilter()" 
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors whitespace-nowrap flex items-center gap-1"
+              title="刷新数据（保留筛选条件）"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+            <button 
+              onclick="clearRecordFilters()" 
+              class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors whitespace-nowrap"
+            >
+              🔄 重置
+            </button>
+          </div>
         </div>
         
         <!-- 筛选结果提示 -->
@@ -1176,7 +1192,7 @@
             <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
             <ul class="list-disc list-inside space-y-2 text-slate-700" id="basicRules">
               <li>假如每次旋转投注 <strong id="basicRulesBetAmount">$20</strong></li>
-              <li>每天有 <strong id="basicRulesMaxSpins">5次</strong> 免费游玩机会</li>
+              <li>每天有 <strong id="basicRulesMaxSpins">5次</strong> 游玩机会</li>
               <li>最低额度要求：<strong id="basicRulesMinQuota">$20</strong></li>
               <li>1行4列布局，共9种符号</li>
             </ul>
@@ -2979,11 +2995,24 @@
         // 保存所有记录到全局变量
         allSlotRecords = recordsData.data;
         
+        // 调试：检查win_type分布
+        console.log('[记录统计] 总记录数:', allSlotRecords.length);
+        const winTypeStats = {};
+        allSlotRecords.forEach(r => {
+          const winType = r.win_type || 'null';
+          winTypeStats[winType] = (winTypeStats[winType] || 0) + 1;
+        });
+        console.log('[记录统计] win_type分布:', winTypeStats);
+        
         // 显示模态框
         document.getElementById('slotRecordsModal').classList.remove('hidden');
         
-        // 渲染记录（不带筛选）
+        // 渲染记录（显示全部）
         renderSlotRecords(allSlotRecords);
+        
+        // 显示总记录数
+        document.getElementById('filterResultHint').textContent = `📊 总记录数: ${allSlotRecords.length}`;
+        document.getElementById('filterResultHint').classList.remove('hidden');
         
         // 渲染待发放记录
         if (pendingData.success && pendingData.data) {
@@ -3342,29 +3371,69 @@
         });
       }
       
-      // 按中奖类型筛选
-      if (winTypeFilter !== 'all') {
-        filteredRecords = filteredRecords.filter(r => r.win_type === winTypeFilter);
+      // 按中奖类型筛选（修复：空字符串也要过滤）
+      if (winTypeFilter && winTypeFilter !== 'all') {
+        filteredRecords = filteredRecords.filter(r => {
+          // 确保比较的是相同类型
+          const recordWinType = r.win_type || '';
+          return recordWinType === winTypeFilter;
+        });
       }
       
       // 显示筛选结果提示
       const hintEl = document.getElementById('filterResultHint');
       if (searchInput || winTypeFilter !== 'all') {
-        hintEl.textContent = `找到 ${filteredRecords.length} 条记录`;
+        hintEl.textContent = `🔍 找到 ${filteredRecords.length} 条记录（总记录数: ${allSlotRecords.length}）`;
         hintEl.classList.remove('hidden');
       } else {
-        hintEl.classList.add('hidden');
+        hintEl.textContent = `📊 总记录数: ${allSlotRecords.length}`;
+        hintEl.classList.remove('hidden');
       }
       
       // 渲染筛选后的记录
       renderSlotRecords(filteredRecords);
     }
 
+    // 刷新记录（保留筛选条件）
+    async function refreshSlotRecordsKeepFilter() {
+      try {
+        // 保存当前筛选条件
+        const searchInput = document.getElementById('recordSearchInput').value;
+        const winTypeFilter = document.getElementById('winTypeFilter').value;
+        
+        // 重新获取数据
+        const recordsRes = await fetch('/api/slot/records');
+        const recordsData = await recordsRes.json();
+        
+        if (!recordsData.success) {
+          showToast(recordsData.message, 'error');
+          return;
+        }
+        
+        // 更新全局记录
+        allSlotRecords = recordsData.data;
+        
+        // 应用筛选条件
+        filterSlotRecords();
+        
+        showToast('记录已刷新', 'success');
+      } catch (error) {
+        console.error('刷新记录失败:', error);
+        showToast('刷新失败', 'error');
+      }
+    }
+
     // 清除筛选
     function clearRecordFilters() {
       document.getElementById('recordSearchInput').value = '';
       document.getElementById('winTypeFilter').value = 'all';
-      document.getElementById('filterResultHint').classList.add('hidden');
+      
+      // 显示总记录数
+      const hintEl = document.getElementById('filterResultHint');
+      hintEl.textContent = `📊 总记录数: ${allSlotRecords.length}`;
+      hintEl.classList.remove('hidden');
+      
+      // 渲染所有记录
       renderSlotRecords(allSlotRecords);
     }
 
