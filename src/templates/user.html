@@ -801,71 +801,89 @@
               <span>📉</span>
               <span>亏损榜 TOP 20</span>
             </h2>
-            <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-            </button>
+            <div class="flex gap-1">
+              <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+              <button onclick="toggleLossBoard()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="收起/展开">
+                <svg id="lossBoardToggleIcon" class="w-4 h-4 text-white transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           <p class="text-xs text-white/70 text-center">最亏损用户top20</p>
           <p id="profitBoardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
         </div>
         
         <!-- 用户自己的盈亏（固定在上方）-->
-        <div class="px-4 py-3 bg-gradient-to-r from-red-600/20 to-rose-600/20 border-b border-red-500/20">
-          <div class="text-white text-sm space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="opacity-90">我的亏损排名：</span>
-              <span id="profitBoardMyRank" class="font-bold text-yellow-300">-</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="opacity-90">我的盈亏：</span>
-              <span id="profitBoardMyProfit" class="font-bold">$0</span>
+        <div id="lossBoardContent" class="transition-all duration-300">
+          <div class="px-4 py-3 bg-gradient-to-r from-red-600/20 to-rose-600/20 border-b border-red-500/20">
+            <div class="text-white text-sm space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="opacity-90">我的亏损排名：</span>
+                <span id="profitBoardMyRank" class="font-bold text-yellow-300">-</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="opacity-90">我的盈亏：</span>
+                <span id="profitBoardMyProfit" class="font-bold">$0</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 盈亏榜列表（可滚动）-->
-        <div id="profitBoardList" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-          <div class="text-center text-white/50 py-8">加载中...</div>
+          <!-- 盈亏榜列表（可滚动）-->
+          <div id="profitBoardList" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent" style="max-height: calc(100vh - 380px);">
+            <div class="text-center text-white/50 py-8">加载中...</div>
+          </div>
         </div>
       </div>
 
       <!-- 右侧：盈利榜（悬浮显示）- 移动端隐藏 -->
-      <div id="slotSidebarLeaderboard" class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-emerald-900/90 to-green-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-green-500/30 overflow-hidden flex flex-col">
+      <div id="slotSidebarLeaderboard" class="absolute top-4 right-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-emerald-900/90 to-green-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-green-500/30 overflow-hidden flex flex-col transition-all duration-300">
         <div class="p-4 bg-gradient-to-r from-green-600/30 to-emerald-600/30 border-b border-green-500/30">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-lg font-bold text-green-400 flex items-center gap-2">
               <span>🏆</span>
               <span>盈利榜 TOP 20</span>
             </h2>
-            <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新排行榜">
-              <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-            </button>
+            <div class="flex gap-1">
+              <button onclick="loadSidebarLeaderboard(true)" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="刷新排行榜">
+                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
+              <button onclick="toggleProfitBoard()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="收起/展开">
+                <svg id="profitBoardToggleIcon" class="w-4 h-4 text-white transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           <p class="text-xs text-white/70 text-center">按总盈亏排名（总赢得 - 总投注）</p>
           <p id="leaderboardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
         </div>
         
         <!-- 用户自己的统计（固定在上方）-->
-        <div id="myLeaderboardStats" class="px-4 py-3 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-b border-green-500/20">
-          <div class="text-white text-sm space-y-1">
-            <div class="flex justify-between items-center">
-              <span class="opacity-90">我的盈利排名：</span>
-              <span id="sidebarMyRank" class="font-bold text-yellow-300">-</span>
-            </div>
-            <div class="flex justify-between items-center">
-              <span class="opacity-90">我的盈亏：</span>
-              <span id="sidebarMyProfit" class="font-bold">$0</span>
+        <div id="profitBoardContent" class="transition-all duration-300">
+          <div id="myLeaderboardStats" class="px-4 py-3 bg-gradient-to-r from-green-600/20 to-emerald-600/20 border-b border-green-500/20">
+            <div class="text-white text-sm space-y-1">
+              <div class="flex justify-between items-center">
+                <span class="opacity-90">我的盈利排名：</span>
+                <span id="sidebarMyRank" class="font-bold text-yellow-300">-</span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="opacity-90">我的盈亏：</span>
+                <span id="sidebarMyProfit" class="font-bold">$0</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- 排行榜列表（可滚动）-->
-        <div id="sidebarLeaderboard" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent">
-          <div class="text-center text-white/50 py-8">加载中...</div>
+          <!-- 排行榜列表（可滚动）-->
+          <div id="sidebarLeaderboard" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin scrollbar-thumb-white/20 scrollbar-track-transparent" style="max-height: calc(100vh - 380px);">
+            <div class="text-center text-white/50 py-8">加载中...</div>
+          </div>
         </div>
       </div>
 
@@ -2553,6 +2571,40 @@
         console.error('加载排行榜失败:', error);
         document.getElementById('sidebarLeaderboard').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
         document.getElementById('profitBoardList').innerHTML = '<div class="text-center text-white/50 py-4 text-sm">加载失败</div>';
+      }
+    }
+
+    // 收起/展开亏损榜
+    function toggleLossBoard() {
+      const content = document.getElementById('lossBoardContent');
+      const icon = document.getElementById('lossBoardToggleIcon');
+      const isCollapsed = content.style.display === 'none';
+      
+      if (isCollapsed) {
+        // 展开
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        // 收起
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(180deg)';
+      }
+    }
+
+    // 收起/展开盈利榜
+    function toggleProfitBoard() {
+      const content = document.getElementById('profitBoardContent');
+      const icon = document.getElementById('profitBoardToggleIcon');
+      const isCollapsed = content.style.display === 'none';
+      
+      if (isCollapsed) {
+        // 展开
+        content.style.display = 'block';
+        icon.style.transform = 'rotate(0deg)';
+      } else {
+        // 收起
+        content.style.display = 'none';
+        icon.style.transform = 'rotate(180deg)';
       }
     }
 
