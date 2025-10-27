@@ -2658,14 +2658,14 @@
       if (slotQuotaMobile) {
         slotQuotaMobile.textContent = quotaText;
       }
-      
-      document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins;
-      document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins;
+
+      document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins || 0;
+      document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins || 0;
       
       // 今日统计
-      document.getElementById('todayPlayed').textContent = slotUserData.today_count;
-      document.getElementById('todayBet').textContent = `$${(slotUserData.today_bet / 500000).toFixed(2)}`;
-      document.getElementById('todayWon').textContent = `$${(slotUserData.today_win / 500000).toFixed(2)}`;
+      document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
+      document.getElementById('todayBet').textContent = `$${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('todayWon').textContent = `$${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
       
       // 历史总计
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
@@ -2715,29 +2715,35 @@
       const buySpinsSection = document.getElementById('buySpinsSection');
       const buySpinsButton = document.getElementById('buySpinsButton');
 
-      if (slotConfig.buy_spins_enabled && !slotUserData.is_banned) {
+      if (buySpinsSection && slotConfig.buy_spins_enabled && !slotUserData.is_banned) {
         // 显示购买区域
         buySpinsSection.classList.remove('hidden');
 
         // 更新价格显示
         const buyPriceUSD = (slotConfig.buy_spins_price / 500000).toFixed(2);
-        document.getElementById('buySpinsPrice').textContent = `$${buyPriceUSD}`;
-        document.getElementById('buySpinsBtnPrice').textContent = buyPriceUSD;
+        const buySpinsPriceEl = document.getElementById('buySpinsPrice');
+        const buySpinsBtnPriceEl = document.getElementById('buySpinsBtnPrice');
+        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `$${buyPriceUSD}`;
+        if (buySpinsBtnPriceEl) buySpinsBtnPriceEl.textContent = buyPriceUSD;
 
         // 更新已购次数
-        document.getElementById('buySpinsToday').textContent = slotUserData.bought_today || 0;
-        document.getElementById('buySpinsMax').textContent = slotConfig.max_daily_buy_spins;
+        const buySpinsTodayEl = document.getElementById('buySpinsToday');
+        const buySpinsMaxEl = document.getElementById('buySpinsMax');
+        if (buySpinsTodayEl) buySpinsTodayEl.textContent = slotUserData.bought_today || 0;
+        if (buySpinsMaxEl) buySpinsMaxEl.textContent = slotConfig.max_daily_buy_spins;
 
         // 更新按钮状态
         const boughtToday = slotUserData.bought_today || 0;
-        if (boughtToday >= slotConfig.max_daily_buy_spins) {
-          buySpinsButton.disabled = true;
-        } else if (slotUserData.quota < slotConfig.buy_spins_price) {
-          buySpinsButton.disabled = true;
-        } else {
-          buySpinsButton.disabled = false;
+        if (buySpinsButton) {
+          if (boughtToday >= slotConfig.max_daily_buy_spins) {
+            buySpinsButton.disabled = true;
+          } else if (slotUserData.quota < slotConfig.buy_spins_price) {
+            buySpinsButton.disabled = true;
+          } else {
+            buySpinsButton.disabled = false;
+          }
         }
-      } else {
+      } else if (buySpinsSection) {
         // 隐藏购买区域
         buySpinsSection.classList.add('hidden');
       }
@@ -2746,6 +2752,10 @@
     // 购买抽奖次数
     async function buySpins() {
       const button = document.getElementById('buySpinsButton');
+      if (!button) {
+        showToast('按钮加载失败', 'error');
+        return;
+      }
       if (button.disabled) return;
 
       if (!slotConfig || !slotUserData) {
@@ -2779,7 +2789,7 @@
 
           // 更新用户数据
           slotUserData.quota = data.data.quota_after;
-          slotUserData.free_spins = data.data.free_spins;
+          slotUserData.remaining_spins = data.data.remaining_spins;
           slotUserData.bought_today = data.data.bought_today;
 
           // 更新UI
