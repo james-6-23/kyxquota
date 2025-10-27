@@ -11,7 +11,7 @@ class RateLimiter {
     // 配置（优化后：降低并发，增加间隔，避免触发429）
     // 关键原因：虽然KYX API RPM=1000，但有瞬时并发限制
     // 50个并发太高会导致突发流量，触发限流
-    private readonly maxConcurrent = 8; // 最大并发请求数（从50降到8，避免突发流量）
+    private readonly maxConcurrent = 50; // 最大并发请求数（从50降到8，避免突发流量）
     private readonly minInterval = 200; // 最小请求间隔（从100ms增加到200ms）
     private readonly maxQueueSize = 2000; // 最大队列长度（保持2000，更好地缓冲峰值）
 
