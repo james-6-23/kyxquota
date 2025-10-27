@@ -8,18 +8,20 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（高性能配置，KYX API RPM=1000，配合缓存可以支持大量用户）
-    private readonly maxConcurrent = 50; // 最大并发请求数（提升至50，充分利用API容量）
-    private readonly minInterval = 100; // 最小请求间隔（毫秒，优化为100ms）
-    private readonly maxQueueSize = 2000; // 最大队列长度（提升至2000，更好地缓冲峰值）
+    // 配置（优化后：降低并发，增加间隔，避免触发429）
+    // 关键原因：虽然KYX API RPM=1000，但有瞬时并发限制
+    // 50个并发太高会导致突发流量，触发限流
+    private readonly maxConcurrent = 8; // 最大并发请求数（从50降到8，避免突发流量）
+    private readonly minInterval = 200; // 最小请求间隔（从100ms增加到200ms）
+    private readonly maxQueueSize = 2000; // 最大队列长度（保持2000，更好地缓冲峰值）
 
     // 统计
     private totalRequests = 0;
     private failedRequests = 0;
     private rateLimitHits = 0;
-    
+
     // 动态速率调整
-    private currentInterval = 100; // 当前实际间隔（可动态调整）
+    private currentInterval = 200; // 当前实际间隔（从100ms改为200ms起始）
     private adaptiveMode = true; // 启用自适应模式（仅在触发429时才调整）
 
     /**
@@ -55,11 +57,11 @@ class RateLimiter {
 
                     this.lastRequestTime = Date.now();
                     const result = await fn();
-                    
-                    // 成功后快速恢复正常速率（有高RPM支持，可以快速恢复）
+
+                    // 成功后缓慢恢复正常速率（避免过快恢复导致再次限流）
                     if (this.adaptiveMode && this.currentInterval > this.minInterval) {
-                        // 每次减少 100ms，快速恢复到正常速率
-                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 100);
+                        // 每次减少 50ms，缓慢恢复到正常速率
+                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 50);
                     }
 
                     resolve(result);
@@ -96,12 +98,12 @@ class RateLimiter {
     recordRateLimit() {
         this.rateLimitHits++;
 
-        // 自适应调整：温和增加请求间隔（有高RPM支持，不需要太激进）
+        // 自适应调整：触发429时增加间隔
         if (this.adaptiveMode) {
             const oldInterval = this.currentInterval;
-            // 温和增加：每次增加 150ms，最多到 800ms（保持响应速度）
-            this.currentInterval = Math.min(this.currentInterval + 150, 800);
-            
+            // 激进增加：每次增加 200ms，最多到 1000ms（确保不再触发429）
+            this.currentInterval = Math.min(this.currentInterval + 200, 1000);
+
             // 只在间隔变化时才输出日志（避免日志过多）
             if (oldInterval !== this.currentInterval) {
                 console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms`);

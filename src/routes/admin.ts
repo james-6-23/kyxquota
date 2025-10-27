@@ -12,6 +12,7 @@ import { cacheManager } from '../cache';
 import { CONFIG } from '../config';
 import { searchAndFindExactUser, pushKeysToGroup } from '../services/kyx-api';
 import { validateModelScopeKey } from '../services/keys';
+import { manualProcessRewards } from '../services/reward-processor';
 import type { DonateRecord } from '../types';
 
 const app = new Hono();
@@ -1122,6 +1123,318 @@ app.post('/users/:linuxDoId/unbind', requireAdmin, async (c) => {
     } catch (e: any) {
         console.error(`[管理员] ❌ 解绑用户失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
         return c.json({ success: false, message: `解绑失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 发放免费次数
+ */
+app.post('/grant-free-spins', requireAdmin, async (c) => {
+    const { linux_do_id, spins, reason } = await c.req.json();
+
+    if (!linux_do_id || !spins || typeof spins !== 'number' || spins <= 0) {
+        return c.json({ success: false, message: '参数错误：请提供有效的用户ID和免费次数' }, 400);
+    }
+
+    if (spins > 100) {
+        return c.json({ success: false, message: '单次发放次数不能超过100次' }, 400);
+    }
+
+    try {
+        // 验证用户是否存在
+        const user = userQueries.get.get(linux_do_id);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        // 获取当前免费次数
+        const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
+        const currentSpins = currentFreeSpin?.free_spins || 0;
+        const now = Date.now();
+
+        // 增加免费次数
+        const newSpins = currentSpins + spins;
+        slotQueries.setFreeSpin.run(
+            linux_do_id,
+            newSpins,
+            currentFreeSpin?.banned_until || 0,
+            now
+        );
+
+        console.log(`[管理员] 🎁 发放免费次数 - 用户: ${user.username} (${linux_do_id}), 发放次数: ${spins}, 原次数: ${currentSpins}, 新次数: ${newSpins}, 原因: ${reason || '管理员发放'}`);
+
+        return c.json({
+            success: true,
+            message: `成功为用户 ${user.username} 发放 ${spins} 次免费抽奖机会`,
+            data: {
+                linux_do_id,
+                username: user.username,
+                granted_spins: spins,
+                previous_spins: currentSpins,
+                total_spins: newSpins,
+                reason: reason || '管理员发放'
+            }
+        });
+    } catch (e: any) {
+        console.error(`[管理员] ❌ 发放免费次数失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
+        return c.json({ success: false, message: `发放失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 批量发放免费次数
+ */
+app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
+    const { user_ids, spins, reason } = await c.req.json();
+
+    if (!Array.isArray(user_ids) || user_ids.length === 0) {
+        return c.json({ success: false, message: '请提供有效的用户ID列表' }, 400);
+    }
+
+    if (!spins || typeof spins !== 'number' || spins <= 0) {
+        return c.json({ success: false, message: '请提供有效的免费次数' }, 400);
+    }
+
+    if (spins > 100) {
+        return c.json({ success: false, message: '单次发放次数不能超过100次' }, 400);
+    }
+
+    if (user_ids.length > 100) {
+        return c.json({ success: false, message: '单次批量发放用户不能超过100个' }, 400);
+    }
+
+    const results = {
+        success: 0,
+        failed: 0,
+        details: [] as any[]
+    };
+
+    for (const linux_do_id of user_ids) {
+        try {
+            // 验证用户是否存在
+            const user = userQueries.get.get(linux_do_id);
+            if (!user) {
+                results.failed++;
+                results.details.push({
+                    linux_do_id,
+                    success: false,
+                    message: '用户不存在'
+                });
+                continue;
+            }
+
+            // 获取当前免费次数
+            const currentFreeSpin = slotQueries.getFreeSpin.get(linux_do_id);
+            const currentSpins = currentFreeSpin?.free_spins || 0;
+            const now = Date.now();
+
+            // 增加免费次数
+            const newSpins = currentSpins + spins;
+            slotQueries.setFreeSpin.run(
+                linux_do_id,
+                newSpins,
+                currentFreeSpin?.banned_until || 0,
+                now
+            );
+
+            results.success++;
+            results.details.push({
+                linux_do_id,
+                username: user.username,
+                success: true,
+                granted_spins: spins,
+                previous_spins: currentSpins,
+                total_spins: newSpins
+            });
+
+            console.log(`[管理员] 🎁 批量发放免费次数 - 用户: ${user.username} (${linux_do_id}), 发放次数: ${spins}, 原次数: ${currentSpins}, 新次数: ${newSpins}`);
+        } catch (e: any) {
+            results.failed++;
+            results.details.push({
+                linux_do_id,
+                success: false,
+                message: e.message
+            });
+            console.error(`[管理员] ❌ 批量发放免费次数失败 - Linux Do ID: ${linux_do_id}, 错误:`, e);
+        }
+    }
+
+    console.log(`[管理员] 📊 批量发放免费次数完成 - 成功: ${results.success}, 失败: ${results.failed}, 原因: ${reason || '管理员批量发放'}`);
+
+    return c.json({
+        success: true,
+        message: `批量发放完成：成功 ${results.success} 个，失败 ${results.failed} 个`,
+        data: results
+    });
+});
+
+/**
+ * 查询用户免费次数
+ */
+app.get('/users/:linuxDoId/free-spins', requireAdmin, async (c) => {
+    const linuxDoId = c.req.param('linuxDoId');
+
+    try {
+        const user = userQueries.get.get(linuxDoId);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        const freeSpin = slotQueries.getFreeSpin.get(linuxDoId);
+
+        return c.json({
+            success: true,
+            data: {
+                linux_do_id: linuxDoId,
+                username: user.username,
+                free_spins: freeSpin?.free_spins || 0,
+                banned_until: freeSpin?.banned_until || 0,
+                updated_at: freeSpin?.updated_at || 0
+            }
+        });
+    } catch (e: any) {
+        console.error(`[管理员] ❌ 查询用户免费次数失败 - Linux Do ID: ${linuxDoId}, 错误:`, e);
+        return c.json({ success: false, message: `查询失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 获取所有待发放奖金记录
+ */
+app.get('/pending-rewards', requireAdmin, async (c) => {
+    try {
+        const { pendingRewardQueries } = await import('../database');
+
+        // 获取所有待发放的奖金（pending 或 failed 状态）
+        const pendingRewards = pendingRewardQueries.getPending.all();
+
+        // 统计信息
+        const stats = {
+            total: pendingRewards.length,
+            totalAmount: pendingRewards.reduce((sum: number, r: any) => sum + r.reward_amount, 0),
+            byStatus: {
+                pending: pendingRewards.filter((r: any) => r.status === 'pending').length,
+                failed: pendingRewards.filter((r: any) => r.status === 'failed').length,
+                processing: pendingRewards.filter((r: any) => r.status === 'processing').length,
+            }
+        };
+
+        // 格式化数据
+        const formattedRewards = pendingRewards.map((r: any) => ({
+            id: r.id,
+            linux_do_id: r.linux_do_id,
+            kyx_user_id: r.kyx_user_id,
+            username: r.username,
+            reward_amount: r.reward_amount,
+            reward_amount_cny: (r.reward_amount / 500000).toFixed(2),
+            reason: r.reason,
+            status: r.status,
+            retry_count: r.retry_count,
+            error_message: r.error_message,
+            created_at: r.created_at,
+            updated_at: r.updated_at,
+            processed_at: r.processed_at,
+            created_date: new Date(r.created_at).toLocaleString('zh-CN'),
+            updated_date: new Date(r.updated_at).toLocaleString('zh-CN'),
+        }));
+
+        console.log(`[管理员] 📋 查询待发放奖金 - 总数: ${stats.total}, 总金额: $${(stats.totalAmount / 500000).toFixed(2)}`);
+
+        return c.json({
+            success: true,
+            data: formattedRewards,
+            stats: {
+                ...stats,
+                totalAmountCny: (stats.totalAmount / 500000).toFixed(2)
+            }
+        });
+    } catch (e: any) {
+        console.error('[管理员] ❌ 获取待发放奖金失败:', e);
+        return c.json({ success: false, message: `获取失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 手动触发发放待发放奖金（一键发放）
+ */
+app.post('/pending-rewards/process', requireAdmin, async (c) => {
+    try {
+        console.log('[管理员] 🎁 手动触发待发放奖金处理');
+
+        const result = await manualProcessRewards();
+
+        console.log(`[管理员] ✅ 待发放奖金处理完成 - 成功: ${result.success}, 失败: ${result.failed}`);
+
+        return c.json({
+            success: true,
+            message: `处理完成：成功 ${result.success} 条，失败 ${result.failed} 条`,
+            data: result
+        });
+    } catch (e: any) {
+        console.error('[管理员] ❌ 处理待发放奖金失败:', e);
+        return c.json({ success: false, message: `处理失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 删除待发放奖金记录（谨慎操作）
+ */
+app.delete('/pending-rewards/:id', requireAdmin, async (c) => {
+    const id = parseInt(c.req.param('id'));
+
+    try {
+        const { pendingRewardQueries, db } = await import('../database');
+
+        // 获取记录信息
+        const reward = pendingRewardQueries.getById.get(id);
+        if (!reward) {
+            return c.json({ success: false, message: '记录不存在' }, 404);
+        }
+
+        // 删除记录
+        const deleteStmt = db.prepare('DELETE FROM pending_rewards WHERE id = ?');
+        deleteStmt.run(id);
+
+        console.log(`[管理员] 🗑️ 删除待发放奖金记录 - ID: ${id}, 用户: ${reward.username}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
+
+        return c.json({
+            success: true,
+            message: '记录已删除'
+        });
+    } catch (e: any) {
+        console.error(`[管理员] ❌ 删除待发放奖金记录失败 - ID: ${id}, 错误:`, e);
+        return c.json({ success: false, message: `删除失败: ${e.message}` }, 500);
+    }
+});
+
+/**
+ * 重置待发放奖金状态（将 failed 改为 pending 以便重试）
+ */
+app.post('/pending-rewards/:id/retry', requireAdmin, async (c) => {
+    const id = parseInt(c.req.param('id'));
+
+    try {
+        const { pendingRewardQueries } = await import('../database');
+
+        // 获取记录信息
+        const reward = pendingRewardQueries.getById.get(id);
+        if (!reward) {
+            return c.json({ success: false, message: '记录不存在' }, 404);
+        }
+
+        // 重置状态为 pending，清空错误信息
+        const now = Date.now();
+        pendingRewardQueries.updateStatus.run('pending', now, null, id);
+
+        console.log(`[管理员] 🔄 重置待发放奖金状态 - ID: ${id}, 用户: ${reward.username}`);
+
+        return c.json({
+            success: true,
+            message: '已重置为待发放状态，将在下次自动处理'
+        });
+    } catch (e: any) {
+        console.error(`[管理员] ❌ 重置待发放奖金状态失败 - ID: ${id}, 错误:`, e);
+        return c.json({ success: false, message: `重置失败: ${e.message}` }, 500);
     }
 });
 

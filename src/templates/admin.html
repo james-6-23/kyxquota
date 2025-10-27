@@ -155,6 +155,12 @@
           <button onclick="showSection('users')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>👥</span> 用户列表
           </button>
+          <button onclick="showSection('grantFreeSpins')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🎁</span> 发放免费次数
+          </button>
+          <button onclick="showSection('pendingRewards')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>💰</span> 待发放奖金
+          </button>
         </nav>
       </aside>
 
@@ -1244,7 +1250,237 @@
             </div>
           </div>
         </div>
+
+        <!-- Grant Free Spins Section -->
+        <div id="grantFreeSpinsSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">🎁 发放免费次数</h2>
+          
+          <!-- 单个用户发放 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">单个用户发放</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">用户 Linux Do ID *</label>
+                <input type="text" id="singleLinuxDoId" placeholder="例如: 123456" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <p class="text-xs text-slate-500 mt-1">输入用户的 Linux Do ID</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">免费次数 *</label>
+                <input type="number" id="singleSpins" min="1" max="100" value="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <p class="text-xs text-slate-500 mt-1">最多100次</p>
+              </div>
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">发放原因</label>
+                <input type="text" id="singleReason" placeholder="例如: bug补偿、活动奖励等" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                <p class="text-xs text-slate-500 mt-1">选填，记录发放原因便于追溯</p>
+              </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+              <button onclick="grantSingleFreeSpin()" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                发放
+              </button>
+              <button onclick="clearSingleForm()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                清空
+              </button>
+            </div>
+          </div>
+
+          <!-- 批量发放 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">批量发放</h3>
+            <div class="grid grid-cols-1 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">用户 Linux Do ID 列表 *</label>
+                <textarea id="batchLinuxDoIds" rows="4" placeholder="输入多个用户ID，每行一个，例如：&#10;123456&#10;789012&#10;345678" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent font-mono text-sm"></textarea>
+                <p class="text-xs text-slate-500 mt-1">每行一个ID，最多100个用户</p>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">免费次数 *</label>
+                  <input type="number" id="batchSpins" min="1" max="100" value="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                  <p class="text-xs text-slate-500 mt-1">每个用户获得的次数</p>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">发放原因</label>
+                  <input type="text" id="batchReason" placeholder="例如: bug补偿、活动奖励等" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+              </div>
+            </div>
+            <div class="flex gap-3 mt-4">
+              <button onclick="grantBatchFreeSpin()" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                批量发放
+              </button>
+              <button onclick="clearBatchForm()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+                清空
+              </button>
+            </div>
+          </div>
+
+          <!-- 查询用户免费次数 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-lg font-semibold text-slate-900 mb-4">查询用户免费次数</h3>
+            <div class="flex gap-3">
+              <div class="flex-1">
+                <input type="text" id="queryLinuxDoId" placeholder="输入用户 Linux Do ID" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              </div>
+              <button onclick="queryUserFreeSpins()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                查询
+              </button>
+            </div>
+            <div id="queryResult" class="mt-4 hidden">
+              <div class="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <p class="text-sm text-slate-600">用户名</p>
+                    <p id="queryUsername" class="text-lg font-bold text-slate-900 mt-1">--</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-600">免费次数</p>
+                    <p id="queryFreeSpins" class="text-lg font-bold text-purple-600 mt-1">0</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-600">禁止抽奖至</p>
+                    <p id="queryBannedUntil" class="text-lg font-bold text-slate-900 mt-1">--</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-slate-600">更新时间</p>
+                    <p id="queryUpdatedAt" class="text-lg font-bold text-slate-900 mt-1">--</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pending Rewards Section -->
+        <div id="pendingRewardsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">💰 待发放奖金管理</h2>
+            <div class="flex gap-2">
+              <button onclick="refreshPendingRewards()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                <svg id="pendingRewardsRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                刷新
+              </button>
+              <button onclick="processAllPendingRewards()" id="processAllBtn" class="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all font-semibold shadow-lg">
+                <span>🚀</span> 一键发放全部
+              </button>
+            </div>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">📋</div>
+                <div>
+                  <p class="text-sm text-slate-600">待发放总数</p>
+                  <p id="pendingTotal" class="text-2xl font-bold text-slate-900">0</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">💵</div>
+                <div>
+                  <p class="text-sm text-slate-600">待发放总额</p>
+                  <p id="pendingTotalAmount" class="text-2xl font-bold text-green-600">$0.00</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">⏳</div>
+                <div>
+                  <p class="text-sm text-slate-600">待处理</p>
+                  <p id="pendingCount" class="text-2xl font-bold text-yellow-600">0</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-2xl">❌</div>
+                <div>
+                  <p class="text-sm text-slate-600">失败</p>
+                  <p id="failedCount" class="text-2xl font-bold text-red-600">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 说明提示 -->
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl">ℹ️</div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-blue-900 mb-2">关于待发放奖金</h3>
+                <ul class="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>自动发放</strong>：系统每 60 秒自动尝试发放一次待处理的奖金</li>
+                  <li>• <strong>一键发放</strong>：管理员可以手动触发立即发放，作为自动发放失败时的补充</li>
+                  <li>• <strong>重试机制</strong>：失败的记录可以重置状态，让系统重新尝试</li>
+                  <li>• <strong>最大重试</strong>：每条记录最多重试 10 次，超过后标记为失败</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 奖金列表 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">奖金金额</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">原因</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">重试次数</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">创建时间</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="pendingRewardsTableBody">
+                  <tr>
+                    <td colspan="8" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </main>
+    </div>
+  </div>
+
+  <!-- Grant Free Spins Modal -->
+  <div id="grantFreeSpinsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold text-slate-900 mb-4">🎁 发放免费次数</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">用户</label>
+          <input type="text" id="modalUsername" readonly class="w-full px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg text-slate-700">
+          <input type="hidden" id="modalLinuxDoId">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">免费次数 *</label>
+          <input type="number" id="modalSpins" min="1" max="100" value="5" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">发放原因</label>
+          <input type="text" id="modalReason" placeholder="例如: bug补偿" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="confirmGrantFreeSpin()" class="flex-1 px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+          确认发放
+        </button>
+        <button onclick="closeGrantFreeSpinsModal()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+          取消
+        </button>
+      </div>
     </div>
   </div>
 
@@ -2097,9 +2333,10 @@
             const actionButtons = isBanned
               ? `<button onclick="unbanUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-semibold transition-colors">解封</button>`
               : `
-                <div class="flex gap-2 justify-center">
-                  <button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors">封禁</button>
-                  <button onclick="unbindUser('${user.linux_do_id}', '${user.username}')" class="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-semibold transition-colors">解绑</button>
+                <div class="flex gap-1 justify-center flex-wrap">
+                  <button onclick="showGrantFreeSpinsModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold transition-colors" title="发放免费次数">🎁</button>
+                  <button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors" title="封禁用户">🚫</button>
+                  <button onclick="unbindUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-semibold transition-colors" title="解绑用户">🔓</button>
                 </div>
               `;
             
@@ -2412,7 +2649,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -2426,6 +2663,7 @@
       if (section === 'slotAnalytics') loadSlotAnalytics();
       if (section === 'profitLeaderboard') loadProfitLeaderboard();
       if (section === 'lossLeaderboard') loadLossLeaderboard();
+      if (section === 'pendingRewards') loadPendingRewards();
     }
 
     // 老虎机配置管理
@@ -3095,6 +3333,433 @@
       } catch (error) {
         console.error('加载亏损排行榜失败:', error);
         showMessage('加载亏损排行榜失败', 'error');
+      }
+    }
+
+    // ========== 发放免费次数功能 ==========
+
+    // 显示发放免费次数的模态框
+    function showGrantFreeSpinsModal(linuxDoId, username) {
+      document.getElementById('modalLinuxDoId').value = linuxDoId;
+      document.getElementById('modalUsername').value = username;
+      document.getElementById('modalSpins').value = 5;
+      document.getElementById('modalReason').value = '';
+      document.getElementById('grantFreeSpinsModal').classList.remove('hidden');
+    }
+
+    // 关闭模态框
+    function closeGrantFreeSpinsModal() {
+      document.getElementById('grantFreeSpinsModal').classList.add('hidden');
+    }
+
+    // 从模态框确认发放
+    async function confirmGrantFreeSpin() {
+      const linuxDoId = document.getElementById('modalLinuxDoId').value;
+      const username = document.getElementById('modalUsername').value;
+      const spins = parseInt(document.getElementById('modalSpins').value);
+      const reason = document.getElementById('modalReason').value;
+
+      if (!spins || spins <= 0) {
+        showToast('请输入有效的免费次数', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/grant-free-spins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linux_do_id: linuxDoId, spins, reason })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(data.message || '发放成功', 'success');
+          closeGrantFreeSpinsModal();
+          // 刷新用户列表
+          if (usersCurrentPage) {
+            loadUsersList(usersCurrentPage);
+          }
+        } else {
+          showToast(data.message || '发放失败', 'error');
+        }
+      } catch (error) {
+        console.error('发放免费次数失败:', error);
+        showToast('发放失败，请重试', 'error');
+      }
+    }
+
+    // 单个用户发放
+    async function grantSingleFreeSpin() {
+      const linuxDoId = document.getElementById('singleLinuxDoId').value.trim();
+      const spins = parseInt(document.getElementById('singleSpins').value);
+      const reason = document.getElementById('singleReason').value.trim();
+
+      if (!linuxDoId) {
+        showToast('请输入用户 Linux Do ID', 'error');
+        return;
+      }
+
+      if (!spins || spins <= 0) {
+        showToast('请输入有效的免费次数', 'error');
+        return;
+      }
+
+      if (spins > 100) {
+        showToast('单次发放次数不能超过100次', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/grant-free-spins', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linux_do_id: linuxDoId, spins, reason })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ ${data.message}`, 'success');
+          clearSingleForm();
+        } else {
+          showToast(`❌ ${data.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('发放免费次数失败:', error);
+        showToast('发放失败，请重试', 'error');
+      }
+    }
+
+    // 批量发放
+    async function grantBatchFreeSpin() {
+      const idsText = document.getElementById('batchLinuxDoIds').value.trim();
+      const spins = parseInt(document.getElementById('batchSpins').value);
+      const reason = document.getElementById('batchReason').value.trim();
+
+      if (!idsText) {
+        showToast('请输入用户 Linux Do ID 列表', 'error');
+        return;
+      }
+
+      if (!spins || spins <= 0) {
+        showToast('请输入有效的免费次数', 'error');
+        return;
+      }
+
+      if (spins > 100) {
+        showToast('单次发放次数不能超过100次', 'error');
+        return;
+      }
+
+      // 解析 ID 列表
+      const userIds = idsText.split('\n')
+        .map(id => id.trim())
+        .filter(id => id.length > 0);
+
+      if (userIds.length === 0) {
+        showToast('请输入至少一个用户 ID', 'error');
+        return;
+      }
+
+      if (userIds.length > 100) {
+        showToast('单次批量发放用户不能超过100个', 'error');
+        return;
+      }
+
+      if (!confirm(`确认为 ${userIds.length} 个用户各发放 ${spins} 次免费抽奖机会吗？`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/admin/grant-free-spins-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_ids: userIds, spins, reason })
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          const results = data.data;
+          showToast(`✅ ${data.message}`, 'success');
+          
+          // 显示详细结果
+          if (results.failed > 0) {
+            const failedDetails = results.details
+              .filter(d => !d.success)
+              .map(d => `${d.linux_do_id}: ${d.message}`)
+              .join('\n');
+            
+            console.log('批量发放失败详情:\n' + failedDetails);
+          }
+          
+          clearBatchForm();
+        } else {
+          showToast(`❌ ${data.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('批量发放免费次数失败:', error);
+        showToast('批量发放失败，请重试', 'error');
+      }
+    }
+
+    // 查询用户免费次数
+    async function queryUserFreeSpins() {
+      const linuxDoId = document.getElementById('queryLinuxDoId').value.trim();
+
+      if (!linuxDoId) {
+        showToast('请输入用户 Linux Do ID', 'error');
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/users/${linuxDoId}/free-spins`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const info = data.data;
+          
+          document.getElementById('queryUsername').textContent = info.username || '--';
+          document.getElementById('queryFreeSpins').textContent = info.free_spins;
+          
+          const bannedUntil = info.banned_until;
+          if (bannedUntil > 0 && bannedUntil > Date.now()) {
+            const bannedDate = new Date(bannedUntil);
+            document.getElementById('queryBannedUntil').textContent = bannedDate.toLocaleString('zh-CN');
+            document.getElementById('queryBannedUntil').className = 'text-lg font-bold text-red-600 mt-1';
+          } else {
+            document.getElementById('queryBannedUntil').textContent = '无限制';
+            document.getElementById('queryBannedUntil').className = 'text-lg font-bold text-green-600 mt-1';
+          }
+          
+          const updatedAt = info.updated_at;
+          if (updatedAt > 0) {
+            const updatedDate = new Date(updatedAt);
+            document.getElementById('queryUpdatedAt').textContent = updatedDate.toLocaleString('zh-CN');
+          } else {
+            document.getElementById('queryUpdatedAt').textContent = '从未更新';
+          }
+          
+          document.getElementById('queryResult').classList.remove('hidden');
+          showToast('查询成功', 'success');
+        } else {
+          showToast(data.message || '查询失败', 'error');
+        }
+      } catch (error) {
+        console.error('查询用户免费次数失败:', error);
+        showToast('查询失败，请重试', 'error');
+      }
+    }
+
+    // 清空单个用户发放表单
+    function clearSingleForm() {
+      document.getElementById('singleLinuxDoId').value = '';
+      document.getElementById('singleSpins').value = 5;
+      document.getElementById('singleReason').value = '';
+    }
+
+    // 清空批量发放表单
+    function clearBatchForm() {
+      document.getElementById('batchLinuxDoIds').value = '';
+      document.getElementById('batchSpins').value = 5;
+      document.getElementById('batchReason').value = '';
+    }
+
+    // ========== 待发放奖金管理功能 ==========
+
+    // 加载待发放奖金列表
+    async function loadPendingRewards() {
+      try {
+        const res = await fetch('/api/admin/pending-rewards');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast('加载待发放奖金失败', 'error');
+          return;
+        }
+
+        const rewards = data.data;
+        const stats = data.stats;
+
+        // 更新统计卡片
+        document.getElementById('pendingTotal').textContent = stats.total;
+        document.getElementById('pendingTotalAmount').textContent = '$' + stats.totalAmountCny;
+        document.getElementById('pendingCount').textContent = stats.byStatus.pending;
+        document.getElementById('failedCount').textContent = stats.byStatus.failed;
+
+        // 渲染表格
+        const tbody = document.getElementById('pendingRewardsTableBody');
+        
+        if (rewards.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-green-600 font-semibold">🎉 没有待发放的奖金记录</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = rewards.map(reward => {
+          // 状态标签
+          let statusBadge = '';
+          if (reward.status === 'pending') {
+            statusBadge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 待处理</span>';
+          } else if (reward.status === 'failed') {
+            statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">❌ 失败</span>';
+          } else if (reward.status === 'processing') {
+            statusBadge = '<span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">⚙️ 处理中</span>';
+          } else if (reward.status === 'success') {
+            statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 成功</span>';
+          }
+
+          // 操作按钮
+          let actionButtons = '';
+          if (reward.status === 'failed') {
+            actionButtons = `
+              <div class="flex gap-1 justify-center">
+                <button onclick="retryPendingReward(${reward.id}, '${reward.username}')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold" title="重试">🔄</button>
+                <button onclick="deletePendingReward(${reward.id}, '${reward.username}')" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold" title="删除">🗑️</button>
+              </div>
+            `;
+          } else if (reward.status === 'pending' || reward.status === 'processing') {
+            actionButtons = `
+              <span class="text-slate-400 text-xs">等待处理</span>
+            `;
+          }
+
+          // 错误信息提示
+          const errorInfo = reward.error_message 
+            ? `<div class="text-xs text-red-600 mt-1" title="${reward.error_message}">⚠️ ${reward.error_message.substring(0, 30)}...</div>`
+            : '';
+
+          return `
+            <tr class="border-b border-slate-100 hover:bg-slate-50">
+              <td class="px-4 py-3 font-mono text-slate-600">#${reward.id}</td>
+              <td class="px-4 py-3">
+                <div class="font-semibold text-slate-900">${reward.username}</div>
+                <div class="text-xs text-slate-500">${reward.linux_do_id}</div>
+              </td>
+              <td class="px-4 py-3 text-right">
+                <div class="font-bold text-green-600">$${reward.reward_amount_cny}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-slate-700">${reward.reason}</div>
+                ${errorInfo}
+              </td>
+              <td class="px-4 py-3 text-center">${statusBadge}</td>
+              <td class="px-4 py-3 text-center">
+                <span class="font-semibold ${reward.retry_count >= 5 ? 'text-red-600' : 'text-slate-700'}">${reward.retry_count}/10</span>
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-600">${reward.created_date}</td>
+              <td class="px-4 py-3 text-center">${actionButtons}</td>
+            </tr>
+          `;
+        }).join('');
+
+        showToast('待发放奖金列表已刷新', 'success');
+      } catch (error) {
+        console.error('加载待发放奖金失败:', error);
+        showToast('加载失败，请重试', 'error');
+      }
+    }
+
+    // 刷新待发放奖金列表
+    async function refreshPendingRewards() {
+      const icon = document.getElementById('pendingRewardsRefreshIcon');
+      icon.classList.add('refresh-spin');
+      await loadPendingRewards();
+      setTimeout(() => icon.classList.remove('refresh-spin'), 600);
+    }
+
+    // 一键发放全部待发放奖金
+    async function processAllPendingRewards() {
+      const total = document.getElementById('pendingTotal').textContent;
+      const totalAmount = document.getElementById('pendingTotalAmount').textContent;
+      
+      if (total === '0') {
+        showToast('没有待发放的奖金记录', 'error');
+        return;
+      }
+
+      if (!confirm(`确认立即发放全部 ${total} 条待发放奖金（总额 ${totalAmount}）吗？\n\n此操作将立即触发发放流程。`)) {
+        return;
+      }
+
+      const btn = document.getElementById('processAllBtn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="animate-spin">⚙️</span> 处理中...';
+
+      try {
+        const res = await fetch('/api/admin/pending-rewards/process', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ ${data.message}`, 'success');
+          // 刷新列表
+          await loadPendingRewards();
+        } else {
+          showToast(`❌ ${data.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('一键发放失败:', error);
+        showToast('发放失败，请重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 重试单条失败的奖金
+    async function retryPendingReward(id, username) {
+      if (!confirm(`确认重置奖金发放状态吗？\n\n用户: ${username}\n记录 ID: #${id}\n\n重置后，系统将在下次自动处理时重新尝试发放。`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/pending-rewards/${id}/retry`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('已重置为待发放状态', 'success');
+          await loadPendingRewards();
+        } else {
+          showToast(data.message || '重置失败', 'error');
+        }
+      } catch (error) {
+        console.error('重试失败:', error);
+        showToast('操作失败，请重试', 'error');
+      }
+    }
+
+    // 删除待发放奖金记录
+    async function deletePendingReward(id, username) {
+      if (!confirm(`⚠️ 警告：确认删除此记录吗？\n\n用户: ${username}\n记录 ID: #${id}\n\n此操作不可撤销！删除后该奖金将无法发放。`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/pending-rewards/${id}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('记录已删除', 'success');
+          await loadPendingRewards();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除失败:', error);
+        showToast('操作失败，请重试', 'error');
       }
     }
 
