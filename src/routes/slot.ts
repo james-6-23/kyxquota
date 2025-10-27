@@ -656,6 +656,173 @@ slot.get('/leaderboard', requireAuth, async (c) => {
     }
 });
 
+/**
+ * 用户申请补发待发放奖金
+ */
+slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+        if (!session?.linux_do_id) {
+            return c.json({ success: false, message: '未登录' }, 401);
+        }
+
+        const rewardId = parseInt(c.req.param('id'));
+
+        // 获取待发放记录
+        const reward = pendingRewardQueries.getById.get(rewardId);
+        if (!reward) {
+            return c.json({ success: false, message: '记录不存在' }, 404);
+        }
+
+        // 验证记录真实性：确保是该用户的记录
+        if (reward.linux_do_id !== session.linux_do_id) {
+            console.error(`[申请补发] ❌ 用户尝试申请他人记录 - 用户: ${session.linux_do_id}, 记录所属: ${reward.linux_do_id}`);
+            return c.json({ success: false, message: '无权操作此记录' }, 403);
+        }
+
+        // 只允许失败状态的记录申请补发
+        if (reward.status === 'success') {
+            return c.json({ success: false, message: '该记录已成功发放' }, 400);
+        }
+
+        if (reward.status === 'processing') {
+            return c.json({ success: false, message: '该记录正在处理中，请稍后刷新查看结果' }, 400);
+        }
+
+        console.log(`[申请补发] 🎁 用户申请补发 - 用户: ${session.username || session.linux_do_id}, 记录ID: ${rewardId}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
+
+        // 标记为处理中
+        const now = Date.now();
+        pendingRewardQueries.updateStatus.run('processing', now, null, rewardId);
+
+        // 获取管理员配置
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            pendingRewardQueries.updateStatus.run('failed', now, '系统配置未找到', rewardId);
+            return c.json({
+                success: false,
+                message: '系统配置错误，请联系管理员',
+                details: '管理员配置未初始化'
+            }, 500);
+        }
+
+        try {
+            // 获取用户当前额度
+            const userResult = await getKyxUserById(
+                reward.kyx_user_id,
+                adminConfig.session,
+                adminConfig.new_api_user,
+                3,
+                true // 跳过缓存，获取最新数据
+            );
+
+            if (!userResult.success || !userResult.user) {
+                const errorMsg = `获取用户信息失败: ${userResult.message || '未知错误'}`;
+                pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
+                console.error(`[申请补发] ❌ ${errorMsg}`);
+                return c.json({
+                    success: false,
+                    message: '系统繁忙，请联系管理员',
+                    details: errorMsg
+                }, 500);
+            }
+
+            const currentQuota = userResult.user.quota;
+            const newQuota = currentQuota + reward.reward_amount;
+
+            console.log(`[申请补发] 当前额度: ${currentQuota}, 奖金: ${reward.reward_amount}, 目标额度: ${newQuota}`);
+
+            // 更新额度
+            const updateResult = await updateKyxUserQuota(
+                reward.kyx_user_id,
+                newQuota,
+                adminConfig.session,
+                adminConfig.new_api_user,
+                reward.username,
+                userResult.user.group || 'default',
+                3
+            );
+
+            if (!updateResult || !updateResult.success) {
+                const errorMsg = `额度更新失败: ${updateResult?.message || '未知错误'}`;
+                const httpStatus = updateResult?.httpStatus;
+
+                // 记录详细错误信息
+                let userFriendlyMsg = '系统繁忙，请联系管理员';
+                if (httpStatus === 429) {
+                    userFriendlyMsg = 'API请求过于频繁，请5分钟后再试';
+                    pendingRewardQueries.updateStatus.run('pending', now, 'API限流，请稍后重试', rewardId);
+                } else {
+                    pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
+                }
+
+                console.error(`[申请补发] ❌ ${errorMsg}, HTTP状态: ${httpStatus}`);
+                return c.json({
+                    success: false,
+                    message: userFriendlyMsg,
+                    details: errorMsg,
+                    httpStatus
+                }, httpStatus === 429 ? 429 : 500);
+            }
+
+            // 验证额度是否真的更新了
+            const verifyResult = await getKyxUserById(
+                reward.kyx_user_id,
+                adminConfig.session,
+                adminConfig.new_api_user,
+                3,
+                true
+            );
+
+            if (verifyResult.success && verifyResult.user) {
+                const actualQuota = verifyResult.user.quota;
+                console.log(`[申请补发] 验证额度 - 期望: ${newQuota}, 实际: ${actualQuota}`);
+
+                // 允许小范围误差
+                if (Math.abs(actualQuota - newQuota) > reward.reward_amount) {
+                    const errorMsg = `额度验证失败 - 期望: ${newQuota}, 实际: ${actualQuota}`;
+                    pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
+                    console.error(`[申请补发] ⚠️ ${errorMsg}`);
+                    return c.json({
+                        success: false,
+                        message: '系统繁忙，请联系管理员',
+                        details: errorMsg
+                    }, 500);
+                }
+            }
+
+            // 标记为成功
+            pendingRewardQueries.markSuccess.run('success', now, now, rewardId);
+            console.log(`[申请补发] ✅ 发放成功 - 用户: ${reward.username}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
+
+            return c.json({
+                success: true,
+                message: `补发成功！$${(reward.reward_amount / 500000).toFixed(2)} 已到账`,
+                data: {
+                    old_quota: currentQuota,
+                    new_quota: newQuota,
+                    reward_amount: reward.reward_amount
+                }
+            });
+
+        } catch (error: any) {
+            const errorMsg = error.message || '未知错误';
+            console.error(`[申请补发] ❌ 处理失败:`, error);
+            pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
+
+            return c.json({
+                success: false,
+                message: '系统繁忙，请联系管理员',
+                details: errorMsg
+            }, 500);
+        }
+
+    } catch (error: any) {
+        console.error('[申请补发] ❌ 服务器错误:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
 // 获取用户的待发放奖金
 slot.get('/pending-rewards', requireAuth, async (c) => {
     try {
