@@ -461,9 +461,6 @@
               <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
                 <span>📊</span> 我的记录
               </button>
-              <button onclick="showPendingRewardsModal()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
-                <span>💰</span> 待发放记录
-              </button>
               <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
                 <span>🚪</span> 退出登录
               </button>
@@ -716,6 +713,9 @@
                 </button>
                 <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
                   <span>📊</span> 我的记录
+                </button>
+                <button onclick="showPendingRewardsModal()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2 text-slate-900">
+                  <span>💰</span> 待发放记录
                 </button>
                 <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
                   <span>🚪</span> 退出登录
@@ -1332,13 +1332,13 @@
       // 未中奖/惩罚音效
       playLose() {
         this.init();
-        this.playAudio('lose', 0.7);
+        this.playAudio('lose', 1.0);
       }
       
       // 惩罚音效（与未中奖使用相同音效）
       playPunishment() {
         this.init();
-        this.playAudio('lose', 0.8);
+        this.playAudio('lose', 1.0);
       }
       
       // 按钮点击音效（保留简单音调）
