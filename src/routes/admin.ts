@@ -619,6 +619,69 @@ app.post('/slot/weights', requireAdmin, async (c) => {
 });
 
 /**
+ * 获取奖励倍数配置
+ */
+app.get('/slot/multipliers', requireAdmin, async (c) => {
+    try {
+        const multipliers = slotQueries.getMultipliers.get();
+        return c.json({
+            success: true,
+            data: multipliers || {
+                super_jackpot_multiplier: 256,
+                special_combo_multiplier: 16,
+                quad_multiplier: 32,
+                triple_multiplier: 8,
+                double_multiplier: 4
+            }
+        });
+    } catch (error: any) {
+        console.error('获取奖励倍数失败:', error);
+        return c.json({ success: false, message: '获取奖励倍数失败' }, 500);
+    }
+});
+
+/**
+ * 更新奖励倍数配置
+ */
+app.post('/slot/multipliers', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { super_jackpot_multiplier, special_combo_multiplier, quad_multiplier, triple_multiplier, double_multiplier } = body;
+
+        // 验证所有倍数都是正整数
+        const multipliers = [super_jackpot_multiplier, special_combo_multiplier, quad_multiplier, triple_multiplier, double_multiplier];
+        for (const multiplier of multipliers) {
+            if (multiplier !== undefined && (typeof multiplier !== 'number' || multiplier < 1 || multiplier > 10000)) {
+                return c.json({ success: false, message: '倍数必须是1-10000之间的整数' }, 400);
+            }
+        }
+
+        const now = Date.now();
+        const currentMultipliers = slotQueries.getMultipliers.get();
+
+        slotQueries.updateMultipliers.run(
+            super_jackpot_multiplier !== undefined ? super_jackpot_multiplier : currentMultipliers!.super_jackpot_multiplier,
+            special_combo_multiplier !== undefined ? special_combo_multiplier : currentMultipliers!.special_combo_multiplier,
+            quad_multiplier !== undefined ? quad_multiplier : currentMultipliers!.quad_multiplier,
+            triple_multiplier !== undefined ? triple_multiplier : currentMultipliers!.triple_multiplier,
+            double_multiplier !== undefined ? double_multiplier : currentMultipliers!.double_multiplier,
+            now
+        );
+
+        console.log('[管理员] 奖励倍数已更新:', body);
+
+        return c.json({
+            success: true,
+            message: '奖励倍数已更新',
+            data: slotQueries.getMultipliers.get()
+        });
+    } catch (error: any) {
+        console.error('更新奖励倍数失败:', error);
+        return c.json({ success: false, message: '更新失败' }, 500);
+    }
+});
+
+/**
  * 获取老虎机抽奖分析数据
  */
 app.get('/slot/analytics', requireAdmin, async (c) => {

@@ -44,6 +44,32 @@ export function getSymbolWeights(): Record<string, number> {
     return DEFAULT_SYMBOL_WEIGHTS;
 }
 
+// 从数据库获取奖励倍数
+export function getRewardMultipliers() {
+    try {
+        const multipliers = slotQueries.getMultipliers.get();
+        if (multipliers) {
+            return {
+                super_jackpot: multipliers.super_jackpot_multiplier,
+                special_combo: multipliers.special_combo_multiplier,
+                quad: multipliers.quad_multiplier,
+                triple: multipliers.triple_multiplier,
+                double: multipliers.double_multiplier
+            };
+        }
+    } catch (error) {
+        console.error('获取奖励倍数失败，使用默认值:', error);
+    }
+    // 返回默认值（已互换）
+    return {
+        super_jackpot: 256,
+        special_combo: 16,
+        quad: 32,
+        triple: 8,
+        double: 4
+    };
+}
+
 // 中奖类型
 export enum WinType {
     SUPER_JACKPOT = 'super_jackpot',      // 256x 特殊顺序
@@ -131,6 +157,9 @@ export function calculateWin(symbols: string[]): {
     punishmentCount?: number;  // 律师函数量
     shouldBan?: boolean;       // 是否需要禁止抽奖
 } {
+    // 获取奖励倍数配置
+    const multipliers = getRewardMultipliers();
+
     // 1. 惩罚规则（最高优先级）
     const punishmentCount = symbols.filter(s => s === SYMBOLS.PUNISHMENT).length;
 
@@ -149,7 +178,7 @@ export function calculateWin(symbols: string[]): {
     if (arraysEqual(symbols, ['j', 'n', 't', 'm'])) {
         return {
             winType: WinType.SUPER_JACKPOT,
-            multiplier: 256,
+            multiplier: multipliers.super_jackpot,
             freeSpinAwarded: false
         };
     }
@@ -158,7 +187,7 @@ export function calculateWin(symbols: string[]): {
     if (arraysEqual(symbols, ['bj', 'zft', 'bdk', 'lq'])) {
         return {
             winType: WinType.SUPER_JACKPOT,
-            multiplier: 256,
+            multiplier: multipliers.super_jackpot,
             freeSpinAwarded: false
         };
     }
@@ -167,7 +196,7 @@ export function calculateWin(symbols: string[]): {
     if (containsAll(symbols, SYMBOLS.SPECIAL_GROUP_1)) {
         return {
             winType: WinType.SPECIAL_COMBO,
-            multiplier: 32,
+            multiplier: multipliers.special_combo,
             freeSpinAwarded: false
         };
     }
@@ -175,7 +204,7 @@ export function calculateWin(symbols: string[]): {
     if (containsAll(symbols, SYMBOLS.SPECIAL_GROUP_2)) {
         return {
             winType: WinType.SPECIAL_COMBO,
-            multiplier: 32,
+            multiplier: multipliers.special_combo,
             freeSpinAwarded: false
         };
     }
@@ -187,7 +216,7 @@ export function calculateWin(symbols: string[]): {
     if (maxCount === 4) {
         return {
             winType: WinType.QUAD,
-            multiplier: 16,  // 2^4
+            multiplier: multipliers.quad,
             freeSpinAwarded: true  // 奖励1次免费
         };
     }
@@ -195,20 +224,19 @@ export function calculateWin(symbols: string[]): {
     if (maxCount === 3) {
         return {
             winType: WinType.TRIPLE,
-            multiplier: 8,  // 2^3
-            freeSpinAwarded: true  // 奖励1次免费
+            multiplier: multipliers.triple,
+            freeSpinAwarded: false
         };
     }
 
     if (maxCount === 2) {
         return {
             winType: WinType.DOUBLE,
-            multiplier: 4,  // 2^2
+            multiplier: multipliers.double,
             freeSpinAwarded: false
         };
     }
 
-    // 未中奖
     return {
         winType: WinType.NONE,
         multiplier: 0,

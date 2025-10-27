@@ -3272,7 +3272,7 @@
         document.getElementById('modalSuccessAmount').textContent = `$${(summary.success_amount / 500000).toFixed(2)}`;
         
         // 获取当前用户信息（包含余额）
-        const userRes = await fetch('/api/user/info');
+        const userRes = await fetch('/api/user/quota');
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;
@@ -3364,7 +3364,7 @@
         }
         
         // 同时获取当前余额
-        const userRes = await fetch('/api/user/info');
+        const userRes = await fetch('/api/user/quota');
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;

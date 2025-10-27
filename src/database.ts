@@ -269,6 +269,25 @@ export function initDatabase() {
     VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, ${Date.now()})
   `);
 
+    // 奖励倍数配置表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS slot_reward_multipliers (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      super_jackpot_multiplier INTEGER DEFAULT 256,
+      special_combo_multiplier INTEGER DEFAULT 16,
+      quad_multiplier INTEGER DEFAULT 32,
+      triple_multiplier INTEGER DEFAULT 8,
+      double_multiplier INTEGER DEFAULT 4,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 插入默认奖励倍数配置
+    db.exec(`
+    INSERT OR IGNORE INTO slot_reward_multipliers (id, super_jackpot_multiplier, special_combo_multiplier, quad_multiplier, triple_multiplier, double_multiplier, updated_at)
+    VALUES (1, 256, 16, 32, 8, 4, ${Date.now()})
+  `);
+
     // 老虎机游戏记录表
     db.exec(`
     CREATE TABLE IF NOT EXISTS slot_machine_records (
@@ -519,6 +538,14 @@ function initQueries() {
         ),
         updateWeights: db.query(
             'UPDATE slot_symbol_weights SET weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, updated_at = ? WHERE id = 1'
+        ),
+
+        // 奖励倍数配置
+        getMultipliers: db.query<any, never>(
+            'SELECT * FROM slot_reward_multipliers WHERE id = 1'
+        ),
+        updateMultipliers: db.query(
+            'UPDATE slot_reward_multipliers SET super_jackpot_multiplier = ?, special_combo_multiplier = ?, quad_multiplier = ?, triple_multiplier = ?, double_multiplier = ?, updated_at = ? WHERE id = 1'
         ),
 
         // 游戏记录

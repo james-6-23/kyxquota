@@ -678,14 +678,34 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
             processed_at: reward.processed_at
         }));
 
+        // 计算待发放和已成功的统计
+        const pendingRewards = formattedRewards.filter((r: any) =>
+            r.status === 'pending' || r.status === 'processing' || r.status === 'failed'
+        );
+        const successRewards = formattedRewards.filter((r: any) => r.status === 'success');
+
+        const pendingAmount = pendingRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
+        const successAmount = successRewards.reduce((sum: number, r: any) => sum + r.amount, 0);
+
+        // 格式化显示日期
+        const formattedWithDates = formattedRewards.map((r: any) => ({
+            ...r,
+            amount: r.amount / 500000,  // 转换为美元
+            created_date: new Date(r.created_at).toLocaleString('zh-CN'),
+            updated_date: new Date(r.updated_at).toLocaleString('zh-CN'),
+        }));
+
         return c.json({
             success: true,
             data: {
-                rewards: formattedRewards,
                 summary: {
-                    count: summary?.count || 0,
-                    total_amount: summary?.total_amount || 0
-                }
+                    pending_count: pendingRewards.length,
+                    pending_amount: pendingAmount,
+                    success_count: successRewards.length,
+                    success_amount: successAmount,
+                    total_count: formattedRewards.length
+                },
+                rewards: formattedWithDates
             }
         });
     } catch (error) {
