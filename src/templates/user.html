@@ -2748,10 +2748,31 @@
       const freeSpinButton = document.getElementById('freeSpinButton');
 
       // 普通旋转按钮
-      if (slotUserData.remaining_spins > 0 && slotUserData.quota >= slotConfig.min_quota_required) {
+      const hasSpins = slotUserData.remaining_spins > 0;
+      const hasQuota = slotUserData.quota >= slotConfig.min_quota_required;
+
+      console.log('[updateSlotUI] Spin按钮状态检查:', {
+        remaining_spins: slotUserData.remaining_spins,
+        hasSpins: hasSpins,
+        quota: slotUserData.quota,
+        min_quota_required: slotConfig.min_quota_required,
+        hasQuota: hasQuota,
+        quotaUSD: `$${(slotUserData.quota / 500000).toFixed(2)}`,
+        minQuotaUSD: `$${(slotConfig.min_quota_required / 500000).toFixed(2)}`,
+        shouldEnable: hasSpins && hasQuota
+      });
+
+      if (hasSpins && hasQuota) {
         spinButton.disabled = false;
+        console.log('[updateSlotUI] ✅ Spin按钮已启用');
       } else {
         spinButton.disabled = true;
+        if (!hasSpins) {
+          console.log('[updateSlotUI] ❌ Spin按钮禁用：没有剩余次数');
+        }
+        if (!hasQuota) {
+          console.log('[updateSlotUI] ❌ Spin按钮禁用：额度不足（需要至少 $' + (slotConfig.min_quota_required / 500000).toFixed(2) + '）');
+        }
       }
 
       // 免费旋转按钮

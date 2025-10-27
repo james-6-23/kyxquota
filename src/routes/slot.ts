@@ -1017,6 +1017,8 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         const newBoughtToday = totalBoughtToday + 1;
         const newRemainingSpins = Math.max(0, config.max_daily_spins + newBoughtToday - todaySpins);
 
+        console.log(`[购买次数] 🔍 计算剩余次数 - max_daily_spins: ${config.max_daily_spins}, newBoughtToday: ${newBoughtToday}, todaySpins: ${todaySpins}, newRemainingSpins: ${newRemainingSpins}`);
+
         // 返回新的额度和购买信息
         return c.json({
             success: true,
