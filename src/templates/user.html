@@ -1192,6 +1192,40 @@
     </div>
   </div>
 
+  <!-- 购买确认弹窗 -->
+  <div id="buySpinsConfirmModal" onclick="if(event.target === this) cancelBuySpins()" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[70] p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl animate-in">
+      <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-orange-500 to-yellow-600">
+        <h3 class="text-xl font-bold text-white flex items-center gap-2">
+          <span>💰</span>
+          <span>确认购买</span>
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="mb-6 text-center">
+          <p class="text-lg text-slate-900 mb-3">确认购买1次抽奖机会吗？</p>
+          <div class="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
+            <p class="text-sm text-slate-700 mb-2">
+              <span class="font-semibold">价格：</span>
+              <span id="confirmBuyPrice" class="text-2xl font-bold text-orange-600">$40.00</span>
+            </p>
+            <p class="text-xs text-slate-600 mt-2">
+              ⚠️ 购买后今日剩余次数+1（仍需投注 $20）
+            </p>
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="cancelBuySpins()" class="flex-1 px-4 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold transition-colors">
+            取消
+          </button>
+          <button onclick="confirmBuySpins()" class="flex-1 px-4 py-3 bg-gradient-to-r from-orange-500 to-yellow-600 hover:from-orange-600 hover:to-yellow-700 text-white rounded-lg font-semibold transition-all shadow-lg">
+            确认购买
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 老虎机规则弹窗 -->
   <div id="slotRulesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
@@ -2649,7 +2683,17 @@
 
     // 更新老虎机界面数据
     function updateSlotUI() {
-      if (!slotUserData || !slotConfig) return;
+      if (!slotUserData || !slotConfig) {
+        console.warn('[updateSlotUI] 缺少必要数据:', { slotUserData, slotConfig });
+        return;
+      }
+
+      console.log('[updateSlotUI] 更新UI，当前数据:', {
+        remaining_spins: slotUserData.remaining_spins,
+        free_spins: slotUserData.free_spins,
+        quota: slotUserData.quota,
+        bought_today: slotUserData.bought_today
+      });
 
       const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('slotQuota').textContent = quotaText;
@@ -2659,8 +2703,16 @@
         slotQuotaMobile.textContent = quotaText;
       }
 
-      document.getElementById('spinsRemaining').textContent = slotUserData.remaining_spins || 0;
-      document.getElementById('freeSpinsCount').textContent = slotUserData.free_spins || 0;
+      const spinsRemainingEl = document.getElementById('spinsRemaining');
+      const freeSpinsCountEl = document.getElementById('freeSpinsCount');
+
+      spinsRemainingEl.textContent = slotUserData.remaining_spins || 0;
+      freeSpinsCountEl.textContent = slotUserData.free_spins || 0;
+
+      console.log('[updateSlotUI] DOM更新完成:', {
+        spinsRemainingEl_text: spinsRemainingEl.textContent,
+        freeSpinsCountEl_text: freeSpinsCountEl.textContent
+      });
       
       // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
@@ -2749,8 +2801,8 @@
       }
     }
 
-    // 购买抽奖次数
-    async function buySpins() {
+    // 购买抽奖次数 - 显示确认弹窗
+    function buySpins() {
       const button = document.getElementById('buySpinsButton');
       if (!button) {
         showToast('按钮加载失败', 'error');
@@ -2763,13 +2815,29 @@
         return;
       }
 
-      const buyPrice = slotConfig.buy_spins_price;
-      const buyPriceUSD = (buyPrice / 500000).toFixed(2);
-
-      // 确认购买
-      if (!confirm(`确认购买1次抽奖机会吗？\n\n价格：$${buyPriceUSD}\n购买后今日剩余次数+1（仍需投注）`)) {
-        return;
+      // 更新弹窗中的价格显示
+      const buyPriceUSD = (slotConfig.buy_spins_price / 500000).toFixed(2);
+      const confirmPriceEl = document.getElementById('confirmBuyPrice');
+      if (confirmPriceEl) {
+        confirmPriceEl.textContent = `$${buyPriceUSD}`;
       }
+
+      // 显示确认弹窗
+      document.getElementById('buySpinsConfirmModal').classList.remove('hidden');
+    }
+
+    // 取消购买
+    function cancelBuySpins() {
+      document.getElementById('buySpinsConfirmModal').classList.add('hidden');
+    }
+
+    // 确认购买 - 执行购买逻辑
+    async function confirmBuySpins() {
+      // 隐藏确认弹窗
+      document.getElementById('buySpinsConfirmModal').classList.add('hidden');
+
+      const button = document.getElementById('buySpinsButton');
+      if (!button) return;
 
       // 禁用按钮
       button.disabled = true;
@@ -2792,11 +2860,16 @@
           slotUserData.remaining_spins = data.data.remaining_spins;
           slotUserData.bought_today = data.data.bought_today;
 
-          // 更新UI
-          updateSlotUI();
+          console.log('[购买成功] API返回数据:', data.data);
+          console.log('[购买成功] 更新后的 slotUserData:', {
+            quota: slotUserData.quota,
+            remaining_spins: slotUserData.remaining_spins,
+            bought_today: slotUserData.bought_today,
+            free_spins: slotUserData.free_spins
+          });
 
-          // 刷新额度显示
-          await loadQuota();
+          // 立即更新UI
+          updateSlotUI();
         } else {
           showToast(data.message, 'error');
         }
@@ -2805,10 +2878,7 @@
         showToast('购买失败，请重试', 'error');
       } finally {
         button.innerHTML = originalText;
-        button.disabled = false;
-
-        // 重新更新按钮状态（根据最新数据）
-        setTimeout(() => updateSlotUI(), 100);
+        // 不在这里重新启用按钮，让 updateSlotUI 来决定按钮状态
       }
     }
 
