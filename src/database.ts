@@ -9,6 +9,10 @@ import type {
     SlotMachineConfig,
     SlotMachineRecord,
     UserFreeSpin,
+    UserTickets,
+    AdvancedSlotConfig,
+    TicketDropRecord,
+    AdvancedSlotRTPStats,
 } from './types';
 
 // 创建数据库连接
@@ -428,7 +432,103 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_pending_rewards_linux_do_id ON pending_rewards(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_pending_rewards_created_at ON pending_rewards(created_at)');
 
-    console.log('✅ 数据库初始化完成');
+    // ========== 高级场系统表 ==========
+
+    // 用户入场券和碎片表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_tickets (
+      linux_do_id TEXT PRIMARY KEY,
+      tickets INTEGER DEFAULT 0,
+      fragments INTEGER DEFAULT 0,
+      tickets_expires_at INTEGER,
+      advanced_mode_until INTEGER,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_tickets_expires ON user_tickets(tickets_expires_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_tickets_advanced ON user_tickets(advanced_mode_until)');
+
+    // 高级场配置表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS advanced_slot_config (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      enabled INTEGER DEFAULT 1,
+      bet_min INTEGER DEFAULT 50000000,
+      bet_max INTEGER DEFAULT 250000000,
+      reward_multiplier REAL DEFAULT 4.0,
+      penalty_weight_factor REAL DEFAULT 2.0,
+      rtp_target REAL DEFAULT 0.95,
+      ticket_valid_hours INTEGER DEFAULT 24,
+      session_valid_hours INTEGER DEFAULT 24,
+      fragments_needed INTEGER DEFAULT 5,
+      drop_rate_triple REAL DEFAULT 1.0,
+      drop_rate_double REAL DEFAULT 1.0,
+      max_tickets_hold INTEGER DEFAULT 2,
+      daily_bet_limit INTEGER DEFAULT 5000000000,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 插入默认高级场配置
+    db.exec(`
+    INSERT OR IGNORE INTO advanced_slot_config (id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, updated_at)
+    VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, ${Date.now()})
+  `);
+
+    // 入场券掉落记录表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS ticket_drop_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      drop_type TEXT NOT NULL,
+      drop_count INTEGER NOT NULL,
+      trigger_win_type TEXT NOT NULL,
+      timestamp INTEGER NOT NULL,
+      date TEXT NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ticket_drop_linux_do_id ON ticket_drop_records(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ticket_drop_timestamp ON ticket_drop_records(timestamp)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_ticket_drop_date ON ticket_drop_records(date)');
+
+    // 高级场RTP统计表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS advanced_slot_rtp_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL UNIQUE,
+      total_bet INTEGER DEFAULT 0,
+      total_win INTEGER DEFAULT 0,
+      rtp REAL DEFAULT 0,
+      games_count INTEGER DEFAULT 0,
+      last_updated INTEGER NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_advanced_rtp_linux_do_id ON advanced_slot_rtp_stats(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_advanced_rtp_last_updated ON advanced_slot_rtp_stats(last_updated)');
+
+    // 修改 slot_machine_records 表，添加高级场相关字段（兼容旧数据）
+    try {
+        db.exec('ALTER TABLE slot_machine_records ADD COLUMN slot_mode TEXT DEFAULT \'normal\'');
+        console.log('✅ 已添加 slot_mode 字段到 slot_machine_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_machine_records ADD COLUMN ticket_dropped INTEGER DEFAULT 0');
+        console.log('✅ 已添加 ticket_dropped 字段到 slot_machine_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_machine_records ADD COLUMN drop_type TEXT');
+        console.log('✅ 已添加 drop_type 字段到 slot_machine_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_records_mode ON slot_machine_records(slot_mode)');
+
+    console.log('✅ 数据库初始化完成（含高级场系统）');
 
     // 初始化预编译查询语句
     initQueries();
@@ -445,6 +545,7 @@ export let sessionQueries: any;
 export let adminQueries: any;
 export let slotQueries: any;
 export let pendingRewardQueries: any;
+export let advancedSlotQueries: any;  // 高级场查询
 
 /**
  * 初始化预编译查询语句
@@ -735,6 +836,108 @@ function initQueries() {
         ),
     };
 
+    // ========== 高级场系统查询 ==========
+    advancedSlotQueries = {
+        // 入场券和碎片管理
+        getTickets: db.query<UserTickets, string>(
+            'SELECT * FROM user_tickets WHERE linux_do_id = ?'
+        ),
+        upsertTickets: db.query(
+            `INSERT INTO user_tickets (linux_do_id, tickets, fragments, tickets_expires_at, advanced_mode_until, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tickets = excluded.tickets,
+             fragments = excluded.fragments,
+             tickets_expires_at = excluded.tickets_expires_at,
+             advanced_mode_until = excluded.advanced_mode_until,
+             updated_at = excluded.updated_at`
+        ),
+        addTickets: db.query(
+            `INSERT INTO user_tickets (linux_do_id, tickets, tickets_expires_at, updated_at)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tickets = MIN(tickets + ?, ?),
+             tickets_expires_at = ?,
+             updated_at = ?`
+        ),
+        addFragments: db.query(
+            `INSERT INTO user_tickets (linux_do_id, fragments, updated_at)
+             VALUES (?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             fragments = fragments + ?,
+             updated_at = ?`
+        ),
+        useTicket: db.query(
+            `UPDATE user_tickets SET 
+             tickets = tickets - 1,
+             advanced_mode_until = ?,
+             updated_at = ?
+             WHERE linux_do_id = ? AND tickets > 0`
+        ),
+        clearExpiredTickets: db.query(
+            `UPDATE user_tickets 
+             SET tickets = 0, tickets_expires_at = NULL, updated_at = ?
+             WHERE linux_do_id = ? AND tickets_expires_at < ?`
+        ),
+        exitAdvancedMode: db.query(
+            `UPDATE user_tickets
+             SET advanced_mode_until = NULL, updated_at = ?
+             WHERE linux_do_id = ?`
+        ),
+
+        // 高级场配置
+        getAdvancedConfig: db.query<AdvancedSlotConfig, never>(
+            'SELECT * FROM advanced_slot_config WHERE id = 1'
+        ),
+        updateAdvancedConfig: db.query(
+            `UPDATE advanced_slot_config SET
+             enabled = ?,
+             bet_min = ?,
+             bet_max = ?,
+             reward_multiplier = ?,
+             penalty_weight_factor = ?,
+             rtp_target = ?,
+             ticket_valid_hours = ?,
+             session_valid_hours = ?,
+             fragments_needed = ?,
+             drop_rate_triple = ?,
+             drop_rate_double = ?,
+             max_tickets_hold = ?,
+             daily_bet_limit = ?,
+             updated_at = ?
+             WHERE id = 1`
+        ),
+
+        // 入场券掉落记录
+        insertDropRecord: db.query(
+            'INSERT INTO ticket_drop_records (linux_do_id, username, drop_type, drop_count, trigger_win_type, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getDropRecordsByUser: db.query<TicketDropRecord, string>(
+            'SELECT * FROM ticket_drop_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllDropRecords: db.query<TicketDropRecord, never>(
+            'SELECT * FROM ticket_drop_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+
+        // RTP 统计
+        getRTPStats: db.query<AdvancedSlotRTPStats, string>(
+            'SELECT * FROM advanced_slot_rtp_stats WHERE linux_do_id = ?'
+        ),
+        updateRTPStats: db.query(
+            `INSERT INTO advanced_slot_rtp_stats (linux_do_id, total_bet, total_win, rtp, games_count, last_updated)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             total_bet = total_bet + ?,
+             total_win = total_win + ?,
+             rtp = CAST(total_win AS REAL) / CAST(total_bet AS REAL),
+             games_count = games_count + 1,
+             last_updated = ?`
+        ),
+        getAllRTPStats: db.query<AdvancedSlotRTPStats, never>(
+            'SELECT * FROM advanced_slot_rtp_stats ORDER BY games_count DESC LIMIT 100'
+        ),
+    };
+
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
         const now = Date.now();
@@ -744,6 +947,6 @@ function initQueries() {
         }
     }, 3600000);
 
-    console.log('✅ 数据库查询语句已预编译');
+    console.log('✅ 数据库查询语句已预编译（含高级场系统）');
 }
 

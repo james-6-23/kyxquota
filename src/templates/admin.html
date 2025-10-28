@@ -138,10 +138,19 @@
             <span>🎁</span> 投喂记录
           </button>
           <button onclick="showSection('slotRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎰</span> 老虎机记录
+            <span>🎰</span> 初级场记录
+          </button>
+          <button onclick="showSection('advancedSlotRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🔥</span> 高级场记录
           </button>
           <button onclick="showSection('slotConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>⚙️</span> 老虎机配置
+          </button>
+          <button onclick="showSection('advancedSlotConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🔥</span> 高级场配置
+          </button>
+          <button onclick="showSection('ticketDropRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🎟️</span> 入场券掉落
           </button>
           <button onclick="showSection('slotAnalytics')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>📈</span> 抽奖分析
@@ -646,9 +655,287 @@
           </div>
         </div>
 
+        <!-- 🔥 Advanced Slot Records Section -->
+        <div id="advancedSlotRecordsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🔥 高级场游戏记录</h2>
+            <button onclick="refreshAdvancedSlotRecords()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+          
+          <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p class="text-sm text-red-800">
+              💡 <strong>高级场特色：</strong>投注金额$100-$500可选，奖励倍率×4，惩罚权重×2，目标RTP 95%
+            </p>
+          </div>
+
+          <!-- 统计信息 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p class="text-sm text-slate-600">总记录数</p>
+                <p id="advancedSlotTotal" class="text-2xl font-bold text-slate-900">0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">总投注</p>
+                <p id="advancedSlotTotalBet" class="text-2xl font-bold text-blue-600">$0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">总获奖</p>
+                <p id="advancedSlotTotalWin" class="text-2xl font-bold text-green-600">$0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">实际RTP</p>
+                <p id="advancedSlotRTP" class="text-2xl font-bold text-purple-600">0%</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gradient-to-r from-red-50 to-orange-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">时间</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">投注金额</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">符号</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">中奖类型</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">倍率</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">奖金</th>
+                  </tr>
+                </thead>
+                <tbody id="advancedSlotRecordsBody">
+                  <tr>
+                    <td colspan="8" class="px-4 py-8 text-center text-slate-400">暂无高级场游戏记录</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div id="advancedSlotRecordsPagination" class="hidden px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div class="text-sm text-slate-600">
+                共 <span id="advancedSlotRecordsTotal">0</span> 条记录，当前第 <span id="advancedSlotCurrentPage">1</span> 页
+              </div>
+              <div class="flex gap-2">
+                <button onclick="advancedSlotPrevPage()" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" id="advancedSlotPrevBtn">
+                  上一页
+                </button>
+                <button onclick="advancedSlotNextPage()" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" id="advancedSlotNextBtn">
+                  下一页
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔥 Advanced Slot Config Section -->
+        <div id="advancedSlotConfigSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">🔥 高级场配置</h2>
+          
+          <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-6">
+            <p class="text-sm text-red-800">
+              ⚠️ <strong>注意：</strong>配置修改后立即生效，影响所有用户的高级场体验
+            </p>
+          </div>
+
+          <!-- 基础设置 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">基础设置</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- 启用状态 -->
+              <div>
+                <label class="flex items-center gap-2">
+                  <input type="checkbox" id="advancedEnabled" class="w-5 h-5 text-red-600 rounded">
+                  <span class="text-sm font-medium text-slate-700">启用高级场功能</span>
+                </label>
+              </div>
+              
+              <!-- 投注范围 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">投注范围</label>
+                <div class="flex items-center gap-2">
+                  <input type="number" id="advancedBetMin" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg" placeholder="最小投注">
+                  <span class="text-slate-600">~</span>
+                  <input type="number" id="advancedBetMax" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg" placeholder="最大投注">
+                </div>
+                <p class="text-xs text-slate-500 mt-1">
+                  美元换算: $<span id="advancedBetMinUsd">100</span> ~ $<span id="advancedBetMaxUsd">500</span>
+                </p>
+              </div>
+              
+              <!-- 奖励倍数放大 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">奖励倍数放大系数</label>
+                <input type="number" step="0.1" id="advancedRewardMultiplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">高级场奖励 = 基础倍率 × 此系数（推荐：4.0）</p>
+              </div>
+              
+              <!-- 惩罚权重放大 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">惩罚权重放大系数</label>
+                <input type="number" step="0.1" id="advancedPenaltyFactor" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">律师函权重 × 此系数（推荐：2.0）</p>
+              </div>
+              
+              <!-- RTP目标 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">目标RTP</label>
+                <input type="number" step="0.01" min="0.5" max="1.5" id="advancedRTPTarget" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">目标回报率（推荐：0.95，即95%）</p>
+              </div>
+              
+              <!-- 每日投注上限 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日投注上限</label>
+                <input type="number" id="advancedDailyBetLimit" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">
+                  美元换算: $<span id="advancedDailyBetLimitUsd">10000</span>
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 时效设置 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">时效设置</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- 入场券有效期 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">入场券有效期（小时）</label>
+                <input type="number" id="advancedTicketValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">入场券过期时间（推荐：24小时）</p>
+              </div>
+              
+              <!-- 高级场停留时长 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">高级场停留时长（小时）</label>
+                <input type="number" id="advancedSessionValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">进入高级场后的有效时间（推荐：24小时）</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 掉落设置 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">掉落设置</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <!-- 合成所需碎片 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">合成所需碎片数</label>
+                <input type="number" id="advancedFragmentsNeeded" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">碎片合成入场券（推荐：5个）</p>
+              </div>
+              
+              <!-- 三连掉落概率 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">三连掉落概率</label>
+                <input type="number" step="0.1" min="0" max="1" id="advancedDropRateTriple" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">0-1之间（推荐：1.0，即100%）</p>
+              </div>
+              
+              <!-- 二连掉落概率 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">二连掉落概率</label>
+                <input type="number" step="0.1" min="0" max="1" id="advancedDropRateDouble" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">0-1之间（推荐：1.0，即100%）</p>
+              </div>
+              
+              <!-- 最多持有券数 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">最多持有入场券</label>
+                <input type="number" id="advancedMaxTicketsHold" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">防止囤券（推荐：2张）</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 保存按钮 -->
+          <div class="flex gap-4">
+            <button onclick="saveAdvancedSlotConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+              💾 保存配置
+            </button>
+            <button onclick="loadAdvancedSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
+              🔄 重置
+            </button>
+          </div>
+        </div>
+
+        <!-- 🎟️ Ticket Drop Records Section -->
+        <div id="ticketDropRecordsSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">🎟️ 入场券掉落记录</h2>
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p class="text-sm text-slate-600">总掉落次数</p>
+                <p id="ticketDropTotal" class="text-2xl font-bold text-slate-900">0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">入场券掉落</p>
+                <p id="ticketDropCount" class="text-2xl font-bold text-purple-600">0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">碎片掉落</p>
+                <p id="fragmentDropCount" class="text-2xl font-bold text-blue-600">0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">今日掉落</p>
+                <p id="todayDropCount" class="text-2xl font-bold text-green-600">0</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-slate-50">
+                  <tr>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">时间</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">掉落类型</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">数量</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-slate-700">触发条件</th>
+                  </tr>
+                </thead>
+                <tbody id="ticketDropRecordsBody">
+                  <tr>
+                    <td colspan="6" class="px-4 py-8 text-center text-slate-400">暂无掉落记录</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div id="ticketDropPagination" class="hidden px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div class="text-sm text-slate-600">
+                共 <span id="ticketDropRecordsTotal">0</span> 条记录，当前第 <span id="ticketDropCurrentPage">1</span> 页
+              </div>
+              <div class="flex gap-2">
+                <button onclick="ticketDropPrevPage()" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" id="ticketDropPrevBtn">
+                  上一页
+                </button>
+                <button onclick="ticketDropNextPage()" class="px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 text-sm disabled:opacity-50 disabled:cursor-not-allowed" id="ticketDropNextBtn">
+                  下一页
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Slot Machine Config Section -->
         <div id="slotConfigSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">老虎机配置</h2>
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">⚙️ 老虎机配置（初级场）</h2>
           
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <h3 class="text-lg font-semibold text-slate-900 mb-4">基本配置</h3>
@@ -1174,7 +1461,7 @@
         <!-- Slot Machine Records Section -->
         <div id="slotRecordsSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold text-slate-900">老虎机记录</h2>
+            <h2 class="text-2xl font-bold text-slate-900">🎰 初级场游戏记录</h2>
             <button onclick="refreshSlotRecords()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
               <svg id="slotRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -2844,18 +3131,21 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'slotConfig', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
 
       if (section === 'users') loadUsersList(1);
       if (section === 'slotRecords') loadSlotRecords(1);
+      if (section === 'advancedSlotRecords') loadAdvancedSlotRecords(1);
+      if (section === 'ticketDropRecords') loadTicketDropRecords(1);
       if (section === 'slotConfig') {
         loadSlotConfig();
         loadSymbolWeights();
         loadMultipliers();
       }
+      if (section === 'advancedSlotConfig') loadAdvancedSlotConfig();
       if (section === 'slotAnalytics') loadSlotAnalytics();
       if (section === 'profitLeaderboard') loadProfitLeaderboard();
       if (section === 'lossLeaderboard') loadLossLeaderboard();
@@ -4266,6 +4556,273 @@
         document.getElementById('loginSection').classList.remove('hidden');
       }
     };
+
+    // ========== 高级场管理功能 ==========
+
+    // 高级场配置管理
+    async function loadAdvancedSlotConfig() {
+      try {
+        const res = await fetch('/api/admin/slot/advanced/config');
+        const data = await res.json();
+
+        if (data.success) {
+          const config = data.data;
+          
+          // 基础设置
+          document.getElementById('advancedEnabled').checked = config.enabled === 1;
+          document.getElementById('advancedBetMin').value = config.bet_min;
+          document.getElementById('advancedBetMax').value = config.bet_max;
+          document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier;
+          document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor;
+          document.getElementById('advancedRTPTarget').value = config.rtp_target;
+          document.getElementById('advancedDailyBetLimit').value = config.daily_bet_limit;
+          
+          // 时效设置
+          document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours;
+          document.getElementById('advancedSessionValidHours').value = config.session_valid_hours;
+          
+          // 掉落设置
+          document.getElementById('advancedFragmentsNeeded').value = config.fragments_needed;
+          document.getElementById('advancedDropRateTriple').value = config.drop_rate_triple;
+          document.getElementById('advancedDropRateDouble').value = config.drop_rate_double;
+          document.getElementById('advancedMaxTicketsHold').value = config.max_tickets_hold;
+          
+          // 更新美元换算显示
+          document.getElementById('advancedBetMinUsd').textContent = (config.bet_min / 500000).toFixed(0);
+          document.getElementById('advancedBetMaxUsd').textContent = (config.bet_max / 500000).toFixed(0);
+          document.getElementById('advancedDailyBetLimitUsd').textContent = (config.daily_bet_limit / 500000).toFixed(0);
+          
+          // 实时更新美元换算
+          document.getElementById('advancedBetMin').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value) || 0;
+            document.getElementById('advancedBetMinUsd').textContent = (value / 500000).toFixed(0);
+          });
+          document.getElementById('advancedBetMax').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value) || 0;
+            document.getElementById('advancedBetMaxUsd').textContent = (value / 500000).toFixed(0);
+          });
+          document.getElementById('advancedDailyBetLimit').addEventListener('input', (e) => {
+            const value = parseInt(e.target.value) || 0;
+            document.getElementById('advancedDailyBetLimitUsd').textContent = (value / 500000).toFixed(0);
+          });
+        }
+      } catch (error) {
+        console.error('加载高级场配置失败:', error);
+        showMessage('加载配置失败', 'error');
+      }
+    }
+
+    async function saveAdvancedSlotConfig() {
+      try {
+        const config = {
+          enabled: document.getElementById('advancedEnabled').checked ? 1 : 0,
+          bet_min: parseInt(document.getElementById('advancedBetMin').value),
+          bet_max: parseInt(document.getElementById('advancedBetMax').value),
+          reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value),
+          penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value),
+          rtp_target: parseFloat(document.getElementById('advancedRTPTarget').value),
+          ticket_valid_hours: parseInt(document.getElementById('advancedTicketValidHours').value),
+          session_valid_hours: parseInt(document.getElementById('advancedSessionValidHours').value),
+          fragments_needed: parseInt(document.getElementById('advancedFragmentsNeeded').value),
+          drop_rate_triple: parseFloat(document.getElementById('advancedDropRateTriple').value),
+          drop_rate_double: parseFloat(document.getElementById('advancedDropRateDouble').value),
+          max_tickets_hold: parseInt(document.getElementById('advancedMaxTicketsHold').value),
+          daily_bet_limit: parseInt(document.getElementById('advancedDailyBetLimit').value)
+        };
+        
+        // 验证
+        if (config.bet_min >= config.bet_max) {
+          showMessage('最小投注必须小于最大投注', 'error');
+          return;
+        }
+        
+        const res = await fetch('/api/admin/slot/advanced/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('高级场配置已更新', 'success');
+          console.log('[管理员] 高级场配置已保存:', config);
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('保存高级场配置失败:', error);
+        showMessage('保存配置失败', 'error');
+      }
+    }
+
+    // 高级场游戏记录
+    let advancedSlotCurrentPage = 1;
+    let advancedSlotPageSize = 50;
+
+    async function loadAdvancedSlotRecords(page = 1) {
+      try {
+        advancedSlotCurrentPage = page;
+        const res = await fetch(`/api/admin/slot/advanced/records?page=${page}&pageSize=${advancedSlotPageSize}`);
+        const data = await res.json();
+
+        if (data.success) {
+          const { records, total, stats } = data.data;
+          
+          // 更新统计信息
+          document.getElementById('advancedSlotTotal').textContent = stats.count;
+          document.getElementById('advancedSlotTotalBet').textContent = `$${(stats.total_bet / 500000).toFixed(2)}`;
+          document.getElementById('advancedSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
+          const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
+          document.getElementById('advancedSlotRTP').textContent = `${rtp}%`;
+          
+          // 渲染表格
+          const tbody = document.getElementById('advancedSlotRecordsBody');
+          if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">暂无高级场游戏记录</td></tr>';
+          } else {
+            tbody.innerHTML = records.map(r => {
+              const symbols = JSON.parse(r.result_symbols);
+              const winTypeNames = {
+                'super_jackpot': '🏆 超级大奖',
+                'special_combo': '💎 特殊组合',
+                'quad': '🎰 四连',
+                'triple': '✨ 三连',
+                'double': '🎁 双连',
+                'punishment': '⚡ 律师函',
+                'none': '❌ 未中奖'
+              };
+              const winAmount = r.win_amount;
+              const amountClass = winAmount > 0 ? 'text-green-600 font-semibold' : (winAmount < 0 ? 'text-red-600 font-semibold' : 'text-slate-600');
+              
+              return `
+                <tr class="border-t border-slate-200 hover:bg-slate-50">
+                  <td class="px-4 py-3 text-sm text-slate-600">${r.id}</td>
+                  <td class="px-4 py-3 text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="font-medium text-slate-900">${r.linux_do_username || r.username}</div>
+                    <div class="text-xs text-slate-500">${r.username}</div>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-semibold text-blue-600">$${(r.bet_amount / 500000).toFixed(2)}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex gap-1">
+                      ${symbols.map(s => `<img src="/slot-symbols/${s}.${['m','t','n','j','lsh'].includes(s) ? 'png' : 'jpg'}" class="w-8 h-8 object-contain" title="${s}">`).join('')}
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">${winTypeNames[r.win_type] || r.win_type}</td>
+                  <td class="px-4 py-3 text-sm font-semibold">${r.win_multiplier}x</td>
+                  <td class="px-4 py-3 text-sm ${amountClass}">${winAmount >= 0 ? '+' : ''}$${(winAmount / 500000).toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+          
+          // 更新分页
+          document.getElementById('advancedSlotRecordsTotal').textContent = total;
+          document.getElementById('advancedSlotCurrentPage').textContent = page;
+          document.getElementById('advancedSlotPrevBtn').disabled = page <= 1;
+          document.getElementById('advancedSlotNextBtn').disabled = records.length < advancedSlotPageSize;
+          
+          if (total > 0) {
+            document.getElementById('advancedSlotRecordsPagination').classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.error('加载高级场记录失败', e);
+        showMessage('加载记录失败', 'error');
+      }
+    }
+
+    function refreshAdvancedSlotRecords() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage);
+    }
+
+    function advancedSlotPrevPage() {
+      if (advancedSlotCurrentPage > 1) {
+        loadAdvancedSlotRecords(advancedSlotCurrentPage - 1);
+      }
+    }
+
+    function advancedSlotNextPage() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage + 1);
+    }
+
+    // 入场券掉落记录
+    let ticketDropCurrentPage = 1;
+    let ticketDropPageSize = 50;
+
+    async function loadTicketDropRecords(page = 1) {
+      try {
+        ticketDropCurrentPage = page;
+        const res = await fetch(`/api/admin/slot/tickets/drop-records?page=${page}&pageSize=${ticketDropPageSize}`);
+        const data = await res.json();
+
+        if (data.success) {
+          const { records, total, stats } = data.data;
+          
+          // 更新统计信息
+          document.getElementById('ticketDropTotal').textContent = stats.total;
+          document.getElementById('ticketDropCount').textContent = stats.ticket_drops;
+          document.getElementById('fragmentDropCount').textContent = stats.fragment_drops;
+          document.getElementById('todayDropCount').textContent = stats.today_drops;
+          
+          // 渲染表格
+          const tbody = document.getElementById('ticketDropRecordsBody');
+          if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">暂无掉落记录</td></tr>';
+          } else {
+            tbody.innerHTML = records.map(r => {
+              const dropIcon = r.drop_type === 'ticket' ? '🎟️' : '🧩';
+              const dropName = r.drop_type === 'ticket' ? '入场券' : '碎片';
+              const winTypeNames = {
+                'quad': '🎰 四连',
+                'triple': '✨ 三连',
+                'double': '🎁 双连'
+              };
+              
+              return `
+                <tr class="border-t border-slate-200 hover:bg-slate-50">
+                  <td class="px-4 py-3 text-sm text-slate-600">${r.id}</td>
+                  <td class="px-4 py-3 text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                  <td class="px-4 py-3 text-sm font-medium text-slate-900">${r.username}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                      ${dropIcon} ${dropName}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-semibold text-indigo-600">${r.drop_count}</td>
+                  <td class="px-4 py-3 text-sm">${winTypeNames[r.trigger_win_type] || r.trigger_win_type}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+          
+          // 更新分页
+          document.getElementById('ticketDropRecordsTotal').textContent = total;
+          document.getElementById('ticketDropCurrentPage').textContent = page;
+          document.getElementById('ticketDropPrevBtn').disabled = page <= 1;
+          document.getElementById('ticketDropNextBtn').disabled = records.length < ticketDropPageSize;
+          
+          if (total > 0) {
+            document.getElementById('ticketDropPagination').classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.error('加载掉落记录失败', e);
+        showMessage('加载记录失败', 'error');
+      }
+    }
+
+    function ticketDropPrevPage() {
+      if (ticketDropCurrentPage > 1) {
+        loadTicketDropRecords(ticketDropCurrentPage - 1);
+      }
+    }
+
+    function ticketDropNextPage() {
+      loadTicketDropRecords(ticketDropCurrentPage + 1);
+    }
+
   </script>
 </body>
 </html>

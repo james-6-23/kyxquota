@@ -25,6 +25,19 @@ import {
     WIN_TYPE_NAMES,
     WinType
 } from '../services/slot';
+import {
+    getUserTickets,
+    getAdvancedSlotConfig,
+    addTicket,
+    addFragment,
+    synthesizeTicket,
+    checkTicketExpiry,
+    isInAdvancedMode,
+    enterAdvancedMode,
+    exitAdvancedMode,
+    checkAdvancedModeExpiry,
+    recordTicketDrop
+} from '../services/advanced-slot';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 
 const slot = new Hono();
@@ -524,6 +537,45 @@ slot.post('/spin', requireAuth, async (c) => {
             result.winType
         );
 
+        // ========== 高级场掉落逻辑 ==========
+        let ticketDropped = false;
+        let dropType: 'ticket' | 'fragment' | null = null;
+        let dropCount = 0;
+
+        // 只在初级场掉落入场券/碎片（高级场不掉落）
+        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
+        if (!inAdvancedMode) {
+            const advancedConfig = getAdvancedSlotConfig();
+
+            // 四连 → 掉落1张入场券
+            if (result.winType === WinType.QUAD && Math.random() < advancedConfig.drop_rate_triple) {
+                addTicket(session.linux_do_id, 1);
+                recordTicketDrop(session.linux_do_id, user.username, 'ticket', 1, result.winType);
+                ticketDropped = true;
+                dropType = 'ticket';
+                dropCount = 1;
+                console.log(`[掉落] 🎟️ 四连中奖！用户 ${user.username} 获得1张入场券`);
+            }
+            // 三连 → 掉落1张入场券
+            else if (result.winType === WinType.TRIPLE && Math.random() < advancedConfig.drop_rate_triple) {
+                addTicket(session.linux_do_id, 1);
+                recordTicketDrop(session.linux_do_id, user.username, 'ticket', 1, result.winType);
+                ticketDropped = true;
+                dropType = 'ticket';
+                dropCount = 1;
+                console.log(`[掉落] 🎟️ 三连中奖！用户 ${user.username} 获得1张入场券`);
+            }
+            // 二连 → 掉落1个碎片
+            else if (result.winType === WinType.DOUBLE && Math.random() < advancedConfig.drop_rate_double) {
+                addFragment(session.linux_do_id, 1);
+                recordTicketDrop(session.linux_do_id, user.username, 'fragment', 1, result.winType);
+                ticketDropped = true;
+                dropType = 'fragment';
+                dropCount = 1;
+                console.log(`[掉落] 🧩 二连中奖！用户 ${user.username} 获得1个碎片`);
+            }
+        }
+
         // 获取更新后的状态
         const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
         const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
@@ -569,7 +621,18 @@ slot.post('/spin', requireAuth, async (c) => {
             if (result.freeSpinAwarded) {
                 message += ' | 🎁 获得1次免费机会！';
             }
+            // 添加掉落消息
+            if (ticketDropped) {
+                if (dropType === 'ticket') {
+                    message += ' | 🎟️ 获得入场券×1！';
+                } else if (dropType === 'fragment') {
+                    message += ' | 🧩 获得碎片×1！';
+                }
+            }
         }
+
+        // 获取最新的入场券信息
+        const ticketsInfo = getUserTickets(session.linux_do_id);
 
         return c.json({
             success: true,
@@ -584,10 +647,16 @@ slot.post('/spin', requireAuth, async (c) => {
                 quota_after: quotaAfter,
                 spins_remaining: remainingSpinsAfter,
                 free_spins_remaining: freeSpinsAfter,
-                quota_update_failed: quotaUpdateFailed  // 新增：标记额度更新是否失败
+                quota_update_failed: quotaUpdateFailed,  // 标记额度更新是否失败
+                // 高级场掉落信息
+                ticket_dropped: ticketDropped,
+                drop_type: dropType,
+                drop_count: dropCount,
+                tickets: ticketsInfo.tickets,
+                fragments: ticketsInfo.fragments
             },
             message,
-            warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 新增：警告信息
+            warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 警告信息
         });
     } catch (error) {
         console.error('旋转老虎机失败:', error);
@@ -1059,6 +1128,130 @@ slot.post('/buy-spins', requireAuth, async (c) => {
 
     } catch (error) {
         console.error('购买抽奖次数失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+// ========== 高级场系统 API ==========
+
+/**
+ * 获取用户入场券信息
+ */
+slot.get('/tickets', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        // 检查并清理过期入场券
+        checkTicketExpiry(session.linux_do_id);
+        checkAdvancedModeExpiry(session.linux_do_id);
+
+        const tickets = getUserTickets(session.linux_do_id);
+        const config = getAdvancedSlotConfig();
+
+        return c.json({
+            success: true,
+            data: {
+                tickets: tickets.tickets,
+                fragments: tickets.fragments,
+                tickets_expires_at: tickets.tickets_expires_at,
+                advanced_mode_until: tickets.advanced_mode_until,
+                can_synthesize: tickets.fragments >= config.fragments_needed,
+                in_advanced_mode: isInAdvancedMode(session.linux_do_id),
+                fragments_needed: config.fragments_needed,
+                max_tickets_hold: config.max_tickets_hold
+            }
+        });
+    } catch (error) {
+        console.error('获取入场券信息失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 合成入场券
+ */
+slot.post('/tickets/synthesize', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        // 检查过期
+        checkTicketExpiry(session.linux_do_id);
+
+        const result = synthesizeTicket(session.linux_do_id);
+
+        return c.json(result, result.success ? 200 : 400);
+    } catch (error) {
+        console.error('合成入场券失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 进入高级场
+ */
+slot.post('/advanced/enter', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        const result = enterAdvancedMode(session.linux_do_id);
+
+        return c.json(result, result.success ? 200 : 400);
+    } catch (error) {
+        console.error('进入高级场失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 退出高级场
+ */
+slot.post('/advanced/exit', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        exitAdvancedMode(session.linux_do_id);
+
+        return c.json({
+            success: true,
+            message: '已退出高级场'
+        });
+    } catch (error) {
+        console.error('退出高级场失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 获取高级场状态
+ */
+slot.get('/advanced/status', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        // 检查过期
+        checkAdvancedModeExpiry(session.linux_do_id);
+
+        const tickets = getUserTickets(session.linux_do_id);
+        const config = getAdvancedSlotConfig();
+        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
+
+        return c.json({
+            success: true,
+            data: {
+                in_advanced_mode: inAdvancedMode,
+                advanced_mode_until: tickets.advanced_mode_until,
+                config: {
+                    enabled: config.enabled === 1,
+                    bet_min: config.bet_min,
+                    bet_max: config.bet_max,
+                    reward_multiplier: config.reward_multiplier,
+                    penalty_weight_factor: config.penalty_weight_factor,
+                    session_valid_hours: config.session_valid_hours
+                }
+            }
+        });
+    } catch (error) {
+        console.error('获取高级场状态失败:', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });

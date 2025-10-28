@@ -8,6 +8,7 @@ import {
     userQueries,
     slotQueries,
     pendingRewardQueries,
+    advancedSlotQueries,
     db,
 } from '../database';
 import { cacheManager } from '../cache';
@@ -1745,6 +1746,190 @@ app.post('/pending-rewards/:id/retry', requireAdmin, async (c) => {
     } catch (e: any) {
         console.error(`[管理员] ❌ 重置待发放奖金状态失败 - ID: ${id}, 错误:`, e);
         return c.json({ success: false, message: `重置失败: ${e.message}` }, 500);
+    }
+});
+
+// ========== 高级场管理 API ==========
+
+/**
+ * 获取高级场配置
+ */
+app.get('/slot/advanced/config', requireAdmin, async (c) => {
+    try {
+        const config = advancedSlotQueries.getAdvancedConfig.get();
+
+        return c.json({
+            success: true,
+            data: config
+        });
+    } catch (e: any) {
+        console.error('[管理员] 获取高级场配置失败:', e);
+        return c.json({ success: false, message: '获取配置失败' }, 500);
+    }
+});
+
+/**
+ * 更新高级场配置
+ */
+app.post('/slot/advanced/config', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+
+        const {
+            enabled,
+            bet_min,
+            bet_max,
+            reward_multiplier,
+            penalty_weight_factor,
+            rtp_target,
+            ticket_valid_hours,
+            session_valid_hours,
+            fragments_needed,
+            drop_rate_triple,
+            drop_rate_double,
+            max_tickets_hold,
+            daily_bet_limit
+        } = body;
+
+        // 验证参数
+        if (bet_min >= bet_max) {
+            return c.json({ success: false, message: '最小投注必须小于最大投注' }, 400);
+        }
+
+        const now = Date.now();
+        advancedSlotQueries.updateAdvancedConfig.run(
+            enabled ? 1 : 0,
+            bet_min,
+            bet_max,
+            reward_multiplier,
+            penalty_weight_factor,
+            rtp_target,
+            ticket_valid_hours,
+            session_valid_hours,
+            fragments_needed,
+            drop_rate_triple,
+            drop_rate_double,
+            max_tickets_hold,
+            daily_bet_limit,
+            now
+        );
+
+        console.log('[管理员] ✅ 高级场配置已更新:', body);
+
+        return c.json({
+            success: true,
+            message: '配置已更新'
+        });
+    } catch (e: any) {
+        console.error('[管理员] 更新高级场配置失败:', e);
+        return c.json({ success: false, message: '更新配置失败' }, 500);
+    }
+});
+
+/**
+ * 获取高级场游戏记录
+ */
+app.get('/slot/advanced/records', requireAdmin, async (c) => {
+    try {
+        const page = parseInt(c.req.query('page') || '1');
+        const pageSize = parseInt(c.req.query('pageSize') || '50');
+
+        // 查询高级场记录（slot_mode = 'advanced'）
+        const records = db.query(`
+            SELECT * FROM slot_machine_records 
+            WHERE slot_mode = 'advanced'
+            ORDER BY timestamp DESC 
+            LIMIT ? OFFSET ?
+        `).all(pageSize, (page - 1) * pageSize);
+
+        const totalResult = db.query(`
+            SELECT COUNT(*) as total FROM slot_machine_records WHERE slot_mode = 'advanced'
+        `).get() as { total: number };
+
+        const total = totalResult?.total || 0;
+
+        // 统计信息
+        const statsResult = db.query(`
+            SELECT 
+                COUNT(*) as count,
+                COALESCE(SUM(bet_amount), 0) as total_bet,
+                COALESCE(SUM(win_amount), 0) as total_win
+            FROM slot_machine_records 
+            WHERE slot_mode = 'advanced'
+        `).get() as { count: number, total_bet: number, total_win: number };
+
+        return c.json({
+            success: true,
+            data: {
+                records,
+                total,
+                page,
+                pageSize,
+                stats: statsResult
+            }
+        });
+    } catch (e: any) {
+        console.error('[管理员] 获取高级场记录失败:', e);
+        return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 获取入场券掉落记录
+ */
+app.get('/slot/tickets/drop-records', requireAdmin, async (c) => {
+    try {
+        const page = parseInt(c.req.query('page') || '1');
+        const pageSize = parseInt(c.req.query('pageSize') || '50');
+
+        const records = advancedSlotQueries.getAllDropRecords.all();
+
+        // 手动分页
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize;
+        const paginatedRecords = records.slice(start, end);
+
+        // 统计信息
+        const ticketDrops = records.filter(r => r.drop_type === 'ticket').length;
+        const fragmentDrops = records.filter(r => r.drop_type === 'fragment').length;
+        const today = new Date().toISOString().split('T')[0];
+        const todayDrops = records.filter(r => r.date === today).length;
+
+        return c.json({
+            success: true,
+            data: {
+                records: paginatedRecords,
+                total: records.length,
+                page,
+                pageSize,
+                stats: {
+                    total: records.length,
+                    ticket_drops: ticketDrops,
+                    fragment_drops: fragmentDrops,
+                    today_drops: todayDrops
+                }
+            }
+        });
+    } catch (e: any) {
+        console.error('[管理员] 获取掉落记录失败:', e);
+        return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 获取高级场RTP统计
+ */
+app.get('/slot/advanced/rtp-stats', requireAdmin, async (c) => {
+    try {
+        const stats = advancedSlotQueries.getAllRTPStats.all();
+
+        return c.json({
+            success: true,
+            data: stats
+        });
+    } catch (e: any) {
+        console.error('[管理员] 获取RTP统计失败:', e);
+        return c.json({ success: false, message: '获取统计失败' }, 500);
     }
 });
 

@@ -116,3 +116,57 @@ export interface BuySpinsRecord {
     timestamp: number;
     date: string;
 }
+
+// ========== 高级场系统类型 ==========
+
+// 用户入场券和碎片
+export interface UserTickets {
+    linux_do_id: string;
+    tickets: number;              // 完整入场券数量
+    fragments: number;             // 碎片数量
+    tickets_expires_at: number | null;  // 入场券过期时间戳
+    advanced_mode_until: number | null; // 高级场资格截止时间戳
+    updated_at: number;
+}
+
+// 高级场配置
+export interface AdvancedSlotConfig {
+    id: number;
+    enabled: number;               // 是否启用
+    bet_min: number;               // 最小投注额
+    bet_max: number;               // 最大投注额
+    reward_multiplier: number;     // 奖励倍数放大系数
+    penalty_weight_factor: number; // 惩罚权重放大系数
+    rtp_target: number;            // 目标RTP
+    ticket_valid_hours: number;    // 入场券有效期（小时）
+    session_valid_hours: number;   // 高级场停留时长（小时）
+    fragments_needed: number;       // 合成所需碎片数
+    drop_rate_triple: number;       // 三连掉落概率
+    drop_rate_double: number;       // 二连掉落概率
+    max_tickets_hold: number;       // 最多持有入场券数
+    daily_bet_limit: number;        // 每日投注上限
+    updated_at: number;
+}
+
+// 入场券掉落记录
+export interface TicketDropRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    drop_type: 'ticket' | 'fragment';  // 掉落类型
+    drop_count: number;                 // 掉落数量
+    trigger_win_type: string;           // 触发的中奖类型
+    timestamp: number;
+    date: string;
+}
+
+// 高级场RTP统计
+export interface AdvancedSlotRTPStats {
+    id?: number;
+    linux_do_id: string;
+    total_bet: number;      // 总投注
+    total_win: number;      // 总获奖
+    rtp: number;            // RTP比率
+    games_count: number;    // 游戏次数
+    last_updated: number;
+}
