@@ -762,132 +762,187 @@
             </p>
           </div>
 
-          <!-- 基础设置 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">基础设置</h3>
+          <!-- 🧱 顶部固定区（基础设置）-->
+          <div class="bg-gradient-to-br from-slate-50 to-blue-50 rounded-xl shadow-md border-2 border-slate-300 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <span>基础设置</span>
+                <button onclick="showRTPHelp()" class="text-blue-600 hover:text-blue-700 transition-colors" title="倍率与RTP说明">
+                  🧠
+                </button>
+              </h3>
+            </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- 启用状态 -->
-              <div>
-                <label class="flex items-center gap-2">
-                  <input type="checkbox" id="advancedEnabled" class="w-5 h-5 text-red-600 rounded">
-                  <span class="text-sm font-medium text-slate-700">启用高级场功能</span>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <!-- 启用开关 -->
+              <div class="md:col-span-2 lg:col-span-3">
+                <label class="flex items-center gap-3 cursor-pointer group">
+                  <div class="relative">
+                    <input type="checkbox" id="advancedEnabled" class="sr-only peer">
+                    <div class="w-14 h-7 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-red-600 peer-checked:to-orange-600"></div>
+                  </div>
+                  <span class="text-base font-semibold text-slate-900">启用高级场功能</span>
                 </label>
               </div>
               
               <!-- 投注范围 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">投注范围（美元）</label>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  投注范围 <span class="text-red-600">*</span>
+                </label>
                 <div class="flex items-center gap-2">
-                  <div class="flex-1">
-                    <div class="relative">
-                      <span class="absolute left-3 top-2 text-slate-500">$</span>
-                      <input type="number" id="advancedBetMinUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="100">
-                    </div>
-                  </div>
-                  <span class="text-slate-600">~</span>
-                  <div class="flex-1">
-                    <div class="relative">
-                      <span class="absolute left-3 top-2 text-slate-500">$</span>
-                      <input type="number" id="advancedBetMaxUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="500">
-                    </div>
-                  </div>
+                  <input type="number" id="advancedBetMinUsd" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-center font-bold" placeholder="200">
+                  <span class="text-slate-500 font-medium">至</span>
+                  <input type="number" id="advancedBetMaxUsd" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-center font-bold" placeholder="1500">
                 </div>
-                <p class="text-xs text-slate-500 mt-1">
-                  聪值: <span id="advancedBetMinQuota">50000000</span> ~ <span id="advancedBetMaxQuota">250000000</span>
-                </p>
+                <p class="text-xs text-slate-500 mt-1">美元</p>
               </div>
               
-              <!-- 奖励倍数放大 -->
+              <!-- 奖励倍数 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">奖励倍数放大系数</label>
-                <input type="number" step="0.1" id="advancedRewardMultiplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">高级场奖励 = 基础倍率 × 此系数（推荐：4.0）</p>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  奖励倍数 <span class="text-blue-500" title="奖励倍数说明">🛈</span>
+                </label>
+                <input type="number" step="0.1" id="advancedRewardMultiplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-green-600" placeholder="4.0">
+                <p class="text-xs text-slate-500 mt-1">奖励放大系数</p>
               </div>
               
-              <!-- 惩罚权重放大 -->
+              <!-- 目标RTP -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">惩罚权重放大系数</label>
-                <input type="number" step="0.1" id="advancedPenaltyFactor" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">律师函权重 × 此系数（推荐：2.0）</p>
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  目标RTP <span class="text-blue-500" title="RTP = 返还玩家率">🛈</span>
+                </label>
+                <input type="number" step="0.01" min="0.5" max="1.5" id="advancedRTPTarget" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-blue-600" placeholder="0.88">
+                <p class="text-xs text-slate-500 mt-1">推荐: 0.88 (88%)</p>
               </div>
               
-              <!-- RTP目标 -->
+              <!-- 惩罚倍数 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">目标RTP</label>
-                <input type="number" step="0.01" min="0.5" max="1.5" id="advancedRTPTarget" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">目标回报率（推荐：0.95，即95%）</p>
+                <label class="block text-sm font-medium text-red-700 mb-2">
+                  惩罚倍数 <span class="text-red-500" title="律师函惩罚放大">🛈</span>
+                </label>
+                <input type="number" step="0.1" id="advancedPenaltyFactor" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 font-bold text-red-600" placeholder="2.0">
+                <p class="text-xs text-red-600 mt-1">律师函权重放大</p>
               </div>
               
               <!-- 每日投注上限 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">每日投注上限（美元）</label>
-                <div class="relative">
-                  <span class="absolute left-3 top-2 text-slate-500">$</span>
-                  <input type="number" id="advancedDailyBetLimitUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="10000">
+                <label class="block text-sm font-medium text-slate-700 mb-2">
+                  每日投注上限 <span class="text-blue-500" title="单个用户每天最多投注金额">🛈</span>
+                </label>
+                <input type="number" id="advancedDailyBetLimitUsd" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-orange-600" placeholder="10000">
+                <p class="text-xs text-slate-500 mt-1">美元 (当前: <span id="advancedDailyBetLimitQuota">5000000000</span> 聪)</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- ⏰ 时效设置（可折叠）-->
+          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 group">
+            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-900 hover:bg-slate-50 transition-colors flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
+                <span>⏰ 时效设置</span>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 border-t border-slate-200">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <!-- 入场券有效期 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">入场券有效期（小时）</label>
+                  <input type="number" id="advancedTicketValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold" placeholder="24">
+                  <p class="text-xs text-slate-500 mt-1">入场券过期时间</p>
                 </div>
-                <p class="text-xs text-slate-500 mt-1">
-                  聪值: <span id="advancedDailyBetLimitQuota">5000000000</span>
-                </p>
+                
+                <!-- 高级场停留时长 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">高级场停留时长（小时）</label>
+                  <input type="number" id="advancedSessionValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold" placeholder="24">
+                  <p class="text-xs text-slate-500 mt-1">进入高级场后的有效时间</p>
+                </div>
+                
+                <!-- 提示 -->
+                <div class="md:col-span-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p class="text-xs text-blue-800">
+                    💡 <strong>提示：</strong>剩余有效时间 = min(入场券有效期, 停留时长)
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          </details>
 
-          <!-- 时效设置 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">时效设置</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <!-- 入场券有效期 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">入场券有效期（小时）</label>
-                <input type="number" id="advancedTicketValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">入场券过期时间（推荐：24小时）</p>
-              </div>
-              
-              <!-- 高级场停留时长 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">高级场停留时长（小时）</label>
-                <input type="number" id="advancedSessionValidHours" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">进入高级场后的有效时间（推荐：24小时）</p>
+          <!-- 🎲 掉落设置（可折叠）-->
+          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6 group">
+            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-900 hover:bg-slate-50 transition-colors flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
+                <span>🎲 掉落与资格机制</span>
+              </span>
+            </summary>
+            <div class="px-6 pb-6 border-t border-slate-200">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                <!-- 合成所需碎片数 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">合成所需碎片数量</label>
+                  <input type="number" id="advancedFragmentsNeeded" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold" placeholder="5">
+                  <p class="text-xs text-slate-500 mt-1">合成1张入场券需要的碎片</p>
+                </div>
+                
+                <!-- 最多持有券数 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">最多持有入场券数</label>
+                  <input type="number" id="advancedMaxTicketsHold" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold" placeholder="2">
+                  <p class="text-xs text-slate-500 mt-1">防止囤券</p>
+                </div>
+                
+                <!-- 二连掉落碎片概率 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">二连掉落碎片概率</label>
+                  <input type="range" id="advancedDropRateDoubleSlider" min="0" max="1" step="0.01" value="0.5" 
+                         class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                         oninput="updateDropRateDoubleDisplay(this.value)">
+                  <div class="flex items-center justify-between mt-2">
+                    <input type="number" step="0.01" min="0" max="1" id="advancedDropRateDouble" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm font-bold"
+                           oninput="document.getElementById('advancedDropRateDoubleSlider').value = this.value; updateDropRateDoubleDisplay(this.value)">
+                    <div class="flex-1 ml-3">
+                      <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="dropDoubleBar" class="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-300" style="width: 50%"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">期望: 每100局产出 <span id="dropDoubleExpected" class="font-bold text-purple-600">50</span> 个碎片</p>
+                </div>
+                
+                <!-- 三连/四连掉落入场券概率 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">三连掉落入场券概率</label>
+                  <input type="range" id="advancedDropRateTripleSlider" min="0" max="1" step="0.01" value="0.1" 
+                         class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                         oninput="updateDropRateTripleDisplay(this.value)">
+                  <div class="flex items-center justify-between mt-2">
+                    <input type="number" step="0.01" min="0" max="1" id="advancedDropRateTriple" class="w-20 px-2 py-1 border border-slate-300 rounded text-center text-sm font-bold"
+                           oninput="document.getElementById('advancedDropRateTripleSlider').value = this.value; updateDropRateTripleDisplay(this.value)">
+                    <div class="flex-1 ml-3">
+                      <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                        <div id="dropTripleBar" class="h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300" style="width: 10%"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="text-xs text-slate-500 mt-1">期望: 每100局产出 <span id="dropTripleExpected" class="font-bold text-orange-600">10</span> 张券</p>
+                </div>
+                
+                <!-- 掉落强度评估 -->
+                <div class="md:col-span-2 p-4 bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-lg">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-slate-700">掉落强度：</span>
+                    <div id="dropIntensity" class="flex items-center gap-1">
+                      <span class="text-2xl">★★☆☆☆</span>
+                      <span class="text-sm font-bold text-purple-600 ml-2">(平衡)</span>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- 掉落设置 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <h3 class="text-lg font-bold text-slate-900 mb-4">掉落设置</h3>
-            
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <!-- 合成所需碎片 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">合成所需碎片数</label>
-                <input type="number" id="advancedFragmentsNeeded" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">碎片合成入场券（推荐：5个）</p>
-              </div>
-              
-              <!-- 三连掉落概率 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">三连掉落概率</label>
-                <input type="number" step="0.1" min="0" max="1" id="advancedDropRateTriple" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">0-1之间（推荐：1.0，即100%）</p>
-              </div>
-              
-              <!-- 二连掉落概率 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">二连掉落概率</label>
-                <input type="number" step="0.1" min="0" max="1" id="advancedDropRateDouble" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">0-1之间（推荐：1.0，即100%）</p>
-              </div>
-              
-              <!-- 最多持有券数 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">最多持有入场券</label>
-                <input type="number" id="advancedMaxTicketsHold" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">防止囤券（推荐：2张）</p>
-              </div>
-            </div>
-          </div>
+          </details>
 
           <!-- 🎲 符号权重配置（同初级场配置） -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -4717,6 +4772,18 @@
           document.getElementById('advancedDropRateDouble').value = config.drop_rate_double;
           document.getElementById('advancedMaxTicketsHold').value = config.max_tickets_hold;
           
+          // 🔥 初始化掉落率滑杆和可视条
+          const doubleSlider = document.getElementById('advancedDropRateDoubleSlider');
+          const tripleSlider = document.getElementById('advancedDropRateTripleSlider');
+          if (doubleSlider) {
+            doubleSlider.value = config.drop_rate_double;
+            updateDropRateDoubleDisplay(config.drop_rate_double);
+          }
+          if (tripleSlider) {
+            tripleSlider.value = config.drop_rate_triple;
+            updateDropRateTripleDisplay(config.drop_rate_triple);
+          }
+          
           // 🎯 实时更新聪值显示（美元→聪）
           document.getElementById('advancedBetMinUsd').addEventListener('input', (e) => {
             const value = parseInt(e.target.value) || 0;
@@ -5032,6 +5099,93 @@
       }
     }
 
+    // 🔥 更新二连掉落率显示
+    function updateDropRateDoubleDisplay(value) {
+      const rate = parseFloat(value);
+      document.getElementById('advancedDropRateDouble').value = rate.toFixed(2);
+      document.getElementById('dropDoubleBar').style.width = (rate * 100) + '%';
+      
+      // 计算期望值（假设二连出现率约20%）
+      const expected = Math.round(rate * 20);
+      document.getElementById('dropDoubleExpected').textContent = expected;
+      
+      // 更新掉落强度
+      updateDropIntensity();
+    }
+    
+    // 🔥 更新三连掉落率显示
+    function updateDropRateTripleDisplay(value) {
+      const rate = parseFloat(value);
+      document.getElementById('advancedDropRateTriple').value = rate.toFixed(2);
+      document.getElementById('dropTripleBar').style.width = (rate * 100) + '%';
+      
+      // 计算期望值（假设三连/四连出现率约10%）
+      const expected = Math.round(rate * 10);
+      document.getElementById('dropTripleExpected').textContent = expected;
+      
+      // 更新掉落强度
+      updateDropIntensity();
+    }
+    
+    // 🔥 更新掉落强度评估
+    function updateDropIntensity() {
+      const doubleRate = parseFloat(document.getElementById('advancedDropRateDouble').value) || 0;
+      const tripleRate = parseFloat(document.getElementById('advancedDropRateTriple').value) || 0;
+      
+      // 综合评分 (0-1)
+      const intensityScore = (doubleRate * 0.3 + tripleRate * 0.7);
+      
+      let stars, label, color;
+      if (intensityScore >= 0.8) {
+        stars = '★★★★★';
+        label = '(极高)';
+        color = 'text-red-600';
+      } else if (intensityScore >= 0.6) {
+        stars = '★★★★☆';
+        label = '(高)';
+        color = 'text-orange-600';
+      } else if (intensityScore >= 0.4) {
+        stars = '★★★☆☆';
+        label = '(中等)';
+        color = 'text-yellow-600';
+      } else if (intensityScore >= 0.2) {
+        stars = '★★☆☆☆';
+        label = '(平衡)';
+        color = 'text-purple-600';
+      } else {
+        stars = '★☆☆☆☆';
+        label = '(低)';
+        color = 'text-blue-600';
+      }
+      
+      document.getElementById('dropIntensity').innerHTML = `
+        <span class="text-2xl">${stars}</span>
+        <span class="text-sm font-bold ${color} ml-2">${label}</span>
+      `;
+    }
+    
+    // 🔥 显示RTP帮助说明
+    function showRTPHelp() {
+      alert(`🧠 倍率与RTP说明
+
+RTP (Return to Player)：
+• 返还玩家率，表示玩家长期游戏能拿回的投注比例
+• 例如：RTP 0.88 = 88%，玩家长期平均能拿回88%的投注
+
+奖励倍数：
+• 高级场的奖励倍数放大系数
+• 例如：基础倍率8x，奖励倍数4.0，实际奖励 = 8 × 4 = 32x
+
+惩罚倍数：
+• 律师函的权重放大系数
+• 数值越高，律师函出现越频繁，游戏难度越大
+
+推荐配置：
+• 奖励倍数：4.0
+• 惩罚倍数：2.0  
+• 目标RTP：0.88 (88%)`);
+    }
+    
     function calculateAdvancedProbabilities() {
       const weights = {
         m: parseInt(document.getElementById('advWeight_m').value) || 100,
