@@ -1933,5 +1933,64 @@ app.get('/slot/advanced/rtp-stats', requireAdmin, async (c) => {
     }
 });
 
+/**
+ * 获取高级场符号权重配置
+ */
+app.get('/slot/advanced/weights', requireAdmin, async (c) => {
+    try {
+        const weights = advancedSlotQueries.getAdvancedWeights.get();
+
+        return c.json({
+            success: true,
+            data: weights || {
+                weight_m: 100,
+                weight_t: 100,
+                weight_n: 100,
+                weight_j: 100,
+                weight_lq: 100,
+                weight_bj: 100,
+                weight_zft: 100,
+                weight_bdk: 100,
+                weight_lsh: 50
+            }
+        });
+    } catch (e: any) {
+        console.error('[管理员] 获取高级场符号权重失败:', e);
+        return c.json({ success: false, message: '获取权重失败' }, 500);
+    }
+});
+
+/**
+ * 更新高级场符号权重配置
+ */
+app.post('/slot/advanced/weights', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh } = body;
+
+        // 验证所有权重都是有效数字
+        const weights = [weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh];
+        if (weights.some(w => isNaN(w) || w < 1 || w > 1000)) {
+            return c.json({ success: false, message: '权重必须在1-1000之间' }, 400);
+        }
+
+        const now = Date.now();
+        advancedSlotQueries.updateAdvancedWeights.run(
+            weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh,
+            now
+        );
+
+        console.log('[管理员] ✅ 高级场符号权重已更新:', body);
+
+        return c.json({
+            success: true,
+            message: '高级场权重配置已更新'
+        });
+    } catch (e: any) {
+        console.error('[管理员] 更新高级场符号权重失败:', e);
+        return c.json({ success: false, message: '更新权重失败' }, 500);
+    }
+});
+
 export default app;
 

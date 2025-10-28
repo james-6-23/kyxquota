@@ -691,6 +691,23 @@
               <div>
                 <p class="text-sm text-slate-600">实际RTP</p>
                 <p id="advancedSlotRTP" class="text-2xl font-bold text-purple-600">0%</p>
+                <p class="text-xs text-slate-500 mt-1">目标: <span id="advancedSlotTargetRTP">95%</span></p>
+              </div>
+            </div>
+            
+            <!-- RTP计算公式说明 -->
+            <div class="mt-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <div class="flex items-start gap-2">
+                <span class="text-purple-600">📊</span>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold text-purple-900 mb-1">RTP计算公式</p>
+                  <p class="text-xs text-slate-700">
+                    RTP (Return To Player) = (总获奖 ÷ 总投注) × 100%
+                  </p>
+                  <p class="text-xs text-slate-600 mt-1">
+                    示例：总投注$1000，总获奖$950 → RTP = (950 ÷ 1000) × 100% = 95%
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -760,14 +777,24 @@
               
               <!-- 投注范围 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">投注范围</label>
+                <label class="block text-sm font-medium text-slate-700 mb-2">投注范围（美元）</label>
                 <div class="flex items-center gap-2">
-                  <input type="number" id="advancedBetMin" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg" placeholder="最小投注">
+                  <div class="flex-1">
+                    <div class="relative">
+                      <span class="absolute left-3 top-2 text-slate-500">$</span>
+                      <input type="number" id="advancedBetMinUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="100">
+                    </div>
+                  </div>
                   <span class="text-slate-600">~</span>
-                  <input type="number" id="advancedBetMax" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg" placeholder="最大投注">
+                  <div class="flex-1">
+                    <div class="relative">
+                      <span class="absolute left-3 top-2 text-slate-500">$</span>
+                      <input type="number" id="advancedBetMaxUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="500">
+                    </div>
+                  </div>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">
-                  美元换算: $<span id="advancedBetMinUsd">100</span> ~ $<span id="advancedBetMaxUsd">500</span>
+                  聪值: <span id="advancedBetMinQuota">50000000</span> ~ <span id="advancedBetMaxQuota">250000000</span>
                 </p>
               </div>
               
@@ -794,10 +821,13 @@
               
               <!-- 每日投注上限 -->
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">每日投注上限</label>
-                <input type="number" id="advancedDailyBetLimit" class="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日投注上限（美元）</label>
+                <div class="relative">
+                  <span class="absolute left-3 top-2 text-slate-500">$</span>
+                  <input type="number" id="advancedDailyBetLimitUsd" class="w-full pl-7 pr-3 py-2 border border-slate-300 rounded-lg" placeholder="10000">
+                </div>
                 <p class="text-xs text-slate-500 mt-1">
-                  美元换算: $<span id="advancedDailyBetLimitUsd">10000</span>
+                  聪值: <span id="advancedDailyBetLimitQuota">5000000000</span>
                 </p>
               </div>
             </div>
@@ -859,10 +889,95 @@
             </div>
           </div>
 
+          <!-- 🎲 符号权重配置（同初级场配置） -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">🎲 符号出现概率配置（高级场专用）</h3>
+              <button onclick="calculateAdvancedProbabilities()" class="text-sm text-red-600 hover:text-red-700 font-medium">
+                📊 计算概率
+              </button>
+            </div>
+            
+            <div class="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p class="text-xs text-orange-800">
+                💡 <strong>说明：</strong>权重决定符号出现的概率。权重越高，出现概率越大。高级场可以单独配置符号权重，不影响初级场。
+              </p>
+            </div>
+            
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <!-- 普通符号 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">🎵 美 (m)</label>
+                <input type="number" id="advWeight_m" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_m" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">⚡ 太 (t)</label>
+                <input type="number" id="advWeight_t" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_t" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">👀 你 (n)</label>
+                <input type="number" id="advWeight_n" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_n" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">🐔 鸡 (j)</label>
+                <input type="number" id="advWeight_j" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_j" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">🏀 篮球 (lq)</label>
+                <input type="number" id="advWeight_lq" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_lq" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">🎬 背景 (bj)</label>
+                <input type="number" id="advWeight_bj" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_bj" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">💇 中分头 (zft)</label>
+                <input type="number" id="advWeight_zft" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_zft" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">👖 背带裤 (bdk)</label>
+                <input type="number" id="advWeight_bdk" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
+                <p id="advProb_bdk" class="text-xs text-slate-500 mt-1">概率: 0%</p>
+              </div>
+              <div class="md:col-span-3">
+                <label class="block text-sm font-medium text-red-700 mb-2">⚖️ 律师函 (lsh) - 惩罚符号</label>
+                <input type="number" id="advWeight_lsh" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50" min="1" max="1000">
+                <p id="advProb_lsh" class="text-xs text-red-600 mt-1">概率: 0% | 4个位置至少出现1次: 0%</p>
+              </div>
+            </div>
+            
+            <!-- 总权重显示 -->
+            <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-300">
+              <p class="text-sm text-slate-700">
+                📊 当前总权重: <span id="advTotalWeight" class="font-bold text-indigo-600">825</span>
+              </p>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <div class="flex gap-2 mt-4">
+              <button onclick="saveAdvancedSymbolWeights()" class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold transition-all">
+                保存权重配置
+              </button>
+              <button onclick="loadAdvancedSymbolWeights()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
+                重置
+              </button>
+              <button onclick="resetAdvancedWeightsToDefault()" class="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg font-medium transition-colors">
+                恢复默认值
+              </button>
+            </div>
+          </div>
+
           <!-- 保存按钮 -->
           <div class="flex gap-4">
             <button onclick="saveAdvancedSlotConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transition-all">
-              💾 保存配置
+              💾 保存基础配置
             </button>
             <button onclick="loadAdvancedSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
               🔄 重置
@@ -3145,7 +3260,10 @@
         loadSymbolWeights();
         loadMultipliers();
       }
-      if (section === 'advancedSlotConfig') loadAdvancedSlotConfig();
+      if (section === 'advancedSlotConfig') {
+        loadAdvancedSlotConfig();
+        loadAdvancedSymbolWeights();  // 🔥 加载高级场权重
+      }
       if (section === 'slotAnalytics') loadSlotAnalytics();
       if (section === 'profitLeaderboard') loadProfitLeaderboard();
       if (section === 'lossLeaderboard') loadLossLeaderboard();
@@ -4570,12 +4688,24 @@
           
           // 基础设置
           document.getElementById('advancedEnabled').checked = config.enabled === 1;
-          document.getElementById('advancedBetMin').value = config.bet_min;
-          document.getElementById('advancedBetMax').value = config.bet_max;
+          
+          // 🎯 使用美元显示投注范围
+          const betMinUsd = (config.bet_min / 500000).toFixed(0);
+          const betMaxUsd = (config.bet_max / 500000).toFixed(0);
+          const dailyLimitUsd = (config.daily_bet_limit / 500000).toFixed(0);
+          
+          document.getElementById('advancedBetMinUsd').value = betMinUsd;
+          document.getElementById('advancedBetMaxUsd').value = betMaxUsd;
+          document.getElementById('advancedDailyBetLimitUsd').value = dailyLimitUsd;
+          
+          // 显示聪值
+          document.getElementById('advancedBetMinQuota').textContent = config.bet_min;
+          document.getElementById('advancedBetMaxQuota').textContent = config.bet_max;
+          document.getElementById('advancedDailyBetLimitQuota').textContent = config.daily_bet_limit;
+          
           document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier;
           document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor;
           document.getElementById('advancedRTPTarget').value = config.rtp_target;
-          document.getElementById('advancedDailyBetLimit').value = config.daily_bet_limit;
           
           // 时效设置
           document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours;
@@ -4587,23 +4717,18 @@
           document.getElementById('advancedDropRateDouble').value = config.drop_rate_double;
           document.getElementById('advancedMaxTicketsHold').value = config.max_tickets_hold;
           
-          // 更新美元换算显示
-          document.getElementById('advancedBetMinUsd').textContent = (config.bet_min / 500000).toFixed(0);
-          document.getElementById('advancedBetMaxUsd').textContent = (config.bet_max / 500000).toFixed(0);
-          document.getElementById('advancedDailyBetLimitUsd').textContent = (config.daily_bet_limit / 500000).toFixed(0);
-          
-          // 实时更新美元换算
-          document.getElementById('advancedBetMin').addEventListener('input', (e) => {
+          // 🎯 实时更新聪值显示（美元→聪）
+          document.getElementById('advancedBetMinUsd').addEventListener('input', (e) => {
             const value = parseInt(e.target.value) || 0;
-            document.getElementById('advancedBetMinUsd').textContent = (value / 500000).toFixed(0);
+            document.getElementById('advancedBetMinQuota').textContent = value * 500000;
           });
-          document.getElementById('advancedBetMax').addEventListener('input', (e) => {
+          document.getElementById('advancedBetMaxUsd').addEventListener('input', (e) => {
             const value = parseInt(e.target.value) || 0;
-            document.getElementById('advancedBetMaxUsd').textContent = (value / 500000).toFixed(0);
+            document.getElementById('advancedBetMaxQuota').textContent = value * 500000;
           });
-          document.getElementById('advancedDailyBetLimit').addEventListener('input', (e) => {
+          document.getElementById('advancedDailyBetLimitUsd').addEventListener('input', (e) => {
             const value = parseInt(e.target.value) || 0;
-            document.getElementById('advancedDailyBetLimitUsd').textContent = (value / 500000).toFixed(0);
+            document.getElementById('advancedDailyBetLimitQuota').textContent = value * 500000;
           });
         }
       } catch (error) {
@@ -4614,10 +4739,15 @@
 
     async function saveAdvancedSlotConfig() {
       try {
+        // 🎯 从美元输入框获取值，转换为聪
+        const betMinUsd = parseInt(document.getElementById('advancedBetMinUsd').value) || 100;
+        const betMaxUsd = parseInt(document.getElementById('advancedBetMaxUsd').value) || 500;
+        const dailyLimitUsd = parseInt(document.getElementById('advancedDailyBetLimitUsd').value) || 10000;
+        
         const config = {
           enabled: document.getElementById('advancedEnabled').checked ? 1 : 0,
-          bet_min: parseInt(document.getElementById('advancedBetMin').value),
-          bet_max: parseInt(document.getElementById('advancedBetMax').value),
+          bet_min: betMinUsd * 500000,  // 美元转聪
+          bet_max: betMaxUsd * 500000,  // 美元转聪
           reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value),
           penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value),
           rtp_target: parseFloat(document.getElementById('advancedRTPTarget').value),
@@ -4627,11 +4757,11 @@
           drop_rate_triple: parseFloat(document.getElementById('advancedDropRateTriple').value),
           drop_rate_double: parseFloat(document.getElementById('advancedDropRateDouble').value),
           max_tickets_hold: parseInt(document.getElementById('advancedMaxTicketsHold').value),
-          daily_bet_limit: parseInt(document.getElementById('advancedDailyBetLimit').value)
+          daily_bet_limit: dailyLimitUsd * 500000  // 美元转聪
         };
         
         // 验证
-        if (config.bet_min >= config.bet_max) {
+        if (betMinUsd >= betMaxUsd) {
           showMessage('最小投注必须小于最大投注', 'error');
           return;
         }
@@ -4675,6 +4805,14 @@
           document.getElementById('advancedSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
           const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
           document.getElementById('advancedSlotRTP').textContent = `${rtp}%`;
+          
+          // 🎯 显示目标RTP（从配置读取）
+          const configRes = await fetch('/api/admin/slot/advanced/config');
+          const configData = await configRes.json();
+          if (configData.success) {
+            const targetRtp = (configData.data.rtp_target * 100).toFixed(0);
+            document.getElementById('advancedSlotTargetRTP').textContent = `${targetRtp}%`;
+          }
           
           // 渲染表格
           const tbody = document.getElementById('advancedSlotRecordsBody');
@@ -4821,6 +4959,127 @@
 
     function ticketDropNextPage() {
       loadTicketDropRecords(ticketDropCurrentPage + 1);
+    }
+
+    // 高级场符号权重管理
+    async function loadAdvancedSymbolWeights() {
+      try {
+        const res = await fetch('/api/admin/slot/advanced/weights');
+        const data = await res.json();
+
+        if (data.success) {
+          const weights = data.data;
+          
+          // 填充表单
+          document.getElementById('advWeight_m').value = weights.weight_m;
+          document.getElementById('advWeight_t').value = weights.weight_t;
+          document.getElementById('advWeight_n').value = weights.weight_n;
+          document.getElementById('advWeight_j').value = weights.weight_j;
+          document.getElementById('advWeight_lq').value = weights.weight_lq;
+          document.getElementById('advWeight_bj').value = weights.weight_bj;
+          document.getElementById('advWeight_zft').value = weights.weight_zft;
+          document.getElementById('advWeight_bdk').value = weights.weight_bdk;
+          document.getElementById('advWeight_lsh').value = weights.weight_lsh;
+          
+          // 计算并显示概率
+          calculateAdvancedProbabilities();
+        }
+      } catch (error) {
+        console.error('加载高级场符号权重失败:', error);
+        showMessage('加载权重失败', 'error');
+      }
+    }
+
+    async function saveAdvancedSymbolWeights() {
+      try {
+        const weights = {
+          weight_m: parseInt(document.getElementById('advWeight_m').value),
+          weight_t: parseInt(document.getElementById('advWeight_t').value),
+          weight_n: parseInt(document.getElementById('advWeight_n').value),
+          weight_j: parseInt(document.getElementById('advWeight_j').value),
+          weight_lq: parseInt(document.getElementById('advWeight_lq').value),
+          weight_bj: parseInt(document.getElementById('advWeight_bj').value),
+          weight_zft: parseInt(document.getElementById('advWeight_zft').value),
+          weight_bdk: parseInt(document.getElementById('advWeight_bdk').value),
+          weight_lsh: parseInt(document.getElementById('advWeight_lsh').value)
+        };
+        
+        // 验证
+        for (const [key, value] of Object.entries(weights)) {
+          if (isNaN(value) || value < 1 || value > 1000) {
+            showMessage(`${key} 权重必须在1-1000之间`, 'error');
+            return;
+          }
+        }
+        
+        const res = await fetch('/api/admin/slot/advanced/weights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(weights)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('高级场权重配置已更新', 'success');
+          calculateAdvancedProbabilities();
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('保存高级场权重失败:', error);
+        showMessage('保存权重失败', 'error');
+      }
+    }
+
+    function calculateAdvancedProbabilities() {
+      const weights = {
+        m: parseInt(document.getElementById('advWeight_m').value) || 100,
+        t: parseInt(document.getElementById('advWeight_t').value) || 100,
+        n: parseInt(document.getElementById('advWeight_n').value) || 100,
+        j: parseInt(document.getElementById('advWeight_j').value) || 100,
+        lq: parseInt(document.getElementById('advWeight_lq').value) || 100,
+        bj: parseInt(document.getElementById('advWeight_bj').value) || 100,
+        zft: parseInt(document.getElementById('advWeight_zft').value) || 100,
+        bdk: parseInt(document.getElementById('advWeight_bdk').value) || 100,
+        lsh: parseInt(document.getElementById('advWeight_lsh').value) || 50
+      };
+      
+      const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+      document.getElementById('advTotalWeight').textContent = totalWeight;
+      
+      // 计算每个符号的概率
+      for (const [symbol, weight] of Object.entries(weights)) {
+        const prob = ((weight / totalWeight) * 100).toFixed(2);
+        const probEl = document.getElementById(`advProb_${symbol}`);
+        
+        if (symbol === 'lsh') {
+          // 律师函特殊计算：至少出现1次的概率
+          const singleProb = weight / totalWeight;
+          const atLeastOne = (1 - Math.pow(1 - singleProb, 4)) * 100;
+          probEl.textContent = `概率: ${prob}% | 4个位置至少出现1次: ${atLeastOne.toFixed(2)}%`;
+        } else {
+          probEl.textContent = `概率: ${prob}%`;
+        }
+      }
+    }
+
+    function resetAdvancedWeightsToDefault() {
+      if (!confirm('确定要恢复高级场符号权重为默认值吗？\n默认：普通符号100，律师函50')) {
+        return;
+      }
+      
+      document.getElementById('advWeight_m').value = 100;
+      document.getElementById('advWeight_t').value = 100;
+      document.getElementById('advWeight_n').value = 100;
+      document.getElementById('advWeight_j').value = 100;
+      document.getElementById('advWeight_lq').value = 100;
+      document.getElementById('advWeight_bj').value = 100;
+      document.getElementById('advWeight_zft').value = 100;
+      document.getElementById('advWeight_bdk').value = 100;
+      document.getElementById('advWeight_lsh').value = 50;
+      
+      calculateAdvancedProbabilities();
     }
 
   </script>

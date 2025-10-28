@@ -475,6 +475,29 @@ export function initDatabase() {
     VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, ${Date.now()})
   `);
 
+    // 高级场符号权重配置表（独立于初级场）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS advanced_slot_symbol_weights (
+      id INTEGER PRIMARY KEY CHECK (id = 1),
+      weight_m INTEGER DEFAULT 100,
+      weight_t INTEGER DEFAULT 100,
+      weight_n INTEGER DEFAULT 100,
+      weight_j INTEGER DEFAULT 100,
+      weight_lq INTEGER DEFAULT 100,
+      weight_bj INTEGER DEFAULT 100,
+      weight_zft INTEGER DEFAULT 100,
+      weight_bdk INTEGER DEFAULT 100,
+      weight_lsh INTEGER DEFAULT 50,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+
+    // 插入默认高级场符号权重配置（律师函权重更高）
+    db.exec(`
+    INSERT OR IGNORE INTO advanced_slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, updated_at)
+    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${Date.now()})
+  `);
+
     // 入场券掉落记录表
     db.exec(`
     CREATE TABLE IF NOT EXISTS ticket_drop_records (
@@ -695,7 +718,7 @@ function initQueries() {
 
         // 游戏记录
         insertRecord: db.query(
-            'INSERT INTO slot_machine_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO slot_machine_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, slot_mode, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getRecordsByUser: db.query<SlotMachineRecord, string>(
             'SELECT * FROM slot_machine_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
@@ -935,6 +958,14 @@ function initQueries() {
         ),
         getAllRTPStats: db.query<AdvancedSlotRTPStats, never>(
             'SELECT * FROM advanced_slot_rtp_stats ORDER BY games_count DESC LIMIT 100'
+        ),
+
+        // 高级场符号权重
+        getAdvancedWeights: db.query<any, never>(
+            'SELECT * FROM advanced_slot_symbol_weights WHERE id = 1'
+        ),
+        updateAdvancedWeights: db.query(
+            'UPDATE advanced_slot_symbol_weights SET weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, updated_at = ? WHERE id = 1'
         ),
     };
 

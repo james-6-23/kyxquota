@@ -1,4 +1,4 @@
-import { slotQueries } from '../database';
+import { slotQueries, advancedSlotQueries } from '../database';
 
 // 符号定义
 const SYMBOLS = {
@@ -22,9 +22,13 @@ const DEFAULT_SYMBOL_WEIGHTS: Record<string, number> = {
 };
 
 // 从数据库获取符号权重
-export function getSymbolWeights(): Record<string, number> {
+export function getSymbolWeights(isAdvancedMode: boolean = false): Record<string, number> {
     try {
-        const weights = slotQueries.getWeights.get();
+        // 🔥 高级场使用独立的权重配置
+        const weights = isAdvancedMode
+            ? advancedSlotQueries.getAdvancedWeights.get()
+            : slotQueries.getWeights.get();
+
         if (weights) {
             return {
                 'm': weights.weight_m,
@@ -93,10 +97,10 @@ export const WIN_TYPE_NAMES: Record<WinType, string> = {
 };
 
 /**
- * 加权随机抽取符号
+ * 加权随机抽取符号（初级场）
  */
 function getRandomSymbol(): string {
-    const SYMBOL_WEIGHTS = getSymbolWeights(); // 每次从数据库获取最新权重
+    const SYMBOL_WEIGHTS = getSymbolWeights(false); // 初级场权重
     const totalWeight = Object.values(SYMBOL_WEIGHTS).reduce((a, b) => a + b, 0);
     let random = Math.random() * totalWeight;
 
@@ -111,9 +115,40 @@ function getRandomSymbol(): string {
 }
 
 /**
- * 生成4个随机符号
+ * 加权随机抽取符号（高级场 - 使用独立权重）
  */
-export function generateSymbols(): string[] {
+function getRandomSymbolAdvanced(): string {
+    const SYMBOL_WEIGHTS = getSymbolWeights(true); // 🔥 高级场独立权重
+
+    const totalWeight = Object.values(SYMBOL_WEIGHTS).reduce((a, b) => a + b, 0);
+    let random = Math.random() * totalWeight;
+
+    for (const [symbol, weight] of Object.entries(SYMBOL_WEIGHTS)) {
+        random -= weight;
+        if (random <= 0) {
+            return symbol;
+        }
+    }
+
+    return 'm';
+}
+
+/**
+ * 生成4个随机符号
+ * @param isAdvancedMode 是否为高级场模式
+ */
+export function generateSymbols(isAdvancedMode: boolean = false): string[] {
+    if (isAdvancedMode) {
+        // 🔥 高级场：使用独立权重配置
+        return [
+            getRandomSymbolAdvanced(),
+            getRandomSymbolAdvanced(),
+            getRandomSymbolAdvanced(),
+            getRandomSymbolAdvanced()
+        ];
+    }
+
+    // 初级场：使用正常权重
     return [
         getRandomSymbol(),
         getRandomSymbol(),
@@ -149,8 +184,10 @@ function containsAll(arr: string[], target: string[]): boolean {
 
 /**
  * 计算中奖结果
+ * @param symbols 符号数组
+ * @param rewardMultiplier 奖励倍率放大系数（高级场为4.0，初级场为1.0）
  */
-export function calculateWin(symbols: string[]): {
+export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0): {
     winType: WinType;
     multiplier: number;
     freeSpinAwarded: boolean;
@@ -178,7 +215,7 @@ export function calculateWin(symbols: string[]): {
     if (arraysEqual(symbols, ['j', 'n', 't', 'm'])) {
         return {
             winType: WinType.SUPER_JACKPOT,
-            multiplier: multipliers.super_jackpot,
+            multiplier: multipliers.super_jackpot * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -187,7 +224,7 @@ export function calculateWin(symbols: string[]): {
     if (arraysEqual(symbols, ['bj', 'zft', 'bdk', 'lq'])) {
         return {
             winType: WinType.SUPER_JACKPOT,
-            multiplier: multipliers.super_jackpot,
+            multiplier: multipliers.super_jackpot * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -196,7 +233,7 @@ export function calculateWin(symbols: string[]): {
     if (containsAll(symbols, SYMBOLS.SPECIAL_GROUP_1)) {
         return {
             winType: WinType.SPECIAL_COMBO,
-            multiplier: multipliers.special_combo,
+            multiplier: multipliers.special_combo * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -204,7 +241,7 @@ export function calculateWin(symbols: string[]): {
     if (containsAll(symbols, SYMBOLS.SPECIAL_GROUP_2)) {
         return {
             winType: WinType.SPECIAL_COMBO,
-            multiplier: multipliers.special_combo,
+            multiplier: multipliers.special_combo * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -216,7 +253,7 @@ export function calculateWin(symbols: string[]): {
     if (maxCount === 4) {
         return {
             winType: WinType.QUAD,
-            multiplier: multipliers.quad,
+            multiplier: multipliers.quad * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: true  // 奖励1次免费
         };
     }
@@ -224,7 +261,7 @@ export function calculateWin(symbols: string[]): {
     if (maxCount === 3) {
         return {
             winType: WinType.TRIPLE,
-            multiplier: multipliers.triple,
+            multiplier: multipliers.triple * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -232,7 +269,7 @@ export function calculateWin(symbols: string[]): {
     if (maxCount === 2) {
         return {
             winType: WinType.DOUBLE,
-            multiplier: multipliers.double,
+            multiplier: multipliers.double * rewardMultiplier,  // 🔥 高级场倍率放大
             freeSpinAwarded: false
         };
     }
@@ -361,7 +398,7 @@ export function useUserFreeSpin(linuxDoId: string): boolean {
         // 通过验证查询来确认是否扣除成功
         if (!result || typeof result.changes === 'undefined') {
             console.log(`[扣除免费次数] ℹ️ UPDATE 执行完成，验证扣除结果...`);
-            
+
             // 查询验证是否扣除成功
             const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
 
@@ -408,7 +445,8 @@ export function saveGameRecord(
     multiplier: number,
     winAmount: number,
     freeSpinAwarded: boolean,
-    isFreeSpin: boolean
+    isFreeSpin: boolean,
+    slotMode: 'normal' | 'advanced' = 'normal'  // 🔥 新增：场次模式
 ) {
     const now = Date.now();
     const today = getTodayDate();
@@ -424,9 +462,12 @@ export function saveGameRecord(
         winAmount,
         freeSpinAwarded ? 1 : 0,
         isFreeSpin ? 1 : 0,
+        slotMode,  // 🔥 记录场次模式
         now,
         today
     );
+
+    console.log(`[记录保存] 模式: ${slotMode}, 用户: ${username}, 倍率: ${multiplier}`);
 }
 
 /**

@@ -249,10 +249,31 @@ slot.post('/spin', requireAuth, async (c) => {
         // 解析请求参数
         const body = await c.req.json().catch(() => ({}));
         const useFreeSpinn = body.useFreeSpinn === true;
+        const advancedBetAmount = body.advancedBetAmount || null;  // 🔥 高级场自定义投注金额
+
+        // 🔥 检查是否在高级场
+        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
 
         let isFreeSpin = false;
         let betAmount = config.bet_amount;
         let calculationBetAmount = config.bet_amount; // 用于计算奖金的金额
+
+        // 🔥 高级场使用自定义投注金额
+        if (inAdvancedMode && advancedBetAmount) {
+            const advancedConfig = getAdvancedSlotConfig();
+
+            // 验证投注金额在范围内
+            if (advancedBetAmount < advancedConfig.bet_min || advancedBetAmount > advancedConfig.bet_max) {
+                return c.json({
+                    success: false,
+                    message: `投注金额必须在 $${(advancedConfig.bet_min / 500000).toFixed(0)} ~ $${(advancedConfig.bet_max / 500000).toFixed(0)} 之间`
+                }, 400);
+            }
+
+            betAmount = advancedBetAmount;
+            calculationBetAmount = advancedBetAmount;
+            console.log(`[高级场] 使用自定义投注金额: $${(advancedBetAmount / 500000).toFixed(2)}`);
+        }
 
         if (useFreeSpinn) {
             console.log(`[免费次数] 开始处理 - 用户: ${user.username} (${session.linux_do_id})`);
@@ -354,11 +375,19 @@ slot.post('/spin', requireAuth, async (c) => {
             console.log(`[老虎机] ✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
         }
 
-        // 生成随机符号
-        const symbols = generateSymbols();
+        // 🔥 获取高级场配置（用于倍率）
+        let rewardMultiplier = 1.0;
+        if (inAdvancedMode) {
+            const advancedConfig = getAdvancedSlotConfig();
+            rewardMultiplier = advancedConfig.reward_multiplier;
+            console.log(`[高级场] 用户 ${user.username} 在高级场游戏 - 投注: $${(betAmount / 500000).toFixed(2)}, 奖励倍率×${rewardMultiplier}`);
+        }
 
-        // 计算中奖结果
-        const result = calculateWin(symbols);
+        // 生成随机符号（高级场使用独立权重配置）
+        const symbols = generateSymbols(inAdvancedMode);
+
+        // 计算中奖结果（高级场会放大奖励倍率）
+        const result = calculateWin(symbols, rewardMultiplier);
 
         // 获取管理员配置（用于更新额度）
         const adminConfigForWin = adminQueries.get.get();
@@ -522,7 +551,8 @@ slot.post('/spin', requireAuth, async (c) => {
             result.multiplier,
             winAmount,
             result.freeSpinAwarded,
-            isFreeSpin
+            isFreeSpin,
+            inAdvancedMode ? 'advanced' : 'normal'  // 🔥 传入场次模式
         );
 
         // 更新用户总统计（用于排行榜）
@@ -1158,7 +1188,12 @@ slot.get('/tickets', requireAuth, async (c) => {
                 can_synthesize: tickets.fragments >= config.fragments_needed,
                 in_advanced_mode: isInAdvancedMode(session.linux_do_id),
                 fragments_needed: config.fragments_needed,
-                max_tickets_hold: config.max_tickets_hold
+                max_tickets_hold: config.max_tickets_hold,
+                config: {  // 🔥 返回高级场配置
+                    bet_min: config.bet_min,
+                    bet_max: config.bet_max,
+                    reward_multiplier: config.reward_multiplier
+                }
             }
         });
     } catch (error) {
