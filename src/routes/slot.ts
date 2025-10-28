@@ -274,17 +274,17 @@ slot.post('/spin', requireAuth, async (c) => {
             const today = new Date().toISOString().split('T')[0];
             const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
             const boughtToday = todayBought?.total || 0;
-            
+
             // 🎯 修复：检查今日次数（包含购买的次数）
             const todaySpins = getUserTodaySpins(session.linux_do_id);
             const totalAllowedSpins = config.max_daily_spins + boughtToday;
-            
+
             console.log(`[抽奖检查] 用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
-            
+
             if (todaySpins >= totalAllowedSpins) {
-                return c.json({ 
-                    success: false, 
-                    message: `今日游玩次数已用完（已玩${todaySpins}/${totalAllowedSpins}次）` 
+                return c.json({
+                    success: false,
+                    message: `今日游玩次数已用完（已玩${todaySpins}/${totalAllowedSpins}次）`
                 }, 400);
             }
 
@@ -528,9 +528,22 @@ slot.post('/spin', requireAuth, async (c) => {
         const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
         const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
 
+        // 🎯 关键修复：获取今日已购买次数
+        const todayForSpinResult = new Date().toISOString().split('T')[0];
+        const todayBoughtAfter = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, todayForSpinResult);
+        const boughtTodayAfter = todayBoughtAfter?.total || 0;
+
         const todaySpinsAfter = getUserTodaySpins(session.linux_do_id);
         const freeSpinsAfter = getUserFreeSpins(session.linux_do_id);
-        const remainingSpinsAfter = Math.max(0, config.max_daily_spins - todaySpinsAfter);
+
+        // 🎯 关键修复：计算剩余次数时必须包含购买次数！
+        const remainingSpinsAfter = Math.max(0, config.max_daily_spins + boughtTodayAfter - todaySpinsAfter);
+
+        console.log(`[Spin结果] 📊 剩余次数计算 - 用户: ${user.username}`);
+        console.log(`[Spin结果]    基础次数: ${config.max_daily_spins}`);
+        console.log(`[Spin结果]    购买次数: ${boughtTodayAfter}`);
+        console.log(`[Spin结果]    已玩次数: ${todaySpinsAfter}`);
+        console.log(`[Spin结果]    计算公式: ${config.max_daily_spins} + ${boughtTodayAfter} - ${todaySpinsAfter} = ${remainingSpinsAfter}`);
 
         // 构造响应消息
         let message = '';
