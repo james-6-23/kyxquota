@@ -609,7 +609,7 @@ function initQueries() {
             'SELECT COUNT(*) as count FROM slot_machine_records'
         ),
         getTodaySpins: db.query<{ count: number }, [string, string]>(
-            'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ?'
+            'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND is_free_spin = 0'
         ),
         getTodayStats: db.query<{ total_bet: number; total_win: number; count: number }, [string, string]>(
             'SELECT COALESCE(SUM(bet_amount), 0) as total_bet, COALESCE(SUM(win_amount), 0) as total_win, COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ?'

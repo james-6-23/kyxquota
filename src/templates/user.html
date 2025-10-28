@@ -2706,12 +2706,31 @@
       const spinsRemainingEl = document.getElementById('spinsRemaining');
       const freeSpinsCountEl = document.getElementById('freeSpinsCount');
 
-      spinsRemainingEl.textContent = slotUserData.remaining_spins || 0;
-      freeSpinsCountEl.textContent = slotUserData.free_spins || 0;
+      // 🎯 增强：确保元素存在且正确更新
+      if (spinsRemainingEl) {
+        const newValue = slotUserData.remaining_spins || 0;
+        const oldValue = parseInt(spinsRemainingEl.textContent) || 0;
+        spinsRemainingEl.textContent = newValue;
+        
+        // 如果值发生变化，添加日志
+        if (oldValue !== newValue) {
+          console.log(`[updateSlotUI] 🔄 剩余次数更新: ${oldValue} → ${newValue}`);
+        }
+      } else {
+        console.error('[updateSlotUI] ❌ 找不到 spinsRemaining 元素！');
+      }
+      
+      if (freeSpinsCountEl) {
+        freeSpinsCountEl.textContent = slotUserData.free_spins || 0;
+      } else {
+        console.error('[updateSlotUI] ❌ 找不到 freeSpinsCount 元素！');
+      }
 
       console.log('[updateSlotUI] DOM更新完成:', {
-        spinsRemainingEl_text: spinsRemainingEl.textContent,
-        freeSpinsCountEl_text: freeSpinsCountEl.textContent
+        spinsRemainingEl_text: spinsRemainingEl?.textContent || 'N/A',
+        freeSpinsCountEl_text: freeSpinsCountEl?.textContent || 'N/A',
+        remaining_spins_value: slotUserData.remaining_spins,
+        free_spins_value: slotUserData.free_spins
       });
       
       // 今日统计
@@ -2874,14 +2893,17 @@
         const data = await res.json();
 
         if (data.success) {
-          showToast(data.message, 'success');
-
+          // 🎯 保存购买前的剩余次数，用于视觉对比
+          const oldRemainingSpins = slotUserData.remaining_spins || 0;
+          
           // 更新用户数据
           slotUserData.quota = data.data.quota_after;
           slotUserData.remaining_spins = data.data.remaining_spins;
           slotUserData.bought_today = data.data.bought_today;
 
           console.log('[购买成功] API返回数据:', data.data);
+          console.log('[购买成功] 更新前剩余次数:', oldRemainingSpins);
+          console.log('[购买成功] 更新后剩余次数:', slotUserData.remaining_spins);
           console.log('[购买成功] 更新后的 slotUserData:', {
             quota: slotUserData.quota,
             remaining_spins: slotUserData.remaining_spins,
@@ -2891,15 +2913,39 @@
 
           // 立即更新UI
           updateSlotUI();
+          
+          // 🎯 添加视觉反馈：高亮显示剩余次数
+          const spinsRemainingEl = document.getElementById('spinsRemaining');
+          if (spinsRemainingEl) {
+            // 添加闪烁动画
+            spinsRemainingEl.style.animation = 'pulse 0.5s ease-in-out 3';
+            setTimeout(() => {
+              spinsRemainingEl.style.animation = '';
+            }, 1500);
+          }
+          
+          // 🎯 显示详细的成功消息
+          const increase = slotUserData.remaining_spins - oldRemainingSpins;
+          setTimeout(() => {
+            showToast(`✅ 购买成功！剩余次数：${oldRemainingSpins} → ${slotUserData.remaining_spins} (+${increase})`, 'success');
+          }, 500);
+          
         } else {
           showToast(data.message, 'error');
+          // 失败时也要恢复按钮状态
+          button.disabled = false;
         }
       } catch (error) {
         console.error('购买失败:', error);
         showToast('购买失败，请重试', 'error');
+        // 失败时恢复按钮状态
+        button.disabled = false;
       } finally {
-        button.innerHTML = originalText;
-        // 不在这里重新启用按钮，让 updateSlotUI 来决定按钮状态
+        // 🎯 修复：恢复按钮文本，但不在这里设置 disabled 状态
+        // 让 updateSlotUI() 来决定最终的按钮状态
+        setTimeout(() => {
+          button.innerHTML = originalText;
+        }, 100);
       }
     }
 
