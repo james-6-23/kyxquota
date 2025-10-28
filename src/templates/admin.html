@@ -795,7 +795,7 @@
                   <span class="text-slate-500 font-medium">至</span>
                   <input type="number" id="advancedBetMaxUsd" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-center font-bold" placeholder="1500">
                 </div>
-                <p class="text-xs text-slate-500 mt-1">美元</p>
+                <p class="text-xs text-slate-500 mt-1">美元 (当前: <span id="advancedBetMinQuota">50000000</span> 聪 至 <span id="advancedBetMaxQuota">250000000</span> 聪)</p>
               </div>
               
               <!-- 奖励倍数 -->
@@ -909,7 +909,7 @@
                       </div>
                     </div>
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">期望: 每100局产出 <span id="dropDoubleExpected" class="font-bold text-purple-600">50</span> 个碎片</p>
+                  <p class="text-xs text-slate-500 mt-1">期望: 每10局掉落 <span id="dropDoubleExpected" class="font-bold text-purple-600">1.0</span> 个碎片</p>
                 </div>
                 
                 <!-- 三连/四连掉落入场券概率 -->
@@ -927,7 +927,7 @@
                       </div>
                     </div>
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">期望: 每100局产出 <span id="dropTripleExpected" class="font-bold text-orange-600">10</span> 张券</p>
+                  <p class="text-xs text-slate-500 mt-1">期望: 每10局掉落 <span id="dropTripleExpected" class="font-bold text-orange-600">0.1</span> 张券</p>
                 </div>
                 
                 <!-- 掉落强度评估 -->
@@ -5105,9 +5105,9 @@
       document.getElementById('advancedDropRateDouble').value = rate.toFixed(2);
       document.getElementById('dropDoubleBar').style.width = (rate * 100) + '%';
       
-      // 计算期望值（假设二连出现率约20%）
-      const expected = Math.round(rate * 20);
-      document.getElementById('dropDoubleExpected').textContent = expected;
+      // 计算期望值（假设二连出现率约20%，每10局中有2次二连）
+      const expected = Math.round(rate * 2 * 10) / 10; // 保留一位小数
+      document.getElementById('dropDoubleExpected').textContent = expected.toFixed(1);
       
       // 更新掉落强度
       updateDropIntensity();
@@ -5119,9 +5119,9 @@
       document.getElementById('advancedDropRateTriple').value = rate.toFixed(2);
       document.getElementById('dropTripleBar').style.width = (rate * 100) + '%';
       
-      // 计算期望值（假设三连/四连出现率约10%）
-      const expected = Math.round(rate * 10);
-      document.getElementById('dropTripleExpected').textContent = expected;
+      // 计算期望值（假设三连/四连出现率约10%，每10局中有1次）
+      const expected = Math.round(rate * 1 * 10) / 10; // 保留一位小数
+      document.getElementById('dropTripleExpected').textContent = expected.toFixed(1);
       
       // 更新掉落强度
       updateDropIntensity();
