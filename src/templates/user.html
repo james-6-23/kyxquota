@@ -2743,18 +2743,27 @@
         if (data.success) {
           showToast('🔥 ' + data.message, 'success');
           
-          // 🔥 先重新加载配置
-          const configRes = await fetch('/api/slot/config').then(res => res.json());
+          // 🔥 立即设置高级场状态
+          isInAdvancedMode = true;
+          
+          // 🔥 并行加载配置和入场券信息
+          const [configRes] = await Promise.all([
+            fetch('/api/slot/config').then(res => res.json()),
+            loadAdvancedTickets()  // 这会调用 updateAdvancedTicketsUI
+          ]);
+          
           if (configRes && configRes.success) {
             slotConfig = configRes.data.config;
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 然后加载入场券信息（这会更新 isInAdvancedMode）
-          await loadAdvancedTickets();
-          
-          // 🔥 最后更新UI（此时 isInAdvancedMode 已经是 true）
+          // 🔥 再次更新UI确保所有状态正确
           updateSlotUI();
+          
+          // 🔥 强制更新高级场UI（确保显示正确）
+          if (advancedTicketsData) {
+            updateAdvancedTicketsUI();
+          }
           
           // 🎉 进入高级场特效
           playEnterAdvancedAnimation();
@@ -2784,21 +2793,27 @@
         
         if (data.success) {
           showToast(data.message, 'success');
-          // 刷新入场券信息
-          await loadAdvancedTickets();
           
-          // 🔥 重新加载配置，确保获取正确的初级场投注金额
-          try {
-            const configRes = await fetch('/api/slot/config');
-            const configData = await configRes.json();
-            if (configData.success) {
-              slotConfig = configData.data.config;
-              slotUserData = configData.data.user;
-              // 更新老虎机界面，确保显示正确的投注金额
-              updateSlotUI();
-            }
-          } catch (error) {
-            console.error('[高级场] 重新加载配置失败:', error);
+          // 🔥 立即设置为初级场状态
+          isInAdvancedMode = false;
+          
+          // 🔥 并行加载配置和入场券信息
+          const [configRes] = await Promise.all([
+            fetch('/api/slot/config').then(res => res.json()),
+            loadAdvancedTickets()  // 这会调用 updateAdvancedTicketsUI
+          ]);
+          
+          if (configRes && configRes.success) {
+            slotConfig = configRes.data.config;
+            slotUserData = configRes.data.user;
+          }
+          
+          // 🔥 更新UI确保显示正确的投注金额
+          updateSlotUI();
+          
+          // 🔥 强制更新UI（确保退出高级场后UI正确）
+          if (advancedTicketsData) {
+            updateAdvancedTicketsUI();
           }
         } else {
           showToast(data.message, 'error');
@@ -2826,15 +2841,23 @@
           stopAdvancedModeTimer();
           showToast('高级场时间已到，已自动退出', 'error');
           
-          // 刷新状态和重新加载配置
+          // 🔥 立即设置为初级场状态
+          isInAdvancedMode = false;
+          
+          // 🔥 并行刷新状态和重新加载配置
           Promise.all([
-            loadAdvancedTickets(),
+            loadAdvancedTickets(),  // 这会调用 updateAdvancedTicketsUI
             fetch('/api/slot/config').then(res => res.json())
           ]).then(([_, configData]) => {
             if (configData && configData.success) {
               slotConfig = configData.data.config;
               slotUserData = configData.data.user;
               updateSlotUI(); // 🔥 更新UI，确保显示正确的投注金额
+            }
+            
+            // 🔥 强制更新UI（确保退出高级场后UI正确）
+            if (advancedTicketsData) {
+              updateAdvancedTicketsUI();
             }
           }).catch(error => {
             console.error('[高级场] 自动退出时重新加载配置失败:', error);
@@ -3043,8 +3066,16 @@
           loadSidebarLeaderboard();
           await loadAdvancedTickets();  // 🔥 加载入场券信息
           console.log('[初始化] 入场券加载完成，isInAdvancedMode:', isInAdvancedMode);
+          
+          // 🔥 如果用户在高级场，确保UI正确显示
+          if (isInAdvancedMode && advancedTicketsData) {
+            console.log('[初始化] 用户在高级场，强制更新UI');
+            updateAdvancedTicketsUI();  // 确保高级场UI显示正确
+          }
+          
           // 🔥 加载完入场券后再次更新UI，确保进度条正确显示
           updateSlotUI();
+          
           // 🔥 再次强制更新进度条（确保显示）
           setTimeout(() => {
             console.log('[初始化] 延迟更新进度条');
