@@ -13,6 +13,7 @@ import {
     calculateWin,
     saveGameRecord,
     getUserRecords,
+    getUserRecordsByMode,
     getUserTodayStats,
     updateUserTotalStats,
     getLeaderboard,
@@ -729,7 +730,17 @@ slot.get('/records', requireAuth, async (c) => {
             return c.json({ success: false, message: '未登录' }, 401);
         }
 
-        const records = getUserRecords(session.linux_do_id);
+        // 获取查询参数
+        const { mode } = c.req.query();
+
+        let records;
+        if (mode === 'normal' || mode === 'advanced') {
+            // 按场次获取记录
+            records = getUserRecordsByMode(session.linux_do_id, mode);
+        } else {
+            // 获取所有记录（兼容旧版）
+            records = getUserRecords(session.linux_do_id);
+        }
 
         // 解析符号 JSON
         const formattedRecords = records.map(r => ({

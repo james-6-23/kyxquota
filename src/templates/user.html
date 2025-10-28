@@ -1143,7 +1143,7 @@
     <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
       <!-- 标题栏 -->
       <div class="flex justify-between items-center p-6 border-b border-slate-200 bg-gradient-to-r from-purple-600 to-indigo-600">
-        <h2 class="text-2xl font-bold text-white">🎰 我的抽奖记录</h2>
+        <h2 id="slotRecordsTitle" class="text-2xl font-bold text-white">🎰 我的抽奖记录</h2>
         <button onclick="closeSlotRecords()" class="text-white hover:text-yellow-300 transition-colors">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -3376,10 +3376,10 @@
 
       // console.log('[updateSlotUI] 更新UI，当前数据:', {
       //   remaining_spins: slotUserData.remaining_spins,
-        free_spins: slotUserData.free_spins,
-        quota: slotUserData.quota,
-        bought_today: slotUserData.bought_today
-      });
+      //   free_spins: slotUserData.free_spins,
+      //   quota: slotUserData.quota,
+      //   bought_today: slotUserData.bought_today
+      // });
 
       const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('slotQuota').textContent = quotaText;
@@ -3414,10 +3414,10 @@
 
       // console.log('[updateSlotUI] DOM更新完成:', {
       //   spinsRemainingEl_text: spinsRemainingEl?.textContent || 'N/A',
-        freeSpinsCountEl_text: freeSpinsCountEl?.textContent || 'N/A',
-        remaining_spins_value: slotUserData.remaining_spins,
-        free_spins_value: slotUserData.free_spins
-      });
+      //   freeSpinsCountEl_text: freeSpinsCountEl?.textContent || 'N/A',
+      //   remaining_spins_value: slotUserData.remaining_spins,
+      //   free_spins_value: slotUserData.free_spins
+      // });
       
       // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
@@ -3468,14 +3468,14 @@
 
       // console.log('[updateSlotUI] Spin按钮状态检查:', {
       //   remaining_spins: slotUserData.remaining_spins,
-        hasSpins: hasSpins,
-        quota: slotUserData.quota,
-        min_quota_required: slotConfig.min_quota_required,
-        hasQuota: hasQuota,
-        quotaUSD: `$${(slotUserData.quota / 500000).toFixed(2)}`,
-        minQuotaUSD: `$${(slotConfig.min_quota_required / 500000).toFixed(2)}`,
-        shouldEnable: hasSpins && hasQuota
-      });
+      //   hasSpins: hasSpins,
+      //   quota: slotUserData.quota,
+      //   min_quota_required: slotConfig.min_quota_required,
+      //   hasQuota: hasQuota,
+      //   quotaUSD: `$${(slotUserData.quota / 500000).toFixed(2)}`,
+      //   minQuotaUSD: `$${(slotConfig.min_quota_required / 500000).toFixed(2)}`,
+      //   shouldEnable: hasSpins && hasQuota
+      // });
 
       if (hasSpins && hasQuota) {
         spinButton.disabled = false;
@@ -3602,10 +3602,10 @@
           // console.log('[购买成功] 更新后剩余次数:', slotUserData.remaining_spins);
           // console.log('[购买成功] 更新后的 slotUserData:', {
           //   quota: slotUserData.quota,
-            remaining_spins: slotUserData.remaining_spins,
-            bought_today: slotUserData.bought_today,
-            free_spins: slotUserData.free_spins
-          });
+          //   remaining_spins: slotUserData.remaining_spins,
+          //   bought_today: slotUserData.bought_today,
+          //   free_spins: slotUserData.free_spins
+          // });
 
           // 立即更新UI
           updateSlotUI();
@@ -3961,9 +3961,13 @@
       if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
       
       try {
+        // 根据当前模式获取对应的记录
+        const mode = isInAdvancedMode ? 'advanced' : 'normal';
+        const modeName = isInAdvancedMode ? '高级场' : '初级场';
+        
         // 并行获取抽奖记录和待发放记录
         const [recordsRes, pendingRes] = await Promise.all([
-          fetch('/api/slot/records'),
+          fetch(`/api/slot/records?mode=${mode}`),
           fetch('/api/slot/pending-rewards')
         ]);
         
@@ -3986,6 +3990,9 @@
           winTypeStats[winType] = (winTypeStats[winType] || 0) + 1;
         });
         // console.log('[记录统计] win_type分布:', winTypeStats);
+        
+        // 更新标题显示当前场次
+        document.getElementById('slotRecordsTitle').textContent = `🎰 我的抽奖记录 - ${modeName}`;
         
         // 显示模态框
         document.getElementById('slotRecordsModal').classList.remove('hidden');
@@ -4384,8 +4391,9 @@
         const searchInput = document.getElementById('recordSearchInput').value;
         const winTypeFilter = document.getElementById('winTypeFilter').value;
         
-        // 重新获取数据
-        const recordsRes = await fetch('/api/slot/records');
+        // 根据当前模式重新获取数据
+        const mode = isInAdvancedMode ? 'advanced' : 'normal';
+        const recordsRes = await fetch(`/api/slot/records?mode=${mode}`);
         const recordsData = await recordsRes.json();
         
         if (!recordsData.success) {

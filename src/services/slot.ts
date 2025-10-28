@@ -492,6 +492,13 @@ export function getUserRecords(linuxDoId: string) {
 }
 
 /**
+ * 获取用户指定场次的游戏记录
+ */
+export function getUserRecordsByMode(linuxDoId: string, mode: 'normal' | 'advanced') {
+    return slotQueries.getRecordsByUserAndMode.all(linuxDoId, mode);
+}
+
+/**
  * 获取用户今日统计
  */
 export function getUserTodayStats(linuxDoId: string) {

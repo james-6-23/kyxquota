@@ -472,8 +472,9 @@ app.get('/records/slot', requireAdmin, async (c) => {
     const pageSize = parseInt(c.req.query('pageSize') || '50');
 
     const offset = (page - 1) * pageSize;
-    const records = slotQueries.getAllRecordsPaginated.all(pageSize, offset);
-    const totalCount = slotQueries.countRecords.get()!.count;
+    // 只获取初级场记录（slot_mode = 'normal' 或 NULL）
+    const records = slotQueries.getNormalRecordsPaginated.all(pageSize, offset);
+    const totalCount = slotQueries.countNormalRecords.get()!.count;
     const totalPages = Math.ceil(totalCount / pageSize);
 
     return c.json({
@@ -704,10 +705,13 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
         // 获取所有老虎机记录
         const allRecords = slotQueries.getAllRecords.all();
 
-        // 基础统计
-        const totalCount = allRecords.length;
-        const totalBet = allRecords.reduce((sum, r) => sum + r.bet_amount, 0);
-        const totalWin = allRecords.reduce((sum, r) => sum + r.win_amount, 0);
+        // 筛选初级场记录（slot_mode = 'normal' 或 NULL）
+        const normalRecords = allRecords.filter(r => r.slot_mode === 'normal' || r.slot_mode === null);
+
+        // 基础统计（基于初级场记录）
+        const totalCount = normalRecords.length;
+        const totalBet = normalRecords.reduce((sum, r) => sum + r.bet_amount, 0);
+        const totalWin = normalRecords.reduce((sum, r) => sum + r.win_amount, 0);
         const netProfit = totalWin - totalBet;
 
         // 按中奖类型统计
@@ -721,7 +725,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             'none': { count: 0, totalWin: 0, avgWin: 0 }
         };
 
-        allRecords.forEach(r => {
+        normalRecords.forEach(r => {
             if (winTypes[r.win_type]) {
                 winTypes[r.win_type].count++;
                 winTypes[r.win_type].totalWin += r.win_amount;
@@ -734,11 +738,11 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
         });
 
-        const winCount = allRecords.filter(r => r.win_amount > 0).length;
+        const winCount = normalRecords.filter(r => r.win_amount > 0).length;
         const winRate = totalCount > 0 ? (winCount / totalCount) * 100 : 0;
 
         // 获取最近的游戏记录（最多100条）
-        const recentRecords = allRecords.slice(0, 100).map(r => ({
+        const recentRecords = normalRecords.slice(0, 100).map(r => ({
             ...r,
             result_symbols: JSON.parse(r.result_symbols),
             timestamp: r.timestamp,
@@ -760,7 +764,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             dailyStats[dateStr] = { count: 0, bet: 0, win: 0, profit: 0 };
         }
 
-        allRecords.forEach(r => {
+        normalRecords.forEach(r => {
             if (dailyStats[r.date]) {
                 dailyStats[r.date].count++;
                 dailyStats[r.date].bet += r.bet_amount;
@@ -784,7 +788,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
                 recentRecords,
                 userStats: userStats.slice(0, 100), // 盈利排行榜
                 lossStats: lossStats.slice(0, 100), // 亏损排行榜
-                allRecords, // 添加所有记录（用于筛选）
+                allRecords: normalRecords, // 添加初级场记录（用于筛选）
                 dailyStats
             }
         });
@@ -1907,6 +1911,84 @@ app.get('/slot/advanced/records', requireAdmin, async (c) => {
     } catch (e: any) {
         console.error('[管理员] 获取高级场记录失败:', e);
         return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 获取高级场分析数据
+ */
+app.get('/slot/advanced/analytics', requireAdmin, async (c) => {
+    try {
+        // 获取所有老虎机记录
+        const allRecords = slotQueries.getAllRecords.all();
+
+        // 筛选高级场记录（slot_mode = 'advanced'）
+        const advancedRecords = allRecords.filter(r => r.slot_mode === 'advanced');
+
+        // 基础统计（基于高级场记录）
+        const totalCount = advancedRecords.length;
+        const totalBet = advancedRecords.reduce((sum, r) => sum + r.bet_amount, 0);
+        const totalWin = advancedRecords.reduce((sum, r) => sum + r.win_amount, 0);
+        const netProfit = totalWin - totalBet;
+
+        // 按中奖类型统计
+        const winTypes: Record<string, { count: number; totalWin: number; avgWin: number }> = {
+            'super_jackpot': { count: 0, totalWin: 0, avgWin: 0 },
+            'special_combo': { count: 0, totalWin: 0, avgWin: 0 },
+            'quad': { count: 0, totalWin: 0, avgWin: 0 },
+            'triple': { count: 0, totalWin: 0, avgWin: 0 },
+            'double': { count: 0, totalWin: 0, avgWin: 0 },
+            'punishment': { count: 0, totalWin: 0, avgWin: 0 },
+            'none': { count: 0, totalWin: 0, avgWin: 0 }
+        };
+
+        advancedRecords.forEach(r => {
+            if (winTypes[r.win_type]) {
+                winTypes[r.win_type].count++;
+                winTypes[r.win_type].totalWin += r.win_amount;
+            }
+        });
+
+        // 计算平均值和概率
+        Object.keys(winTypes).forEach(key => {
+            const type = winTypes[key];
+            type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
+        });
+
+        const winCount = advancedRecords.filter(r => r.win_amount > 0).length;
+        const winRate = totalCount > 0 ? (winCount / totalCount) * 100 : 0;
+
+        // 获取最近的游戏记录（最多100条）
+        const recentRecords = advancedRecords.slice(0, 100).map(r => ({
+            ...r,
+            result_symbols: JSON.parse(r.result_symbols),
+            timestamp: r.timestamp,
+            date: r.date
+        }));
+
+        // 获取高级场RTP统计
+        const rtpStats = advancedSlotQueries.getAllRTPStats.all();
+
+        return c.json({
+            success: true,
+            data: {
+                summary: {
+                    totalCount,
+                    totalBet,
+                    totalWin,
+                    netProfit,
+                    winCount,
+                    winRate
+                },
+                winTypes,
+                recentRecords,
+                rtpStats,
+                allRecords: advancedRecords // 添加高级场记录（用于筛选）
+            }
+        });
+    } catch (error: any) {
+        console.error('[管理员] 获取高级场分析数据失败:', error);
+        return c.json({ success: false, message: '获取分析数据失败' }, 500);
     }
 });
 

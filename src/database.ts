@@ -723,14 +723,23 @@ function initQueries() {
         getRecordsByUser: db.query<SlotMachineRecord, string>(
             'SELECT * FROM slot_machine_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
         ),
+        getRecordsByUserAndMode: db.query<SlotMachineRecord, [string, string]>(
+            'SELECT * FROM slot_machine_records WHERE linux_do_id = ? AND slot_mode = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
         getAllRecords: db.query<SlotMachineRecord, never>(
             'SELECT * FROM slot_machine_records ORDER BY timestamp DESC'
         ),
         getAllRecordsPaginated: db.query<SlotMachineRecord, [number, number]>(
             'SELECT * FROM slot_machine_records ORDER BY timestamp DESC LIMIT ? OFFSET ?'
         ),
+        getNormalRecordsPaginated: db.query<SlotMachineRecord, [number, number]>(
+            'SELECT * FROM slot_machine_records WHERE slot_mode = "normal" OR slot_mode IS NULL ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+        ),
         countRecords: db.query<{ count: number }, never>(
             'SELECT COUNT(*) as count FROM slot_machine_records'
+        ),
+        countNormalRecords: db.query<{ count: number }, never>(
+            'SELECT COUNT(*) as count FROM slot_machine_records WHERE slot_mode = "normal" OR slot_mode IS NULL'
         ),
         getTodaySpins: db.query<{ count: number }, [string, string]>(
             'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND is_free_spin = 0'
