@@ -9,20 +9,29 @@ import type { UserTickets, AdvancedSlotConfig } from '../types';
  * 获取用户入场券信息
  */
 export function getUserTickets(linuxDoId: string): UserTickets | null {
-    const result = advancedSlotQueries.getTickets.get(linuxDoId);
+    console.log(`[高级场] 查询用户入场券信息 - linuxDoId: ${linuxDoId}`);
+    
+    try {
+        const result = advancedSlotQueries.getTickets.get(linuxDoId);
+        console.log(`[高级场] 查询结果:`, result);
+        
+        if (!result) {
+            console.log(`[高级场] 用户没有入场券记录，返回默认值`);
+            return {
+                linux_do_id: linuxDoId,
+                tickets: 0,
+                fragments: 0,
+                tickets_expires_at: null,
+                advanced_mode_until: null,
+                updated_at: Date.now()
+            };
+        }
 
-    if (!result) {
-        return {
-            linux_do_id: linuxDoId,
-            tickets: 0,
-            fragments: 0,
-            tickets_expires_at: null,
-            advanced_mode_until: null,
-            updated_at: Date.now()
-        };
+        return result;
+    } catch (error) {
+        console.error(`[高级场] 查询入场券信息失败:`, error);
+        return null;
     }
-
-    return result;
 }
 
 /**
@@ -32,7 +41,25 @@ export function getAdvancedSlotConfig(): AdvancedSlotConfig {
     const result = advancedSlotQueries.getAdvancedConfig.get();
 
     if (!result) {
-        throw new Error('高级场配置未找到');
+        console.error('[高级场] 配置未找到，返回默认配置');
+        // 返回默认配置而不是抛出错误
+        return {
+            id: 1,
+            enabled: 1,
+            bet_min: 50000000,
+            bet_max: 250000000,
+            reward_multiplier: 4.0,
+            penalty_weight_factor: 2.0,
+            rtp_target: 0.88,
+            ticket_valid_hours: 24,
+            session_valid_hours: 24,
+            fragments_needed: 5,
+            drop_rate_triple: 1.0,
+            drop_rate_double: 1.0,
+            max_tickets_hold: 2,
+            daily_bet_limit: 5000000000,
+            updated_at: Date.now()
+        };
     }
 
     return result;
@@ -142,12 +169,16 @@ export function isInAdvancedMode(linuxDoId: string): boolean {
  * 进入高级场（消耗1张入场券）
  */
 export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
+    console.log(`[高级场] 尝试进入高级场 - 用户: ${linuxDoId}`);
+    
     // 检查入场券是否过期
     checkTicketExpiry(linuxDoId);
 
     const tickets = getUserTickets(linuxDoId);
+    console.log(`[高级场] 用户入场券信息:`, tickets);
 
     if (!tickets || tickets.tickets < 1) {
+        console.log(`[高级场] 进入失败 - 入场券不足: ${tickets?.tickets || 0}`);
         return {
             success: false,
             message: '入场券不足，无法进入高级场'
@@ -155,8 +186,10 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     }
 
     const config = getAdvancedSlotConfig();
+    console.log(`[高级场] 高级场配置 - enabled: ${config.enabled}`);
 
     if (!config.enabled) {
+        console.log(`[高级场] 进入失败 - 高级场功能已关闭`);
         return {
             success: false,
             message: '高级场功能已关闭'
@@ -167,12 +200,24 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     const validUntil = now + (config.session_valid_hours * 3600000);
 
     // 扣除入场券并设置高级场资格
-    const result = advancedSlotQueries.useTicket.run(validUntil, now, linuxDoId);
-
-    if (!result || result.changes === 0) {
+    console.log(`[高级场] 执行 useTicket - validUntil: ${new Date(validUntil).toISOString()}, linuxDoId: ${linuxDoId}`);
+    
+    try {
+        const result = advancedSlotQueries.useTicket.run(validUntil, now, linuxDoId);
+        console.log(`[高级场] useTicket 结果:`, result);
+        
+        if (!result || result.changes === 0) {
+            console.log(`[高级场] 进入失败 - 数据库更新失败，changes: ${result?.changes || 0}`);
+            return {
+                success: false,
+                message: '进入失败，请重试'
+            };
+        }
+    } catch (error) {
+        console.error(`[高级场] useTicket 执行错误:`, error);
         return {
             success: false,
-            message: '进入失败，请重试'
+            message: '数据库操作失败'
         };
     }
 
