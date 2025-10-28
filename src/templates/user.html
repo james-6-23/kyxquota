@@ -649,7 +649,7 @@
     
     <!-- 顶部导航栏（与主界面一致）-->
     <nav class="bg-black/30 backdrop-blur-md border-b border-white/10 sticky top-0 z-40">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
         <div class="flex items-center h-16">
           <!-- Logo和导航 - 响应式 -->
           <div class="flex items-center gap-2 sm:gap-4 md:gap-8">
@@ -673,7 +673,7 @@
             </div>
           </div>
           
-          <!-- 右侧：用户菜单 -->
+          <!-- 右侧：用户菜单和高级场信息 -->
           <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <!-- 音效控制按钮 -->
             <button id="soundToggleBtn" onclick="toggleSound()" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors" title="音效开关">
@@ -693,6 +693,7 @@
             <div class="text-white text-right sm:hidden">
               <p id="slotQuotaMobile" class="text-sm font-bold text-yellow-400">$0.00</p>
             </div>
+            
             <div class="relative">
               <button onclick="toggleSlotDropdown()" class="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors">
                 <div id="slotUserAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold border-2 border-white/30">
@@ -722,90 +723,71 @@
                 </button>
               </div>
             </div>
+            
+            <!-- 🔥 高级场倒计时和返回按钮（绝对定位到最右侧边缘）-->
+            <div id="advancedModeIndicator" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-lg">
+              <div class="text-white">
+                <p class="text-xs opacity-75 leading-tight">剩余时间</p>
+                <p id="advancedTimeRemaining" class="text-sm font-mono font-bold text-yellow-300 leading-tight">23:59:59</p>
+              </div>
+              <button onclick="exitAdvancedMode()" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded transition-all whitespace-nowrap">
+                返回初级场
+              </button>
+            </div>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- 🔥 高级场入场券状态栏 - 顶部常驻 -->
-    <div id="advancedTicketBar" class="hidden bg-gradient-to-r from-purple-600/95 to-blue-600/95 backdrop-blur-md border-b border-yellow-400/30 shadow-lg sticky top-0 z-30">
-      <div class="max-w-7xl mx-auto px-4 py-3">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <!-- 左侧：入场券和碎片信息 -->
-          <div class="flex items-center gap-4">
-            <!-- 入场券 -->
-            <div class="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-              <span class="text-2xl">🎟️</span>
-              <div class="text-white">
-                <p class="text-xs opacity-75">入场券</p>
-                <p class="text-lg font-bold"><span id="ticketCount">0</span>/<span id="ticketMax">2</span></p>
-              </div>
-            </div>
-            
-            <!-- 碎片 -->
-            <div class="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-              <span class="text-2xl">🧩</span>
-              <div class="text-white">
-                <p class="text-xs opacity-75">碎片</p>
-                <p class="text-lg font-bold"><span id="fragmentCount">0</span>/<span id="fragmentsNeeded">5</span></p>
-              </div>
-            </div>
-            
-            <!-- 过期时间 -->
-            <div class="text-white text-xs opacity-75">
-              <p id="ticketExpiry"></p>
+    <!-- 🔥 入场券信息栏（独立，在导航栏下方）-->
+    <div id="advancedTicketBar" class="hidden bg-gradient-to-r from-purple-600/95 to-blue-600/95 backdrop-blur-md border-b border-yellow-400/30 shadow-lg">
+      <div class="flex items-center justify-center px-4 py-2">
+        <!-- 居中的紧凑布局 -->
+        <div class="flex items-center gap-3">
+          <!-- 入场券 -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-lg">🎟️</span>
+            <div class="text-white">
+              <p class="text-xs opacity-75 leading-tight"><span id="ticketCount">0</span>/<span id="ticketMax">2</span></p>
             </div>
           </div>
           
-          <!-- 右侧：操作按钮 -->
-          <div class="flex items-center gap-2">
-            <!-- 合成按钮 -->
-            <button id="synthesizeButton" onclick="synthesizeTicket()" 
-                    class="px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-lg shadow-lg 
-                           transform hover:scale-105 transition-all duration-200 text-sm
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    disabled>
-              🔨 合成入场券
-            </button>
-            
-            <!-- 进入高级场按钮 -->
-            <button id="enterAdvancedButton" onclick="enterAdvancedMode()" 
-                    class="px-4 py-2 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-lg shadow-lg 
-                           transform hover:scale-105 transition-all duration-200 text-sm
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    disabled>
-              🔥 进入高级场
-            </button>
-          </div>
-        </div>
-        
-        <!-- 提示文字 -->
-        <div class="mt-2 text-white/70 text-xs text-center">
-          💡 二连获得碎片🧩，三连/四连获得入场券🎟️
-        </div>
-      </div>
-    </div>
-
-    <!-- 🔥 高级场状态栏 - 顶部常驻（进入高级场后显示）-->
-    <div id="advancedModeBar" class="hidden bg-gradient-to-r from-red-600/95 to-orange-600/95 backdrop-blur-md border-b border-yellow-400 shadow-lg sticky top-0 z-30">
-      <div class="max-w-7xl mx-auto px-4 py-3">
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div class="flex items-center gap-3">
-            <span class="text-3xl">🔥</span>
+          <!-- 碎片 -->
+          <div class="flex items-center gap-1.5">
+            <span class="text-lg">🧩</span>
             <div class="text-white">
-              <p class="text-lg font-bold">高级场模式</p>
-              <p class="text-xs opacity-90">奖励倍率 <span class="text-yellow-300 font-bold">×4</span> | 惩罚概率提升</p>
+              <p class="text-xs opacity-75 leading-tight"><span id="fragmentCount">0</span>/<span id="fragmentsNeeded">5</span></p>
             </div>
           </div>
-          <div class="flex items-center gap-3">
-            <div class="text-white text-right">
-              <p class="text-xs opacity-75">剩余时间</p>
-              <p id="advancedTimeRemaining" class="text-lg font-mono font-bold text-yellow-300">23:59:59</p>
-            </div>
-            <button id="exitAdvancedButton" onclick="exitAdvancedMode()" 
-                    class="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-bold rounded-lg transition-all duration-200 text-sm">
-              返回初级场
-            </button>
+          
+          <!-- 分隔线 -->
+          <div class="h-6 w-px bg-white/30"></div>
+          
+          <!-- 操作按钮 -->
+          <button id="synthesizeButton" onclick="synthesizeTicket()" 
+                  class="px-2.5 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-lg shadow-lg 
+                         transform hover:scale-105 transition-all duration-200 text-xs
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  disabled>
+            🔨 合成
+          </button>
+          
+          <button id="enterAdvancedButton" onclick="enterAdvancedMode()" 
+                  class="px-2.5 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-lg shadow-lg 
+                         transform hover:scale-105 transition-all duration-200 text-xs
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  disabled>
+            🔥 进入
+          </button>
+          
+          <!-- 过期时间 -->
+          <div class="text-white text-xs opacity-60">
+            <p id="ticketExpiry"></p>
+          </div>
+          
+          <!-- 提示 -->
+          <div class="text-white/50 text-xs ml-2">
+            💡 二连→碎片，三连/四连→券
           </div>
         </div>
       </div>
@@ -856,37 +838,6 @@
           </div>
         </div>
 
-        <!-- 🔥 高级场投注金额选择器 -->
-        <div id="advancedBetSelector" class="hidden bg-gradient-to-r from-orange-500/20 to-yellow-500/20 backdrop-blur-md rounded-xl px-6 py-4 mb-6 border-2 border-orange-400/30 shadow-xl">
-          <div class="text-center mb-4">
-            <p class="text-white text-sm mb-2">💰 选择投注金额</p>
-            <div class="flex items-center justify-center gap-4 mb-3">
-              <button onclick="setAdvancedBet(100)" class="advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all" data-amount="100">
-                $100
-              </button>
-              <button onclick="setAdvancedBet(200)" class="advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all" data-amount="200">
-                $200
-              </button>
-              <button onclick="setAdvancedBet(300)" class="advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all" data-amount="300">
-                $300
-              </button>
-              <button onclick="setAdvancedBet(500)" class="advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all" data-amount="500">
-                $500
-              </button>
-            </div>
-            <!-- 滑块 -->
-            <div class="px-4">
-              <input type="range" id="advancedBetSlider" min="100" max="500" step="10" value="100" 
-                     class="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
-                     oninput="updateAdvancedBetDisplay(this.value)">
-              <div class="text-center mt-2">
-                <span class="text-white text-sm">当前投注：</span>
-                <span id="advancedBetDisplay" class="text-yellow-300 text-3xl font-bold">$100</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <!-- 老虎机滚轮容器 (1行4列) - 响应式 -->
         <div id="slotReelsContainer" class="bg-black/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl mb-4 sm:mb-6 md:mb-8">
           <div id="slotReels" class="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
@@ -900,7 +851,48 @@
           <p id="slotResultText" class="text-white text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-center drop-shadow-lg"></p>
         </div>
 
-        <!-- 控制按钮 - 响应式 -->
+        <!-- 🔥 高级场投注选择器和按钮（紧凑版，在滚轮下方）-->
+        <div id="advancedBetSelector" class="hidden mb-6">
+          <div class="max-w-xl mx-auto">
+            <!-- 快捷金额按钮 -->
+            <div class="flex items-center justify-center gap-2 mb-3">
+              <button onclick="setAdvancedBet(100)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="100">
+                $100
+              </button>
+              <button onclick="setAdvancedBet(200)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="200">
+                $200
+              </button>
+              <button onclick="setAdvancedBet(300)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="300">
+                $300
+              </button>
+              <button onclick="setAdvancedBet(500)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="500">
+                $500
+              </button>
+            </div>
+            
+            <!-- 滑块（紧凑版）-->
+            <div class="px-4 mb-3">
+              <input type="range" id="advancedBetSlider" min="100" max="500" step="10" value="100" 
+                     class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                     oninput="updateAdvancedBetDisplay(this.value)">
+            </div>
+            
+            <!-- 投注按钮 -->
+            <button id="advancedSpinButton" onclick="spinSlot(false)" 
+                    class="w-full px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
+                           text-white text-xl font-bold rounded-lg shadow-lg 
+                           transform hover:scale-105 transition-all duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              <span class="flex items-center justify-center gap-2">
+                <span>🎰</span>
+                <span>投注</span>
+                <span id="advancedBetDisplay" class="text-yellow-300">$100</span>
+              </span>
+            </button>
+          </div>
+        </div>
+
+        <!-- 初级场控制按钮 - 响应式 -->
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto px-4 sm:px-0">
           <button id="spinButton" onclick="spinSlot(false)" 
                   class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600 
@@ -2392,9 +2384,9 @@
       // 高亮选中的按钮
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
         if (parseInt(btn.dataset.amount) === amount) {
-          btn.className = 'advanced-bet-option px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg font-bold transition-all shadow-lg';
+          btn.className = 'advanced-bet-option px-4 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg font-bold transition-all shadow-lg text-sm';
         } else {
-          btn.className = 'advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all';
+          btn.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         }
       });
       
@@ -2406,13 +2398,18 @@
       advancedBetAmount = parseInt(value);
       document.getElementById('advancedBetDisplay').textContent = `$${value}`;
       
-      // 更新按钮高亮
+      // 更新按钮高亮（最接近的金额）
+      const presets = [100, 200, 300, 500];
+      const closest = presets.reduce((prev, curr) => 
+        Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
+      );
+      
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
         const amount = parseInt(btn.dataset.amount);
-        if (amount === parseInt(value)) {
-          btn.className = 'advanced-bet-option px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg font-bold transition-all shadow-lg';
+        if (amount === closest) {
+          btn.className = 'advanced-bet-option px-4 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg font-bold transition-all shadow-lg text-sm';
         } else {
-          btn.className = 'advanced-bet-option px-4 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all';
+          btn.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         }
       });
     }
@@ -2466,18 +2463,20 @@
       const enterBtn = document.getElementById('enterAdvancedButton');
       enterBtn.disabled = tickets < 1;
       
-      // 🎯 改进：显示/隐藏入场券栏和高级场状态栏
+      // 🎯 改进：显示/隐藏入场券栏和高级场指示器
       const ticketBar = document.getElementById('advancedTicketBar');
-      const modeBar = document.getElementById('advancedModeBar');
+      const modeIndicator = document.getElementById('advancedModeIndicator');  // 🔥 导航栏右上角的指示器
       const betSelector = document.getElementById('advancedBetSelector');
       const freeSpinButton = document.getElementById('freeSpinButton');
+      const normalSpinButton = document.getElementById('spinButton');
       
       if (in_advanced_mode) {
-        // 在高级场：隐藏入场券栏，显示高级场状态栏和投注选择器
+        // 在高级场：隐藏入场券栏，显示高级场指示器和投注选择器
         ticketBar.classList.add('hidden');
-        modeBar.classList.remove('hidden');
-        betSelector.classList.remove('hidden');  // 🔥 显示投注选择器
-        freeSpinButton.classList.add('hidden');  // 🔥 隐藏免费抽奖（高级场没有）
+        modeIndicator.classList.remove('hidden');  // 🔥 显示右上角指示器
+        betSelector.classList.remove('hidden');     // 🔥 显示投注选择器
+        freeSpinButton.classList.add('hidden');     // 🔥 隐藏免费抽奖
+        normalSpinButton.classList.add('hidden');   // 🔥 隐藏初级场spin按钮
         isInAdvancedMode = true;
         startAdvancedModeTimer();
         
@@ -2489,13 +2488,20 @@
           const slider = document.getElementById('advancedBetSlider');
           slider.min = advancedBetMin;
           slider.max = advancedBetMax;
+          
+          // 如果当前投注超出范围，重置为最小值
+          if (advancedBetAmount < advancedBetMin || advancedBetAmount > advancedBetMax) {
+            setAdvancedBet(advancedBetMin);
+          }
+          
           console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}`);
         }
       } else {
-        // 不在高级场：常驻显示入场券栏，隐藏高级场状态栏和投注选择器
+        // 不在高级场：常驻显示入场券栏，隐藏高级场指示器和投注选择器
         ticketBar.classList.remove('hidden');
-        modeBar.classList.add('hidden');
-        betSelector.classList.add('hidden');  // 🔥 隐藏投注选择器
+        modeIndicator.classList.add('hidden');    // 🔥 隐藏右上角指示器
+        betSelector.classList.add('hidden');      // 🔥 隐藏投注选择器
+        normalSpinButton.classList.remove('hidden'); // 🔥 显示初级场spin按钮
         isInAdvancedMode = false;
         stopAdvancedModeTimer();
       }
@@ -2612,7 +2618,8 @@
         
         if (remaining <= 0) {
           // 时间到，自动退出高级场
-          document.getElementById('advancedTimeRemaining').textContent = '00:00:00';
+          const timeEl = document.getElementById('advancedTimeRemaining');
+          if (timeEl) timeEl.textContent = '00:00:00';
           stopAdvancedModeTimer();
           showToast('高级场时间已到，已自动退出', 'error');
           loadAdvancedTickets(); // 刷新状态
@@ -2623,8 +2630,11 @@
         const minutes = Math.floor((remaining % 3600000) / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
         
-        document.getElementById('advancedTimeRemaining').textContent = 
-          `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // 🔥 更新导航栏中的倒计时
+        const timeEl = document.getElementById('advancedTimeRemaining');
+        if (timeEl) timeEl.textContent = timeStr;
       };
       
       updateTimer(); // 立即更新一次
@@ -3406,9 +3416,11 @@
       // 隐藏上次结果
       resultDiv.classList.add('hidden');
 
-      // 禁用按钮
+      // 禁用所有按钮
       spinButton.disabled = true;
       freeSpinButton.disabled = true;
+      const advSpinBtn = document.getElementById('advancedSpinButton');
+      if (advSpinBtn) advSpinBtn.disabled = true;  // 🔥 同时禁用高级场按钮
       isSpinning = true;
 
       try {
@@ -3521,15 +3533,26 @@
 
       } catch (error) {
         console.error('旋转失败:', error);
-        showToast('旋转失败', 'error');
+        console.error('错误详情:', error);
+        showToast('旋转失败，请重试', 'error');
       } finally {
         isSpinning = false;
-        // 恢复按钮状态
-        if (slotUserData.remaining_spins > 0 && slotUserData.quota >= slotConfig.min_quota_required) {
-          spinButton.disabled = false;
-        }
-        if (slotUserData.free_spins > 0) {
-          freeSpinButton.disabled = false;
+        
+        // 🔥 恢复按钮状态（区分高级场和初级场）
+        if (isInAdvancedMode) {
+          // 高级场：控制投注选择器内的按钮
+          const advSpinBtn = document.getElementById('advancedSpinButton');
+          if (advSpinBtn && slotUserData.quota >= (advancedBetAmount * 500000)) {
+            advSpinBtn.disabled = false;
+          }
+        } else {
+          // 初级场：控制普通spin按钮
+          if (slotUserData.remaining_spins > 0 && slotUserData.quota >= slotConfig.min_quota_required) {
+            spinButton.disabled = false;
+          }
+          if (slotUserData.free_spins > 0) {
+            freeSpinButton.disabled = false;
+          }
         }
       }
     }
@@ -3540,9 +3563,11 @@
       
       // 🎯 优化：所有滚轮同时启动，制造同步感
       const startTime = Date.now();
-      const animationPromises = reels.map((reel, idx) => 
-        animateReel(reel, finalSymbols[idx], idx, startTime)
-      );
+      const animationPromises = [];
+      
+      reels.forEach((reel, idx) => {
+        animationPromises.push(animateReel(reel, finalSymbols[idx], idx, startTime));
+      });
 
       // 等待所有滚轮动画完成
       await Promise.all(animationPromises);
@@ -4722,4 +4747,5 @@
   </script>
 </body>
 </html>
+
 
