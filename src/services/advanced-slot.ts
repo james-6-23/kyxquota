@@ -204,14 +204,36 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
 
     try {
         const result = advancedSlotQueries.useTicket.run(validUntil, now, linuxDoId);
-        console.log(`[高级场] useTicket 结果:`, result);
+        console.log(`[高级场] useTicket 执行结果:`, result);
 
-        if (!result || result.changes === 0) {
-            console.log(`[高级场] 进入失败 - 数据库更新失败，changes: ${result?.changes || 0}`);
-            return {
-                success: false,
-                message: '进入失败，请重试'
-            };
+        // UPDATE 语句可能不返回结果对象（这是正常的）
+        // 通过验证查询来确认是否扣除成功
+        if (!result || typeof result.changes === 'undefined') {
+            console.log(`[高级场] UPDATE 执行完成，验证扣除结果...`);
+
+            // 查询验证是否扣除成功
+            const afterTickets = getUserTickets(linuxDoId);
+
+            if (afterTickets && afterTickets.tickets === tickets.tickets - 1 && afterTickets.advanced_mode_until === validUntil) {
+                console.log(`[高级场] 验证成功！用户 ${linuxDoId} 剩余入场券: ${afterTickets.tickets}`);
+            } else {
+                console.error(`[高级场] 验证失败 - 期望剩余: ${tickets.tickets - 1}, 实际: ${afterTickets?.tickets ?? 'null'}`);
+                return {
+                    success: false,
+                    message: '进入失败，请重试'
+                };
+            }
+        } else {
+            // 如果 result.changes 存在，直接使用
+            console.log(`[高级场] 受影响行数: ${result.changes}`);
+
+            if (result.changes === 0) {
+                console.log(`[高级场] 进入失败 - 数据库更新失败，changes: 0`);
+                return {
+                    success: false,
+                    message: '进入失败，请重试'
+                };
+            }
         }
     } catch (error) {
         console.error(`[高级场] useTicket 执行错误:`, error);
