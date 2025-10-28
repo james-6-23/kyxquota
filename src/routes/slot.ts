@@ -573,7 +573,7 @@ slot.post('/spin', requireAuth, async (c) => {
         let dropCount = 0;
 
         // 只在初级场掉落入场券/碎片（高级场不掉落）
-        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
+        // 🔧 使用已经声明的 inAdvancedMode 变量，不重复声明
         if (!inAdvancedMode) {
             const advancedConfig = getAdvancedSlotConfig();
 
