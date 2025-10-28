@@ -1024,12 +1024,12 @@
 
     <!-- 底部统计（固定底部）- 响应式 -->
     <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
-      <!-- 🔥 投注限额进度条 -->
-      <div id="dailyBetLimitBar" class="mb-2 sm:mb-3">
+      <!-- 🔥 投注限额进度条（默认隐藏，高级场时显示）-->
+      <div id="dailyBetLimitBar" class="hidden mb-2 sm:mb-3">
         <div class="max-w-2xl mx-auto">
           <div class="flex items-center justify-between mb-1 text-xs">
-            <span id="dailyBetLimitTitle" class="text-white/60">今日投注限额</span>
-            <span id="dailyBetProgress" class="text-white font-medium">$0 / $1,000</span>
+            <span id="dailyBetLimitTitle" class="text-white/60">今日投注额度限额</span>
+            <span id="dailyBetProgress" class="text-white font-medium">$0 / $5,000</span>
           </div>
           <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
@@ -2436,20 +2436,31 @@
 
     // 🔥 更新投注限额进度条（独立函数）
     function updateBetLimitProgressBar() {
-      if (!slotUserData) return;
+      console.log('[进度条] ========== updateBetLimitProgressBar 被调用 ==========');
+      console.log('[进度条] isInAdvancedMode:', isInAdvancedMode);
+      console.log('[进度条] slotUserData:', slotUserData);
+      console.log('[进度条] advancedTicketsData:', advancedTicketsData);
+      
+      if (!slotUserData) {
+        console.warn('[进度条] slotUserData 不存在，跳过更新');
+        return;
+      }
       
       const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
+      console.log('[进度条] 找到元素 dailyBetLimitBar:', dailyBetLimitBar);
+      console.log('[进度条] 元素当前 classList:', dailyBetLimitBar?.classList);
+      
       if (!dailyBetLimitBar) {
         console.error('[进度条] ❌ 找不到 dailyBetLimitBar 元素！');
         return;
       }
       
-      console.log('[进度条] 更新进度条 - isInAdvancedMode:', isInAdvancedMode);
-      
       if (isInAdvancedMode) {
         // 🔥 高级场：显示投注额度限额进度条
-        console.log('[进度条] 高级场模式 - 显示进度条');
+        console.log('[进度条] ✅ 高级场模式 - 准备显示进度条');
         dailyBetLimitBar.classList.remove('hidden');
+        console.log('[进度条] ✅ 已移除 hidden 类，当前 class:', dailyBetLimitBar.className);
+        console.log('[进度条] ✅ computed style display:', window.getComputedStyle(dailyBetLimitBar).display);
         
         const titleEl = document.getElementById('dailyBetLimitTitle');
         const progressText = document.getElementById('dailyBetProgress');
