@@ -863,20 +863,9 @@
         <!-- 🔥 高级场投注选择器和按钮（紧凑版，在滚轮下方）-->
         <div id="advancedBetSelector" class="hidden mb-6">
           <div class="max-w-xl mx-auto">
-            <!-- 快捷金额按钮 -->
-            <div class="flex items-center justify-center gap-2 mb-3">
-              <button onclick="setAdvancedBet(100)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="100">
-                $100
-              </button>
-              <button onclick="setAdvancedBet(200)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="200">
-                $200
-              </button>
-              <button onclick="setAdvancedBet(300)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="300">
-                $300
-              </button>
-              <button onclick="setAdvancedBet(500)" class="advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm" data-amount="500">
-                $500
-              </button>
+            <!-- 快捷金额按钮（动态生成）-->
+            <div id="advancedBetOptions" class="flex items-center justify-center gap-2 mb-3">
+              <!-- 按钮将通过 JavaScript 动态生成 -->
             </div>
             
             <!-- 滑块（紧凑版）-->
@@ -2398,6 +2387,53 @@
     let advancedBetMin = 100;        // 高级场最小投注
     let advancedBetMax = 500;        // 高级场最大投注
 
+    // 🔥 动态生成投注选项按钮
+    function generateAdvancedBetOptions(minBet, maxBet) {
+      const container = document.getElementById('advancedBetOptions');
+      if (!container) return;
+      
+      // 清空现有按钮
+      container.innerHTML = '';
+      
+      // 计算合适的选项（均匀分布4个选项）
+      const range = maxBet - minBet;
+      const options = [];
+      
+      if (range <= 100) {
+        // 范围很小，直接使用最小和最大值
+        options.push(minBet, maxBet);
+      } else if (range <= 400) {
+        // 中等范围，生成3-4个选项
+        options.push(minBet);
+        const step = Math.floor(range / 3);
+        options.push(minBet + step);
+        options.push(minBet + step * 2);
+        options.push(maxBet);
+      } else {
+        // 大范围，生成4个均匀分布的选项
+        const step = Math.floor(range / 3);
+        options.push(minBet);
+        options.push(minBet + step);
+        options.push(minBet + step * 2);
+        options.push(maxBet);
+      }
+      
+      // 去重并排序
+      const uniqueOptions = [...new Set(options)].sort((a, b) => a - b);
+      
+      // 生成按钮
+      uniqueOptions.forEach(amount => {
+        const button = document.createElement('button');
+        button.onclick = () => setAdvancedBet(amount);
+        button.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
+        button.setAttribute('data-amount', amount);
+        button.textContent = `$${amount}`;
+        container.appendChild(button);
+      });
+      
+      console.log('[高级场] 动态生成投注选项:', uniqueOptions);
+    }
+    
     // 🔥 设置高级场投注金额
     function setAdvancedBet(amount) {
       advancedBetAmount = amount;
@@ -2595,21 +2631,28 @@
         isInAdvancedMode = true;
         startAdvancedModeTimer();
         
-        // 🔥 从高级场状态中获取投注范围
+        // 🔥 从高级场状态中获取投注范围并动态生成选项
         if (advancedTicketsData.config) {
           advancedBetMin = advancedTicketsData.config.bet_min / 500000;
           advancedBetMax = advancedTicketsData.config.bet_max / 500000;
-          // 更新滑块范围
+          
+          // 🔥 动态生成投注选项按钮
+          generateAdvancedBetOptions(advancedBetMin, advancedBetMax);
+          
+          // 更新滑块范围和步长
           const slider = document.getElementById('advancedBetSlider');
           slider.min = advancedBetMin;
           slider.max = advancedBetMax;
+          // 动态计算合适的步长
+          const range = advancedBetMax - advancedBetMin;
+          slider.step = range <= 100 ? 5 : (range <= 500 ? 10 : 50);
           
           // 如果当前投注超出范围，重置为最小值
           if (advancedBetAmount < advancedBetMin || advancedBetAmount > advancedBetMax) {
             setAdvancedBet(advancedBetMin);
           }
           
-          console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}`);
+          console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}, 步长: ${slider.step}`);
         }
         
         // 🔥 立即更新进度条显示（确保高级场进度条显示）
