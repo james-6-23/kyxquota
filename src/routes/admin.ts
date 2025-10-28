@@ -1756,7 +1756,24 @@ app.post('/pending-rewards/:id/retry', requireAdmin, async (c) => {
  */
 app.get('/slot/advanced/config', requireAdmin, async (c) => {
     try {
-        const config = advancedSlotQueries.getAdvancedConfig.get();
+        let config = advancedSlotQueries.getAdvancedConfig.get();
+
+        // 🔥 如果配置不存在，创建默认配置
+        if (!config) {
+            console.log('[管理员] 高级场配置不存在，创建默认配置');
+            const now = Date.now();
+            db.exec(`
+                INSERT OR IGNORE INTO advanced_slot_config (
+                    id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, 
+                    rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, 
+                    drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, updated_at
+                )
+                VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.88, 24, 24, 5, 1.0, 1.0, 2, 5000000000, ${now})
+            `);
+
+            // 重新查询
+            config = advancedSlotQueries.getAdvancedConfig.get();
+        }
 
         return c.json({
             success: true,
@@ -1764,7 +1781,7 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
         });
     } catch (e: any) {
         console.error('[管理员] 获取高级场配置失败:', e);
-        return c.json({ success: false, message: '获取配置失败' }, 500);
+        return c.json({ success: false, message: '获取配置失败: ' + e.message }, 500);
     }
 });
 
@@ -1938,7 +1955,23 @@ app.get('/slot/advanced/rtp-stats', requireAdmin, async (c) => {
  */
 app.get('/slot/advanced/weights', requireAdmin, async (c) => {
     try {
-        const weights = advancedSlotQueries.getAdvancedWeights.get();
+        let weights = advancedSlotQueries.getAdvancedWeights.get();
+
+        // 🔥 如果权重配置不存在，创建默认配置
+        if (!weights) {
+            console.log('[管理员] 高级场符号权重不存在，创建默认配置');
+            const now = Date.now();
+            db.exec(`
+                INSERT OR IGNORE INTO advanced_slot_symbol_weights (
+                    id, weight_m, weight_t, weight_n, weight_j, weight_lq, 
+                    weight_bj, weight_zft, weight_bdk, weight_lsh, updated_at
+                )
+                VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${now})
+            `);
+
+            // 重新查询
+            weights = advancedSlotQueries.getAdvancedWeights.get();
+        }
 
         return c.json({
             success: true,
@@ -1956,7 +1989,7 @@ app.get('/slot/advanced/weights', requireAdmin, async (c) => {
         });
     } catch (e: any) {
         console.error('[管理员] 获取高级场符号权重失败:', e);
-        return c.json({ success: false, message: '获取权重失败' }, 500);
+        return c.json({ success: false, message: '获取权重失败: ' + e.message }, 500);
     }
 });
 
