@@ -2434,6 +2434,78 @@
       });
     }
 
+    // 🔥 更新投注限额进度条（独立函数）
+    function updateBetLimitProgressBar() {
+      if (!slotUserData) return;
+      
+      const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
+      if (!dailyBetLimitBar) {
+        console.error('[进度条] ❌ 找不到 dailyBetLimitBar 元素！');
+        return;
+      }
+      
+      console.log('[进度条] 更新进度条 - isInAdvancedMode:', isInAdvancedMode);
+      
+      if (isInAdvancedMode) {
+        // 🔥 高级场：显示投注额度限额进度条
+        console.log('[进度条] 高级场模式 - 显示进度条');
+        dailyBetLimitBar.classList.remove('hidden');
+        
+        const titleEl = document.getElementById('dailyBetLimitTitle');
+        const progressText = document.getElementById('dailyBetProgress');
+        const progressBar = document.getElementById('dailyBetProgressBar');
+        const warningText = document.getElementById('dailyBetWarning');
+        
+        // 从配置获取高级场每日投注限额（管理员可配置）
+        const betLimit = advancedTicketsData?.config?.daily_bet_limit 
+          ? advancedTicketsData.config.daily_bet_limit / 500000 
+          : 5000; // 默认$5000
+        const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
+        const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
+        
+        console.log('[进度条] 限额:', betLimit, '已投注:', todayBetAmount, '进度:', betPercentage + '%');
+        
+        if (titleEl) titleEl.textContent = '今日投注额度限额';
+        if (progressText) {
+          progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
+        }
+        
+        if (progressBar) {
+          progressBar.style.width = `${betPercentage}%`;
+          // 根据进度改变颜色
+          if (betPercentage >= 100) {
+            progressBar.className = 'h-full bg-gradient-to-r from-red-600 to-red-800 transition-all duration-300';
+          } else if (betPercentage >= 80) {
+            progressBar.className = 'h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300';
+          } else if (betPercentage >= 60) {
+            progressBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300';
+          } else {
+            progressBar.className = 'h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300';
+          }
+        }
+        
+        // 显示警告
+        if (warningText) {
+          if (betPercentage >= 80) {
+            warningText.classList.remove('hidden');
+            if (betPercentage >= 100) {
+              warningText.textContent = '⛔ 已达到投注限额';
+              warningText.className = 'text-xs text-red-400 mt-1';
+            } else {
+              warningText.textContent = '⚠️ 接近投注限额';
+              warningText.className = 'text-xs text-orange-400 mt-1';
+            }
+          } else {
+            warningText.classList.add('hidden');
+          }
+        }
+      } else {
+        // 🔥 初级场：隐藏投注限额进度条（初级场使用次数限制）
+        console.log('[进度条] 初级场模式 - 隐藏进度条');
+        dailyBetLimitBar.classList.add('hidden');
+      }
+    }
+    
     // 🔥 加载入场券信息
     async function loadAdvancedTickets() {
       try {
@@ -2528,6 +2600,9 @@
           
           console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}`);
         }
+        
+        // 🔥 立即更新进度条显示（确保高级场进度条显示）
+        updateBetLimitProgressBar();
       } else {
         // 不在高级场：常驻显示入场券栏，隐藏高级场指示器和投注选择器
         ticketBar.classList.remove('hidden');
@@ -2548,6 +2623,9 @@
         
         isInAdvancedMode = false;
         stopAdvancedModeTimer();
+        
+        // 🔥 更新进度条显示（确保初级场进度条隐藏）
+        updateBetLimitProgressBar();
       }
     }
 
@@ -2611,22 +2689,17 @@
         if (data.success) {
           showToast('🔥 ' + data.message, 'success');
           
-          // 🔥 并行加载入场券信息和配置
-          const [_, configRes] = await Promise.all([
-            loadAdvancedTickets(),
-            fetch('/api/slot/config').then(res => res.json())
-          ]);
-          
-          // 更新配置和用户数据
+          // 🔥 先重新加载配置
+          const configRes = await fetch('/api/slot/config').then(res => res.json());
           if (configRes && configRes.success) {
             slotConfig = configRes.data.config;
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 确保立即设置高级场标志
-          isInAdvancedMode = true;
+          // 🔥 然后加载入场券信息（这会更新 isInAdvancedMode）
+          await loadAdvancedTickets();
           
-          // 🔥 立即更新老虎机UI，确保显示高级场状态
+          // 🔥 最后更新UI（此时 isInAdvancedMode 已经是 true）
           updateSlotUI();
           
           // 🎉 进入高级场特效
@@ -2912,9 +2985,11 @@
         loadingOverlay.style.animation = '';
 
         // 5. 异步加载排行榜和入场券信息（不阻塞主界面，延迟加载）
-        setTimeout(() => {
+        setTimeout(async () => {
           loadSidebarLeaderboard();
-          loadAdvancedTickets();  // 🔥 加载入场券信息
+          await loadAdvancedTickets();  // 🔥 加载入场券信息
+          // 🔥 加载完入场券后再次更新UI，确保进度条正确显示
+          updateSlotUI();
         }, 100);
 
         // 完成动画
@@ -3263,65 +3338,8 @@
       document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
-      // 🔥 更新投注限额进度条（仅高级场显示）
-      const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
-      if (dailyBetLimitBar) {
-        if (isInAdvancedMode) {
-          // 🔥 高级场：显示投注额度限额进度条
-          dailyBetLimitBar.classList.remove('hidden');
-          
-          const titleEl = document.getElementById('dailyBetLimitTitle');
-          const progressText = document.getElementById('dailyBetProgress');
-          const progressBar = document.getElementById('dailyBetProgressBar');
-          const warningText = document.getElementById('dailyBetWarning');
-          
-          // 从配置获取高级场每日投注限额（管理员可配置）
-          const betLimit = advancedTicketsData?.config?.daily_bet_limit 
-            ? advancedTicketsData.config.daily_bet_limit / 500000 
-            : 5000; // 默认$5000
-          const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
-          const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
-          
-          if (titleEl) titleEl.textContent = '今日投注额度限额';
-          
-          if (progressText) {
-            progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
-          }
-          
-          if (progressBar) {
-            progressBar.style.width = `${betPercentage}%`;
-            // 根据进度改变颜色
-            if (betPercentage >= 100) {
-              progressBar.className = 'h-full bg-gradient-to-r from-red-600 to-red-800 transition-all duration-300';
-            } else if (betPercentage >= 80) {
-              progressBar.className = 'h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300';
-            } else if (betPercentage >= 60) {
-              progressBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300';
-            } else {
-              progressBar.className = 'h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300';
-            }
-          }
-          
-          // 显示警告
-          if (warningText) {
-            if (betPercentage >= 80) {
-              warningText.classList.remove('hidden');
-              if (betPercentage >= 100) {
-                warningText.textContent = '⛔ 已达到投注限额';
-                warningText.className = 'text-xs text-red-400 mt-1';
-              } else {
-                warningText.textContent = '⚠️ 接近投注限额';
-                warningText.className = 'text-xs text-orange-400 mt-1';
-              }
-            } else {
-              warningText.classList.add('hidden');
-            }
-          }
-        } else {
-          // 🔥 初级场：隐藏投注限额进度条（初级场使用次数限制）
-          dailyBetLimitBar.classList.add('hidden');
-        }
-      }
+      // 🔥 更新投注限额进度条
+      updateBetLimitProgressBar();
 
       // 显示禁止状态
       const bannedNotice = document.getElementById('bannedNotice');
