@@ -1775,9 +1775,28 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
             config = advancedSlotQueries.getAdvancedConfig.get();
         }
 
+        // 处理所有可能的 null 值，使用默认值替换
+        const safeConfig = {
+            id: config?.id || 1,
+            enabled: config?.enabled ?? 1,
+            bet_min: config?.bet_min || 50000000,
+            bet_max: config?.bet_max || 250000000,
+            reward_multiplier: config?.reward_multiplier || 4.0,
+            penalty_weight_factor: config?.penalty_weight_factor || 2.0,
+            rtp_target: config?.rtp_target || 0.88,
+            ticket_valid_hours: config?.ticket_valid_hours || 24,
+            session_valid_hours: config?.session_valid_hours || 24,
+            fragments_needed: config?.fragments_needed || 5,
+            drop_rate_triple: config?.drop_rate_triple || 1.0,
+            drop_rate_double: config?.drop_rate_double || 1.0,
+            max_tickets_hold: config?.max_tickets_hold || 2,
+            daily_bet_limit: config?.daily_bet_limit || 5000000000,
+            updated_at: config?.updated_at || Date.now()
+        };
+
         return c.json({
             success: true,
-            data: config
+            data: safeConfig
         });
     } catch (e: any) {
         console.error('[管理员] 获取高级场配置失败:', e);

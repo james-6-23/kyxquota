@@ -4754,23 +4754,23 @@
           document.getElementById('advancedDailyBetLimitUsd').value = dailyLimitUsd;
           
           // 显示聪值
-          document.getElementById('advancedBetMinQuota').textContent = config.bet_min;
-          document.getElementById('advancedBetMaxQuota').textContent = config.bet_max;
-          document.getElementById('advancedDailyBetLimitQuota').textContent = config.daily_bet_limit;
+          document.getElementById('advancedBetMinQuota').textContent = config.bet_min || 50000000;
+          document.getElementById('advancedBetMaxQuota').textContent = config.bet_max || 250000000;
+          document.getElementById('advancedDailyBetLimitQuota').textContent = config.daily_bet_limit || 5000000000;
           
-          document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier;
-          document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor;
-          document.getElementById('advancedRTPTarget').value = config.rtp_target;
+          document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier || 4.0;
+          document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor || 2.0;
+          document.getElementById('advancedRTPTarget').value = config.rtp_target || 0.88;
           
           // 时效设置
-          document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours;
-          document.getElementById('advancedSessionValidHours').value = config.session_valid_hours;
+          document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours || 24;
+          document.getElementById('advancedSessionValidHours').value = config.session_valid_hours || 24;
           
           // 掉落设置
-          document.getElementById('advancedFragmentsNeeded').value = config.fragments_needed;
-          document.getElementById('advancedDropRateTriple').value = config.drop_rate_triple;
-          document.getElementById('advancedDropRateDouble').value = config.drop_rate_double;
-          document.getElementById('advancedMaxTicketsHold').value = config.max_tickets_hold;
+          document.getElementById('advancedFragmentsNeeded').value = config.fragments_needed || 5;
+          document.getElementById('advancedDropRateTriple').value = config.drop_rate_triple || 1.0;
+          document.getElementById('advancedDropRateDouble').value = config.drop_rate_double || 1.0;
+          document.getElementById('advancedMaxTicketsHold').value = config.max_tickets_hold || 2;
           
           // 🔥 初始化掉落率滑杆和可视条
           const doubleSlider = document.getElementById('advancedDropRateDoubleSlider');
@@ -4815,15 +4815,15 @@
           enabled: document.getElementById('advancedEnabled').checked ? 1 : 0,
           bet_min: betMinUsd * 500000,  // 美元转聪
           bet_max: betMaxUsd * 500000,  // 美元转聪
-          reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value),
-          penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value),
-          rtp_target: parseFloat(document.getElementById('advancedRTPTarget').value),
-          ticket_valid_hours: parseInt(document.getElementById('advancedTicketValidHours').value),
-          session_valid_hours: parseInt(document.getElementById('advancedSessionValidHours').value),
-          fragments_needed: parseInt(document.getElementById('advancedFragmentsNeeded').value),
-          drop_rate_triple: parseFloat(document.getElementById('advancedDropRateTriple').value),
-          drop_rate_double: parseFloat(document.getElementById('advancedDropRateDouble').value),
-          max_tickets_hold: parseInt(document.getElementById('advancedMaxTicketsHold').value),
+          reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value) || 4.0,
+          penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value) || 2.0,
+          rtp_target: parseFloat(document.getElementById('advancedRTPTarget').value) || 0.88,
+          ticket_valid_hours: parseInt(document.getElementById('advancedTicketValidHours').value) || 24,
+          session_valid_hours: parseInt(document.getElementById('advancedSessionValidHours').value) || 24,
+          fragments_needed: parseInt(document.getElementById('advancedFragmentsNeeded').value) || 5,
+          drop_rate_triple: parseFloat(document.getElementById('advancedDropRateTriple').value) || 1.0,
+          drop_rate_double: parseFloat(document.getElementById('advancedDropRateDouble').value) || 1.0,
+          max_tickets_hold: parseInt(document.getElementById('advancedMaxTicketsHold').value) || 2,
           daily_bet_limit: dailyLimitUsd * 500000  // 美元转聪
         };
         
