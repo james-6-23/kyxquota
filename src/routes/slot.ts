@@ -397,17 +397,19 @@ slot.post('/spin', requireAuth, async (c) => {
 
         // 🔥 获取高级场配置（用于倍率）
         let rewardMultiplier = 1.0;
+        let penaltyMultiplier = 1.0;
         if (inAdvancedMode) {
             const advancedConfig = getAdvancedSlotConfig();
             rewardMultiplier = advancedConfig.reward_multiplier;
-            console.log(`[高级场] 用户 ${user.username} 在高级场游戏 - 投注: $${(betAmount / 500000).toFixed(2)}, 奖励倍率×${rewardMultiplier}`);
+            penaltyMultiplier = advancedConfig.penalty_weight_factor;
+            console.log(`[高级场] 用户 ${user.username} 在高级场游戏 - 投注: $${(betAmount / 500000).toFixed(2)}, 奖励倍率×${rewardMultiplier}, 惩罚倍率×${penaltyMultiplier}`);
         }
 
         // 生成随机符号（高级场使用独立权重配置）
         const symbols = generateSymbols(inAdvancedMode);
 
-        // 计算中奖结果（高级场会放大奖励倍率）
-        const result = calculateWin(symbols, rewardMultiplier);
+        // 计算中奖结果（高级场会放大奖励倍率和惩罚倍率）
+        const result = calculateWin(symbols, rewardMultiplier, penaltyMultiplier);
 
         // 获取管理员配置（用于更新额度）
         const adminConfigForWin = adminQueries.get.get();

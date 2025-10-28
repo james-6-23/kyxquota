@@ -186,8 +186,9 @@ function containsAll(arr: string[], target: string[]): boolean {
  * 计算中奖结果
  * @param symbols 符号数组
  * @param rewardMultiplier 奖励倍率放大系数（高级场为4.0，初级场为1.0）
+ * @param penaltyMultiplier 惩罚倍率放大系数（高级场为2.0，初级场为1.0）
  */
-export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0): {
+export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, penaltyMultiplier: number = 1.0): {
     winType: WinType;
     multiplier: number;
     freeSpinAwarded: boolean;
@@ -201,10 +202,14 @@ export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0):
     const punishmentCount = symbols.filter(s => s === SYMBOLS.PUNISHMENT).length;
 
     if (punishmentCount > 0) {
-        // 梯度惩罚：1个扣1倍，2个扣2倍，3个扣3倍，4个扣4倍
+        // 梯度惩罚：基础倍数 × 惩罚倍率
+        // 1个律师函：扣1倍 × penaltyMultiplier
+        // 2个律师函：扣2倍 × penaltyMultiplier
+        // 3个律师函：扣3倍 × penaltyMultiplier
+        // 4个律师函：扣4倍 × penaltyMultiplier
         return {
             winType: WinType.PUNISHMENT,
-            multiplier: -punishmentCount,  // 负数倍率表示扣除
+            multiplier: -punishmentCount * penaltyMultiplier,  // 负数倍率表示扣除，乘以惩罚倍率
             freeSpinAwarded: false,
             punishmentCount: punishmentCount,
             shouldBan: punishmentCount >= 3  // 3个及以上禁止抽奖

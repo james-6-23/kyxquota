@@ -669,7 +669,7 @@
           
           <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-4">
             <p class="text-sm text-red-800">
-              💡 <strong>高级场特色：</strong>投注金额$100-$500可选，奖励倍率×4，惩罚权重×2，目标RTP 95%
+              💡 <strong>高级场特色：</strong>投注金额$100-$500可选，奖励倍率×4，惩罚金额×2，目标RTP 88%
             </p>
           </div>
 
@@ -819,10 +819,10 @@
               <!-- 惩罚倍数 -->
               <div>
                 <label class="block text-sm font-medium text-red-700 mb-2">
-                  惩罚倍数 <span class="text-red-500" title="律师函惩罚放大">🛈</span>
+                  惩罚倍数 <span class="text-red-500" title="律师函惩罚金额倍数">🛈</span>
                 </label>
                 <input type="number" step="0.1" id="advancedPenaltyFactor" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 font-bold text-red-600" placeholder="2.0">
-                <p class="text-xs text-red-600 mt-1">律师函权重放大</p>
+                <p class="text-xs text-red-600 mt-1">律师函扣除金额倍数</p>
               </div>
               
               <!-- 每日投注上限 -->
@@ -896,7 +896,7 @@
                 
                 <!-- 二连掉落碎片概率 -->
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">二连掉落碎片概率</label>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">二连中奖后掉落碎片概率</label>
                   <input type="range" id="advancedDropRateDoubleSlider" min="0" max="1" step="0.01" value="0.5" 
                          class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                          oninput="updateDropRateDoubleDisplay(this.value)">
@@ -909,12 +909,16 @@
                       </div>
                     </div>
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">期望: 每10局掉落 <span id="dropDoubleExpected" class="font-bold text-purple-600">1.0</span> 个碎片</p>
+                  <p class="text-xs text-slate-500 mt-1">
+                    中二连时有 <span id="dropDoublePercent" class="font-bold text-purple-600">50</span>% 概率掉落
+                    <span class="mx-1">•</span>
+                    期望: 每10局掉落 <span id="dropDoubleExpected" class="font-bold text-purple-600">1.0</span> 个碎片
+                  </p>
                 </div>
                 
                 <!-- 三连/四连掉落入场券概率 -->
                 <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">三连掉落入场券概率</label>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">三连/四连中奖后掉落入场券概率</label>
                   <input type="range" id="advancedDropRateTripleSlider" min="0" max="1" step="0.01" value="0.1" 
                          class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                          oninput="updateDropRateTripleDisplay(this.value)">
@@ -927,7 +931,11 @@
                       </div>
                     </div>
                   </div>
-                  <p class="text-xs text-slate-500 mt-1">期望: 每10局掉落 <span id="dropTripleExpected" class="font-bold text-orange-600">0.1</span> 张券</p>
+                  <p class="text-xs text-slate-500 mt-1">
+                    中三连/四连时有 <span id="dropTriplePercent" class="font-bold text-orange-600">10</span>% 概率掉落
+                    <span class="mx-1">•</span>
+                    期望: 每10局掉落 <span id="dropTripleExpected" class="font-bold text-orange-600">0.1</span> 张券
+                  </p>
                 </div>
                 
                 <!-- 掉落强度评估 -->
@@ -5105,6 +5113,9 @@
       document.getElementById('advancedDropRateDouble').value = rate.toFixed(2);
       document.getElementById('dropDoubleBar').style.width = (rate * 100) + '%';
       
+      // 更新百分比显示
+      document.getElementById('dropDoublePercent').textContent = Math.round(rate * 100);
+      
       // 计算期望值（假设二连出现率约20%，每10局中有2次二连）
       const expected = Math.round(rate * 2 * 10) / 10; // 保留一位小数
       document.getElementById('dropDoubleExpected').textContent = expected.toFixed(1);
@@ -5118,6 +5129,9 @@
       const rate = parseFloat(value);
       document.getElementById('advancedDropRateTriple').value = rate.toFixed(2);
       document.getElementById('dropTripleBar').style.width = (rate * 100) + '%';
+      
+      // 更新百分比显示
+      document.getElementById('dropTriplePercent').textContent = Math.round(rate * 100);
       
       // 计算期望值（假设三连/四连出现率约10%，每10局中有1次）
       const expected = Math.round(rate * 1 * 10) / 10; // 保留一位小数
@@ -5177,8 +5191,9 @@ RTP (Return to Player)：
 • 例如：基础倍率8x，奖励倍数4.0，实际奖励 = 8 × 4 = 32x
 
 惩罚倍数：
-• 律师函的权重放大系数
-• 数值越高，律师函出现越频繁，游戏难度越大
+• 律师函的惩罚金额放大系数
+• 例如：1个律师函扣1倍投注，惩罚倍数2.0，实际扣除 = 1 × 2 = 2倍投注
+• 律师函出现概率由权重配置单独控制
 
 推荐配置：
 • 奖励倍数：4.0
