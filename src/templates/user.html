@@ -1024,6 +1024,20 @@
 
     <!-- 底部统计（固定底部）- 响应式 -->
     <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
+      <!-- 🔥 今日投注限额进度条 -->
+      <div id="dailyBetLimitBar" class="mb-2 sm:mb-3">
+        <div class="max-w-2xl mx-auto">
+          <div class="flex items-center justify-between mb-1 text-xs">
+            <span class="text-white/60">今日投注限额</span>
+            <span id="dailyBetProgress" class="text-white font-medium">$0 / $1,000</span>
+          </div>
+          <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+          <p id="dailyBetWarning" class="hidden text-xs text-orange-400 mt-1">⚠️ 接近每日投注限额</p>
+        </div>
+      </div>
+      
       <!-- 今日统计 -->
       <div class="mb-1 sm:mb-2">
         <p class="text-xs text-white/60 mb-0.5 sm:mb-1">📅 今日数据</p>
@@ -2407,15 +2421,12 @@
       advancedBetAmount = parseInt(value);
       document.getElementById('advancedBetDisplay').textContent = `$${value}`;
       
-      // 更新按钮高亮（最接近的金额）
+      // 更新按钮高亮（只有精确匹配的才高亮）
       const presets = [100, 200, 300, 500];
-      const closest = presets.reduce((prev, curr) => 
-        Math.abs(curr - value) < Math.abs(prev - value) ? curr : prev
-      );
       
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
         const amount = parseInt(btn.dataset.amount);
-        if (amount === closest) {
+        if (amount === advancedBetAmount) {
           btn.className = 'advanced-bet-option px-4 py-1.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black rounded-lg font-bold transition-all shadow-lg text-sm';
         } else {
           btn.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
@@ -2480,6 +2491,7 @@
       const normalSpinButton = document.getElementById('spinButton');
       
       if (in_advanced_mode) {
+        console.log('[高级场] 更新UI为高级场模式');
         // 在高级场：隐藏入场券栏，显示高级场指示器和投注选择器
         ticketBar.classList.add('hidden');
         modeIndicator.classList.remove('hidden');  // 🔥 显示右上角指示器
@@ -2570,6 +2582,7 @@
 
     // 🔥 进入高级场
     async function enterAdvancedMode() {
+      console.log('[高级场] 尝试进入高级场...');
       if (!advancedTicketsData || advancedTicketsData.tickets < 1) {
         showToast('入场券不足', 'error');
         return;
@@ -2585,11 +2598,28 @@
           method: 'POST'
         });
         const data = await res.json();
+        console.log('[高级场] 进入高级场响应:', data);
         
         if (data.success) {
           showToast('🔥 ' + data.message, 'success');
-          // 刷新入场券信息
-          await loadAdvancedTickets();
+          
+          // 🔥 并行加载入场券信息和配置
+          const [_, configRes] = await Promise.all([
+            loadAdvancedTickets(),
+            fetch('/api/slot/config').then(res => res.json())
+          ]);
+          
+          // 更新配置和用户数据
+          if (configRes && configRes.success) {
+            slotConfig = configRes.data.config;
+            slotUserData = configRes.data.user;
+          }
+          
+          // 🔥 确保立即设置高级场标志
+          isInAdvancedMode = true;
+          
+          // 🔥 立即更新老虎机UI，确保显示高级场状态
+          updateSlotUI();
           
           // 🎉 进入高级场特效
           playEnterAdvancedAnimation();
@@ -3224,6 +3254,60 @@
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
       document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
+      
+      // 🔥 更新今日投注限额进度条（仅初级场显示）
+      const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
+      if (dailyBetLimitBar) {
+        if (isInAdvancedMode) {
+          // 高级场隐藏限额进度条
+          dailyBetLimitBar.classList.add('hidden');
+        } else {
+          // 初级场显示限额进度条
+          dailyBetLimitBar.classList.remove('hidden');
+          
+          const dailyBetLimit = 1000; // 每日投注限额 $1000
+          const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
+          const betPercentage = Math.min((todayBetAmount / dailyBetLimit) * 100, 100);
+          
+          const progressText = document.getElementById('dailyBetProgress');
+          const progressBar = document.getElementById('dailyBetProgressBar');
+          const warningText = document.getElementById('dailyBetWarning');
+          
+          if (progressText) {
+            progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${dailyBetLimit.toLocaleString()}`;
+          }
+          
+          if (progressBar) {
+            progressBar.style.width = `${betPercentage}%`;
+            // 根据进度改变颜色
+            if (betPercentage >= 100) {
+              progressBar.className = 'h-full bg-gradient-to-r from-red-600 to-red-800 transition-all duration-300';
+            } else if (betPercentage >= 80) {
+              progressBar.className = 'h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300';
+            } else if (betPercentage >= 60) {
+              progressBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300';
+            } else {
+              progressBar.className = 'h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300';
+            }
+          }
+          
+          // 显示警告
+          if (warningText) {
+            if (betPercentage >= 80) {
+              warningText.classList.remove('hidden');
+              if (betPercentage >= 100) {
+                warningText.textContent = '⛔ 已达到每日投注限额';
+                warningText.className = 'text-xs text-red-400 mt-1';
+              } else {
+                warningText.textContent = '⚠️ 接近每日投注限额';
+                warningText.className = 'text-xs text-orange-400 mt-1';
+              }
+            } else {
+              warningText.classList.add('hidden');
+            }
+          }
+        }
+      }
 
       // 显示禁止状态
       const bannedNotice = document.getElementById('bannedNotice');
@@ -3295,8 +3379,8 @@
       const buySpinsSection = document.getElementById('buySpinsSection');
       const buySpinsButton = document.getElementById('buySpinsButton');
 
-      if (buySpinsSection && slotConfig.buy_spins_enabled && !slotUserData.is_banned) {
-        // 显示购买区域
+      if (buySpinsSection && slotConfig.buy_spins_enabled && !slotUserData.is_banned && !isInAdvancedMode) {
+        // 显示购买区域（高级场不显示）
         buySpinsSection.classList.remove('hidden');
 
         // 更新价格显示
@@ -3324,7 +3408,7 @@
           }
         }
       } else if (buySpinsSection) {
-        // 隐藏购买区域
+        // 隐藏购买区域（高级场或其他原因）
         buySpinsSection.classList.add('hidden');
       }
     }
