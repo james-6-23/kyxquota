@@ -673,6 +673,13 @@
             </div>
           </div>
           
+          <!-- 🔥 高级场标题（居中显示）-->
+          <div id="advancedModeTitle" class="hidden absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <span class="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent animate-pulse whitespace-nowrap">
+              <span class="hidden sm:inline">🔥 </span>高级场模式
+            </span>
+          </div>
+          
           <!-- 右侧：用户菜单和高级场信息 -->
           <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <!-- 音效控制按钮 -->
@@ -724,8 +731,8 @@
               </div>
             </div>
             
-            <!-- 🔥 高级场倒计时和返回按钮（绝对定位到最右侧边缘）-->
-            <div id="advancedModeIndicator" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-lg">
+            <!-- 🔥 高级场倒计时和返回按钮 -->
+            <div id="advancedModeIndicator" class="hidden flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg shadow-lg ml-2">
               <div class="text-white">
                 <p class="text-xs opacity-75 leading-tight">剩余时间</p>
                 <p id="advancedTimeRemaining" class="text-sm font-mono font-bold text-yellow-300 leading-tight">23:59:59</p>
@@ -2477,6 +2484,11 @@
         betSelector.classList.remove('hidden');     // 🔥 显示投注选择器
         freeSpinButton.classList.add('hidden');     // 🔥 隐藏免费抽奖
         normalSpinButton.classList.add('hidden');   // 🔥 隐藏初级场spin按钮
+        
+        // 🔥 显示高级场标题
+        const advancedTitle = document.getElementById('advancedModeTitle');
+        if (advancedTitle) advancedTitle.classList.remove('hidden');
+        
         isInAdvancedMode = true;
         startAdvancedModeTimer();
         
@@ -2501,7 +2513,13 @@
         ticketBar.classList.remove('hidden');
         modeIndicator.classList.add('hidden');    // 🔥 隐藏右上角指示器
         betSelector.classList.add('hidden');      // 🔥 隐藏投注选择器
+        if (freeSpinButton) freeSpinButton.classList.remove('hidden'); // 🔥 显示免费抽奖
         normalSpinButton.classList.remove('hidden'); // 🔥 显示初级场spin按钮
+        
+        // 🔥 隐藏高级场标题
+        const advancedTitle = document.getElementById('advancedModeTitle');
+        if (advancedTitle) advancedTitle.classList.add('hidden');
+        
         isInAdvancedMode = false;
         stopAdvancedModeTimer();
       }
