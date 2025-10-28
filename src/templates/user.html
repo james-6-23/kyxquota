@@ -680,6 +680,13 @@
             </span>
           </div>
           
+          <!-- 🎰 初级场标题（居中显示）-->
+          <div id="normalModeTitle" class="hidden absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <span class="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent whitespace-nowrap">
+              <span class="hidden sm:inline">🎰 </span>初级场
+            </span>
+          </div>
+          
           <!-- 右侧：用户菜单和高级场信息 -->
           <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <!-- 音效控制按钮 -->
@@ -747,54 +754,49 @@
     </nav>
 
     <!-- 🔥 入场券信息栏（独立，在导航栏下方）-->
-    <div id="advancedTicketBar" class="hidden bg-gradient-to-r from-purple-600/95 to-blue-600/95 backdrop-blur-md border-b border-yellow-400/30 shadow-lg">
-      <div class="flex items-center justify-center px-4 py-2">
-        <!-- 居中的紧凑布局 -->
-        <div class="flex items-center gap-3">
-          <!-- 入场券 -->
-          <div class="flex items-center gap-1.5">
-            <span class="text-lg">🎟️</span>
-            <div class="text-white">
-              <p class="text-xs opacity-75 leading-tight"><span id="ticketCount">0</span>/<span id="ticketMax">2</span></p>
+    <div id="advancedTicketBar" class="hidden bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md border-b border-white/20">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-center py-1.5">
+          <!-- 紧凑且清晰的布局 -->
+          <div class="flex items-center gap-2 sm:gap-3">
+            <!-- 入场券 -->
+            <div class="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded">
+              <span class="text-sm">🎟️</span>
+              <span class="text-white font-medium text-sm">
+                <span id="ticketCount">0</span>/<span id="ticketMax" class="text-white/70">2</span>
+              </span>
             </div>
-          </div>
-          
-          <!-- 碎片 -->
-          <div class="flex items-center gap-1.5">
-            <span class="text-lg">🧩</span>
-            <div class="text-white">
-              <p class="text-xs opacity-75 leading-tight"><span id="fragmentCount">0</span>/<span id="fragmentsNeeded">5</span></p>
+            
+            <!-- 碎片 -->
+            <div class="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded">
+              <span class="text-sm">🍀</span>
+              <span class="text-white font-medium text-sm">
+                <span id="fragmentCount">0</span>/<span id="fragmentsNeeded" class="text-white/70">5</span>
+              </span>
             </div>
-          </div>
-          
-          <!-- 分隔线 -->
-          <div class="h-6 w-px bg-white/30"></div>
-          
-          <!-- 操作按钮 -->
-          <button id="synthesizeButton" onclick="synthesizeTicket()" 
-                  class="px-2.5 py-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black font-bold rounded-lg shadow-lg 
-                         transform hover:scale-105 transition-all duration-200 text-xs
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  disabled>
-            🔨 合成
-          </button>
-          
-          <button id="enterAdvancedButton" onclick="enterAdvancedMode()" 
-                  class="px-2.5 py-1 bg-gradient-to-r from-red-500 to-pink-600 text-white font-bold rounded-lg shadow-lg 
-                         transform hover:scale-105 transition-all duration-200 text-xs
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-                  disabled>
-            🔥 进入
-          </button>
-          
-          <!-- 过期时间 -->
-          <div class="text-white text-xs opacity-60">
-            <p id="ticketExpiry"></p>
-          </div>
-          
-          <!-- 提示 -->
-          <div class="text-white/50 text-xs ml-2">
-            💡 二连→碎片，三连/四连→券
+            
+            <!-- 操作按钮 -->
+            <button id="synthesizeButton" onclick="synthesizeTicket()" 
+                    class="px-2 py-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs font-bold rounded 
+                           hover:scale-105 transition-transform duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              🔨 合成
+            </button>
+            
+            <button id="enterAdvancedButton" onclick="enterAdvancedMode()" 
+                    class="px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 text-white text-xs font-bold rounded 
+                           hover:scale-105 transition-transform duration-200
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              🔥 进入
+            </button>
+            
+            <!-- 过期时间 -->
+            <span id="ticketExpiry" class="text-white/60 text-xs hidden sm:inline"></span>
+            
+            <!-- 提示（移动端隐藏）-->
+            <div class="hidden sm:block text-white/50 text-xs">
+              二连→碎片 三/四连→券
+            </div>
           </div>
         </div>
       </div>
@@ -2485,9 +2487,11 @@
         freeSpinButton.classList.add('hidden');     // 🔥 隐藏免费抽奖
         normalSpinButton.classList.add('hidden');   // 🔥 隐藏初级场spin按钮
         
-        // 🔥 显示高级场标题
+        // 🔥 显示高级场标题，隐藏初级场标题
         const advancedTitle = document.getElementById('advancedModeTitle');
+        const normalTitle = document.getElementById('normalModeTitle');
         if (advancedTitle) advancedTitle.classList.remove('hidden');
+        if (normalTitle) normalTitle.classList.add('hidden');
         
         isInAdvancedMode = true;
         startAdvancedModeTimer();
@@ -2516,9 +2520,11 @@
         if (freeSpinButton) freeSpinButton.classList.remove('hidden'); // 🔥 显示免费抽奖
         normalSpinButton.classList.remove('hidden'); // 🔥 显示初级场spin按钮
         
-        // 🔥 隐藏高级场标题
+        // 🔥 隐藏高级场标题，显示初级场标题
         const advancedTitle = document.getElementById('advancedModeTitle');
+        const normalTitle = document.getElementById('normalModeTitle');
         if (advancedTitle) advancedTitle.classList.add('hidden');
+        if (normalTitle) normalTitle.classList.remove('hidden');
         
         isInAdvancedMode = false;
         stopAdvancedModeTimer();
@@ -2615,6 +2621,20 @@
           showToast(data.message, 'success');
           // 刷新入场券信息
           await loadAdvancedTickets();
+          
+          // 🔥 重新加载配置，确保获取正确的初级场投注金额
+          try {
+            const configRes = await fetch('/api/slot/config');
+            const configData = await configRes.json();
+            if (configData.success) {
+              slotConfig = configData.data.config;
+              slotUserData = configData.data.user;
+              // 更新老虎机界面，确保显示正确的投注金额
+              updateSlotUI();
+            }
+          } catch (error) {
+            console.error('[高级场] 重新加载配置失败:', error);
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -2640,7 +2660,21 @@
           if (timeEl) timeEl.textContent = '00:00:00';
           stopAdvancedModeTimer();
           showToast('高级场时间已到，已自动退出', 'error');
-          loadAdvancedTickets(); // 刷新状态
+          
+          // 刷新状态和重新加载配置
+          Promise.all([
+            loadAdvancedTickets(),
+            fetch('/api/slot/config').then(res => res.json())
+          ]).then(([_, configData]) => {
+            if (configData && configData.success) {
+              slotConfig = configData.data.config;
+              slotUserData = configData.data.user;
+              updateSlotUI(); // 🔥 更新UI，确保显示正确的投注金额
+            }
+          }).catch(error => {
+            console.error('[高级场] 自动退出时重新加载配置失败:', error);
+          });
+          
           return;
         }
         
