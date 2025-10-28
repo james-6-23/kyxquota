@@ -924,6 +924,20 @@
         <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
           📖 查看游戏规则
         </button>
+        
+        <!-- 🔥 投注限额进度条（仅高级场显示，在规则按钮下方）-->
+        <div id="dailyBetLimitBar" class="hidden mt-6 max-w-xl mx-auto">
+          <div class="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3">
+            <div class="flex items-center justify-between mb-2 text-xs sm:text-sm">
+              <span id="dailyBetLimitTitle" class="text-white/80 font-medium">今日投注额度限额</span>
+              <span id="dailyBetProgress" class="text-white font-bold">$0 / $5,000</span>
+            </div>
+            <div class="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="dailyBetWarning" class="hidden text-xs sm:text-sm text-orange-400 mt-2 text-center font-medium">⚠️ 接近投注限额</p>
+          </div>
+        </div>
       </div>
 
       <!-- 左侧：亏损榜（悬浮显示）- 移动端隐藏 -->
@@ -1024,20 +1038,6 @@
 
     <!-- 底部统计（固定底部）- 响应式 -->
     <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
-      <!-- 🔥 投注限额进度条（默认隐藏，高级场时显示）-->
-      <div id="dailyBetLimitBar" class="hidden mb-2 sm:mb-3">
-        <div class="max-w-2xl mx-auto">
-          <div class="flex items-center justify-between mb-1 text-xs">
-            <span id="dailyBetLimitTitle" class="text-white/60">今日投注额度限额</span>
-            <span id="dailyBetProgress" class="text-white font-medium">$0 / $5,000</span>
-          </div>
-          <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-            <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
-          </div>
-          <p id="dailyBetWarning" class="hidden text-xs text-orange-400 mt-1">⚠️ 接近投注限额</p>
-        </div>
-      </div>
-      
       <!-- 今日统计 -->
       <div class="mb-1 sm:mb-2">
         <p class="text-xs text-white/60 mb-0.5 sm:mb-1">📅 今日数据</p>
