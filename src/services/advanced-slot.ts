@@ -9,14 +9,10 @@ import type { UserTickets, AdvancedSlotConfig } from '../types';
  * 获取用户入场券信息
  */
 export function getUserTickets(linuxDoId: string): UserTickets | null {
-    console.log(`[高级场] 查询用户入场券信息 - linuxDoId: ${linuxDoId}`);
-
     try {
         const result = advancedSlotQueries.getTickets.get(linuxDoId);
-        console.log(`[高级场] 查询结果:`, result);
 
         if (!result) {
-            console.log(`[高级场] 用户没有入场券记录，返回默认值`);
             return {
                 linux_do_id: linuxDoId,
                 tickets: 0,
@@ -147,8 +143,6 @@ export function checkTicketExpiry(linuxDoId: string): boolean {
 
     if (tickets && tickets.tickets_expires_at && tickets.tickets_expires_at < now) {
         advancedSlotQueries.clearExpiredTickets.run(now, linuxDoId, now);
-
-        console.log(`[过期] 用户 ${linuxDoId} 的入场券已过期`);
         return true;
     }
 
@@ -169,16 +163,13 @@ export function isInAdvancedMode(linuxDoId: string): boolean {
  * 进入高级场（消耗1张入场券）
  */
 export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
-    console.log(`[高级场] 尝试进入高级场 - 用户: ${linuxDoId}`);
-
     // 检查入场券是否过期
     checkTicketExpiry(linuxDoId);
 
     const tickets = getUserTickets(linuxDoId);
-    console.log(`[高级场] 用户入场券信息:`, tickets);
 
     if (!tickets || tickets.tickets < 1) {
-        console.log(`[高级场] 进入失败 - 入场券不足: ${tickets?.tickets || 0}`);
+        console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 入场券不足: ${tickets?.tickets || 0}`);
         return {
             success: false,
             message: '入场券不足，无法进入高级场'
@@ -186,7 +177,6 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     }
 
     const config = getAdvancedSlotConfig();
-    console.log(`[高级场] 高级场配置 - enabled: ${config.enabled}`);
 
     if (!config.enabled) {
         console.log(`[高级场] 进入失败 - 高级场功能已关闭`);
@@ -199,25 +189,19 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     const now = Date.now();
     const validUntil = now + (config.session_valid_hours * 3600000);
 
-    // 扣除入场券并设置高级场资格
-    console.log(`[高级场] 执行 useTicket - validUntil: ${new Date(validUntil).toISOString()}, linuxDoId: ${linuxDoId}`);
-
     try {
         const result = advancedSlotQueries.useTicket.run(validUntil, now, linuxDoId);
-        console.log(`[高级场] useTicket 执行结果:`, result);
 
         // UPDATE 语句可能不返回结果对象（这是正常的）
         // 通过验证查询来确认是否扣除成功
         if (!result || typeof result.changes === 'undefined') {
-            console.log(`[高级场] UPDATE 执行完成，验证扣除结果...`);
-
             // 查询验证是否扣除成功
             const afterTickets = getUserTickets(linuxDoId);
 
             if (afterTickets && afterTickets.tickets === tickets.tickets - 1 && afterTickets.advanced_mode_until === validUntil) {
-                console.log(`[高级场] 验证成功！用户 ${linuxDoId} 剩余入场券: ${afterTickets.tickets}`);
+                console.log(`[高级场] 用户 ${linuxDoId} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
             } else {
-                console.error(`[高级场] 验证失败 - 期望剩余: ${tickets.tickets - 1}, 实际: ${afterTickets?.tickets ?? 'null'}`);
+                console.error(`[高级场] 进入失败 - 用户: ${linuxDoId}, 验证失败`);
                 return {
                     success: false,
                     message: '进入失败，请重试'
@@ -225,25 +209,22 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
             }
         } else {
             // 如果 result.changes 存在，直接使用
-            console.log(`[高级场] 受影响行数: ${result.changes}`);
-
             if (result.changes === 0) {
-                console.log(`[高级场] 进入失败 - 数据库更新失败，changes: 0`);
+                console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 数据库更新失败`);
                 return {
                     success: false,
                     message: '进入失败，请重试'
                 };
             }
+            console.log(`[高级场] 用户 ${linuxDoId} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
         }
     } catch (error) {
-        console.error(`[高级场] useTicket 执行错误:`, error);
+        console.error(`[高级场] 进入高级场失败 - 用户: ${linuxDoId}`, error);
         return {
             success: false,
             message: '数据库操作失败'
         };
     }
-
-    console.log(`[高级场] 用户 ${linuxDoId} 进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
 
     return {
         success: true,

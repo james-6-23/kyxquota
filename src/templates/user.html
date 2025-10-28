@@ -1461,7 +1461,7 @@
           });
           
           this.initialized = true;
-          console.log('🔊 音效系统已初始化（使用真实音频文件）');
+          // console.log('🔊 音效系统已初始化（使用真实音频文件）');
         } catch (error) {
           console.error('❌ 音效初始化失败:', error);
         }
@@ -1474,7 +1474,7 @@
         try {
           const audio = this.sounds[soundName];
           if (!audio) {
-            console.warn(`音效 ${soundName} 不存在`);
+            // console.warn(`音效 ${soundName} 不存在`);
             return;
           }
           
@@ -1487,7 +1487,7 @@
           
           // 播放音效
           audio.play().catch(err => {
-            console.warn('音效播放失败:', err.message);
+            // console.warn('音效播放失败:', err.message);
           });
         } catch (error) {
           console.error('播放音效出错:', error);
@@ -1961,7 +1961,7 @@
             const letterAvatarUrl = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
             const img = new Image();
             img.onload = function() {
-              console.log('[头像加载] Letter avatar加载成功');
+              // console.log('[头像加载] Letter avatar加载成功');
               const userAvatar = document.getElementById('userAvatar');
               userAvatar.style.backgroundImage = `url(${letterAvatarUrl})`;
               userAvatar.style.backgroundSize = 'cover';
@@ -2431,7 +2431,7 @@
         container.appendChild(button);
       });
       
-      console.log('[高级场] 动态生成投注选项:', uniqueOptions);
+      // console.log('[高级场] 动态生成投注选项:', uniqueOptions);
     }
     
     // 🔥 设置高级场投注金额
@@ -2449,7 +2449,7 @@
         }
       });
       
-      console.log('[高级场] 投注金额设置为:', amount);
+      // console.log('[高级场] 投注金额设置为:', amount);
     }
 
     // 🔥 更新投注金额显示（滑块）
@@ -2472,31 +2472,31 @@
 
     // 🔥 更新投注限额进度条（独立函数）
     function updateBetLimitProgressBar() {
-      console.log('[进度条] ========== updateBetLimitProgressBar 被调用 ==========');
-      console.log('[进度条] isInAdvancedMode:', isInAdvancedMode);
-      console.log('[进度条] slotUserData:', slotUserData);
-      console.log('[进度条] advancedTicketsData:', advancedTicketsData);
+      // console.log('[进度条] ========== updateBetLimitProgressBar 被调用 ==========');
+      // console.log('[进度条] isInAdvancedMode:', isInAdvancedMode);
+      // console.log('[进度条] slotUserData:', slotUserData);
+      // console.log('[进度条] advancedTicketsData:', advancedTicketsData);
       
       if (!slotUserData) {
-        console.warn('[进度条] slotUserData 不存在，跳过更新');
+        // console.warn('[进度条] slotUserData 不存在，跳过更新');
         return;
       }
       
       const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
-      console.log('[进度条] 找到元素 dailyBetLimitBar:', dailyBetLimitBar);
-      console.log('[进度条] 元素当前 classList:', dailyBetLimitBar?.classList);
+      // console.log('[进度条] 找到元素 dailyBetLimitBar:', dailyBetLimitBar);
+      // console.log('[进度条] 元素当前 classList:', dailyBetLimitBar?.classList);
       
       if (!dailyBetLimitBar) {
-        console.error('[进度条] ❌ 找不到 dailyBetLimitBar 元素！');
+        // console.error('[进度条] ❌ 找不到 dailyBetLimitBar 元素！');
         return;
       }
       
       if (isInAdvancedMode) {
         // 🔥 高级场：显示投注额度限额进度条
-        console.log('[进度条] ✅ 高级场模式 - 准备显示进度条');
+        // console.log('[进度条] ✅ 高级场模式 - 准备显示进度条');
         dailyBetLimitBar.classList.remove('hidden');
-        console.log('[进度条] ✅ 已移除 hidden 类，当前 class:', dailyBetLimitBar.className);
-        console.log('[进度条] ✅ computed style display:', window.getComputedStyle(dailyBetLimitBar).display);
+        // console.log('[进度条] ✅ 已移除 hidden 类，当前 class:', dailyBetLimitBar.className);
+        // console.log('[进度条] ✅ computed style display:', window.getComputedStyle(dailyBetLimitBar).display);
         
         const titleEl = document.getElementById('dailyBetLimitTitle');
         const progressText = document.getElementById('dailyBetProgress');
@@ -2510,7 +2510,7 @@
         const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
         const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
         
-        console.log('[进度条] 限额:', betLimit, '已投注:', todayBetAmount, '进度:', betPercentage + '%');
+        // console.log('[进度条] 限额:', betLimit, '已投注:', todayBetAmount, '进度:', betPercentage + '%');
         
         if (titleEl) titleEl.textContent = '今日投注额度限额';
         if (progressText) {
@@ -2548,7 +2548,7 @@
         }
       } else {
         // 🔥 初级场：隐藏投注限额进度条（初级场使用次数限制）
-        console.log('[进度条] 初级场模式 - 隐藏进度条');
+        // console.log('[进度条] 初级场模式 - 隐藏进度条');
         dailyBetLimitBar.classList.add('hidden');
       }
     }
@@ -2562,7 +2562,7 @@
         if (data.success) {
           advancedTicketsData = data.data;
           updateAdvancedTicketsUI();
-          console.log('[高级场] 入场券信息:', advancedTicketsData);
+          // console.log('[高级场] 入场券信息:', advancedTicketsData);
         }
       } catch (error) {
         console.error('[高级场] 加载入场券信息失败:', error);
@@ -2610,7 +2610,7 @@
       const normalSpinButton = document.getElementById('spinButton');
       
       if (in_advanced_mode) {
-        console.log('[高级场] 更新UI为高级场模式');
+        // console.log('[高级场] 更新UI为高级场模式');
         // 在高级场：隐藏入场券栏，显示高级场指示器和投注选择器
         ticketBar.classList.add('hidden');
         modeIndicator.classList.remove('hidden');  // 🔥 显示右上角指示器
@@ -2652,7 +2652,7 @@
             setAdvancedBet(advancedBetMin);
           }
           
-          console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}, 步长: ${slider.step}`);
+          // console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}, 步长: ${slider.step}`);
         }
         
         // 🔥 立即更新进度条显示（确保高级场进度条显示）
@@ -2722,7 +2722,7 @@
 
     // 🔥 进入高级场
     async function enterAdvancedMode() {
-      console.log('[高级场] 尝试进入高级场...');
+      // console.log('[高级场] 尝试进入高级场...');
       if (!advancedTicketsData || advancedTicketsData.tickets < 1) {
         showToast('入场券不足', 'error');
         return;
@@ -2738,7 +2738,7 @@
           method: 'POST'
         });
         const data = await res.json();
-        console.log('[高级场] 进入高级场响应:', data);
+        // console.log('[高级场] 进入高级场响应:', data);
         
         if (data.success) {
           showToast('🔥 ' + data.message, 'success');
@@ -2892,13 +2892,13 @@
     // 🎉 合成成功动画
     function playTicketSynthesizeAnimation() {
       // TODO: 添加炫酷的合成动画特效
-      console.log('[动画] 播放合成成功动画');
+      // console.log('[动画] 播放合成成功动画');
     }
 
     // 🎉 进入高级场动画
     function playEnterAdvancedAnimation() {
       // TODO: 添加进入高级场的特效
-      console.log('[动画] 播放进入高级场动画');
+      // console.log('[动画] 播放进入高级场动画');
     }
 
     // 🎉 掉落动画
@@ -2926,7 +2926,7 @@
         dropEffect.remove();
       }, 2000);
       
-      console.log('[动画] 播放掉落动画:', dropType, dropCount);
+      // console.log('[动画] 播放掉落动画:', dropType, dropCount);
     }
 
     // 初始化老虎机滚轮
@@ -2977,7 +2977,7 @@
       };
       
       img.onload = () => {
-        console.log('✅ 图片加载成功:', symbolName);
+        // console.log('✅ 图片加载成功:', symbolName);
       };
       
       div.appendChild(img);
@@ -3065,11 +3065,11 @@
         setTimeout(async () => {
           loadSidebarLeaderboard();
           await loadAdvancedTickets();  // 🔥 加载入场券信息
-          console.log('[初始化] 入场券加载完成，isInAdvancedMode:', isInAdvancedMode);
+          // console.log('[初始化] 入场券加载完成，isInAdvancedMode:', isInAdvancedMode);
           
           // 🔥 如果用户在高级场，确保UI正确显示
           if (isInAdvancedMode && advancedTicketsData) {
-            console.log('[初始化] 用户在高级场，强制更新UI');
+            // console.log('[初始化] 用户在高级场，强制更新UI');
             updateAdvancedTicketsUI();  // 确保高级场UI显示正确
           }
           
@@ -3078,7 +3078,7 @@
           
           // 🔥 再次强制更新进度条（确保显示）
           setTimeout(() => {
-            console.log('[初始化] 延迟更新进度条');
+            // console.log('[初始化] 延迟更新进度条');
             updateBetLimitProgressBar();
           }, 50);
         }, 100);
@@ -3105,12 +3105,12 @@
       const userAvatar = document.getElementById('userAvatar');
       const userInitial = document.getElementById('userInitial')?.textContent;
       
-      console.log('[同步用户信息] LinuxDo用户名:', linuxDoUsername, '公益站用户名:', userName, 'ID:', userId, '头像元素:', userAvatar);
+      // console.log('[同步用户信息] LinuxDo用户名:', linuxDoUsername, '公益站用户名:', userName, 'ID:', userId, '头像元素:', userAvatar);
       
       // 确保显示正确的用户名
       if (linuxDoUsername) {
         document.getElementById('slotLinuxDoUsername').textContent = linuxDoUsername;
-        console.log('[同步] 设置老虎机LinuxDo用户名为:', linuxDoUsername);
+        // console.log('[同步] 设置老虎机LinuxDo用户名为:', linuxDoUsername);
       }
       if (userName) document.getElementById('slotUserName').textContent = userName;
       if (userId) document.getElementById('slotUserId').textContent = userId;
@@ -3123,7 +3123,7 @@
         const slotAvatar = document.getElementById('slotUserAvatar');
         if (slotAvatar) {
           const bgImage = userAvatar.style.backgroundImage;
-          console.log('[同步头像] 背景图片:', bgImage);
+          // console.log('[同步头像] 背景图片:', bgImage);
           
           if (bgImage) {
             slotAvatar.style.backgroundImage = bgImage;
@@ -3184,7 +3184,7 @@
         }
 
         // 调试：输出完整的排行榜数据
-        console.log('[盈亏排行榜数据]', leaderboard);
+        // console.log('[盈亏排行榜数据]', leaderboard);
 
         // 渲染盈利榜的函数（绿色主题，奖牌图标）
         const renderProfitLeaderboardItem = (user, index) => {
@@ -3370,12 +3370,12 @@
     // 更新老虎机界面数据
     function updateSlotUI() {
       if (!slotUserData || !slotConfig) {
-        console.warn('[updateSlotUI] 缺少必要数据:', { slotUserData, slotConfig });
+        // console.warn('[updateSlotUI] 缺少必要数据:', { slotUserData, slotConfig });
         return;
       }
 
-      console.log('[updateSlotUI] 更新UI，当前数据:', {
-        remaining_spins: slotUserData.remaining_spins,
+      // console.log('[updateSlotUI] 更新UI，当前数据:', {
+      //   remaining_spins: slotUserData.remaining_spins,
         free_spins: slotUserData.free_spins,
         quota: slotUserData.quota,
         bought_today: slotUserData.bought_today
@@ -3400,20 +3400,20 @@
         
         // 如果值发生变化，添加日志
         if (oldValue !== newValue) {
-          console.log(`[updateSlotUI] 🔄 剩余次数更新: ${oldValue} → ${newValue}`);
+          // console.log(`[updateSlotUI] 🔄 剩余次数更新: ${oldValue} → ${newValue}`);
         }
       } else {
-        console.error('[updateSlotUI] ❌ 找不到 spinsRemaining 元素！');
+        // console.error('[updateSlotUI] ❌ 找不到 spinsRemaining 元素！');
       }
       
       if (freeSpinsCountEl) {
         freeSpinsCountEl.textContent = slotUserData.free_spins || 0;
       } else {
-        console.error('[updateSlotUI] ❌ 找不到 freeSpinsCount 元素！');
+        // console.error('[updateSlotUI] ❌ 找不到 freeSpinsCount 元素！');
       }
 
-      console.log('[updateSlotUI] DOM更新完成:', {
-        spinsRemainingEl_text: spinsRemainingEl?.textContent || 'N/A',
+      // console.log('[updateSlotUI] DOM更新完成:', {
+      //   spinsRemainingEl_text: spinsRemainingEl?.textContent || 'N/A',
         freeSpinsCountEl_text: freeSpinsCountEl?.textContent || 'N/A',
         remaining_spins_value: slotUserData.remaining_spins,
         free_spins_value: slotUserData.free_spins
@@ -3430,7 +3430,7 @@
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
       // 🔥 更新投注限额进度条（在 updateSlotUI 中直接调用）
-      console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
+      // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
       updateBetLimitProgressBar();
 
       // 显示禁止状态
@@ -3466,8 +3466,8 @@
       const hasSpins = slotUserData.remaining_spins > 0;
       const hasQuota = slotUserData.quota >= slotConfig.min_quota_required;
 
-      console.log('[updateSlotUI] Spin按钮状态检查:', {
-        remaining_spins: slotUserData.remaining_spins,
+      // console.log('[updateSlotUI] Spin按钮状态检查:', {
+      //   remaining_spins: slotUserData.remaining_spins,
         hasSpins: hasSpins,
         quota: slotUserData.quota,
         min_quota_required: slotConfig.min_quota_required,
@@ -3479,14 +3479,14 @@
 
       if (hasSpins && hasQuota) {
         spinButton.disabled = false;
-        console.log('[updateSlotUI] ✅ Spin按钮已启用');
+        // console.log('[updateSlotUI] ✅ Spin按钮已启用');
       } else {
         spinButton.disabled = true;
         if (!hasSpins) {
-          console.log('[updateSlotUI] ❌ Spin按钮禁用：没有剩余次数');
+          // console.log('[updateSlotUI] ❌ Spin按钮禁用：没有剩余次数');
         }
         if (!hasQuota) {
-          console.log('[updateSlotUI] ❌ Spin按钮禁用：额度不足（需要至少 $' + (slotConfig.min_quota_required / 500000).toFixed(2) + '）');
+          // console.log('[updateSlotUI] ❌ Spin按钮禁用：额度不足（需要至少 $' + (slotConfig.min_quota_required / 500000).toFixed(2) + '）');
         }
       }
 
@@ -3597,11 +3597,11 @@
           slotUserData.remaining_spins = data.data.remaining_spins;
           slotUserData.bought_today = data.data.bought_today;
 
-          console.log('[购买成功] API返回数据:', data.data);
-          console.log('[购买成功] 更新前剩余次数:', oldRemainingSpins);
-          console.log('[购买成功] 更新后剩余次数:', slotUserData.remaining_spins);
-          console.log('[购买成功] 更新后的 slotUserData:', {
-            quota: slotUserData.quota,
+          // console.log('[购买成功] API返回数据:', data.data);
+          // console.log('[购买成功] 更新前剩余次数:', oldRemainingSpins);
+          // console.log('[购买成功] 更新后剩余次数:', slotUserData.remaining_spins);
+          // console.log('[购买成功] 更新后的 slotUserData:', {
+          //   quota: slotUserData.quota,
             remaining_spins: slotUserData.remaining_spins,
             bought_today: slotUserData.bought_today,
             free_spins: slotUserData.free_spins
@@ -3689,7 +3689,7 @@
         const requestBody = { useFreeSpinn };
         if (isInAdvancedMode) {
           requestBody.advancedBetAmount = advancedBetAmount * 500000;  // 美元转聪
-          console.log(`[高级场] 投注金额: $${advancedBetAmount} (${requestBody.advancedBetAmount}聪)`);
+          // console.log(`[高级场] 投注金额: $${advancedBetAmount} (${requestBody.advancedBetAmount}聪)`);
         }
         
         const res = await fetch('/api/slot/spin', {
@@ -3743,7 +3743,7 @@
 
         // 🔥 处理入场券/碎片掉落
         if (result.ticket_dropped && result.drop_type) {
-          console.log('[掉落] 检测到掉落:', result.drop_type, result.drop_count);
+          // console.log('[掉落] 检测到掉落:', result.drop_type, result.drop_count);
           // 延迟显示掉落动画（在旋转动画之后）
           setTimeout(() => {
             playTicketDropAnimation(result.drop_type, result.drop_count);
@@ -3793,7 +3793,6 @@
 
       } catch (error) {
         console.error('旋转失败:', error);
-        console.error('错误详情:', error);
         showToast('旋转失败，请重试', 'error');
       } finally {
         isSpinning = false;
@@ -3980,13 +3979,13 @@
         allSlotRecords = recordsData.data;
         
         // 调试：检查win_type分布
-        console.log('[记录统计] 总记录数:', allSlotRecords.length);
+        // console.log('[记录统计] 总记录数:', allSlotRecords.length);
         const winTypeStats = {};
         allSlotRecords.forEach(r => {
           const winType = r.win_type || 'null';
           winTypeStats[winType] = (winTypeStats[winType] || 0) + 1;
         });
-        console.log('[记录统计] win_type分布:', winTypeStats);
+        // console.log('[记录统计] win_type分布:', winTypeStats);
         
         // 显示模态框
         document.getElementById('slotRecordsModal').classList.remove('hidden');
