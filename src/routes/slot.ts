@@ -1249,8 +1249,15 @@ slot.post('/tickets/synthesize', requireAuth, async (c) => {
 slot.post('/advanced/enter', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
+        console.log(`[路由] 进入高级场请求 - session:`, session);
+
+        if (!session?.linux_do_id) {
+            console.error(`[路由] 进入高级场失败 - 无效的session`);
+            return c.json({ success: false, message: '会话无效' }, 401);
+        }
 
         const result = enterAdvancedMode(session.linux_do_id);
+        console.log(`[路由] enterAdvancedMode 返回结果:`, result);
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error) {

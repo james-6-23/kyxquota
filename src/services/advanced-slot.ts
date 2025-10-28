@@ -10,11 +10,11 @@ import type { UserTickets, AdvancedSlotConfig } from '../types';
  */
 export function getUserTickets(linuxDoId: string): UserTickets | null {
     console.log(`[高级场] 查询用户入场券信息 - linuxDoId: ${linuxDoId}`);
-    
+
     try {
         const result = advancedSlotQueries.getTickets.get(linuxDoId);
         console.log(`[高级场] 查询结果:`, result);
-        
+
         if (!result) {
             console.log(`[高级场] 用户没有入场券记录，返回默认值`);
             return {
@@ -170,7 +170,7 @@ export function isInAdvancedMode(linuxDoId: string): boolean {
  */
 export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
     console.log(`[高级场] 尝试进入高级场 - 用户: ${linuxDoId}`);
-    
+
     // 检查入场券是否过期
     checkTicketExpiry(linuxDoId);
 
@@ -201,11 +201,11 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
 
     // 扣除入场券并设置高级场资格
     console.log(`[高级场] 执行 useTicket - validUntil: ${new Date(validUntil).toISOString()}, linuxDoId: ${linuxDoId}`);
-    
+
     try {
         const result = advancedSlotQueries.useTicket.run(validUntil, now, linuxDoId);
         console.log(`[高级场] useTicket 结果:`, result);
-        
+
         if (!result || result.changes === 0) {
             console.log(`[高级场] 进入失败 - 数据库更新失败，changes: ${result?.changes || 0}`);
             return {
