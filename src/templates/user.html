@@ -813,8 +813,8 @@
           🎰 KYX-Slot-Machine
         </h1>
         
-        <!-- 次数显示 - 响应式 -->
-        <div class="bg-white/10 backdrop-blur-md rounded-lg px-4 sm:px-8 py-2 sm:py-3 mb-4 sm:mb-6">
+        <!-- 次数显示 - 响应式（仅初级场显示）-->
+        <div id="normalModeSpinsDisplay" class="bg-white/10 backdrop-blur-md rounded-lg px-4 sm:px-8 py-2 sm:py-3 mb-4 sm:mb-6">
           <p class="text-white text-center text-sm sm:text-base md:text-lg">
             今日剩余：<span id="spinsRemaining" class="text-yellow-400 font-bold text-lg sm:text-xl md:text-2xl">5</span> 次
             <span class="mx-2 sm:mx-3">|</span>
@@ -1024,17 +1024,17 @@
 
     <!-- 底部统计（固定底部）- 响应式 -->
     <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
-      <!-- 🔥 今日投注限额进度条 -->
+      <!-- 🔥 投注限额进度条 -->
       <div id="dailyBetLimitBar" class="mb-2 sm:mb-3">
         <div class="max-w-2xl mx-auto">
           <div class="flex items-center justify-between mb-1 text-xs">
-            <span class="text-white/60">今日投注限额</span>
+            <span id="dailyBetLimitTitle" class="text-white/60">今日投注限额</span>
             <span id="dailyBetProgress" class="text-white font-medium">$0 / $1,000</span>
           </div>
           <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
             <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
           </div>
-          <p id="dailyBetWarning" class="hidden text-xs text-orange-400 mt-1">⚠️ 接近每日投注限额</p>
+          <p id="dailyBetWarning" class="hidden text-xs text-orange-400 mt-1">⚠️ 接近投注限额</p>
         </div>
       </div>
       
@@ -2499,6 +2499,10 @@
         freeSpinButton.classList.add('hidden');     // 🔥 隐藏免费抽奖
         normalSpinButton.classList.add('hidden');   // 🔥 隐藏初级场spin按钮
         
+        // 🔥 隐藏初级场次数显示
+        const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
+        if (normalSpinsDisplay) normalSpinsDisplay.classList.add('hidden');
+        
         // 🔥 显示高级场标题，隐藏初级场标题
         const advancedTitle = document.getElementById('advancedModeTitle');
         const normalTitle = document.getElementById('normalModeTitle');
@@ -2531,6 +2535,10 @@
         betSelector.classList.add('hidden');      // 🔥 隐藏投注选择器
         if (freeSpinButton) freeSpinButton.classList.remove('hidden'); // 🔥 显示免费抽奖
         normalSpinButton.classList.remove('hidden'); // 🔥 显示初级场spin按钮
+        
+        // 🔥 显示初级场次数显示
+        const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
+        if (normalSpinsDisplay) normalSpinsDisplay.classList.remove('hidden');
         
         // 🔥 隐藏高级场标题，显示初级场标题
         const advancedTitle = document.getElementById('advancedModeTitle');
@@ -3255,26 +3263,29 @@
       document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
-      // 🔥 更新今日投注限额进度条（仅初级场显示）
+      // 🔥 更新投注限额进度条（仅高级场显示）
       const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
       if (dailyBetLimitBar) {
         if (isInAdvancedMode) {
-          // 高级场隐藏限额进度条
-          dailyBetLimitBar.classList.add('hidden');
-        } else {
-          // 初级场显示限额进度条
+          // 🔥 高级场：显示投注额度限额进度条
           dailyBetLimitBar.classList.remove('hidden');
           
-          const dailyBetLimit = 1000; // 每日投注限额 $1000
-          const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
-          const betPercentage = Math.min((todayBetAmount / dailyBetLimit) * 100, 100);
-          
+          const titleEl = document.getElementById('dailyBetLimitTitle');
           const progressText = document.getElementById('dailyBetProgress');
           const progressBar = document.getElementById('dailyBetProgressBar');
           const warningText = document.getElementById('dailyBetWarning');
           
+          // 从配置获取高级场每日投注限额（管理员可配置）
+          const betLimit = advancedTicketsData?.config?.daily_bet_limit 
+            ? advancedTicketsData.config.daily_bet_limit / 500000 
+            : 5000; // 默认$5000
+          const todayBetAmount = (slotUserData.today_bet || 0) / 500000;
+          const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
+          
+          if (titleEl) titleEl.textContent = '今日投注额度限额';
+          
           if (progressText) {
-            progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${dailyBetLimit.toLocaleString()}`;
+            progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
           }
           
           if (progressBar) {
@@ -3296,16 +3307,19 @@
             if (betPercentage >= 80) {
               warningText.classList.remove('hidden');
               if (betPercentage >= 100) {
-                warningText.textContent = '⛔ 已达到每日投注限额';
+                warningText.textContent = '⛔ 已达到投注限额';
                 warningText.className = 'text-xs text-red-400 mt-1';
               } else {
-                warningText.textContent = '⚠️ 接近每日投注限额';
+                warningText.textContent = '⚠️ 接近投注限额';
                 warningText.className = 'text-xs text-orange-400 mt-1';
               }
             } else {
               warningText.classList.add('hidden');
             }
           }
+        } else {
+          // 🔥 初级场：隐藏投注限额进度条（初级场使用次数限制）
+          dailyBetLimitBar.classList.add('hidden');
         }
       }
 

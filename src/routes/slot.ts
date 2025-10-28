@@ -5,6 +5,7 @@ import { getCookie, getSession } from '../utils';
 import {
     getSlotConfig,
     getUserTodaySpins,
+    getUserTodayBet,
     getUserFreeSpins,
     addUserFreeSpins,
     useUserFreeSpin,
@@ -304,22 +305,41 @@ slot.post('/spin', requireAuth, async (c) => {
             betAmount = 0; // 免费游戏不扣费（用于记录）
             // calculationBetAmount 保持为 config.bet_amount（用于计算奖金）
         } else {
-            // 🎯 修复：获取今日已购买次数
-            const today = new Date().toISOString().split('T')[0];
-            const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
-            const boughtToday = todayBought?.total || 0;
+            // 🔥 初级场和高级场的限制检查
+            if (inAdvancedMode) {
+                // 🔥 高级场：检查每日投注限额
+                const advancedConfig = getAdvancedSlotConfig();
+                const todayBetTotal = getUserTodayBet(session.linux_do_id);
+                const todayBetAmount = todayBetTotal / 500000;
+                const newTodayBet = todayBetTotal + betAmount;
+                const newTodayBetAmount = newTodayBet / 500000;
 
-            // 🎯 修复：检查今日次数（包含购买的次数）
-            const todaySpins = getUserTodaySpins(session.linux_do_id);
-            const totalAllowedSpins = config.max_daily_spins + boughtToday;
+                console.log(`[高级场检查] 用户: ${user.username}, 今日已投注: $${todayBetAmount.toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${newTodayBetAmount.toFixed(2)}, 限额: $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}`);
 
-            console.log(`[抽奖检查] 用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
+                if (newTodayBet > advancedConfig.daily_bet_limit) {
+                    const remaining = (advancedConfig.daily_bet_limit - todayBetTotal) / 500000;
+                    return c.json({
+                        success: false,
+                        message: `超过每日投注限额！今日已投注 $${todayBetAmount.toFixed(2)}，限额 $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}（剩余 $${Math.max(0, remaining).toFixed(2)}）`
+                    }, 400);
+                }
+            } else {
+                // 🎯 初级场：检查今日次数（包含购买的次数）
+                const today = new Date().toISOString().split('T')[0];
+                const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+                const boughtToday = todayBought?.total || 0;
 
-            if (todaySpins >= totalAllowedSpins) {
-                return c.json({
-                    success: false,
-                    message: `今日游玩次数已用完（已玩${todaySpins}/${totalAllowedSpins}次）`
-                }, 400);
+                const todaySpins = getUserTodaySpins(session.linux_do_id);
+                const totalAllowedSpins = config.max_daily_spins + boughtToday;
+
+                console.log(`[初级场检查] 用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
+
+                if (todaySpins >= totalAllowedSpins) {
+                    return c.json({
+                        success: false,
+                        message: `今日游玩次数已用完（已玩${todaySpins}/${totalAllowedSpins}次）`
+                    }, 400);
+                }
             }
 
             // 获取管理员配置

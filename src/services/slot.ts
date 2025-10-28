@@ -306,6 +306,15 @@ export function getUserTodaySpins(linuxDoId: string): number {
 }
 
 /**
+ * 获取用户今日总投注金额（用于高级场限额检查）
+ */
+export function getUserTodayBet(linuxDoId: string): number {
+    const today = getTodayDate();
+    const result = slotQueries.getTodayStats.get(linuxDoId, today);
+    return result?.total_bet || 0;
+}
+
+/**
  * 获取用户免费次数和禁止状态
  */
 export function getUserFreeSpins(linuxDoId: string): number {
