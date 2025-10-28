@@ -2999,8 +2999,14 @@
         setTimeout(async () => {
           loadSidebarLeaderboard();
           await loadAdvancedTickets();  // 🔥 加载入场券信息
+          console.log('[初始化] 入场券加载完成，isInAdvancedMode:', isInAdvancedMode);
           // 🔥 加载完入场券后再次更新UI，确保进度条正确显示
           updateSlotUI();
+          // 🔥 再次强制更新进度条（确保显示）
+          setTimeout(() => {
+            console.log('[初始化] 延迟更新进度条');
+            updateBetLimitProgressBar();
+          }, 50);
         }, 100);
 
         // 完成动画
@@ -3349,7 +3355,8 @@
       document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
       document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
-      // 🔥 更新投注限额进度条
+      // 🔥 更新投注限额进度条（在 updateSlotUI 中直接调用）
+      console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
       updateBetLimitProgressBar();
 
       // 显示禁止状态
