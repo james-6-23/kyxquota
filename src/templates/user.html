@@ -3583,6 +3583,22 @@
           loadSidebarLeaderboard();
           // console.log('[初始化] 排行榜加载完成');
           
+          // 🔥 默认折叠排行榜
+          const lossBoardContent = document.getElementById('lossBoardContent');
+          const profitBoardContent = document.getElementById('profitBoardContent');
+          const lossBoardToggleIcon = document.getElementById('lossBoardToggleIcon');
+          const profitBoardToggleIcon = document.getElementById('profitBoardToggleIcon');
+          
+          if (lossBoardContent && lossBoardToggleIcon) {
+            lossBoardContent.style.display = 'none';
+            lossBoardToggleIcon.style.transform = 'rotate(180deg)';
+          }
+          
+          if (profitBoardContent && profitBoardToggleIcon) {
+            profitBoardContent.style.display = 'none';
+            profitBoardToggleIcon.style.transform = 'rotate(180deg)';
+          }
+          
           // 🔥 如果用户在高级场，确保UI正确显示
           if (isInAdvancedMode && advancedTicketsData) {
             // console.log('[初始化] 用户在高级场，强制更新UI');
