@@ -1899,11 +1899,50 @@
               刷新
             </button>
           </div>
+          
+          <!-- 🔍 搜索栏 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- 用户名搜索 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">搜索用户</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="usersSearchInput" 
+                    placeholder="输入LinuxDo用户名或公益站用户名（linuxdo_xxx）..." 
+                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                  <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex items-end gap-2">
+                <button 
+                  onclick="filterUsers()" 
+                  class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg transition-all font-semibold shadow-md"
+                >
+                  🔍 搜索
+                </button>
+                <button 
+                  onclick="clearUsersFilter()" 
+                  class="flex-1 px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  🔄 重置
+                </button>
+              </div>
+            </div>
+          </div>
+          
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
             <div class="flex justify-between items-center mb-4">
               <div class="flex items-center gap-4">
                 <div class="text-sm text-slate-600">
                   总用户数: <span id="usersTotal" class="font-bold text-slate-900">0</span>
+                  <span id="usersFilteredInfo" class="hidden text-indigo-600 ml-2">（筛选后: <span id="usersFilteredCount">0</span>）</span>
                 </div>
                 <div class="flex items-center gap-2">
                   <label class="text-sm text-slate-600">每页显示:</label>
@@ -2339,6 +2378,42 @@
           确认发放
         </button>
         <button onclick="closeGrantFreeSpinsModal()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🎟️ Grant Tickets Modal -->
+  <div id="grantTicketsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h3 class="text-xl font-bold text-slate-900 mb-4">🎟️ 发放入场券</h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">用户</label>
+          <input type="text" id="ticketModalUsername" readonly class="w-full px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg text-slate-700">
+          <input type="hidden" id="ticketModalLinuxDoId">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">入场券数量 *</label>
+          <input type="number" id="ticketModalCount" min="1" max="10" value="1" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">每次最多发放10张</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">发放原因</label>
+          <input type="text" id="ticketModalReason" placeholder="例如: 活动奖励" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p class="text-xs text-blue-800">
+            💡 <strong>提示：</strong>入场券有效期24小时，用户最多持有2张（可在高级场配置中调整）
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="confirmGrantTickets()" class="flex-1 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+          确认发放
+        </button>
+        <button onclick="closeGrantTicketsModal()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
           取消
         </button>
       </div>
@@ -3154,6 +3229,8 @@
 
     let usersCurrentPage = 1;
     let usersPageSize = 20;
+    let usersAllData = [];  // 存储所有用户数据
+    let usersSearchFilter = '';  // 搜索过滤条件
 
     async function loadUsersList(page = 1) {
       if (page < 1) return;
@@ -3165,10 +3242,30 @@
         if (data.success) {
           usersCurrentPage = data.pagination.page;
           const tbody = document.getElementById('usersListBody');
+          
+          // 🔥 存储所有用户数据
+          usersAllData = data.data;
+          
+          // 🔥 应用搜索过滤
+          let filteredUsers = usersAllData;
+          if (usersSearchFilter) {
+            filteredUsers = usersAllData.filter(user => 
+              (user.linux_do_username && user.linux_do_username.toLowerCase().includes(usersSearchFilter.toLowerCase())) ||
+              (user.username && user.username.toLowerCase().includes(usersSearchFilter.toLowerCase()))
+            );
+          }
 
           // 更新统计信息
           document.getElementById('userCount').textContent = data.pagination.total;
           document.getElementById('usersTotal').textContent = data.pagination.total;
+          
+          // 🔥 显示筛选信息
+          if (usersSearchFilter && filteredUsers.length < usersAllData.length) {
+            document.getElementById('usersFilteredInfo').classList.remove('hidden');
+            document.getElementById('usersFilteredCount').textContent = filteredUsers.length;
+          } else {
+            document.getElementById('usersFilteredInfo').classList.add('hidden');
+          }
           document.getElementById('usersCurrentPage').textContent = data.pagination.page;
           document.getElementById('usersTotalPages').textContent = data.pagination.totalPages;
 
@@ -3179,12 +3276,12 @@
           // 生成页码
           renderUsersPageNumbers(data.pagination.page, data.pagination.totalPages);
 
-          if (data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">暂无用户</td></tr>';
+          if (filteredUsers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-slate-500">暂无用户</td></tr>';
             return;
           }
 
-          tbody.innerHTML = data.data.map((user, index) => {
+          tbody.innerHTML = filteredUsers.map((user, index) => {
             const globalIndex = (page - 1) * usersPageSize + index + 1;
             const isBanned = user.is_banned === 1;
             const statusHtml = isBanned 
@@ -3196,6 +3293,7 @@
               : `
                 <div class="flex gap-1 justify-center flex-wrap">
                   <button onclick="showGrantFreeSpinsModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold transition-colors" title="发放免费次数">🎁</button>
+                  <button onclick="showGrantTicketsModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors" title="发放入场券">🎟️</button>
                   <button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors" title="封禁用户">🚫</button>
                   <button onclick="unbindUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-semibold transition-colors" title="解绑用户">🔓</button>
                 </div>
@@ -3313,6 +3411,21 @@
     function changeUsersPageSize() {
       usersPageSize = parseInt(document.getElementById('usersPageSize').value);
       loadUsersList(1); // 重置到第一页
+    }
+    
+    // 🔥 搜索用户
+    function filterUsers() {
+      usersSearchFilter = document.getElementById('usersSearchInput').value.trim();
+      usersCurrentPage = 1;
+      loadUsersList(1);
+    }
+    
+    // 🔥 清除筛选
+    function clearUsersFilter() {
+      document.getElementById('usersSearchInput').value = '';
+      usersSearchFilter = '';
+      usersCurrentPage = 1;
+      loadUsersList(1);
     }
 
     async function exportUsersData() {
@@ -3510,7 +3623,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -4437,6 +4550,64 @@
         }
       } catch (error) {
         console.error('发放免费次数失败:', error);
+        showToast('发放失败，请重试', 'error');
+      }
+    }
+
+    // ========== 发放入场券功能 ==========
+    
+    // 显示发放入场券弹窗
+    function showGrantTicketsModal(linuxDoId, username) {
+      document.getElementById('ticketModalLinuxDoId').value = linuxDoId;
+      document.getElementById('ticketModalUsername').value = username;
+      document.getElementById('ticketModalCount').value = 1;
+      document.getElementById('ticketModalReason').value = '';
+      document.getElementById('grantTicketsModal').classList.remove('hidden');
+    }
+    
+    // 关闭弹窗
+    function closeGrantTicketsModal() {
+      document.getElementById('grantTicketsModal').classList.add('hidden');
+    }
+    
+    // 确认发放入场券
+    async function confirmGrantTickets() {
+      const linuxDoId = document.getElementById('ticketModalLinuxDoId').value;
+      const username = document.getElementById('ticketModalUsername').value;
+      const count = parseInt(document.getElementById('ticketModalCount').value);
+      const reason = document.getElementById('ticketModalReason').value || '管理员手动发放';
+      
+      if (!count || count <= 0 || count > 10) {
+        showToast('请输入有效的入场券数量（1-10）', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/grant-tickets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            linux_do_id: linuxDoId,
+            count: count,
+            reason: reason
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ 已为用户 "${username}" 发放 ${count} 张入场券`, 'success');
+          closeGrantTicketsModal();
+          
+          // 刷新用户列表
+          if (usersCurrentPage) {
+            loadUsersList(usersCurrentPage);
+          }
+        } else {
+          showToast(data.message || '发放失败', 'error');
+        }
+      } catch (error) {
+        console.error('发放入场券失败:', error);
         showToast('发放失败，请重试', 'error');
       }
     }

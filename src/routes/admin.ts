@@ -1525,6 +1525,46 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
 });
 
 /**
+ * 发放入场券
+ */
+app.post('/grant-tickets', requireAdmin, async (c) => {
+    const { linux_do_id, count, reason } = await c.req.json();
+
+    if (!linux_do_id) {
+        return c.json({ success: false, message: '参数错误：缺少用户ID' }, 400);
+    }
+
+    if (!count || typeof count !== 'number' || count <= 0 || count > 10) {
+        return c.json({ success: false, message: '入场券数量必须在1-10之间' }, 400);
+    }
+
+    try {
+        const user = userQueries.get.get(linux_do_id);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        // 调用添加入场券的服务函数
+        const { addTicket } = await import('../services/advanced-slot');
+        const result = addTicket(linux_do_id, count);
+
+        if (result.success) {
+            console.log(`[管理员] ✅ 发放入场券成功 - 用户: ${user.username}, 数量: ${result.granted || count}, 原因: ${reason || '管理员发放'}`);
+            return c.json({
+                success: true,
+                message: result.message || `成功发放 ${result.granted || count} 张入场券`,
+                data: { granted: result.granted || count }
+            });
+        } else {
+            return c.json({ success: false, message: result.message || '发放失败' }, 400);
+        }
+    } catch (error: any) {
+        console.error('[管理员] 发放入场券失败:', error);
+        return c.json({ success: false, message: '发放失败: ' + error.message }, 500);
+    }
+});
+
+/**
  * 给所有用户发放免费次数
  */
 app.post('/grant-free-spins-all', requireAdmin, async (c) => {
