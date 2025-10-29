@@ -20,10 +20,7 @@ import type {
     UserKunbeiStats,
     KunbeiGradientConfig,
 } from './types';
-import { addDailyLimits } from './migrations/add-daily-limits';
-import { addKunbeiLoanTables } from './migrations/add-kunbei-loan';
-import { up as addKunbeiGradient } from './migrations/add-kunbei-gradient';
-import { up as updateKunbeiDurationType } from './migrations/update-kunbei-duration-type';
+// 数据库迁移已整合到本文件中
 
 // 创建数据库连接
 export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
@@ -551,25 +548,115 @@ export function initDatabase() {
     }
     db.exec('CREATE INDEX IF NOT EXISTS idx_slot_records_mode ON slot_machine_records(slot_mode)');
 
+    // 用户每日进入高级场记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_advanced_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            entry_date TEXT NOT NULL,
+            entry_count INTEGER DEFAULT 0,
+            last_entry_time INTEGER,
+            UNIQUE(linux_do_id, entry_date)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_advanced_entries_date ON user_advanced_entries(entry_date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_advanced_entries_user ON user_advanced_entries(linux_do_id)');
+
+    // 用户每日入场券获得记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_daily_ticket_grants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            grant_date TEXT NOT NULL,
+            ticket_granted INTEGER DEFAULT 0,
+            fragment_granted INTEGER DEFAULT 0,
+            last_grant_time INTEGER,
+            UNIQUE(linux_do_id, grant_date)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_ticket_grants_date ON user_daily_ticket_grants(grant_date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_ticket_grants_user ON user_daily_ticket_grants(linux_do_id)');
+
+    // ========== 坤呗借款系统表 ==========
+
+    // 坤呗配置表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS kunbei_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            enabled INTEGER DEFAULT 1,
+            max_loan_amount INTEGER DEFAULT 50000000,
+            min_loan_amount INTEGER DEFAULT 5000000,
+            repay_multiplier REAL DEFAULT 2.5,
+            loan_duration_hours REAL DEFAULT 72,  -- 支持小数
+            early_repay_discount REAL DEFAULT 0.025,
+            overdue_penalty_hours INTEGER DEFAULT 60,
+            overdue_ban_advanced INTEGER DEFAULT 1,
+            max_active_loans INTEGER DEFAULT 1,
+            deduct_all_quota_on_overdue INTEGER DEFAULT 1,
+            updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
+        )
+    `);
+
+    // 用户借款记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_loans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            loan_amount INTEGER NOT NULL,
+            repay_amount INTEGER NOT NULL,
+            actual_repay_amount INTEGER,
+            status TEXT DEFAULT 'active',
+            borrowed_at INTEGER NOT NULL,
+            due_at INTEGER NOT NULL,
+            repaid_at INTEGER,
+            overdue_penalty_until INTEGER,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_linux_do_id ON user_loans(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_status ON user_loans(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_due_at ON user_loans(due_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_created_at ON user_loans(created_at)');
+
+    // 用户坤呗统计表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_kunbei_stats (
+            linux_do_id TEXT PRIMARY KEY,
+            total_borrowed INTEGER DEFAULT 0,
+            total_repaid INTEGER DEFAULT 0,
+            total_loans INTEGER DEFAULT 0,
+            repaid_loans INTEGER DEFAULT 0,
+            overdue_loans INTEGER DEFAULT 0,
+            credit_score INTEGER DEFAULT 100,
+            is_banned INTEGER DEFAULT 0,
+            last_borrow_date TEXT,
+            has_daily_buff INTEGER DEFAULT 0,
+            buff_multiplier REAL DEFAULT 2.5,
+            buff_used INTEGER DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+
+    // 坤呗梯度配置表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS kunbei_gradient_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            quota_threshold INTEGER NOT NULL,
+            max_loan_amount INTEGER NOT NULL,
+            priority INTEGER NOT NULL DEFAULT 0,
+            is_active BOOLEAN NOT NULL DEFAULT 1,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_kunbei_gradient_priority ON kunbei_gradient_configs(priority DESC)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_kunbei_gradient_active ON kunbei_gradient_configs(is_active)');
+
     console.log('✅ 数据库表结构创建完成');
 
-    // 先执行数据库迁移（添加可能缺失的字段）
-    try {
-        addDailyLimits(db);
-    } catch (error) {
-        console.warn('[迁移] 迁移执行失败:', error);
-    }
-
-    // 🔥 执行坤呗借款系统迁移
-    try {
-        addKunbeiLoanTables(db);
-        addKunbeiGradient(db);
-        updateKunbeiDurationType(db);
-    } catch (error) {
-        console.warn('[坤呗迁移] 迁移执行失败:', error);
-    }
-
-    // 迁移完成后再插入默认数据
+    // 插入默认数据
     insertDefaultData();
 
     console.log('✅ 数据库初始化完成（含高级场系统）');
@@ -604,6 +691,27 @@ function insertDefaultData() {
             )
             VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${Date.now()})
         `);
+
+        // 插入默认坤呗配置
+        db.exec(`
+            INSERT OR IGNORE INTO kunbei_config (
+                id, enabled, max_loan_amount, min_loan_amount, repay_multiplier,
+                loan_duration_hours, early_repay_discount, overdue_penalty_hours,
+                overdue_ban_advanced, max_active_loans, deduct_all_quota_on_overdue, updated_at
+            )
+            VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, ${Date.now()})
+        `);
+
+        // 插入默认坤呗梯度配置（仅在表为空时）
+        const existingConfigs = db.query('SELECT COUNT(*) as count FROM kunbei_gradient_configs').get() as { count: number };
+        if (existingConfigs.count === 0) {
+            db.exec(`
+                INSERT INTO kunbei_gradient_configs (quota_threshold, max_loan_amount, priority)
+                VALUES 
+                    (10000, 10000, 1),    -- 余额小于10000时，可借10000
+                    (100000, 100000, 2)   -- 余额小于100000时，可借100000
+            `);
+        }
 
         console.log('✅ 默认数据插入完成');
     } catch (error) {
