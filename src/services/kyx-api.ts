@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { kyxApiLimiter } from './rate-limiter';
 import { userCache } from './user-cache';
 import { searchCache } from './search-cache';
+import { userQueries } from '../database';
 
 export interface KyxUser {
     id: number;
@@ -547,6 +548,33 @@ export async function pushKeysToGroup(
             failedKeys: keys,
         };
     });
+}
+
+/**
+ * 获取用户额度
+ */
+export function getUserQuota(linuxDoId: string): number {
+    try {
+        // 从本地数据库获取用户信息
+        const user = userQueries.get.get(linuxDoId);
+        if (!user) {
+            console.warn(`[getUserQuota] 用户不存在: ${linuxDoId}`);
+            return 0;
+        }
+        
+        // 从缓存中获取用户信息（同步）
+        const cachedUser = userCache.get(user.kyx_user_id);
+        if (cachedUser) {
+            return cachedUser.quota || 0;
+        }
+        
+        // 如果缓存中没有，返回0（实际场景中应该先确保用户数据已加载）
+        console.warn(`[getUserQuota] 用户 ${linuxDoId} 的额度信息未缓存`);
+        return 0;
+    } catch (error: any) {
+        console.error(`[getUserQuota] 获取用户额度失败:`, error);
+        return 0;
+    }
 }
 
 /**
