@@ -1306,6 +1306,147 @@
     </div>
   </div>
 
+  <!-- 坤呗确认对话框 -->
+  <div id="kunbeiConfirmDialog" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[80] p-4" onclick="if(event.target === this) kunbeiConfirmResolve(false)">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl transform transition-all">
+      <div class="p-6">
+        <!-- 图标 -->
+        <div class="text-center mb-4">
+          <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-2xl">
+            <span class="text-3xl">🐔</span>
+          </div>
+        </div>
+        
+        <!-- 标题 -->
+        <h3 id="kunbeiConfirmTitle" class="text-xl font-bold text-center mb-4 text-slate-800">确认操作</h3>
+        
+        <!-- 内容 -->
+        <div id="kunbeiConfirmContent" class="text-center mb-6 text-slate-600 space-y-2">
+          <!-- 动态内容 -->
+        </div>
+        
+        <!-- 按钮 -->
+        <div class="flex gap-3">
+          <button onclick="kunbeiConfirmResolve(false)" class="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-medium transition-colors">
+            取消
+          </button>
+          <button onclick="kunbeiConfirmResolve(true)" class="flex-1 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-xl font-bold transition-all transform hover:scale-105">
+            确认
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 坤呗规则弹窗 -->
+  <div id="kunbeiRulesModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[75] p-4" onclick="if(event.target === this) document.getElementById('kunbeiRulesModal').classList.add('hidden')">
+    <div class="bg-white rounded-2xl max-w-lg w-full max-h-[80vh] overflow-hidden shadow-2xl">
+      <!-- 标题 -->
+      <div class="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 px-6 py-4 relative">
+        <button onclick="document.getElementById('kunbeiRulesModal').classList.add('hidden')" class="absolute top-4 right-4 text-white/80 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <div class="text-center">
+          <div class="text-4xl mb-2">🐔</div>
+          <h3 class="text-xl font-bold text-white">坤呗使用规则</h3>
+        </div>
+      </div>
+      
+      <!-- 内容 -->
+      <div class="p-6 overflow-y-auto max-h-[60vh] space-y-6">
+        <!-- 借款规则 -->
+        <div class="bg-blue-50 rounded-xl p-4">
+          <h4 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <span class="text-xl">💰</span> 借款规则
+          </h4>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2">
+              <span class="text-blue-500">•</span>
+              <span>借款范围: <span id="rulesLoanRange" class="font-semibold text-blue-600">-</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-500">•</span>
+              <span>还款倍数: <span id="rulesRepayMultiplier" class="font-semibold text-orange-600">-</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-500">•</span>
+              <span>借款期限: <span id="rulesLoanDuration" class="font-semibold">-</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-500">•</span>
+              <span class="font-semibold text-purple-600">每日首次借款获得抽奖倍率 ×2.5 🎰</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- 还款优惠 -->
+        <div class="bg-green-50 rounded-xl p-4">
+          <h4 class="font-bold text-green-800 mb-3 flex items-center gap-2">
+            <span class="text-xl">✨</span> 还款优惠
+          </h4>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2">
+              <span class="text-green-500">•</span>
+              <span>提前还款: 免除<span id="rulesEarlyDiscount" class="font-semibold text-green-600">-</span>（返现）</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-500">•</span>
+              <span>按时还款: 信用分<span class="font-semibold text-green-600">+5</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-green-500">•</span>
+              <span>提前还款: 信用分<span class="font-semibold text-green-600">+10</span></span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- 逾期后果 -->
+        <div class="bg-red-50 rounded-xl p-4">
+          <h4 class="font-bold text-red-800 mb-3 flex items-center gap-2">
+            <span class="text-xl">⚠️</span> 逾期后果
+          </h4>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2">
+              <span class="text-red-500">•</span>
+              <span>禁止进入高级场<span id="rulesPenaltyHours" class="font-semibold text-red-600">-</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-500">•</span>
+              <span>信用分<span class="font-semibold text-red-600">-10</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-red-500">•</span>
+              <span>需全额还款（无优惠）</span>
+            </li>
+          </ul>
+        </div>
+        
+        <!-- 信用分 -->
+        <div class="bg-purple-50 rounded-xl p-4">
+          <h4 class="font-bold text-purple-800 mb-3 flex items-center gap-2">
+            <span class="text-xl">⭐</span> 信用分
+          </h4>
+          <ul class="space-y-2 text-sm text-slate-700">
+            <li class="flex items-start gap-2">
+              <span class="text-purple-500">•</span>
+              <span>初始: <span class="font-semibold text-purple-600">100分</span></span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-500">•</span>
+              <span>低于<span class="font-semibold text-red-600">60分</span>将禁用坤呗功能</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-purple-500">•</span>
+              <span>按时还款可提升信用分</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 待发放奖金弹窗 -->
   <div id="pendingRewardsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
@@ -5429,6 +5570,40 @@
     let kunbeiData = null;
     let kunbeiCurrentAmount = 25000000;  // 默认$50
     let kunbeiConfig = null;
+    let kunbeiConfirmResolver = null;  // 用于处理确认对话框的Promise
+    
+    // 自定义确认对话框
+    function kunbeiConfirm(title, content) {
+      return new Promise((resolve) => {
+        kunbeiConfirmResolver = resolve;
+        document.getElementById('kunbeiConfirmTitle').textContent = title;
+        
+        // 处理内容 - 支持HTML
+        if (typeof content === 'object') {
+          // 如果是对象，构建HTML内容
+          const contentHtml = Object.entries(content).map(([key, value]) => {
+            return `<div class="flex justify-between items-center py-1">
+              <span class="text-slate-600">${key}:</span>
+              <span class="font-semibold ${value.class || ''}">${value.text || value}</span>
+            </div>`;
+          }).join('');
+          document.getElementById('kunbeiConfirmContent').innerHTML = contentHtml;
+        } else {
+          document.getElementById('kunbeiConfirmContent').innerHTML = content;
+        }
+        
+        document.getElementById('kunbeiConfirmDialog').classList.remove('hidden');
+      });
+    }
+    
+    // 确认对话框回调
+    function kunbeiConfirmResolve(result) {
+      document.getElementById('kunbeiConfirmDialog').classList.add('hidden');
+      if (kunbeiConfirmResolver) {
+        kunbeiConfirmResolver(result);
+        kunbeiConfirmResolver = null;
+      }
+    }
     
     // 加载坤呗状态（用于更新悬浮按钮）
     async function loadKunbeiStatus() {
@@ -5622,8 +5797,16 @@
       }
       
       const loanUsd = kunbeiCurrentAmount / 500000;
+      const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
       
-      if (!confirm(`确认借款 $${loanUsd.toFixed(2)} 吗？\n\n需还款: $${(loanUsd * kunbeiConfig.repay_multiplier).toFixed(2)}\n期限: ${kunbeiConfig.loan_duration_hours}小时`)) {
+      const confirmed = await kunbeiConfirm('确认借款', {
+        '借款金额': { text: `$${loanUsd.toFixed(2)}`, class: 'text-green-600' },
+        '需还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-red-600' },
+        '借款期限': { text: `${kunbeiConfig.loan_duration_hours}小时` },
+        '提前还款优惠': { text: `${(kunbeiConfig.early_repay_discount * 100).toFixed(0)}%`, class: 'text-blue-600' }
+      });
+      
+      if (!confirmed) {
         return;
       }
       
@@ -5700,9 +5883,26 @@
       }
       
       const loan = kunbeiData.active_loan;
+      const loanUsd = loan.loan_amount / 500000;
       const repayUsd = loan.repay_amount / 500000;
+      const now = Date.now();
+      const isEarly = now < loan.due_at;
       
-      if (!confirm(`确认还款 $${repayUsd.toFixed(2)} 吗？`)) {
+      let confirmContent = {
+        '借款金额': { text: `$${loanUsd.toFixed(2)}` },
+        '应还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
+      };
+      
+      if (isEarly) {
+        const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
+        const actualRepay = (loan.repay_amount - cashback) / 500000;
+        confirmContent['提前还款'] = { text: `$${actualRepay.toFixed(2)}`, class: 'text-green-600' };
+        confirmContent['返现金额'] = { text: `$${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
+      }
+      
+      const confirmed = await kunbeiConfirm('确认还款', confirmContent);
+      
+      if (!confirmed) {
         return;
       }
       
@@ -5788,27 +5988,16 @@
     // 显示规则
     function showKunbeiRules() {
       if (!kunbeiConfig) return;
-      alert(`🐔 坤呗使用规则
-
-【借款规则】
-• 借款范围: $${kunbeiConfig.min_loan_amount_usd} - $${kunbeiConfig.max_loan_amount_usd}
-• 还款倍数: ${kunbeiConfig.repay_multiplier}倍
-• 借款期限: ${kunbeiConfig.loan_duration_hours}小时
-
-【还款优惠】
-• 提前还款: 免除${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%（返现）
-• 按时还款: 信用分+5
-• 提前还款: 信用分+10
-
-【逾期后果】
-• 禁止进入高级场${kunbeiConfig.overdue_penalty_hours}小时
-• 信用分-10
-• 需全额还款（无优惠）
-
-【信用分】
-• 初始: 100分
-• 低于60分将禁用坤呗功能
-• 按时还款可提升信用分`);
+      
+      // 更新规则内容
+      document.getElementById('rulesLoanRange').textContent = `$${kunbeiConfig.min_loan_amount_usd} - $${kunbeiConfig.max_loan_amount_usd}`;
+      document.getElementById('rulesRepayMultiplier').textContent = `${kunbeiConfig.repay_multiplier}倍`;
+      document.getElementById('rulesLoanDuration').textContent = `${kunbeiConfig.loan_duration_hours}小时`;
+      document.getElementById('rulesEarlyDiscount').textContent = `${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%`;
+      document.getElementById('rulesPenaltyHours').textContent = `${kunbeiConfig.overdue_penalty_hours}小时`;
+      
+      // 显示模态框
+      document.getElementById('kunbeiRulesModal').classList.remove('hidden');
     }
   </script>
 </body>
