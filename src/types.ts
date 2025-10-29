@@ -206,6 +206,7 @@ export interface KunbeiConfig {
     overdue_penalty_hours: number;        // 逾期惩罚时长（小时）
     overdue_ban_advanced: number;         // 逾期是否禁止高级场
     max_active_loans: number;             // 最多同时借款数
+    deduct_all_quota_on_overdue?: number; // 逾期是否扣除所有额度
     updated_at: number;
 }
 
@@ -241,4 +242,15 @@ export interface UserKunbeiStats {
     buff_multiplier: number;              // buff倍率
     buff_used: number;                    // buff是否已使用
     updated_at: number;
+}
+
+// 坤呗梯度配置
+export interface KunbeiGradientConfig {
+    id?: number;
+    quota_threshold: number;              // 额度阈值
+    max_loan_amount: number;              // 最大可借金额
+    priority: number;                     // 优先级
+    is_active: number;                    // 是否启用
+    created_at?: number;
+    updated_at?: number;
 }

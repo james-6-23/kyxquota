@@ -3,7 +3,8 @@
  */
 
 import { kunbeiQueries, userQueries } from '../database';
-import type { KunbeiConfig, UserLoan, UserKunbeiStats } from '../types';
+import type { KunbeiConfig, UserLoan, UserKunbeiStats, KunbeiGradientConfig } from '../types';
+import { getUserQuota, deductQuota } from './kyx-api';
 
 /**
  * 获取坤呗配置
@@ -41,6 +42,7 @@ export function getUserKunbeiStatus(linuxDoId: string): {
     can_borrow: boolean;
     ban_reason?: string;
     config: KunbeiConfig;
+    max_loan_amount?: number;
 } {
     const config = getKunbeiConfig();
 
@@ -87,8 +89,111 @@ export function getUserKunbeiStatus(linuxDoId: string): {
         stats,
         can_borrow,
         ban_reason,
-        config
+        config,
+        max_loan_amount: calculateUserMaxLoanAmount(linuxDoId)
     };
+}
+
+/**
+ * 计算用户的最大可借金额（基于梯度配置）
+ */
+export function calculateUserMaxLoanAmount(linuxDoId: string): number {
+    // 获取用户当前额度
+    const userQuota = getUserQuota(linuxDoId);
+    if (!userQuota) return 0;
+    
+    // 获取所有激活的梯度配置
+    const gradientConfigs = kunbeiQueries.getGradientConfigs.all();
+    if (!gradientConfigs || gradientConfigs.length === 0) {
+        // 如果没有梯度配置，使用默认配置
+        const config = getKunbeiConfig();
+        return config.max_loan_amount;
+    }
+    
+    // 根据用户额度匹配梯度配置（从高优先级到低优先级）
+    for (const gradient of gradientConfigs) {
+        if (userQuota < gradient.quota_threshold) {
+            return gradient.max_loan_amount;
+        }
+    }
+    
+    // 如果用户额度超过所有阈值，使用系统默认最大借款额度
+    const config = getKunbeiConfig();
+    return config.max_loan_amount;
+}
+
+/**
+ * 获取所有梯度配置
+ */
+export function getAllGradientConfigs(): KunbeiGradientConfig[] {
+    return kunbeiQueries.getAllGradientConfigs.all();
+}
+
+/**
+ * 创建梯度配置
+ */
+export function createGradientConfig(config: {
+    quota_threshold: number;
+    max_loan_amount: number;
+    priority: number;
+    is_active: number;
+}): { success: boolean; message: string; data?: any } {
+    try {
+        const now = Date.now();
+        kunbeiQueries.insertGradientConfig.run(
+            config.quota_threshold,
+            config.max_loan_amount,
+            config.priority,
+            config.is_active,
+            now,
+            now
+        );
+        return { success: true, message: '梯度配置创建成功' };
+    } catch (error) {
+        console.error('[坤呗] 创建梯度配置失败:', error);
+        return { success: false, message: '创建失败：' + error.message };
+    }
+}
+
+/**
+ * 更新梯度配置
+ */
+export function updateGradientConfig(
+    id: number,
+    config: {
+        quota_threshold: number;
+        max_loan_amount: number;
+        priority: number;
+        is_active: number;
+    }
+): { success: boolean; message: string } {
+    try {
+        kunbeiQueries.updateGradientConfig.run(
+            config.quota_threshold,
+            config.max_loan_amount,
+            config.priority,
+            config.is_active,
+            Date.now(),
+            id
+        );
+        return { success: true, message: '梯度配置更新成功' };
+    } catch (error) {
+        console.error('[坤呗] 更新梯度配置失败:', error);
+        return { success: false, message: '更新失败：' + error.message };
+    }
+}
+
+/**
+ * 删除梯度配置
+ */
+export function deleteGradientConfig(id: number): { success: boolean; message: string } {
+    try {
+        kunbeiQueries.deleteGradientConfig.run(id);
+        return { success: true, message: '梯度配置删除成功' };
+    } catch (error) {
+        console.error('[坤呗] 删除梯度配置失败:', error);
+        return { success: false, message: '删除失败：' + error.message };
+    }
 }
 
 /**
@@ -107,11 +212,12 @@ export function borrowLoan(
         return { success: false, message: '坤呗功能已关闭' };
     }
 
-    // 2. 验证金额范围
-    if (amount < config.min_loan_amount || amount > config.max_loan_amount) {
+    // 2. 验证金额范围（使用梯度配置）
+    const maxLoanAmount = calculateUserMaxLoanAmount(linuxDoId);
+    if (amount < config.min_loan_amount || amount > maxLoanAmount) {
         return {
             success: false,
-            message: `借款金额必须在 $${(config.min_loan_amount / 500000).toFixed(0)} - $${(config.max_loan_amount / 500000).toFixed(0)} 之间`
+            message: `借款金额必须在 $${(config.min_loan_amount / 500000).toFixed(0)} - $${(maxLoanAmount / 500000).toFixed(0)} 之间`
         };
     }
 
@@ -244,8 +350,19 @@ export function repayLoan(
     }
 
     kunbeiQueries.upsertStats.run(
-        linuxDoId, 0, actualRepayAmount, 0, 1, 0, newScore, 0, now,
-        0, actualRepayAmount, 0, 1, 0, newScore, now
+        linuxDoId, 0, actualRepayAmount, 0, 1, 0, newScore, 0,
+        stats?.last_borrow_date || null,  // last_borrow_date
+        0,                                 // has_daily_buff
+        2.5,                               // buff_multiplier
+        0,                                 // buff_used
+        now,
+        // ON CONFLICT 部分
+        0, actualRepayAmount, 0, 1, 0, newScore,
+        stats?.last_borrow_date || null,
+        0,
+        2.5,
+        0,
+        now
     );
 
     console.log(`[坤呗] 用户 ${loan.username} 还款 $${(actualRepayAmount / 500000).toFixed(2)}${cashback > 0 ? `（返现 $${(cashback / 500000).toFixed(2)}）` : ''}`);
@@ -271,7 +388,7 @@ export function repayLoan(
 /**
  * 检查并处理逾期借款
  */
-export function checkOverdueLoans(): number {
+export async function checkOverdueLoans(): Promise<number> {
     const config = getKunbeiConfig();
     const now = Date.now();
     const activeLoans = kunbeiQueries.getActiveLoans.all();
@@ -302,13 +419,38 @@ export function checkOverdueLoans(): number {
             );
 
             // 更新逾期统计
+            const overdueStats = kunbeiQueries.getStats.get(loan.linux_do_id);
             kunbeiQueries.upsertStats.run(
-                loan.linux_do_id, 0, 0, 0, 0, 1, 90, 0, now,
-                0, 0, 0, 0, 1, 90, now
+                loan.linux_do_id, 0, 0, 0, 0, 1, 90, 0,
+                overdueStats?.last_borrow_date || null,  // last_borrow_date
+                0,                                        // has_daily_buff
+                2.5,                                      // buff_multiplier
+                0,                                        // buff_used
+                now,
+                // ON CONFLICT 部分
+                0, 0, 0, 0, 1, 90,
+                overdueStats?.last_borrow_date || null,
+                0,
+                2.5,
+                0,
+                now
             );
 
             overdueCount++;
             console.log(`[坤呗] 借款逾期 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}`);
+            
+            // 🔥 如果配置启用了逾期扣除所有额度
+            if (config.deduct_all_quota_on_overdue) {
+                const userQuota = getUserQuota(loan.linux_do_id);
+                if (userQuota > 0) {
+                    const result = await deductQuota(loan.linux_do_id, userQuota);
+                    if (result.success) {
+                        console.log(`[坤呗] 逾期扣除用户 ${loan.username} 所有额度 $${(userQuota / 500000).toFixed(2)}`);
+                    } else {
+                        console.error(`[坤呗] 逾期扣除额度失败: ${result.message}`);
+                    }
+                }
+            }
         }
     }
 

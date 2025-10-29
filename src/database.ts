@@ -18,9 +18,11 @@ import type {
     KunbeiConfig,
     UserLoan,
     UserKunbeiStats,
+    KunbeiGradientConfig,
 } from './types';
 import { addDailyLimits } from './migrations/add-daily-limits';
 import { addKunbeiLoanTables } from './migrations/add-kunbei-loan';
+import { up as addKunbeiGradient } from './migrations/add-kunbei-gradient';
 
 // 创建数据库连接
 export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
@@ -560,6 +562,7 @@ export function initDatabase() {
     // 🔥 执行坤呗借款系统迁移
     try {
         addKunbeiLoanTables(db);
+        addKunbeiGradient(db);
     } catch (error) {
         console.warn('[坤呗迁移] 迁移执行失败:', error);
     }
@@ -1136,6 +1139,29 @@ function initQueries() {
         ),
         useBuff: db.query(
             'UPDATE user_kunbei_stats SET buff_used = 1, updated_at = ? WHERE linux_do_id = ?'
+        ),
+        
+        // 梯度配置相关查询
+        getGradientConfigs: db.query<KunbeiGradientConfig, never>(
+            'SELECT * FROM kunbei_gradient_configs WHERE is_active = 1 ORDER BY priority DESC'
+        ),
+        getGradientConfigById: db.query<KunbeiGradientConfig, number>(
+            'SELECT * FROM kunbei_gradient_configs WHERE id = ?'
+        ),
+        getAllGradientConfigs: db.query<KunbeiGradientConfig, never>(
+            'SELECT * FROM kunbei_gradient_configs ORDER BY priority DESC'
+        ),
+        insertGradientConfig: db.query(
+            `INSERT INTO kunbei_gradient_configs (quota_threshold, max_loan_amount, priority, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        ),
+        updateGradientConfig: db.query(
+            `UPDATE kunbei_gradient_configs 
+             SET quota_threshold = ?, max_loan_amount = ?, priority = ?, is_active = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        deleteGradientConfig: db.query(
+            'DELETE FROM kunbei_gradient_configs WHERE id = ?'
         ),
     };
 

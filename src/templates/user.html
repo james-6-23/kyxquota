@@ -1364,7 +1364,7 @@
           <ul class="space-y-2 text-sm text-slate-700">
             <li class="flex items-start gap-2">
               <span class="text-blue-500">•</span>
-              <span>借款范围: <span id="rulesLoanRange" class="font-semibold text-blue-600">-</span></span>
+              <span>您的最大可借额度: <span id="rulesUserMaxLoan" class="font-semibold text-blue-600">-</span></span>
             </li>
             <li class="flex items-start gap-2">
               <span class="text-blue-500">•</span>
@@ -1377,6 +1377,10 @@
             <li class="flex items-start gap-2">
               <span class="text-blue-500">•</span>
               <span class="font-semibold text-purple-600">每日首次借款获得抽奖倍率 ×2.5 🎰</span>
+            </li>
+            <li class="flex items-start gap-2">
+              <span class="text-blue-500">•</span>
+              <span class="text-xs text-slate-500">💡 最大可借额度根据您的余额动态调整</span>
             </li>
           </ul>
         </div>
@@ -5705,7 +5709,7 @@
     function updateKunbeiUI() {
       if (!kunbeiData || !kunbeiConfig) return;
       
-      const maxLoanUsd = kunbeiConfig.max_loan_amount / 500000;
+      const maxLoanUsd = kunbeiData.max_loan_amount ? kunbeiData.max_loan_amount / 500000 : kunbeiConfig.max_loan_amount / 500000;
       const activeLoanUsd = kunbeiData.active_loan ? kunbeiData.active_loan.loan_amount / 500000 : 0;
       const availableUsd = maxLoanUsd - activeLoanUsd;
       const usagePercent = maxLoanUsd > 0 ? (activeLoanUsd / maxLoanUsd * 100).toFixed(0) : 0;
@@ -5726,7 +5730,7 @@
       const slider = document.getElementById('kunbeiAmountSlider');
       if (slider && kunbeiConfig) {
         slider.min = kunbeiConfig.min_loan_amount / 500000;
-        slider.max = kunbeiConfig.max_loan_amount / 500000;
+        slider.max = maxLoanUsd;
       }
       
       updateKunbeiPreview();
@@ -5746,7 +5750,7 @@
     function setKunbeiAmount(amount) {
       if (!kunbeiConfig) return;
       if (amount === 'max') {
-        kunbeiCurrentAmount = kunbeiConfig.max_loan_amount;
+        kunbeiCurrentAmount = kunbeiData.max_loan_amount || kunbeiConfig.max_loan_amount;
       } else {
         kunbeiCurrentAmount = amount;
       }
@@ -5758,9 +5762,10 @@
     function adjustKunbeiAmount(delta) {
       if (!kunbeiConfig) return;
       const deltaInSats = delta * 1000;
+      const maxLoan = kunbeiData.max_loan_amount || kunbeiConfig.max_loan_amount;
       kunbeiCurrentAmount = Math.max(
         kunbeiConfig.min_loan_amount,
-        Math.min(kunbeiConfig.max_loan_amount, kunbeiCurrentAmount + deltaInSats)
+        Math.min(maxLoan, kunbeiCurrentAmount + deltaInSats)
       );
       document.getElementById('kunbeiAmountSlider').value = kunbeiCurrentAmount / 500000;
       updateKunbeiPreview();
@@ -5831,6 +5836,18 @@
           
           closeKunbeiModal();
           loadQuota();
+          
+          // 🔥 更新老虎机页面的额度显示
+          if (currentMode === 'entertain' && slotUserData) {
+            // 增加额度
+            slotUserData.quota = (slotUserData.quota || 0) + kunbeiCurrentAmount;
+            // 立即更新UI显示
+            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const slotQuotaEl = document.getElementById('slotQuota');
+            const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
+            if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
+            if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -5917,6 +5934,19 @@
           showToast(data.message, 'success');
           closeKunbeiModal();
           loadQuota();
+          
+          // 🔥 更新老虎机页面的额度显示
+          if (currentMode === 'entertain' && slotUserData && data.data) {
+            // 扣除实际还款金额
+            const actualRepayAmount = data.data.actual_amount || loan.repay_amount;
+            slotUserData.quota = Math.max(0, (slotUserData.quota || 0) - actualRepayAmount);
+            // 立即更新UI显示
+            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const slotQuotaEl = document.getElementById('slotQuota');
+            const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
+            if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
+            if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -5999,7 +6029,8 @@
       if (!kunbeiConfig) return;
       
       // 更新规则内容
-      document.getElementById('rulesLoanRange').textContent = `$${kunbeiConfig.min_loan_amount_usd} - $${kunbeiConfig.max_loan_amount_usd}`;
+      const maxLoanUsd = kunbeiData.max_loan_amount ? kunbeiData.max_loan_amount / 500000 : kunbeiConfig.max_loan_amount / 500000;
+      document.getElementById('rulesUserMaxLoan').textContent = `$${maxLoanUsd.toFixed(0)}`;
       document.getElementById('rulesRepayMultiplier').textContent = `${kunbeiConfig.repay_multiplier}倍`;
       document.getElementById('rulesLoanDuration').textContent = `${kunbeiConfig.loan_duration_hours}小时`;
       document.getElementById('rulesEarlyDiscount').textContent = `${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%`;

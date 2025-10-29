@@ -2523,6 +2523,63 @@
             </div>
           </div>
           
+          <!-- 梯度配置卡片 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">📊 梯度额度配置</h3>
+              <button onclick="showGradientConfigModal()" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-sm">
+                ➕ 添加梯度
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="border-b border-slate-200">
+                    <th class="text-left py-3 px-4 font-semibold text-slate-700">额度阈值</th>
+                    <th class="text-left py-3 px-4 font-semibold text-slate-700">最大可借金额</th>
+                    <th class="text-left py-3 px-4 font-semibold text-slate-700">优先级</th>
+                    <th class="text-left py-3 px-4 font-semibold text-slate-700">状态</th>
+                    <th class="text-center py-3 px-4 font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="gradientConfigsTable">
+                  <tr>
+                    <td colspan="5" class="text-center py-8 text-slate-500">
+                      <div class="text-4xl mb-2">📋</div>
+                      <p>暂无梯度配置</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+              <p class="text-sm text-amber-800">
+                <strong>💡 说明：</strong>系统会根据用户当前额度匹配合适的梯度。例如：额度小于10000时，可借10000；额度小于100000时，可借100000。
+              </p>
+            </div>
+          </div>
+          
+          <!-- 逾期扣除配置 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">⚡ 逾期惩罚配置</h3>
+            
+            <div class="flex items-center gap-4">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="deductAllQuotaOnOverdue" class="w-5 h-5 rounded border-slate-300 text-red-600 focus:ring-red-500">
+                <span class="text-slate-700 font-medium">逾期时扣除用户所有额度</span>
+              </label>
+              <span class="text-sm text-slate-500">（勾选后，用户逾期时将扣除其全部额度作为惩罚）</span>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button onclick="saveOverdueConfig()" class="px-6 py-2 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                💾 保存惩罚配置
+              </button>
+            </div>
+          </div>
+          
           <!-- 统计卡片 -->
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
@@ -5603,6 +5660,11 @@
           document.getElementById('kunbeiDuration').value = config.loan_duration_hours;
           document.getElementById('kunbeiEarlyDiscount').value = config.early_repay_discount;
           document.getElementById('kunbeiOverduePenalty').value = config.overdue_penalty_hours;
+          
+          // 设置逾期扣除配置
+          if (config.deduct_all_quota_on_overdue !== undefined) {
+            document.getElementById('deductAllQuotaOnOverdue').checked = !!config.deduct_all_quota_on_overdue;
+          }
         }
         
         // 加载借款记录
@@ -5612,6 +5674,9 @@
         if (loansData.success) {
           renderKunbeiLoansTable(loansData.data.loans, loansData.data.stats);
         }
+        
+        // 加载梯度配置
+        loadGradientConfigs();
       } catch (error) {
         console.error('加载坤呗数据失败:', error);
         showToast('加载失败', 'error');
@@ -5728,6 +5793,233 @@
       } catch (error) {
         console.error('豁免失败:', error);
         showToast('操作失败', 'error');
+      }
+    }
+    
+    // ========== 坤呗梯度配置管理 ==========
+    async function loadGradientConfigs() {
+      try {
+        const res = await fetch('/api/admin/kunbei/gradient-configs');
+        const data = await res.json();
+        
+        if (data.success && data.data) {
+          renderGradientConfigsTable(data.data);
+        }
+      } catch (error) {
+        console.error('加载梯度配置失败:', error);
+      }
+    }
+    
+    function renderGradientConfigsTable(configs) {
+      const tbody = document.getElementById('gradientConfigsTable');
+      
+      if (!configs || configs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="text-center py-8 text-slate-500">
+              <div class="text-4xl mb-2">📋</div>
+              <p>暂无梯度配置</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      tbody.innerHTML = configs.map(config => `
+        <tr class="border-b border-slate-100 hover:bg-slate-50">
+          <td class="px-4 py-3">
+            <span class="font-semibold text-slate-900">$${(config.quota_threshold / 500000).toFixed(2)}</span>
+            <div class="text-xs text-slate-500">额度小于此值</div>
+          </td>
+          <td class="px-4 py-3">
+            <span class="font-semibold text-green-600">$${(config.max_loan_amount / 500000).toFixed(2)}</span>
+            <div class="text-xs text-slate-500">最大可借</div>
+          </td>
+          <td class="px-4 py-3">
+            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${config.priority}</span>
+          </td>
+          <td class="px-4 py-3">
+            ${config.is_active 
+              ? '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 启用</span>'
+              : '<span class="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-semibold">❌ 禁用</span>'
+            }
+          </td>
+          <td class="px-4 py-3 text-center">
+            <button onclick="editGradientConfig(${JSON.stringify(config).replace(/"/g, '&quot;')})" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold mr-1">编辑</button>
+            <button onclick="deleteGradientConfig(${config.id})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-semibold">删除</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    function showGradientConfigModal(config = null) {
+      const isEdit = !!config;
+      const modalHtml = `
+        <div id="gradientConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div class="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4">
+            <h3 class="text-xl font-bold text-slate-900 mb-4">${isEdit ? '编辑梯度配置' : '添加梯度配置'}</h3>
+            
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">额度阈值（美元）</label>
+                <input type="number" id="gradientThreshold" value="${config ? config.quota_threshold / 500000 : ''}" 
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" 
+                  placeholder="例如：10000">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">最大可借金额（美元）</label>
+                <input type="number" id="gradientMaxLoan" value="${config ? config.max_loan_amount / 500000 : ''}"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="例如：10000">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">优先级</label>
+                <input type="number" id="gradientPriority" value="${config ? config.priority : 0}"
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="数字越大优先级越高">
+              </div>
+              
+              <div>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="gradientActive" ${!config || config.is_active ? 'checked' : ''}
+                    class="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500">
+                  <span class="text-slate-700 font-medium">启用此配置</span>
+                </label>
+              </div>
+            </div>
+            
+            <div class="flex gap-3 mt-6">
+              <button onclick="closeGradientConfigModal()" 
+                class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">
+                取消
+              </button>
+              <button onclick="saveGradientConfig(${config ? config.id : 'null'})" 
+                class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">
+                ${isEdit ? '更新' : '添加'}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    function editGradientConfig(config) {
+      showGradientConfigModal(config);
+    }
+    
+    function closeGradientConfigModal() {
+      const modal = document.getElementById('gradientConfigModal');
+      if (modal) modal.remove();
+    }
+    
+    async function saveGradientConfig(configId) {
+      try {
+        const threshold = parseFloat(document.getElementById('gradientThreshold').value);
+        const maxLoan = parseFloat(document.getElementById('gradientMaxLoan').value);
+        const priority = parseInt(document.getElementById('gradientPriority').value) || 0;
+        const isActive = document.getElementById('gradientActive').checked ? 1 : 0;
+        
+        if (!threshold || !maxLoan) {
+          showToast('请填写完整信息', 'error');
+          return;
+        }
+        
+        const data = {
+          quota_threshold: threshold * 500000,
+          max_loan_amount: maxLoan * 500000,
+          priority: priority,
+          is_active: isActive
+        };
+        
+        const url = configId 
+          ? `/api/admin/kunbei/gradient-configs/${configId}`
+          : '/api/admin/kunbei/gradient-configs';
+          
+        const method = configId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast(configId ? '更新成功' : '添加成功', 'success');
+          closeGradientConfigModal();
+          loadGradientConfigs();
+        } else {
+          showToast(result.message || '操作失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存梯度配置失败:', error);
+        showToast('操作失败', 'error');
+      }
+    }
+    
+    async function deleteGradientConfig(configId) {
+      if (!confirm('确定要删除此梯度配置吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/kunbei/gradient-configs/${configId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('删除成功', 'success');
+          loadGradientConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除梯度配置失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+    
+    // 保存逾期扣除配置
+    async function saveOverdueConfig() {
+      try {
+        const deductAll = document.getElementById('deductAllQuotaOnOverdue').checked;
+        
+        // 获取当前配置
+        const configRes = await fetch('/api/admin/kunbei/config');
+        const configData = await configRes.json();
+        
+        if (!configData.success) {
+          showToast('获取配置失败', 'error');
+          return;
+        }
+        
+        // 更新配置
+        const config = configData.data;
+        config.deduct_all_quota_on_overdue = deductAll ? 1 : 0;
+        
+        const res = await fetch('/api/admin/kunbei/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('逾期惩罚配置已保存', 'success');
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存逾期配置失败:', error);
+        showToast('保存失败', 'error');
       }
     }
 

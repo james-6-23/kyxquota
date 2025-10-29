@@ -2311,5 +2311,80 @@ app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {
     }
 });
 
+/**
+ * 获取坤呗梯度配置列表
+ */
+app.get('/kunbei/gradient-configs', requireAdmin, async (c) => {
+    try {
+        const { getAllGradientConfigs } = await import('../services/kunbei');
+        const configs = getAllGradientConfigs();
+        return c.json({ success: true, data: configs });
+    } catch (error: any) {
+        console.error('[坤呗管理] 获取梯度配置失败:', error);
+        return c.json({ success: false, message: '获取梯度配置失败' }, 500);
+    }
+});
+
+/**
+ * 创建坤呗梯度配置
+ */
+app.post('/kunbei/gradient-configs', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { createGradientConfig } = await import('../services/kunbei');
+        
+        const result = createGradientConfig({
+            quota_threshold: body.quota_threshold,
+            max_loan_amount: body.max_loan_amount,
+            priority: body.priority || 0,
+            is_active: body.is_active !== undefined ? body.is_active : 1
+        });
+        
+        return c.json(result);
+    } catch (error: any) {
+        console.error('[坤呗管理] 创建梯度配置失败:', error);
+        return c.json({ success: false, message: '创建梯度配置失败' }, 500);
+    }
+});
+
+/**
+ * 更新坤呗梯度配置
+ */
+app.put('/kunbei/gradient-configs/:id', requireAdmin, async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { updateGradientConfig } = await import('../services/kunbei');
+        
+        const result = updateGradientConfig(id, {
+            quota_threshold: body.quota_threshold,
+            max_loan_amount: body.max_loan_amount,
+            priority: body.priority || 0,
+            is_active: body.is_active !== undefined ? body.is_active : 1
+        });
+        
+        return c.json(result);
+    } catch (error: any) {
+        console.error('[坤呗管理] 更新梯度配置失败:', error);
+        return c.json({ success: false, message: '更新梯度配置失败' }, 500);
+    }
+});
+
+/**
+ * 删除坤呗梯度配置
+ */
+app.delete('/kunbei/gradient-configs/:id', requireAdmin, async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+        const { deleteGradientConfig } = await import('../services/kunbei');
+        
+        const result = deleteGradientConfig(id);
+        return c.json(result);
+    } catch (error: any) {
+        console.error('[坤呗管理] 删除梯度配置失败:', error);
+        return c.json({ success: false, message: '删除梯度配置失败' }, 500);
+    }
+});
+
 export default app;
 
