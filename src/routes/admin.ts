@@ -2326,7 +2326,9 @@ app.get('/kunbei/all-loans', requireAdmin, async (c) => {
             active_count: loans.filter(l => l.status === 'active').length,
             repaid_count: loans.filter(l => l.status === 'repaid').length,
             overdue_count: loans.filter(l => l.status === 'overdue').length,
-            total_amount: loans.reduce((sum, l) => sum + l.loan_amount, 0)
+            total_amount: loans.reduce((sum, l) => sum + l.loan_amount, 0),
+            total_loaned: loans.reduce((sum, l) => sum + l.loan_amount, 0),
+            total_repaid: loans.filter(l => l.status === 'repaid').reduce((sum, l) => sum + (l.actual_repay_amount || 0), 0)
         };
 
         return c.json({

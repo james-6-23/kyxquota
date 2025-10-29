@@ -2633,31 +2633,6 @@
               </div>
             </div>
           </div>
-          
-          <!-- 借款记录列表 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-sm">
-                <thead class="bg-gradient-to-r from-yellow-50 to-orange-50 border-b border-slate-200">
-                  <tr>
-                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
-                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户</th>
-                    <th class="px-4 py-3 text-right font-semibold text-slate-700">借款金额</th>
-                    <th class="px-4 py-3 text-right font-semibold text-slate-700">应还金额</th>
-                    <th class="px-4 py-3 text-left font-semibold text-slate-700">借款时间</th>
-                    <th class="px-4 py-3 text-left font-semibold text-slate-700">到期时间</th>
-                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
-                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
-                  </tr>
-                </thead>
-                <tbody id="kunbeiLoansTable">
-                  <tr>
-                    <td colspan="8" class="text-center py-8 text-slate-500">加载中...</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
 
         <!-- 📋 Kunbei Records Section (独立的贷款记录管理) -->
@@ -2742,7 +2717,7 @@
           </div>
 
           <!-- 统计概览 -->
-          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-xl">📊</div>
@@ -2785,10 +2760,20 @@
             
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
               <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl">💰</div>
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-xl">💸</div>
                 <div>
-                  <p class="text-xs text-slate-600">总金额</p>
-                  <p id="totalLoanAmount" class="text-xl font-bold text-purple-600">$0</p>
+                  <p class="text-xs text-slate-600">总借出</p>
+                  <p id="totalLoanedAmount" class="text-xl font-bold text-indigo-600">$0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-xl">💰</div>
+                <div>
+                  <p class="text-xs text-slate-600">总回收</p>
+                  <p id="totalRepaidAmount" class="text-xl font-bold text-emerald-600">$0</p>
                 </div>
               </div>
             </div>
@@ -5861,12 +5846,12 @@
           }
         }
         
-        // 加载借款记录
+        // 加载统计数据
         const loansRes = await fetch('/api/admin/kunbei/loans');
         const loansData = await loansRes.json();
         
         if (loansData.success) {
-          renderKunbeiLoansTable(loansData.data.loans, loansData.data.stats);
+          updateKunbeiMainStats(loansData.data.stats);
         }
         
         // 加载梯度配置
@@ -5914,55 +5899,12 @@
       }
     }
     
-    function renderKunbeiLoansTable(loans, stats) {
-      // 更新统计
+    function updateKunbeiMainStats(stats) {
+      // 更新坤呗管理页面的统计
       document.getElementById('kunbeiActiveCount').textContent = stats.active_count || 0;
       document.getElementById('kunbeiOverdueCount').textContent = stats.overdue_count || 0;
       document.getElementById('kunbeiTotalLoan').textContent = `$${((stats.total_loan || 0) / 500000).toFixed(2)}`;
       document.getElementById('kunbeiTotalRepaid').textContent = `$${((stats.total_repaid || 0) / 500000).toFixed(2)}`;
-      
-      // 渲染表格
-      const tbody = document.getElementById('kunbeiLoansTable');
-      
-      if (loans.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">暂无借款记录</td></tr>';
-        return;
-      }
-      
-      tbody.innerHTML = loans.map(loan => {
-        // 判断是否是豁免的借款
-        const isForgiven = loan.status === 'repaid' && loan.actual_repay_amount === 0;
-        
-        const statusBadge = loan.status === 'active' 
-          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 进行中</span>'
-          : loan.status === 'overdue'
-            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>'
-            : isForgiven
-              ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">🎁 系统豁免</span>'
-              : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
-        
-        const actionButton = (loan.status === 'active' || loan.status === 'overdue')
-          ? `<button onclick="forgiveLoan(${loan.id}, '${loan.username}')" class="px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-xs font-semibold">🎁 豁免</button>`
-          : isForgiven 
-            ? '<span class="text-purple-600 text-xs font-semibold">已豁免</span>'
-            : '<span class="text-slate-400 text-xs">已完成</span>';
-        
-        return `
-          <tr class="border-b border-slate-100 hover:bg-slate-50">
-            <td class="px-4 py-3 font-mono text-slate-600">#${loan.id}</td>
-            <td class="px-4 py-3">
-              <div class="font-semibold text-slate-900">${loan.username}</div>
-              <div class="text-xs text-slate-500">${loan.linux_do_id.substring(0, 8)}...</div>
-            </td>
-            <td class="px-4 py-3 text-right font-semibold text-blue-600">$${(loan.loan_amount / 500000).toFixed(2)}</td>
-            <td class="px-4 py-3 text-right font-semibold text-red-600">$${(loan.repay_amount / 500000).toFixed(2)}</td>
-            <td class="px-4 py-3 text-xs text-slate-600">${new Date(loan.borrowed_at).toLocaleString('zh-CN', { hour12: false })}</td>
-            <td class="px-4 py-3 text-xs text-slate-600">${new Date(loan.due_at).toLocaleString('zh-CN', { hour12: false })}</td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
-            <td class="px-4 py-3 text-center">${actionButton}</td>
-          </tr>
-        `;
-      }).join('');
     }
     
     // 豁免借款
@@ -6292,7 +6234,8 @@
       document.getElementById('activeLoansCount').textContent = stats.active_count || 0;
       document.getElementById('repaidLoansCount').textContent = stats.repaid_count || 0;
       document.getElementById('overdueLoansCount').textContent = stats.overdue_count || 0;
-      document.getElementById('totalLoanAmount').textContent = `$${((stats.total_amount || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalLoanedAmount').textContent = `$${((stats.total_loaned || stats.total_amount || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalRepaidAmount').textContent = `$${((stats.total_repaid || 0) / 500000).toFixed(2)}`;
     }
     
     function renderKunbeiRecordsTable() {
