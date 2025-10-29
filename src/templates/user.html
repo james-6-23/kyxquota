@@ -1067,6 +1067,16 @@
 
     </div>
 
+    <!-- 🐔 坤呗悬浮按钮（右下角）-->
+    <button 
+      id="kunbeiFloatingButton" 
+      onclick="openKunbeiModal()"
+      class="fixed bottom-24 right-6 w-16 h-16 bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 flex flex-col items-center justify-center z-40 animate-pulse"
+      title="坤呗借款">
+      <div class="text-3xl mb-1">🐔</div>
+      <div class="text-xs font-bold text-white">坤呗</div>
+    </button>
+
     <!-- 底部统计（固定底部）- 响应式 -->
     <div class="bg-black/30 backdrop-blur-md p-2 sm:p-3 md:p-4 text-center text-white border-t border-white/10">
       <!-- 今日统计 -->
@@ -1100,6 +1110,196 @@
           待发放 <span id="pendingRewardsCount" class="font-bold text-orange-300">0</span> 条 (<span id="pendingRewardsAmount" class="font-bold text-orange-300">$0</span>)
           <button onclick="showPendingRewardsModal()" class="ml-2 px-2 py-0.5 bg-orange-500/30 hover:bg-orange-500/50 rounded text-xs transition-colors">
             查看详情
+          </button>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🐔 坤呗借款模态框 -->
+  <div id="kunbeiModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
+      <!-- 头部 -->
+      <div class="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 px-6 py-4 relative">
+        <button onclick="closeKunbeiModal()" class="absolute top-4 right-4 text-white/80 hover:text-white">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+        <div class="text-center">
+          <div class="text-5xl mb-2">🐔</div>
+          <h3 class="text-2xl font-bold text-white">坤呗信用中心</h3>
+          <p class="text-sm text-white/90 mt-1">急需额度？坤呗帮您！</p>
+        </div>
+      </div>
+      
+      <!-- 额度显示 -->
+      <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50">
+        <div class="flex items-center justify-between text-sm">
+          <div>
+            <span class="text-slate-600">可用</span>
+            <span id="kunbeiAvailable" class="font-bold text-green-600 ml-1">$0</span>
+          </div>
+          <div>
+            <span class="text-slate-600">已占用</span>
+            <span id="kunbeiUsed" class="font-bold text-red-600 ml-1">$0</span>
+          </div>
+          <div>
+            <span class="text-slate-600">授信</span>
+            <span id="kunbeiCredit" class="font-bold text-blue-600 ml-1">$100</span>
+          </div>
+        </div>
+        <div class="mt-2">
+          <div class="h-2 bg-white/50 rounded-full overflow-hidden">
+            <div id="kunbeiUsageBar" class="h-full bg-gradient-to-r from-yellow-500 to-red-500 transition-all" style="width: 0%"></div>
+          </div>
+          <p class="text-xs text-slate-500 text-right mt-1">
+            <span id="kunbeiUsagePercent">0%</span>
+          </p>
+        </div>
+      </div>
+      
+      <!-- Tab切换 -->
+      <div class="px-6 pt-4">
+        <div class="flex border-b border-slate-200">
+          <button id="kunbeiTabBorrow" onclick="switchKunbeiTab('borrow')" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-orange-500 text-orange-600">
+            ▣ 借款
+          </button>
+          <button id="kunbeiTabRepay" onclick="switchKunbeiTab('repay')" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400">
+            ▢ 还款
+          </button>
+          <button id="kunbeiTabRecords" onclick="switchKunbeiTab('records')" class="flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400">
+            ▢ 记录
+          </button>
+        </div>
+      </div>
+      
+      <!-- 借款面板 -->
+      <div id="kunbeiBorrowPanel" class="px-6 py-4">
+        <!-- 快捷金额 -->
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-slate-700 mb-2">金额</label>
+          <div class="flex gap-2 mb-3">
+            <button onclick="adjustKunbeiAmount(-500)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm font-semibold">-$1</button>
+            <button onclick="setKunbeiAmount(25000000)" class="flex-1 px-3 py-2 bg-gradient-to-r from-blue-100 to-indigo-100 hover:from-blue-200 hover:to-indigo-200 rounded-lg text-sm font-semibold">$50</button>
+            <button onclick="setKunbeiAmount(50000000)" class="flex-1 px-3 py-2 bg-gradient-to-r from-purple-100 to-pink-100 hover:from-purple-200 hover:to-pink-200 rounded-lg text-sm font-semibold">$100</button>
+            <button onclick="setKunbeiAmount('max')" class="flex-1 px-3 py-2 bg-gradient-to-r from-yellow-100 to-orange-100 hover:from-yellow-200 hover:to-orange-200 rounded-lg text-sm font-semibold">借满</button>
+            <button onclick="adjustKunbeiAmount(500)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 rounded-lg text-sm font-semibold">+$1</button>
+          </div>
+          
+          <!-- 滑块 -->
+          <input 
+            type="range" 
+            id="kunbeiAmountSlider" 
+            min="10" 
+            max="100" 
+            value="50" 
+            step="10"
+            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+            oninput="updateKunbeiSlider(this.value)"
+          >
+          <div class="flex justify-between text-xs text-slate-500 mt-1">
+            <span>$10</span>
+            <span id="kunbeiSliderValue" class="font-bold text-orange-600">$50</span>
+            <span>$100</span>
+          </div>
+        </div>
+        
+        <!-- 预览 -->
+        <div class="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-xl p-4 mb-4">
+          <div class="text-sm space-y-2">
+            <div class="flex justify-between">
+              <span class="text-slate-700">还款金额:</span>
+              <span id="kunbeiPreviewRepay" class="font-bold text-red-600">$125.00</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-slate-700">到期时间:</span>
+              <span id="kunbeiPreviewDue" class="text-sm text-slate-600">72小时后</span>
+            </div>
+            <div class="flex justify-between text-green-600">
+              <span>✨ 返现:</span>
+              <span id="kunbeiPreviewCashback" class="font-bold">$3.13</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- 警告 -->
+        <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+          <p class="text-xs text-red-800">
+            ⚠️ <strong>逾期后果：</strong>禁止高级场60小时、信用分-10
+          </p>
+        </div>
+        
+        <!-- 按钮 -->
+        <button 
+          id="kunbeiConfirmBorrowBtn"
+          onclick="confirmKunbeiBorrow()" 
+          class="w-full py-3 bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 text-white rounded-xl font-bold text-lg hover:shadow-xl transition-all">
+          🐔 确认借款
+        </button>
+      </div>
+      
+      <!-- 还款面板 -->
+      <div id="kunbeiRepayPanel" class="hidden px-6 py-4">
+        <div id="kunbeiActiveLoanInfo">
+          <!-- 有借款时显示 -->
+          <div id="kunbeiHasLoan" class="hidden">
+            <div class="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-4">
+              <div class="text-sm space-y-2">
+                <div class="flex justify-between">
+                  <span class="text-slate-700">借款金额:</span>
+                  <span id="activeLoanAmount" class="font-bold">$0</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-700">应还金额:</span>
+                  <span id="activeRepayAmount" class="font-bold text-red-600">$0</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-700">剩余时间:</span>
+                  <span id="activeRemaining" class="font-bold text-orange-600">--</span>
+                </div>
+                <div class="flex justify-between text-green-600" id="kunbeiEarlyRepayInfo">
+                  <span>✨ 提前还款:</span>
+                  <span id="activeEarlyRepay" class="font-bold">$0</span>
+                </div>
+              </div>
+            </div>
+            
+            <button 
+              onclick="confirmKunbeiRepay()" 
+              class="w-full py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold text-lg hover:shadow-xl transition-all">
+              💰 立即还款
+            </button>
+          </div>
+          
+          <!-- 无借款时显示 -->
+          <div id="kunbeiNoLoan" class="hidden">
+            <div class="text-center py-8 text-slate-500">
+              <div class="text-4xl mb-2">✅</div>
+              <p>您当前没有借款</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 记录面板 -->
+      <div id="kunbeiRecordsPanel" class="hidden px-6 py-4 max-h-96 overflow-y-auto">
+        <div id="kunbeiRecordsList">
+          <!-- 加载中 -->
+          <div class="text-center py-8 text-slate-500">
+            <div class="spinner mx-auto mb-2"></div>
+            <p class="text-sm">加载中...</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 底部链接 -->
+      <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 text-center">
+        <p class="text-xs text-slate-500">
+          信用分: <span id="kunbeiCreditScore" class="font-bold text-purple-600">100</span> 分
+          <span class="mx-2">|</span>
+          <button onclick="showKunbeiRules()" class="text-indigo-600 hover:text-indigo-700 font-medium">
+            📖 使用规则
           </button>
         </p>
       </div>
@@ -5220,6 +5420,345 @@
         document.getElementById('loginSection').classList.remove('hidden');
       }
     };
+    
+    // ========== 坤呗借款系统 ==========
+    
+    let kunbeiData = null;
+    let kunbeiCurrentAmount = 25000000;  // 默认$50
+    let kunbeiConfig = null;
+    
+    // 打开坤呗模态框
+    async function openKunbeiModal() {
+      try {
+        // 加载配置和状态
+        const [configRes, statusRes] = await Promise.all([
+          fetch('/api/kunbei/config'),
+          fetch('/api/kunbei/status')
+        ]);
+        
+        const configData = await configRes.json();
+        const statusData = await statusRes.json();
+        
+        if (!configData.success || !statusData.success) {
+          showToast('加载坤呗信息失败', 'error');
+          return;
+        }
+        
+        kunbeiConfig = configData.data;
+        kunbeiData = statusData.data;
+        
+        // 检查是否启用
+        if (!kunbeiConfig.enabled) {
+          showToast('坤呗功能已关闭', 'error');
+          return;
+        }
+        
+        // 更新UI
+        updateKunbeiUI();
+        
+        // 显示模态框
+        document.getElementById('kunbeiModal').classList.remove('hidden');
+        
+        // 默认显示借款面板
+        switchKunbeiTab('borrow');
+      } catch (error) {
+        console.error('打开坤呗失败:', error);
+        showToast('加载失败，请重试', 'error');
+      }
+    }
+    
+    // 关闭模态框
+    function closeKunbeiModal() {
+      document.getElementById('kunbeiModal').classList.add('hidden');
+    }
+    
+    // 切换Tab
+    function switchKunbeiTab(tab) {
+      const tabs = { borrow: 'Borrow', repay: 'Repay', records: 'Records' };
+      
+      Object.keys(tabs).forEach(t => {
+        const tabBtn = document.getElementById(`kunbeiTab${tabs[t]}`);
+        const panel = document.getElementById(`kunbei${tabs[t]}Panel`);
+        
+        if (t === tab) {
+          tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-orange-500 text-orange-600';
+          panel.classList.remove('hidden');
+        } else {
+          tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400';
+          panel.classList.add('hidden');
+        }
+      });
+      
+      if (tab === 'repay') updateRepayPanel();
+      else if (tab === 'records') loadKunbeiRecords();
+    }
+    
+    // 更新UI
+    function updateKunbeiUI() {
+      if (!kunbeiData || !kunbeiConfig) return;
+      
+      const maxLoanUsd = kunbeiConfig.max_loan_amount / 500000;
+      const activeLoanUsd = kunbeiData.active_loan ? kunbeiData.active_loan.loan_amount / 500000 : 0;
+      const availableUsd = maxLoanUsd - activeLoanUsd;
+      const usagePercent = maxLoanUsd > 0 ? (activeLoanUsd / maxLoanUsd * 100).toFixed(0) : 0;
+      
+      document.getElementById('kunbeiAvailable').textContent = `$${availableUsd.toFixed(0)}`;
+      document.getElementById('kunbeiUsed').textContent = `$${activeLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiCredit').textContent = `$${maxLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiUsageBar').style.width = `${usagePercent}%`;
+      document.getElementById('kunbeiUsagePercent').textContent = `${usagePercent}%`;
+      document.getElementById('kunbeiCreditScore').textContent = kunbeiData.stats?.credit_score || 100;
+      
+      const borrowBtn = document.getElementById('kunbeiConfirmBorrowBtn');
+      if (borrowBtn) {
+        borrowBtn.disabled = !kunbeiData.can_borrow;
+        borrowBtn.title = kunbeiData.can_borrow ? '点击借款' : (kunbeiData.ban_reason || '无法借款');
+      }
+      
+      const slider = document.getElementById('kunbeiAmountSlider');
+      if (slider && kunbeiConfig) {
+        slider.min = kunbeiConfig.min_loan_amount / 500000;
+        slider.max = kunbeiConfig.max_loan_amount / 500000;
+      }
+      
+      updateKunbeiPreview();
+    }
+    
+    // 设置借款金额
+    function setKunbeiAmount(amount) {
+      if (!kunbeiConfig) return;
+      if (amount === 'max') {
+        kunbeiCurrentAmount = kunbeiConfig.max_loan_amount;
+      } else {
+        kunbeiCurrentAmount = amount;
+      }
+      document.getElementById('kunbeiAmountSlider').value = kunbeiCurrentAmount / 500000;
+      updateKunbeiPreview();
+    }
+    
+    // 调整金额
+    function adjustKunbeiAmount(delta) {
+      if (!kunbeiConfig) return;
+      const deltaInSats = delta * 1000;
+      kunbeiCurrentAmount = Math.max(
+        kunbeiConfig.min_loan_amount,
+        Math.min(kunbeiConfig.max_loan_amount, kunbeiCurrentAmount + deltaInSats)
+      );
+      document.getElementById('kunbeiAmountSlider').value = kunbeiCurrentAmount / 500000;
+      updateKunbeiPreview();
+    }
+    
+    // 更新滑块
+    function updateKunbeiSlider(value) {
+      kunbeiCurrentAmount = parseInt(value) * 500000;
+      updateKunbeiPreview();
+    }
+    
+    // 更新预览
+    function updateKunbeiPreview() {
+      if (!kunbeiConfig) return;
+      
+      const loanUsd = kunbeiCurrentAmount / 500000;
+      const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
+      const cashbackUsd = repayUsd * kunbeiConfig.early_repay_discount;
+      
+      document.getElementById('kunbeiSliderValue').textContent = `$${loanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiPreviewRepay').textContent = `$${repayUsd.toFixed(2)}`;
+      document.getElementById('kunbeiPreviewCashback').textContent = `$${cashbackUsd.toFixed(2)}`;
+      
+      const dueDate = new Date(Date.now() + kunbeiConfig.loan_duration_hours * 3600000);
+      document.getElementById('kunbeiPreviewDue').textContent = 
+        dueDate.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    }
+    
+    // 确认借款
+    async function confirmKunbeiBorrow() {
+      if (!kunbeiData.can_borrow) {
+        showToast(kunbeiData.ban_reason || '无法借款', 'error');
+        return;
+      }
+      
+      const loanUsd = kunbeiCurrentAmount / 500000;
+      
+      if (!confirm(`确认借款 $${loanUsd.toFixed(2)} 吗？\n\n需还款: $${(loanUsd * kunbeiConfig.repay_multiplier).toFixed(2)}\n期限: ${kunbeiConfig.loan_duration_hours}小时`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/kunbei/borrow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: kunbeiCurrentAmount })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeKunbeiModal();
+          loadQuota();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('借款失败:', error);
+        showToast('借款失败，请重试', 'error');
+      }
+    }
+    
+    // 更新还款面板
+    function updateRepayPanel() {
+      if (!kunbeiData) return;
+      
+      if (kunbeiData.has_active_loan && kunbeiData.active_loan) {
+        const loan = kunbeiData.active_loan;
+        const now = Date.now();
+        const remaining = loan.due_at - now;
+        
+        document.getElementById('kunbeiHasLoan').classList.remove('hidden');
+        document.getElementById('kunbeiNoLoan').classList.add('hidden');
+        
+        document.getElementById('activeLoanAmount').textContent = `$${(loan.loan_amount / 500000).toFixed(2)}`;
+        document.getElementById('activeRepayAmount').textContent = `$${(loan.repay_amount / 500000).toFixed(2)}`;
+        
+        const hours = Math.floor(remaining / 3600000);
+        const minutes = Math.floor((remaining % 3600000) / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        document.getElementById('activeRemaining').textContent = 
+          `${hours}小时${minutes}分${seconds}秒`;
+        
+        if (now < loan.due_at) {
+          const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
+          const earlyAmount = loan.repay_amount - cashback;
+          document.getElementById('kunbeiEarlyRepayInfo').classList.remove('hidden');
+          document.getElementById('activeEarlyRepay').textContent = `$${(earlyAmount / 500000).toFixed(2)}`;
+        } else {
+          document.getElementById('kunbeiEarlyRepayInfo').classList.add('hidden');
+        }
+      } else {
+        document.getElementById('kunbeiHasLoan').classList.add('hidden');
+        document.getElementById('kunbeiNoLoan').classList.remove('hidden');
+      }
+    }
+    
+    // 确认还款
+    async function confirmKunbeiRepay() {
+      if (!kunbeiData.active_loan) {
+        showToast('没有需要还款的借款', 'error');
+        return;
+      }
+      
+      const loan = kunbeiData.active_loan;
+      const repayUsd = loan.repay_amount / 500000;
+      
+      if (!confirm(`确认还款 $${repayUsd.toFixed(2)} 吗？`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/kunbei/repay/${loan.id}`, {
+          method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(data.message, 'success');
+          closeKunbeiModal();
+          loadQuota();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('还款失败:', error);
+        showToast('还款失败，请重试', 'error');
+      }
+    }
+    
+    // 加载借款记录
+    async function loadKunbeiRecords() {
+      try {
+        const res = await fetch('/api/kunbei/my-loans');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderKunbeiRecords(data.data.loans);
+        }
+      } catch (error) {
+        console.error('加载借款记录失败:', error);
+      }
+    }
+    
+    // 渲染借款记录
+    function renderKunbeiRecords(loans) {
+      const container = document.getElementById('kunbeiRecordsList');
+      
+      if (loans.length === 0) {
+        container.innerHTML = '<div class="text-center py-8 text-slate-500"><div class="text-4xl mb-2">📝</div><p>暂无借款记录</p></div>';
+        return;
+      }
+      
+      const statusLabels = {
+        'active': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">进行中</span>',
+        'repaid': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">已还款</span>',
+        'overdue': '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">已逾期</span>'
+      };
+      
+      container.innerHTML = loans.map(loan => {
+        const borrowTime = new Date(loan.borrowed_at).toLocaleString('zh-CN', { hour12: false });
+        const dueTime = new Date(loan.due_at).toLocaleString('zh-CN', { hour12: false });
+        
+        return `
+          <div class="border border-slate-200 rounded-lg p-3 mb-2">
+            <div class="flex justify-between items-start mb-2">
+              <div class="text-sm">
+                <div class="font-semibold text-slate-900">
+                  借 $${loan.loan_amount_usd} → 还 $${loan.repay_amount_usd}
+                </div>
+                <div class="text-xs text-slate-500 mt-1">
+                  借款: ${borrowTime}<br>到期: ${dueTime}
+                </div>
+              </div>
+              <div>${statusLabels[loan.status]}</div>
+            </div>
+            ${loan.actual_repay_amount ? `
+              <div class="text-xs text-green-600">
+                实还: $${loan.actual_repay_amount_usd}
+                ${loan.actual_repay_amount < loan.repay_amount ? 
+                  `· 返现 $${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
+                }
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    // 显示规则
+    function showKunbeiRules() {
+      if (!kunbeiConfig) return;
+      alert(`🐔 坤呗使用规则
+
+【借款规则】
+• 借款范围: $${kunbeiConfig.min_loan_amount_usd} - $${kunbeiConfig.max_loan_amount_usd}
+• 还款倍数: ${kunbeiConfig.repay_multiplier}倍
+• 借款期限: ${kunbeiConfig.loan_duration_hours}小时
+
+【还款优惠】
+• 提前还款: 免除${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%（返现）
+• 按时还款: 信用分+5
+• 提前还款: 信用分+10
+
+【逾期后果】
+• 禁止进入高级场${kunbeiConfig.overdue_penalty_hours}小时
+• 信用分-10
+• 需全额还款（无优惠）
+
+【信用分】
+• 初始: 100分
+• 低于60分将禁用坤呗功能
+• 按时还款可提升信用分`);
+    }
   </script>
 </body>
 </html>

@@ -22,6 +22,7 @@ import userRoutes from './routes/user';
 import adminRoutes from './routes/admin';
 import oauthRoutes from './routes/oauth';
 import slotRoutes from './routes/slot';
+import kunbeiRoutes from './routes/kunbei';
 
 // 中间件
 app.use('*', cors());
@@ -31,6 +32,7 @@ app.route('/api', userRoutes);
 app.route('/api/admin', adminRoutes);
 app.route('/oauth', oauthRoutes);
 app.route('/api/slot', slotRoutes);
+app.route('/api/kunbei', kunbeiRoutes);
 
 // 静态文件服务（老虎机符号图片）
 app.get('/slot-symbols/:filename', async (c) => {
@@ -49,8 +51,8 @@ app.get('/sounds/:filename', async (c) => {
     if (await file.exists()) {
         const ext = filename.split('.').pop()?.toLowerCase();
         const contentType = ext === 'mp3' ? 'audio/mpeg' :
-                           ext === 'wav' ? 'audio/wav' :
-                           'application/octet-stream';
+            ext === 'wav' ? 'audio/wav' :
+                'application/octet-stream';
 
         return new Response(file, {
             headers: {

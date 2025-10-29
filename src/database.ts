@@ -15,8 +15,12 @@ import type {
     AdvancedSlotRTPStats,
     UserAdvancedEntry,
     UserDailyTicketGrant,
+    KunbeiConfig,
+    UserLoan,
+    UserKunbeiStats,
 } from './types';
 import { addDailyLimits } from './migrations/add-daily-limits';
+import { addKunbeiLoanTables } from './migrations/add-kunbei-loan';
 
 // 创建数据库连接
 export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
@@ -553,6 +557,13 @@ export function initDatabase() {
         console.warn('[迁移] 迁移执行失败:', error);
     }
 
+    // 🔥 执行坤呗借款系统迁移
+    try {
+        addKunbeiLoanTables(db);
+    } catch (error) {
+        console.warn('[坤呗迁移] 迁移执行失败:', error);
+    }
+
     // 迁移完成后再插入默认数据
     insertDefaultData();
 
@@ -608,6 +619,7 @@ export let adminQueries: any;
 export let slotQueries: any;
 export let pendingRewardQueries: any;
 export let advancedSlotQueries: any;  // 高级场查询
+export let kunbeiQueries: any;  // 坤呗借款查询
 
 /**
  * 初始化预编译查询语句
@@ -1045,6 +1057,73 @@ function initQueries() {
              ticket_granted = ticket_granted + ?,
              fragment_granted = fragment_granted + ?,
              last_grant_time = ?`
+        ),
+    };
+
+    // ========== 坤呗借款系统查询 ==========
+    kunbeiQueries = {
+        // 配置管理
+        getConfig: db.query<KunbeiConfig, never>(
+            'SELECT * FROM kunbei_config WHERE id = 1'
+        ),
+        updateConfig: db.query(
+            `UPDATE kunbei_config SET 
+             enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
+             repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
+             overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
+             updated_at = ? WHERE id = 1`
+        ),
+
+        // 借款记录管理
+        getActiveLoan: db.query<UserLoan, string>(
+            'SELECT * FROM user_loans WHERE linux_do_id = ? AND status = "active" LIMIT 1'
+        ),
+        getLoanById: db.query<UserLoan, number>(
+            'SELECT * FROM user_loans WHERE id = ?'
+        ),
+        getUserLoans: db.query<UserLoan, string>(
+            'SELECT * FROM user_loans WHERE linux_do_id = ? ORDER BY created_at DESC LIMIT 20'
+        ),
+        getAllLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans ORDER BY created_at DESC LIMIT 200'
+        ),
+        getActiveLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans WHERE status = "active"'
+        ),
+        getOverdueLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans WHERE status = "overdue"'
+        ),
+        insertLoan: db.query(
+            `INSERT INTO user_loans (linux_do_id, username, loan_amount, repay_amount, status, borrowed_at, due_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ),
+        updateLoanStatus: db.query(
+            `UPDATE user_loans SET status = ?, actual_repay_amount = ?, repaid_at = ?, overdue_penalty_until = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+
+        // 用户统计管理
+        getStats: db.query<UserKunbeiStats, string>(
+            'SELECT * FROM user_kunbei_stats WHERE linux_do_id = ?'
+        ),
+        upsertStats: db.query(
+            `INSERT INTO user_kunbei_stats (linux_do_id, total_borrowed, total_repaid, total_loans, repaid_loans, overdue_loans, credit_score, is_banned, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             total_borrowed = total_borrowed + ?,
+             total_repaid = total_repaid + ?,
+             total_loans = total_loans + ?,
+             repaid_loans = repaid_loans + ?,
+             overdue_loans = overdue_loans + ?,
+             credit_score = ?,
+             updated_at = ?`
+        ),
+        updateCreditScore: db.query(
+            `INSERT INTO user_kunbei_stats (linux_do_id, credit_score, updated_at)
+             VALUES (?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             credit_score = MAX(0, MIN(100, credit_score + ?)),
+             updated_at = ?`
         ),
     };
 

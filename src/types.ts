@@ -191,3 +191,50 @@ export interface AdvancedSlotRTPStats {
     games_count: number;    // 游戏次数
     last_updated: number;
 }
+
+// ========== 坤呗借款系统类型 ==========
+
+// 坤呗配置
+export interface KunbeiConfig {
+    id: number;
+    enabled: number;                      // 是否启用
+    max_loan_amount: number;              // 最大借款额度
+    min_loan_amount: number;              // 最小借款额度
+    repay_multiplier: number;             // 还款倍数
+    loan_duration_hours: number;          // 借款期限（小时）
+    early_repay_discount: number;         // 提前还款优惠比例
+    overdue_penalty_hours: number;        // 逾期惩罚时长（小时）
+    overdue_ban_advanced: number;         // 逾期是否禁止高级场
+    max_active_loans: number;             // 最多同时借款数
+    updated_at: number;
+}
+
+// 用户借款记录
+export interface UserLoan {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    loan_amount: number;                  // 借款金额
+    repay_amount: number;                 // 应还金额
+    actual_repay_amount?: number;         // 实际还款金额
+    status: 'active' | 'repaid' | 'overdue';
+    borrowed_at: number;                  // 借款时间
+    due_at: number;                       // 应还时间
+    repaid_at?: number;                   // 实际还款时间
+    overdue_penalty_until?: number;       // 逾期惩罚截止时间
+    created_at: number;
+    updated_at: number;
+}
+
+// 用户坤呗统计
+export interface UserKunbeiStats {
+    linux_do_id: string;
+    total_borrowed: number;               // 累计借款
+    total_repaid: number;                 // 累计还款
+    total_loans: number;                  // 总借款次数
+    repaid_loans: number;                 // 已还款次数
+    overdue_loans: number;                // 逾期次数
+    credit_score: number;                 // 信用分
+    is_banned: number;                    // 是否禁用
+    updated_at: number;
+}

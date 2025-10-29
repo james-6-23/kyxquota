@@ -173,6 +173,9 @@
           <button onclick="showSection('bannedUsers')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>🚫</span> 封禁记录
           </button>
+          <button onclick="showSection('kunbeiManagement')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🐔</span> 坤呗贷款管理
+          </button>
         </nav>
       </aside>
 
@@ -2450,6 +2453,144 @@
             </div>
           </div>
         </div>
+
+        <!-- 🐔 Kunbei Management Section -->
+        <div id="kunbeiManagementSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🐔 坤呗贷款管理</h2>
+            <button onclick="refreshKunbeiData()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+          
+          <!-- 配置卡片 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">⚙️ 坤呗配置</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 启用状态 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">启用状态</label>
+                <select id="kunbeiEnabled" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <option value="1">✅ 启用</option>
+                  <option value="0">❌ 禁用</option>
+                </select>
+              </div>
+              
+              <!-- 最大借款额度 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">最大借款额度</label>
+                <input type="number" id="kunbeiMaxAmount" min="10" max="1000" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">单位：美元</p>
+              </div>
+              
+              <!-- 还款倍数 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">还款倍数</label>
+                <input type="number" id="kunbeiRepayMultiplier" min="1" max="10" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">例如：2.5表示还2.5倍</p>
+              </div>
+              
+              <!-- 借款期限 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">借款期限</label>
+                <input type="number" id="kunbeiDuration" min="1" max="720" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">单位：小时</p>
+              </div>
+              
+              <!-- 提前还款优惠 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">提前还款优惠</label>
+                <input type="number" id="kunbeiEarlyDiscount" min="0" max="0.5" step="0.001" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">例如：0.025表示免除2.5%</p>
+              </div>
+              
+              <!-- 逾期惩罚时长 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">逾期惩罚时长</label>
+                <input type="number" id="kunbeiOverduePenalty" min="1" max="720" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">禁止高级场的小时数</p>
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button onclick="saveKunbeiConfig()" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                💾 保存配置
+              </button>
+            </div>
+          </div>
+          
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">⏳</div>
+                <div>
+                  <p class="text-sm text-slate-600">活跃借款</p>
+                  <p id="kunbeiActiveCount" class="text-2xl font-bold text-yellow-600">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-2xl">⚠️</div>
+                <div>
+                  <p class="text-sm text-slate-600">逾期借款</p>
+                  <p id="kunbeiOverdueCount" class="text-2xl font-bold text-red-600">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center text-2xl">💰</div>
+                <div>
+                  <p class="text-sm text-slate-600">总借出</p>
+                  <p id="kunbeiTotalLoan" class="text-2xl font-bold text-blue-600">$0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center text-2xl">✅</div>
+                <div>
+                  <p class="text-sm text-slate-600">总回收</p>
+                  <p id="kunbeiTotalRepaid" class="text-2xl font-bold text-green-600">$0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 借款记录列表 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-yellow-50 to-orange-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">借款金额</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">应还金额</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">借款时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">到期时间</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="kunbeiLoansTable">
+                  <tr>
+                    <td colspan="8" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
@@ -3723,7 +3864,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -3746,6 +3887,7 @@
       if (section === 'lossLeaderboard') loadLossLeaderboard();
       if (section === 'pendingRewards') loadPendingRewards();
       if (section === 'bannedUsers') loadBannedUsers();
+      if (section === 'kunbeiManagement') loadKunbeiManagement();
     }
 
     // 老虎机配置管理
@@ -5442,6 +5584,143 @@
       } catch (error) {
         console.error('保存高级场配置失败:', error);
         showMessage('保存配置失败', 'error');
+      }
+    }
+
+    // ========== 坤呗贷款管理功能 ==========
+    
+    async function loadKunbeiManagement() {
+      try {
+        // 加载配置
+        const configRes = await fetch('/api/admin/kunbei/config');
+        const configData = await configRes.json();
+        
+        if (configData.success) {
+          const config = configData.data;
+          document.getElementById('kunbeiEnabled').value = config.enabled;
+          document.getElementById('kunbeiMaxAmount').value = config.max_loan_amount / 500000;
+          document.getElementById('kunbeiRepayMultiplier').value = config.repay_multiplier;
+          document.getElementById('kunbeiDuration').value = config.loan_duration_hours;
+          document.getElementById('kunbeiEarlyDiscount').value = config.early_repay_discount;
+          document.getElementById('kunbeiOverduePenalty').value = config.overdue_penalty_hours;
+        }
+        
+        // 加载借款记录
+        const loansRes = await fetch('/api/admin/kunbei/loans');
+        const loansData = await loansRes.json();
+        
+        if (loansData.success) {
+          renderKunbeiLoansTable(loansData.data.loans, loansData.data.stats);
+        }
+      } catch (error) {
+        console.error('加载坤呗数据失败:', error);
+        showToast('加载失败', 'error');
+      }
+    }
+    
+    function refreshKunbeiData() {
+      loadKunbeiManagement();
+    }
+    
+    async function saveKunbeiConfig() {
+      try {
+        const config = {
+          enabled: parseInt(document.getElementById('kunbeiEnabled').value),
+          max_loan_amount: parseInt(document.getElementById('kunbeiMaxAmount').value) * 500000,
+          min_loan_amount: 5000000,
+          repay_multiplier: parseFloat(document.getElementById('kunbeiRepayMultiplier').value),
+          loan_duration_hours: parseInt(document.getElementById('kunbeiDuration').value),
+          early_repay_discount: parseFloat(document.getElementById('kunbeiEarlyDiscount').value),
+          overdue_penalty_hours: parseInt(document.getElementById('kunbeiOverduePenalty').value),
+          overdue_ban_advanced: 1,
+          max_active_loans: 1
+        };
+        
+        const res = await fetch('/api/admin/kunbei/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('配置已保存', 'success');
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存坤呗配置失败:', error);
+        showToast('保存失败', 'error');
+      }
+    }
+    
+    function renderKunbeiLoansTable(loans, stats) {
+      // 更新统计
+      document.getElementById('kunbeiActiveCount').textContent = stats.active_count || 0;
+      document.getElementById('kunbeiOverdueCount').textContent = stats.overdue_count || 0;
+      document.getElementById('kunbeiTotalLoan').textContent = `$${((stats.total_loan || 0) / 500000).toFixed(2)}`;
+      document.getElementById('kunbeiTotalRepaid').textContent = `$${((stats.total_repaid || 0) / 500000).toFixed(2)}`;
+      
+      // 渲染表格
+      const tbody = document.getElementById('kunbeiLoansTable');
+      
+      if (loans.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-8 text-slate-500">暂无借款记录</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = loans.map(loan => {
+        const statusBadge = loan.status === 'active' 
+          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 进行中</span>'
+          : loan.status === 'overdue'
+            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>'
+            : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
+        
+        const actionButton = (loan.status === 'active' || loan.status === 'overdue')
+          ? `<button onclick="forgiveLoan(${loan.id}, '${loan.username}')" class="px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-xs font-semibold">🎁 豁免</button>`
+          : '<span class="text-slate-400 text-xs">已完成</span>';
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-slate-600">#${loan.id}</td>
+            <td class="px-4 py-3">
+              <div class="font-semibold text-slate-900">${loan.username}</div>
+              <div class="text-xs text-slate-500">${loan.linux_do_id.substring(0, 8)}...</div>
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-blue-600">$${(loan.loan_amount / 500000).toFixed(2)}</td>
+            <td class="px-4 py-3 text-right font-semibold text-red-600">$${(loan.repay_amount / 500000).toFixed(2)}</td>
+            <td class="px-4 py-3 text-xs text-slate-600">${new Date(loan.borrowed_at).toLocaleString('zh-CN', { hour12: false })}</td>
+            <td class="px-4 py-3 text-xs text-slate-600">${new Date(loan.due_at).toLocaleString('zh-CN', { hour12: false })}</td>
+            <td class="px-4 py-3 text-center">${statusBadge}</td>
+            <td class="px-4 py-3 text-center">${actionButton}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    // 豁免借款
+    async function forgiveLoan(loanId, username) {
+      if (!confirm(`确认豁免用户 "${username}" 的借款吗？\n\n豁免后该借款将标记为已还清，用户无需还款。`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/kunbei/loans/${loanId}/forgive`, {
+          method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('借款已豁免', 'success');
+          refreshKunbeiData();
+        } else {
+          showToast(data.message || '豁免失败', 'error');
+        }
+      } catch (error) {
+        console.error('豁免失败:', error);
+        showToast('操作失败', 'error');
       }
     }
 

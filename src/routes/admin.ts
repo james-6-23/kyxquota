@@ -9,6 +9,7 @@ import {
     slotQueries,
     pendingRewardQueries,
     advancedSlotQueries,
+    kunbeiQueries,
     db,
 } from '../database';
 import { cacheManager } from '../cache';
@@ -2223,6 +2224,90 @@ app.post('/slot/advanced/weights', requireAdmin, async (c) => {
     } catch (e: any) {
         console.error('[管理员] 更新高级场符号权重失败:', e);
         return c.json({ success: false, message: '更新权重失败' }, 500);
+    }
+});
+
+// ========== 坤呗贷款管理API ==========
+
+/**
+ * 获取坤呗配置
+ */
+app.get('/kunbei/config', requireAdmin, async (c) => {
+    try {
+        const config = kunbeiQueries.getConfig.get();
+        return c.json({ success: true, data: config });
+    } catch (error: any) {
+        return c.json({ success: false, message: '获取配置失败' }, 500);
+    }
+});
+
+/**
+ * 更新坤呗配置
+ */
+app.post('/kunbei/config', requireAdmin, async (c) => {
+    try {
+        const config = await c.req.json();
+        const now = Date.now();
+
+        kunbeiQueries.updateConfig.run(
+            config.enabled,
+            config.max_loan_amount,
+            config.min_loan_amount,
+            config.repay_multiplier,
+            config.loan_duration_hours,
+            config.early_repay_discount,
+            config.overdue_penalty_hours,
+            config.overdue_ban_advanced,
+            config.max_active_loans,
+            now
+        );
+
+        return c.json({ success: true, message: '配置已保存' });
+    } catch (error: any) {
+        console.error('[坤呗管理] 保存配置失败:', error);
+        return c.json({ success: false, message: '保存失败' }, 500);
+    }
+});
+
+/**
+ * 获取所有借款记录
+ */
+app.get('/kunbei/loans', requireAdmin, async (c) => {
+    try {
+        const loans = kunbeiQueries.getAllLoans.all();
+        const activeLoans = kunbeiQueries.getActiveLoans.all();
+        const overdueLoans = kunbeiQueries.getOverdueLoans.all();
+
+        const stats = {
+            active_count: activeLoans.length,
+            overdue_count: overdueLoans.length,
+            total_loan: loans.reduce((sum, l) => sum + l.loan_amount, 0),
+            total_repaid: loans.filter(l => l.status === 'repaid').reduce((sum, l) => sum + (l.actual_repay_amount || 0), 0)
+        };
+
+        return c.json({
+            success: true,
+            data: { loans, stats }
+        });
+    } catch (error: any) {
+        console.error('[坤呗管理] 获取借款记录失败:', error);
+        return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 豁免借款
+ */
+app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {
+    try {
+        const loanId = parseInt(c.req.param('id'));
+        const { forgiveLoan } = await import('../services/kunbei');
+
+        const result = forgiveLoan(loanId);
+        return c.json(result);
+    } catch (error: any) {
+        console.error('[坤呗管理] 豁免失败:', error);
+        return c.json({ success: false, message: '豁免失败' }, 500);
     }
 });
 
