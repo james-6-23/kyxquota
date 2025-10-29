@@ -167,36 +167,36 @@ export function repayLoan(
 ): { success: boolean; message: string; data?: any } {
     const config = getKunbeiConfig();
     const now = Date.now();
-
+    
     // 1. 获取借款信息
     const loan = kunbeiQueries.getLoanById.get(loanId);
-
+    
     if (!loan) {
         return { success: false, message: '借款不存在' };
     }
-
+    
     if (loan.linux_do_id !== linuxDoId) {
         return { success: false, message: '无权操作此借款' };
     }
-
+    
     if (loan.status !== 'active' && loan.status !== 'overdue') {
         return { success: false, message: '该借款已处理' };
     }
-
+    
     // 2. 计算实际还款金额
     let actualRepayAmount = loan.repay_amount;
     let cashback = 0;
     let isEarly = false;
-
+    
     if (now < loan.due_at) {
         // 提前还款，享受优惠
         isEarly = true;
         cashback = Math.floor(loan.repay_amount * config.early_repay_discount);
         actualRepayAmount = loan.repay_amount - cashback;
     }
-
+    
     // 3. 更新借款状态
-    const overduepenaltyUntil = loan.status === 'overdue'
+    const overduePenaltyUntil = loan.status === 'overdue' 
         ? now + (config.overdue_penalty_hours * 3600000)
         : null;
 

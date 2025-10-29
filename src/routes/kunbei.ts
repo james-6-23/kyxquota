@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { requireAuth } from '../middleware/auth';
+import { getCookie, getSession } from '../utils';
 import type { SessionData } from '../types';
 import {
     getKunbeiConfig,
@@ -14,11 +14,28 @@ import {
     getLoanDetails,
     forgiveLoan,
 } from '../services/kunbei';
-import { kunbeiQueries, userQueries } from '../database';
+import { kunbeiQueries, userQueries, adminQueries } from '../database';
 import { addQuota, deductQuota } from '../services/kyx-api';
-import { adminQueries } from '../database';
 
 const kunbei = new Hono();
+
+/**
+ * 中间件：验证用户登录
+ */
+async function requireAuth(c: any, next: any) {
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.json({ success: false, message: '未登录' }, 401);
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.json({ success: false, message: '会话无效' }, 401);
+    }
+
+    c.set('session', session);
+    await next();
+}
 
 /**
  * 获取坤呗配置
