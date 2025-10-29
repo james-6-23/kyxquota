@@ -270,6 +270,30 @@
       animation: fadeIn 0.3s ease-out;
     }
     
+    /* 🔥 UI元素平滑过渡 */
+    #advancedBetSelector,
+    #advancedTicketBar,
+    #normalModeSpinsDisplay,
+    #advancedModeTitle,
+    #normalModeTitle,
+    #advancedModeIndicator {
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    
+    /* 🔥 隐藏状态时的平滑消失 */
+    .smooth-hide {
+      opacity: 0;
+      transform: translateY(-10px);
+      pointer-events: none;
+    }
+    
+    /* 🔥 显示状态时的平滑出现 */
+    .smooth-show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    
     /* 老虎机背景 - 默认渐变（可通过配置切换为GIF） */
     .slot-machine-bg {
       background: linear-gradient(135deg, rgba(30, 58, 138, 0.9) 0%, rgba(59, 130, 246, 0.9) 50%, rgba(139, 92, 246, 0.9) 100%);
@@ -2624,6 +2648,15 @@
       
       const { tickets, fragments, can_synthesize, in_advanced_mode, fragments_needed, max_tickets_hold, config } = advancedTicketsData;
       
+      // 🔥 重要：立即设置高级场状态，避免UI闪烁
+      if (in_advanced_mode) {
+        isInAdvancedMode = true;
+        startAdvancedModeTimer();
+      } else {
+        isInAdvancedMode = false;
+        stopAdvancedModeTimer();
+      }
+      
       // 更新数据显示
       document.getElementById('ticketCount').textContent = tickets;
       document.getElementById('ticketMax').textContent = max_tickets_hold;
@@ -2670,12 +2703,29 @@
         expiryEl.textContent = '';
       }
       
-      // 更新合成按钮状态
+      // 🔥 更新合成按钮状态（考虑今日获得限额）
       const synthesizeBtn = document.getElementById('synthesizeButton');
-      if (can_synthesize && tickets < max_tickets_hold) {
+      const todayGranted = advancedTicketsData.today_ticket_granted || 0;
+      const dailyLimit = config?.daily_ticket_grant_limit || 2;
+      
+      // 可以合成的条件：
+      // 1. 碎片足够 (can_synthesize)
+      // 2. 未达持有上限 (tickets < max_tickets_hold)
+      // 3. 🔥 今日获得未达限额 (todayGranted < dailyLimit)
+      if (can_synthesize && tickets < max_tickets_hold && todayGranted < dailyLimit) {
         synthesizeBtn.disabled = false;
+        synthesizeBtn.title = '点击合成入场券';
       } else {
         synthesizeBtn.disabled = true;
+        
+        // 🔥 根据不同原因显示提示
+        if (!can_synthesize) {
+          synthesizeBtn.title = `碎片不足（需要${fragments_needed}个）`;
+        } else if (tickets >= max_tickets_hold) {
+          synthesizeBtn.title = `已达持有上限（${max_tickets_hold}张）`;
+        } else if (todayGranted >= dailyLimit) {
+          synthesizeBtn.title = `今日获得已达上限（${dailyLimit}张）`;
+        }
       }
       
       // 更新进入高级场按钮状态
@@ -2691,25 +2741,46 @@
       
       if (in_advanced_mode) {
         // console.log('[高级场] 更新UI为高级场模式');
-        // 在高级场：隐藏入场券栏，显示高级场指示器和投注选择器
-        ticketBar.classList.add('hidden');
-        modeIndicator.classList.remove('hidden');  // 🔥 显示右上角指示器
-        betSelector.classList.remove('hidden');     // 🔥 显示投注选择器
-        freeSpinButton.classList.add('hidden');     // 🔥 隐藏免费抽奖
-        normalSpinButton.classList.add('hidden');   // 🔥 隐藏初级场spin按钮
-        
-        // 🔥 隐藏初级场次数显示
+        // 🔥 使用平滑过渡：先隐藏初级场元素
         const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
-        if (normalSpinsDisplay) normalSpinsDisplay.classList.add('hidden');
-        
-        // 🔥 显示高级场标题，隐藏初级场标题
-        const advancedTitle = document.getElementById('advancedModeTitle');
         const normalTitle = document.getElementById('normalModeTitle');
-        if (advancedTitle) advancedTitle.classList.remove('hidden');
-        if (normalTitle) normalTitle.classList.add('hidden');
+        const advancedTitle = document.getElementById('advancedModeTitle');
         
-        isInAdvancedMode = true;
-        startAdvancedModeTimer();
+        // 先设置初级场元素为平滑隐藏
+        if (normalSpinsDisplay) {
+          normalSpinsDisplay.classList.add('smooth-hide');
+          setTimeout(() => normalSpinsDisplay.classList.add('hidden'), 300);
+        }
+        if (normalTitle) {
+          normalTitle.classList.add('smooth-hide');
+          setTimeout(() => normalTitle.classList.add('hidden'), 300);
+        }
+        if (freeSpinButton) {
+          freeSpinButton.classList.add('smooth-hide');
+          setTimeout(() => freeSpinButton.classList.add('hidden'), 300);
+        }
+        if (normalSpinButton) {
+          normalSpinButton.classList.add('smooth-hide');
+          setTimeout(() => normalSpinButton.classList.add('hidden'), 300);
+        }
+        
+        // 隐藏入场券栏
+        ticketBar.classList.add('smooth-hide');
+        setTimeout(() => ticketBar.classList.add('hidden'), 300);
+        
+        // 延迟显示高级场元素（等待初级场元素隐藏）
+        setTimeout(() => {
+          modeIndicator.classList.remove('hidden');
+          betSelector.classList.remove('hidden');
+          if (advancedTitle) advancedTitle.classList.remove('hidden');
+          
+          // 触发平滑显示
+          requestAnimationFrame(() => {
+            modeIndicator.classList.add('smooth-show');
+            betSelector.classList.add('smooth-show');
+            if (advancedTitle) advancedTitle.classList.add('smooth-show');
+          });
+        }, 150);
         
         // 🔥 从高级场状态中获取投注范围并动态生成选项
         if (advancedTicketsData.config) {
@@ -2742,24 +2813,39 @@
         updateAdvancedSpinButtonState();
       } else {
         // 不在高级场：常驻显示入场券栏，隐藏高级场指示器和投注选择器
-        ticketBar.classList.remove('hidden');
-        modeIndicator.classList.add('hidden');    // 🔥 隐藏右上角指示器
-        betSelector.classList.add('hidden');      // 🔥 隐藏投注选择器
-        if (freeSpinButton) freeSpinButton.classList.remove('hidden'); // 🔥 显示免费抽奖
-        normalSpinButton.classList.remove('hidden'); // 🔥 显示初级场spin按钮
-        
-        // 🔥 显示初级场次数显示
+        // 🔥 使用平滑过渡：先隐藏高级场元素
         const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
-        if (normalSpinsDisplay) normalSpinsDisplay.classList.remove('hidden');
-        
-        // 🔥 隐藏高级场标题，显示初级场标题
-        const advancedTitle = document.getElementById('advancedModeTitle');
         const normalTitle = document.getElementById('normalModeTitle');
-        if (advancedTitle) advancedTitle.classList.add('hidden');
-        if (normalTitle) normalTitle.classList.remove('hidden');
+        const advancedTitle = document.getElementById('advancedModeTitle');
         
-        isInAdvancedMode = false;
-        stopAdvancedModeTimer();
+        // 先设置高级场元素为平滑隐藏
+        modeIndicator.classList.add('smooth-hide');
+        betSelector.classList.add('smooth-hide');
+        if (advancedTitle) advancedTitle.classList.add('smooth-hide');
+        
+        setTimeout(() => {
+          modeIndicator.classList.add('hidden');
+          betSelector.classList.add('hidden');
+          if (advancedTitle) advancedTitle.classList.add('hidden');
+        }, 300);
+        
+        // 延迟显示初级场元素（等待高级场元素隐藏）
+        setTimeout(() => {
+          ticketBar.classList.remove('hidden');
+          if (normalSpinsDisplay) normalSpinsDisplay.classList.remove('hidden');
+          if (normalTitle) normalTitle.classList.remove('hidden');
+          if (freeSpinButton) freeSpinButton.classList.remove('hidden');
+          normalSpinButton.classList.remove('hidden');
+          
+          // 触发平滑显示
+          requestAnimationFrame(() => {
+            ticketBar.classList.add('smooth-show');
+            if (normalSpinsDisplay) normalSpinsDisplay.classList.add('smooth-show');
+            if (normalTitle) normalTitle.classList.add('smooth-show');
+            if (freeSpinButton) freeSpinButton.classList.add('smooth-show');
+            normalSpinButton.classList.add('smooth-show');
+          });
+        }, 150);
         
         // 🔥 更新进度条显示（确保初级场进度条隐藏）
         updateBetLimitProgressBar();
@@ -3130,25 +3216,27 @@
           }
         }
 
-        // 3. 初始化UI（快速操作）
+        // 3. 🔥 先加载入场券信息，判断是否在高级场（避免UI闪烁）
+        await loadAdvancedTickets();  // 这会设置 isInAdvancedMode
+        
+        // 4. 初始化UI（此时已经知道是否在高级场）
         initSlotReels();
-        updateSlotUI();
+        updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode 显示正确的UI
         syncUserInfoToSlot();
         
         // 🎵 预初始化音效系统（首次播放时自动初始化）
         soundManager.init();
 
-        // 4. 隐藏loading遮罩
+        // 5. 隐藏loading遮罩
         loadingOverlay.style.animation = 'fadeOut 0.3s ease-in forwards';
         await new Promise(resolve => setTimeout(resolve, 300));
         loadingOverlay.classList.add('hidden');
         loadingOverlay.style.animation = '';
 
-        // 5. 异步加载排行榜和入场券信息（不阻塞主界面，延迟加载）
-        setTimeout(async () => {
+        // 6. 异步加载排行榜（不阻塞主界面）
+        setTimeout(() => {
           loadSidebarLeaderboard();
-          await loadAdvancedTickets();  // 🔥 加载入场券信息
-          // console.log('[初始化] 入场券加载完成，isInAdvancedMode:', isInAdvancedMode);
+          // console.log('[初始化] 排行榜加载完成');
           
           // 🔥 如果用户在高级场，确保UI正确显示
           if (isInAdvancedMode && advancedTicketsData) {

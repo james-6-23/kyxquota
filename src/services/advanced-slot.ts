@@ -135,6 +135,7 @@ export function addFragment(linuxDoId: string, count: number = 1): void {
 export function synthesizeTicket(linuxDoId: string): { success: boolean; message: string; data?: any } {
     const tickets = getUserTickets(linuxDoId);
     const config = getAdvancedSlotConfig();
+    const today = getTodayDate();
 
     if (!tickets || tickets.fragments < config.fragments_needed) {
         return {
@@ -143,12 +144,32 @@ export function synthesizeTicket(linuxDoId: string): { success: boolean; message
         };
     }
 
+    // 🔥 检查今日获得入场券限制
+    const todayGrant = advancedSlotQueries.getTodayGrant.get(linuxDoId, today);
+    const ticketsGrantedToday = todayGrant?.ticket_granted || 0;
+
+    if (ticketsGrantedToday >= config.daily_ticket_grant_limit) {
+        console.log(`[合成] 用户 ${linuxDoId} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
+        return {
+            success: false,
+            message: `今日获得入场券已达上限（${config.daily_ticket_grant_limit}张），无法合成`
+        };
+    }
+
+    // 🔥 检查持有上限
+    if (tickets.tickets >= config.max_tickets_hold) {
+        return {
+            success: false,
+            message: `已达持有上限（${config.max_tickets_hold}张），无法合成`
+        };
+    }
+
     const now = Date.now();
     const expiresAt = now + (config.ticket_valid_hours * 3600000);
 
     // 减少碎片并增加入场券
     const newFragments = tickets.fragments - config.fragments_needed;
-    const newTickets = Math.min(tickets.tickets + 1, config.max_tickets_hold);
+    const newTickets = tickets.tickets + 1;  // 已检查上限，直接+1
 
     advancedSlotQueries.upsertTickets.run(
         linuxDoId,
@@ -159,7 +180,12 @@ export function synthesizeTicket(linuxDoId: string): { success: boolean; message
         now
     );
 
-    console.log(`[合成] 用户 ${linuxDoId} 合成了1张入场券`);
+    // 🔥 记录今日获得数量（合成也算获得）
+    advancedSlotQueries.updateTodayTicketGrant.run(
+        linuxDoId, today, 1, 0, now, 1, 0, now
+    );
+
+    console.log(`[合成] 用户 ${linuxDoId} 合成了1张入场券（今日已获得 ${ticketsGrantedToday + 1}/${config.daily_ticket_grant_limit}）`);
 
     return {
         success: true,
@@ -167,7 +193,9 @@ export function synthesizeTicket(linuxDoId: string): { success: boolean; message
         data: {
             tickets: newTickets,
             fragments: newFragments,
-            expires_at: expiresAt
+            expires_at: expiresAt,
+            today_granted: ticketsGrantedToday + 1,
+            daily_limit: config.daily_ticket_grant_limit
         }
     };
 }
