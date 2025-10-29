@@ -100,8 +100,23 @@ export function getUserKunbeiStatus(linuxDoId: string): {
 export function calculateUserMaxLoanAmount(linuxDoId: string): number {
     // 获取用户当前额度
     const userQuota = getUserQuota(linuxDoId);
-    if (!userQuota) return 0;
-    
+
+    // 如果额度为0，可能是缓存未命中，使用默认最低档配置
+    if (!userQuota || userQuota === 0) {
+        // 获取所有激活的梯度配置
+        const gradientConfigs = kunbeiQueries.getGradientConfigs.all();
+        if (gradientConfigs && gradientConfigs.length > 0) {
+            // 返回最低档的借款额度（quota_threshold 最小的那个）
+            const lowestGradient = gradientConfigs.reduce((min, current) =>
+                current.quota_threshold < min.quota_threshold ? current : min
+            );
+            return lowestGradient.max_loan_amount;
+        }
+        // 如果没有梯度配置，使用默认配置
+        const config = getKunbeiConfig();
+        return config.max_loan_amount;
+    }
+
     // 获取所有激活的梯度配置
     const gradientConfigs = kunbeiQueries.getGradientConfigs.all();
     if (!gradientConfigs || gradientConfigs.length === 0) {
@@ -109,14 +124,14 @@ export function calculateUserMaxLoanAmount(linuxDoId: string): number {
         const config = getKunbeiConfig();
         return config.max_loan_amount;
     }
-    
+
     // 根据用户额度匹配梯度配置（从高优先级到低优先级）
     for (const gradient of gradientConfigs) {
         if (userQuota < gradient.quota_threshold) {
             return gradient.max_loan_amount;
         }
     }
-    
+
     // 如果用户额度超过所有阈值，使用系统默认最大借款额度
     const config = getKunbeiConfig();
     return config.max_loan_amount;
@@ -438,7 +453,7 @@ export async function checkOverdueLoans(): Promise<number> {
 
             overdueCount++;
             console.log(`[坤呗] 借款逾期 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}`);
-            
+
             // 🔥 如果配置启用了逾期扣除所有额度
             if (config.deduct_all_quota_on_overdue) {
                 const userQuota = getUserQuota(loan.linux_do_id);

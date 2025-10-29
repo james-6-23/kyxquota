@@ -8,6 +8,7 @@ import type { SessionData } from '../types';
 import {
     getKunbeiConfig,
     getUserKunbeiStatus,
+    getAllGradientConfigs,
     borrowLoan,
     repayLoan,
     checkOverdueLoans,
@@ -15,7 +16,7 @@ import {
     forgiveLoan,
 } from '../services/kunbei';
 import { kunbeiQueries, userQueries, adminQueries } from '../database';
-import { addQuota, deductQuota } from '../services/kyx-api';
+import { addQuota, deductQuota, getKyxUserById } from '../services/kyx-api';
 
 const kunbei = new Hono();
 
@@ -70,11 +71,35 @@ kunbei.get('/config', requireAuth, async (c) => {
 kunbei.get('/status', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
+
+        // 获取用户信息
+        const user = userQueries.get.get(session.linux_do_id!);
+        if (user) {
+            // 获取管理员配置
+            const adminConfig = adminQueries.get.get();
+            if (adminConfig) {
+                // 尝试加载用户额度信息到缓存（不阻塞主流程）
+                getKyxUserById(
+                    user.kyx_user_id,
+                    adminConfig.session,
+                    adminConfig.new_api_user
+                ).catch(err => {
+                    console.warn('[坤呗] 预加载用户额度信息失败:', err.message);
+                });
+            }
+        }
+
         const status = getUserKunbeiStatus(session.linux_do_id!);
+
+        // 获取梯度配置
+        const gradientConfigs = getAllGradientConfigs();
 
         return c.json({
             success: true,
-            data: status
+            data: {
+                ...status,
+                gradient_configs: gradientConfigs
+            }
         });
     } catch (error: any) {
         console.error('[坤呗] 获取状态失败:', error);
@@ -94,6 +119,33 @@ kunbei.post('/borrow', requireAuth, async (c) => {
             return c.json({ success: false, message: '参数错误' }, 400);
         }
 
+        // 获取用户信息
+        const user = userQueries.get.get(session.linux_do_id!);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        // 获取管理员配置
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({ success: false, message: '系统配置未找到' }, 500);
+        }
+
+        // 确保用户额度信息已加载到缓存（解决缓存未命中问题）
+        const kyxUserResult = await getKyxUserById(
+            user.kyx_user_id,
+            adminConfig.session,
+            adminConfig.new_api_user
+        );
+
+        if (!kyxUserResult.success || !kyxUserResult.user) {
+            console.error('[坤呗] 无法获取用户额度信息:', kyxUserResult.message);
+            return c.json({
+                success: false,
+                message: '获取用户额度信息失败，请稍后重试'
+            }, 500);
+        }
+
         // 调用借款服务
         const result = borrowLoan(session.linux_do_id!, session.username!, amount);
 
@@ -102,16 +154,6 @@ kunbei.post('/borrow', requireAuth, async (c) => {
         }
 
         // 增加用户额度
-        const user = userQueries.get.get(session.linux_do_id!);
-        if (!user) {
-            return c.json({ success: false, message: '用户不存在' }, 404);
-        }
-
-        const adminConfig = adminQueries.get.get();
-        if (!adminConfig) {
-            return c.json({ success: false, message: '系统配置未找到' }, 500);
-        }
-
         const quotaResult = await addQuota(
             user.kyx_user_id,
             amount,
