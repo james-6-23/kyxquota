@@ -1253,13 +1253,13 @@ function initQueries() {
 
         // 梯度配置相关查询
         getGradientConfigs: db.query<KunbeiGradientConfig, never>(
-            'SELECT * FROM kunbei_gradient_configs WHERE is_active = 1 ORDER BY priority DESC'
+            'SELECT * FROM kunbei_gradient_configs WHERE is_active = 1 ORDER BY quota_threshold ASC'
         ),
         getGradientConfigById: db.query<KunbeiGradientConfig, number>(
             'SELECT * FROM kunbei_gradient_configs WHERE id = ?'
         ),
         getAllGradientConfigs: db.query<KunbeiGradientConfig, never>(
-            'SELECT * FROM kunbei_gradient_configs ORDER BY priority DESC'
+            'SELECT * FROM kunbei_gradient_configs ORDER BY quota_threshold ASC'
         ),
         insertGradientConfig: db.query(
             `INSERT INTO kunbei_gradient_configs (quota_threshold, max_loan_amount, priority, is_active, created_at, updated_at)

@@ -176,6 +176,9 @@
           <button onclick="showSection('kunbeiManagement')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>🐔</span> 坤呗贷款管理
           </button>
+          <button onclick="showSection('kunbeiRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>📋</span> 贷款记录
+          </button>
         </nav>
       </aside>
 
@@ -2538,14 +2541,13 @@
                   <tr class="border-b border-slate-200">
                     <th class="text-left py-3 px-4 font-semibold text-slate-700">额度阈值</th>
                     <th class="text-left py-3 px-4 font-semibold text-slate-700">最大可借金额</th>
-                    <th class="text-left py-3 px-4 font-semibold text-slate-700">优先级</th>
                     <th class="text-left py-3 px-4 font-semibold text-slate-700">状态</th>
                     <th class="text-center py-3 px-4 font-semibold text-slate-700">操作</th>
                   </tr>
                 </thead>
                 <tbody id="gradientConfigsTable">
                   <tr>
-                    <td colspan="5" class="text-center py-8 text-slate-500">
+                    <td colspan="4" class="text-center py-8 text-slate-500">
                       <div class="text-4xl mb-2">📋</div>
                       <p>暂无梯度配置</p>
                     </td>
@@ -2556,7 +2558,16 @@
             
             <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
               <p class="text-sm text-amber-800">
-                <strong>💡 说明：</strong>系统会根据用户当前额度匹配合适的梯度。例如：额度小于10000时，可借10000；额度小于100000时，可借100000。
+                <strong>💡 说明：</strong>系统自动根据用户额度匹配借款额度。用户额度低于所有阈值时，使用最小阈值的借款额度。
+              </p>
+              <p class="text-sm text-amber-800 mt-2">
+                <strong>配置示例：</strong><br>
+                • 阈值 $5000，可借 $10 - 额度 < $5000 的用户可借 $10<br>
+                • 阈值 $100000，可借 $200 - 额度 ≥ $100000 的用户可借 $200<br>
+                • 阈值 $1000000，可借 $400 - 额度 ≥ $1000000 的用户可借 $400
+              </p>
+              <p class="text-sm text-amber-700 mt-2">
+                <strong>⚠️ 重要：</strong>系统会自动按阈值排序处理，无需设置优先级。
               </p>
             </div>
           </div>
@@ -2645,6 +2656,188 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📋 Kunbei Records Section (独立的贷款记录管理) -->
+        <div id="kunbeiRecordsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">📋 贷款记录管理</h2>
+            <div class="flex gap-2">
+              <button onclick="exportKunbeiRecords()" class="flex items-center gap-2 px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                导出记录
+              </button>
+              <button onclick="refreshKunbeiRecords()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                刷新
+              </button>
+            </div>
+          </div>
+
+          <!-- 搜索和筛选区域 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <!-- 搜索框 -->
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-slate-700 mb-2">搜索用户</label>
+                <div class="relative">
+                  <input type="text" id="kunbeiRecordSearch" 
+                         placeholder="输入LinuxDo用户名或公益站用户名..." 
+                         class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                         onkeyup="searchKunbeiRecords(event)">
+                  <svg class="absolute left-3 top-2.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+
+              <!-- 状态筛选 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">状态筛选</label>
+                <select id="kunbeiStatusFilter" onchange="filterKunbeiRecords()" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <option value="">全部状态</option>
+                  <option value="active">⏳ 借款中</option>
+                  <option value="repaid">✅ 已还款</option>
+                  <option value="overdue">⚠️ 已逾期</option>
+                  <option value="forgiven">🤝 已免除</option>
+                </select>
+              </div>
+
+              <!-- 时间范围 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">时间范围</label>
+                <select id="kunbeiTimeFilter" onchange="filterKunbeiRecords()" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <option value="">全部时间</option>
+                  <option value="today">今天</option>
+                  <option value="week">最近7天</option>
+                  <option value="month">最近30天</option>
+                  <option value="all">所有记录</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 批量操作 -->
+            <div class="flex items-center gap-4 mt-4 pt-4 border-t border-slate-200">
+              <label class="flex items-center gap-2">
+                <input type="checkbox" id="selectAllRecords" onchange="toggleAllRecords()" class="w-4 h-4 text-indigo-600 border-slate-300 rounded">
+                <span class="text-sm text-slate-700">全选</span>
+              </label>
+              <span class="text-sm text-slate-500">已选择 <span id="selectedCount">0</span> 条记录</span>
+              
+              <div class="ml-auto flex gap-2">
+                <button onclick="batchForgiveLoans()" class="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50" disabled id="batchForgiveBtn">
+                  🤝 批量免除
+                </button>
+                <button onclick="batchSendReminders()" class="px-4 py-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50" disabled id="batchReminderBtn">
+                  📧 批量催收
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 统计概览 -->
+          <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center text-xl">📊</div>
+                <div>
+                  <p class="text-xs text-slate-600">总记录数</p>
+                  <p id="totalRecordsCount" class="text-xl font-bold text-slate-900">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center text-xl">⏳</div>
+                <div>
+                  <p class="text-xs text-slate-600">借款中</p>
+                  <p id="activeLoansCount" class="text-xl font-bold text-yellow-600">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center text-xl">✅</div>
+                <div>
+                  <p class="text-xs text-slate-600">已还款</p>
+                  <p id="repaidLoansCount" class="text-xl font-bold text-green-600">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center text-xl">⚠️</div>
+                <div>
+                  <p class="text-xs text-slate-600">已逾期</p>
+                  <p id="overdueLoansCount" class="text-xl font-bold text-red-600">0</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center text-xl">💰</div>
+                <div>
+                  <p class="text-xs text-slate-600">总金额</p>
+                  <p id="totalLoanAmount" class="text-xl font-bold text-purple-600">$0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 记录列表 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-center">
+                      <input type="checkbox" id="selectAllHeader" onchange="toggleAllRecords()" class="w-4 h-4 text-indigo-600 border-slate-300 rounded">
+                    </th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">LinuxDo用户</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">公益站用户</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">借款金额</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">应还金额</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">借款时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">到期时间</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="kunbeiRecordsTableBody">
+                  <tr>
+                    <td colspan="10" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            
+            <!-- 分页 -->
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div class="text-sm text-slate-600">
+                显示第 <span id="recordsStart">0</span> - <span id="recordsEnd">0</span> 条，共 <span id="recordsTotal">0</span> 条记录
+              </div>
+              <div class="flex gap-2">
+                <button onclick="changeRecordsPage(-1)" id="prevPageBtn" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50" disabled>
+                  上一页
+                </button>
+                <span class="px-4 py-2 text-sm">
+                  第 <span id="currentPageNum">1</span> / <span id="totalPageNum">1</span> 页
+                </span>
+                <button onclick="changeRecordsPage(1)" id="nextPageBtn" class="px-4 py-2 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-50" disabled>
+                  下一页
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -3921,7 +4114,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement', 'kunbeiRecords'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -3945,6 +4138,7 @@
       if (section === 'pendingRewards') loadPendingRewards();
       if (section === 'bannedUsers') loadBannedUsers();
       if (section === 'kunbeiManagement') loadKunbeiManagement();
+      if (section === 'kunbeiRecords') loadKunbeiRecords();
     }
 
     // 老虎机配置管理
@@ -5816,7 +6010,7 @@
       if (!configs || configs.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="5" class="text-center py-8 text-slate-500">
+            <td colspan="4" class="text-center py-8 text-slate-500">
               <div class="text-4xl mb-2">📋</div>
               <p>暂无梯度配置</p>
             </td>
@@ -5829,14 +6023,11 @@
         <tr class="border-b border-slate-100 hover:bg-slate-50">
           <td class="px-4 py-3">
             <span class="font-semibold text-slate-900">$${(config.quota_threshold / 500000).toFixed(2)}</span>
-            <div class="text-xs text-slate-500">额度小于此值</div>
+            <div class="text-xs text-slate-500">额度达到此值</div>
           </td>
           <td class="px-4 py-3">
             <span class="font-semibold text-green-600">$${(config.max_loan_amount / 500000).toFixed(2)}</span>
             <div class="text-xs text-slate-500">最大可借</div>
-          </td>
-          <td class="px-4 py-3">
-            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-semibold">${config.priority}</span>
           </td>
           <td class="px-4 py-3">
             ${config.is_active 
@@ -5872,13 +6063,6 @@
                 <input type="number" id="gradientMaxLoan" value="${config ? config.max_loan_amount / 500000 : ''}"
                   class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="例如：10000">
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">优先级</label>
-                <input type="number" id="gradientPriority" value="${config ? config.priority : 0}"
-                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                  placeholder="数字越大优先级越高">
               </div>
               
               <div>
@@ -5920,7 +6104,6 @@
       try {
         const threshold = parseFloat(document.getElementById('gradientThreshold').value);
         const maxLoan = parseFloat(document.getElementById('gradientMaxLoan').value);
-        const priority = parseInt(document.getElementById('gradientPriority').value) || 0;
         const isActive = document.getElementById('gradientActive').checked ? 1 : 0;
         
         if (!threshold || !maxLoan) {
@@ -5931,7 +6114,7 @@
         const data = {
           quota_threshold: threshold * 500000,
           max_loan_amount: maxLoan * 500000,
-          priority: priority,
+          priority: 0,  // 优先级固定为0，系统会自动按阈值排序
           is_active: isActive
         };
         
@@ -6021,6 +6204,332 @@
         console.error('保存逾期配置失败:', error);
         showToast('保存失败', 'error');
       }
+    }
+
+    // ========== 贷款记录管理功能 ==========
+    
+    let kunbeiRecordsCurrentPage = 1;
+    let kunbeiRecordsData = [];
+    let kunbeiRecordsFiltered = [];
+    let selectedRecords = new Set();
+    const recordsPerPage = 20;
+    
+    async function loadKunbeiRecords() {
+      try {
+        const res = await fetch('/api/admin/kunbei/all-loans');
+        const data = await res.json();
+        
+        if (data.success) {
+          kunbeiRecordsData = data.data.loans || [];
+          applyKunbeiFilters();
+          updateKunbeiStatistics(data.data.stats);
+        }
+      } catch (error) {
+        console.error('加载贷款记录失败:', error);
+        showToast('加载失败', 'error');
+      }
+    }
+    
+    function refreshKunbeiRecords() {
+      selectedRecords.clear();
+      updateSelectedCount();
+      loadKunbeiRecords();
+    }
+    
+    function searchKunbeiRecords(event) {
+      if (event.key === 'Enter' || !event.key) {
+        applyKunbeiFilters();
+      }
+    }
+    
+    function filterKunbeiRecords() {
+      applyKunbeiFilters();
+    }
+    
+    function applyKunbeiFilters() {
+      const searchTerm = document.getElementById('kunbeiRecordSearch').value.toLowerCase();
+      const statusFilter = document.getElementById('kunbeiStatusFilter').value;
+      const timeFilter = document.getElementById('kunbeiTimeFilter').value;
+      
+      kunbeiRecordsFiltered = kunbeiRecordsData.filter(record => {
+        // 搜索过滤
+        if (searchTerm) {
+          const matchLinuxDo = record.username.toLowerCase().includes(searchTerm);
+          const matchKyx = record.kyx_username && record.kyx_username.toLowerCase().includes(searchTerm);
+          if (!matchLinuxDo && !matchKyx) return false;
+        }
+        
+        // 状态过滤
+        if (statusFilter) {
+          // 判断是否豁免
+          const isForgiven = record.status === 'repaid' && record.actual_repay_amount === 0;
+          if (statusFilter === 'forgiven' && !isForgiven) return false;
+          if (statusFilter !== 'forgiven' && statusFilter !== record.status) return false;
+        }
+        
+        // 时间过滤
+        if (timeFilter && timeFilter !== 'all') {
+          const now = Date.now();
+          const recordTime = record.borrowed_at;
+          const dayMs = 24 * 60 * 60 * 1000;
+          
+          if (timeFilter === 'today' && recordTime < now - dayMs) return false;
+          if (timeFilter === 'week' && recordTime < now - 7 * dayMs) return false;
+          if (timeFilter === 'month' && recordTime < now - 30 * dayMs) return false;
+        }
+        
+        return true;
+      });
+      
+      // 重置到第一页
+      kunbeiRecordsCurrentPage = 1;
+      renderKunbeiRecordsTable();
+    }
+    
+    function updateKunbeiStatistics(stats) {
+      // 更新统计数据
+      document.getElementById('totalRecordsCount').textContent = stats.total_count || 0;
+      document.getElementById('activeLoansCount').textContent = stats.active_count || 0;
+      document.getElementById('repaidLoansCount').textContent = stats.repaid_count || 0;
+      document.getElementById('overdueLoansCount').textContent = stats.overdue_count || 0;
+      document.getElementById('totalLoanAmount').textContent = `$${((stats.total_amount || 0) / 500000).toFixed(2)}`;
+    }
+    
+    function renderKunbeiRecordsTable() {
+      const tbody = document.getElementById('kunbeiRecordsTableBody');
+      const totalRecords = kunbeiRecordsFiltered.length;
+      const totalPages = Math.ceil(totalRecords / recordsPerPage);
+      const start = (kunbeiRecordsCurrentPage - 1) * recordsPerPage;
+      const end = Math.min(start + recordsPerPage, totalRecords);
+      const pageRecords = kunbeiRecordsFiltered.slice(start, end);
+      
+      // 更新分页信息
+      document.getElementById('recordsStart').textContent = totalRecords > 0 ? start + 1 : 0;
+      document.getElementById('recordsEnd').textContent = end;
+      document.getElementById('recordsTotal').textContent = totalRecords;
+      document.getElementById('currentPageNum').textContent = kunbeiRecordsCurrentPage;
+      document.getElementById('totalPageNum').textContent = totalPages || 1;
+      
+      // 更新分页按钮状态
+      document.getElementById('prevPageBtn').disabled = kunbeiRecordsCurrentPage <= 1;
+      document.getElementById('nextPageBtn').disabled = kunbeiRecordsCurrentPage >= totalPages;
+      
+      if (pageRecords.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-slate-500">暂无记录</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = pageRecords.map(record => {
+        const isForgiven = record.status === 'repaid' && record.actual_repay_amount === 0;
+        const statusBadge = record.status === 'active' 
+          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 借款中</span>'
+          : record.status === 'overdue'
+            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>'
+            : isForgiven
+              ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">🤝 已免除</span>'
+              : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
+        
+        const isChecked = selectedRecords.has(record.id);
+        const actionButtons = (record.status === 'active' || record.status === 'overdue')
+          ? `
+            <button onclick="viewLoanDetails(${record.id})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium">详情</button>
+            <button onclick="forgiveSingleLoan(${record.id}, '${record.username}')" class="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium">免除</button>
+            `
+          : `<button onclick="viewLoanDetails(${record.id})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium">详情</button>`;
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 text-center">
+              <input type="checkbox" ${isChecked ? 'checked' : ''} 
+                     onchange="toggleRecordSelection(${record.id})"
+                     ${record.status === 'repaid' || isForgiven ? 'disabled' : ''}
+                     class="w-4 h-4 text-indigo-600 border-slate-300 rounded ${record.status === 'repaid' || isForgiven ? 'opacity-50' : ''}">
+            </td>
+            <td class="px-4 py-3 font-mono text-slate-600">#${record.id}</td>
+            <td class="px-4 py-3">
+              <div class="font-medium text-slate-900">${record.username}</div>
+            </td>
+            <td class="px-4 py-3">
+              <div class="text-sm text-slate-600">${record.kyx_username || '-'}</div>
+            </td>
+            <td class="px-4 py-3 text-right font-semibold text-blue-600">$${(record.loan_amount / 500000).toFixed(2)}</td>
+            <td class="px-4 py-3 text-right font-semibold text-red-600">$${(record.repay_amount / 500000).toFixed(2)}</td>
+            <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.borrowed_at).toLocaleString('zh-CN', { hour12: false })}</td>
+            <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.due_at).toLocaleString('zh-CN', { hour12: false })}</td>
+            <td class="px-4 py-3 text-center">${statusBadge}</td>
+            <td class="px-4 py-3 text-center">
+              <div class="flex gap-1 justify-center">
+                ${actionButtons}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function changeRecordsPage(delta) {
+      const totalPages = Math.ceil(kunbeiRecordsFiltered.length / recordsPerPage);
+      const newPage = kunbeiRecordsCurrentPage + delta;
+      
+      if (newPage >= 1 && newPage <= totalPages) {
+        kunbeiRecordsCurrentPage = newPage;
+        renderKunbeiRecordsTable();
+      }
+    }
+    
+    function toggleRecordSelection(recordId) {
+      if (selectedRecords.has(recordId)) {
+        selectedRecords.delete(recordId);
+      } else {
+        selectedRecords.add(recordId);
+      }
+      updateSelectedCount();
+    }
+    
+    function toggleAllRecords() {
+      const checkAll = document.getElementById('selectAllRecords').checked;
+      const headerCheckAll = document.getElementById('selectAllHeader');
+      
+      if (headerCheckAll) {
+        headerCheckAll.checked = checkAll;
+      }
+      
+      if (checkAll) {
+        // 只选择当前页面上可选的记录（非已还款/已免除）
+        const start = (kunbeiRecordsCurrentPage - 1) * recordsPerPage;
+        const end = Math.min(start + recordsPerPage, kunbeiRecordsFiltered.length);
+        const pageRecords = kunbeiRecordsFiltered.slice(start, end);
+        
+        pageRecords.forEach(record => {
+          if (record.status === 'active' || record.status === 'overdue') {
+            selectedRecords.add(record.id);
+          }
+        });
+      } else {
+        selectedRecords.clear();
+      }
+      
+      updateSelectedCount();
+      renderKunbeiRecordsTable();
+    }
+    
+    function updateSelectedCount() {
+      document.getElementById('selectedCount').textContent = selectedRecords.size;
+      const hasSeletion = selectedRecords.size > 0;
+      document.getElementById('batchForgiveBtn').disabled = !hasSeletion;
+      document.getElementById('batchReminderBtn').disabled = !hasSeletion;
+    }
+    
+    async function batchForgiveLoans() {
+      if (selectedRecords.size === 0) return;
+      
+      if (!confirm(`确定要免除选中的 ${selectedRecords.size} 条贷款记录吗？\n\n免除后这些借款将标记为已还清，用户无需还款。`)) {
+        return;
+      }
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const loanId of selectedRecords) {
+        try {
+          const res = await fetch(`/api/admin/kunbei/loans/${loanId}/forgive`, {
+            method: 'POST'
+          });
+          
+          const data = await res.json();
+          if (data.success) {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        } catch (error) {
+          failCount++;
+        }
+      }
+      
+      showToast(`批量免除完成：成功 ${successCount} 条，失败 ${failCount} 条`, 'success');
+      selectedRecords.clear();
+      updateSelectedCount();
+      refreshKunbeiRecords();
+    }
+    
+    function batchSendReminders() {
+      // TODO: 实现批量催收功能
+      showToast('批量催收功能开发中...', 'info');
+    }
+    
+    async function forgiveSingleLoan(loanId, username) {
+      if (!confirm(`确认免除用户 "${username}" 的借款吗？\n\n免除后该借款将标记为已还清，用户无需还款。`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/kunbei/loans/${loanId}/forgive`, {
+          method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('借款已免除', 'success');
+          refreshKunbeiRecords();
+        } else {
+          showToast(data.message || '免除失败', 'error');
+        }
+      } catch (error) {
+        console.error('免除失败:', error);
+        showToast('操作失败', 'error');
+      }
+    }
+    
+    function viewLoanDetails(loanId) {
+      // TODO: 实现查看借款详情功能
+      showToast('借款详情功能开发中...', 'info');
+    }
+    
+    function exportKunbeiRecords() {
+      if (kunbeiRecordsFiltered.length === 0) {
+        showToast('没有可导出的记录', 'warning');
+        return;
+      }
+      
+      // 准备CSV数据
+      const headers = ['ID', 'LinuxDo用户', '公益站用户', '借款金额($)', '应还金额($)', '借款时间', '到期时间', '状态'];
+      const rows = kunbeiRecordsFiltered.map(record => {
+        const isForgiven = record.status === 'repaid' && record.actual_repay_amount === 0;
+        const status = record.status === 'active' ? '借款中' 
+          : record.status === 'overdue' ? '已逾期'
+          : isForgiven ? '已免除'
+          : '已还款';
+          
+        return [
+          record.id,
+          record.username,
+          record.kyx_username || '-',
+          (record.loan_amount / 500000).toFixed(2),
+          (record.repay_amount / 500000).toFixed(2),
+          new Date(record.borrowed_at).toLocaleString('zh-CN', { hour12: false }),
+          new Date(record.due_at).toLocaleString('zh-CN', { hour12: false }),
+          status
+        ];
+      });
+      
+      // 生成CSV内容
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // 下载文件
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kunbei_records_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      showToast('导出成功', 'success');
     }
 
     // ========== 封禁记录管理功能 ==========

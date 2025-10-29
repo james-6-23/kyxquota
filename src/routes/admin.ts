@@ -2297,6 +2297,49 @@ app.get('/kunbei/loans', requireAdmin, async (c) => {
 });
 
 /**
+ * 获取所有借款记录（带公益站用户名）
+ */
+app.get('/kunbei/all-loans', requireAdmin, async (c) => {
+    try {
+        const loans = kunbeiQueries.getAllLoans.all();
+
+        // 获取所有相关用户信息
+        const userIds = [...new Set(loans.map(l => l.linux_do_id))];
+        const usersMap = new Map();
+
+        for (const linuxDoId of userIds) {
+            const user = userQueries.get.get(linuxDoId);
+            if (user) {
+                usersMap.set(linuxDoId, user.username);
+            }
+        }
+
+        // 添加公益站用户名
+        const loansWithKyxUsername = loans.map(loan => ({
+            ...loan,
+            kyx_username: usersMap.get(loan.linux_do_id) || null
+        }));
+
+        // 计算统计数据
+        const stats = {
+            total_count: loans.length,
+            active_count: loans.filter(l => l.status === 'active').length,
+            repaid_count: loans.filter(l => l.status === 'repaid').length,
+            overdue_count: loans.filter(l => l.status === 'overdue').length,
+            total_amount: loans.reduce((sum, l) => sum + l.loan_amount, 0)
+        };
+
+        return c.json({
+            success: true,
+            data: { loans: loansWithKyxUsername, stats }
+        });
+    } catch (error: any) {
+        console.error('[坤呗管理] 获取全部借款记录失败:', error);
+        return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
  * 豁免借款
  */
 app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {

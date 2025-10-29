@@ -101,16 +101,14 @@ export function calculateUserMaxLoanAmount(linuxDoId: string): number {
     // 获取用户当前额度
     const userQuota = getUserQuota(linuxDoId);
 
-    // 如果额度为0，可能是缓存未命中，使用默认最低档配置
+    // 如果额度为0，可能是缓存未命中，尝试获取梯度配置
     if (!userQuota || userQuota === 0) {
         // 获取所有激活的梯度配置
         const gradientConfigs = kunbeiQueries.getGradientConfigs.all();
         if (gradientConfigs && gradientConfigs.length > 0) {
-            // 返回最低档的借款额度（quota_threshold 最小的那个）
-            const lowestGradient = gradientConfigs.reduce((min, current) =>
-                current.quota_threshold < min.quota_threshold ? current : min
-            );
-            return lowestGradient.max_loan_amount;
+            // 按阈值从低到高排序，返回最低档（阈值最小的）
+            const sortedConfigs = [...gradientConfigs].sort((a, b) => a.quota_threshold - b.quota_threshold);
+            return sortedConfigs[0].max_loan_amount;
         }
         // 如果没有梯度配置，使用默认配置
         const config = getKunbeiConfig();
@@ -125,16 +123,22 @@ export function calculateUserMaxLoanAmount(linuxDoId: string): number {
         return config.max_loan_amount;
     }
 
-    // 根据用户额度匹配梯度配置（从高优先级到低优先级）
-    for (const gradient of gradientConfigs) {
-        if (userQuota < gradient.quota_threshold) {
-            return gradient.max_loan_amount;
+    // 按额度阈值从低到高排序
+    const sortedGradients = [...gradientConfigs].sort((a, b) => a.quota_threshold - b.quota_threshold);
+
+    // 找到适用的梯度
+    // 从低到高遍历，找到用户额度能达到的最高档
+    let applicableGradient = sortedGradients[0]; // 默认使用最低档
+
+    for (const gradient of sortedGradients) {
+        if (userQuota >= gradient.quota_threshold) {
+            applicableGradient = gradient; // 更新为更高档
+        } else {
+            break; // 遇到第一个达不到的阈值就停止
         }
     }
 
-    // 如果用户额度超过所有阈值，使用系统默认最大借款额度
-    const config = getKunbeiConfig();
-    return config.max_loan_amount;
+    return applicableGradient.max_loan_amount;
 }
 
 /**
