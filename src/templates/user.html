@@ -3179,7 +3179,16 @@
           ticketBar.classList.remove('hidden');
           if (normalSpinsDisplay) normalSpinsDisplay.classList.remove('hidden');
           if (normalTitle) normalTitle.classList.remove('hidden');
-          if (freeSpinButton) freeSpinButton.classList.remove('hidden');
+          // 🔥 修复：只有在有免费次数时才显示 free spin 按钮
+          if (freeSpinButton) {
+            // 确保数据已加载且有免费次数
+            if (slotUserData && slotUserData.free_spins > 0) {
+              freeSpinButton.classList.remove('hidden');
+            } else {
+              // 如果没有数据或没有免费次数，确保按钮隐藏
+              freeSpinButton.classList.add('hidden');
+            }
+          }
           normalSpinButton.classList.remove('hidden');
           
           // 触发平滑显示
@@ -3187,7 +3196,10 @@
             ticketBar.classList.add('smooth-show');
             if (normalSpinsDisplay) normalSpinsDisplay.classList.add('smooth-show');
             if (normalTitle) normalTitle.classList.add('smooth-show');
-            if (freeSpinButton) freeSpinButton.classList.add('smooth-show');
+            // 🔥 修复：只有在有免费次数时才添加平滑显示效果
+            if (freeSpinButton && slotUserData && slotUserData.free_spins > 0) {
+              freeSpinButton.classList.add('smooth-show');
+            }
             normalSpinButton.classList.add('smooth-show');
           });
         }, 150);
@@ -3615,6 +3627,15 @@
           setTimeout(() => {
             // console.log('[初始化] 延迟更新进度条');
             updateBetLimitProgressBar();
+            
+            // 🔥 最终检查：确保 free spin 按钮状态正确
+            const freeSpinButton = document.getElementById('freeSpinButton');
+            if (freeSpinButton) {
+              if (!slotUserData || slotUserData.free_spins <= 0 || isInAdvancedMode) {
+                freeSpinButton.classList.add('hidden');
+                freeSpinButton.disabled = true;
+              }
+            }
           }, 50);
         }, 100);
 
