@@ -2458,6 +2458,9 @@
         }
       });
       
+      // 🔥 更新投注按钮状态
+      updateAdvancedSpinButtonState();
+      
       // console.log('[高级场] 投注金额设置为:', amount);
     }
 
@@ -2477,6 +2480,34 @@
           btn.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         }
       });
+      
+      // 🔥 更新投注按钮状态
+      updateAdvancedSpinButtonState();
+    }
+
+    // 🔥 更新高级场投注按钮状态（独立函数）
+    function updateAdvancedSpinButtonState() {
+      if (!isInAdvancedMode || !slotUserData) return;
+      
+      const advSpinBtn = document.getElementById('advancedSpinButton');
+      if (!advSpinBtn) return;
+      
+      // 检查用户是否被禁止
+      if (slotUserData.is_banned) {
+        advSpinBtn.disabled = true;
+        // console.log('[高级场] 投注按钮禁用：用户被禁止');
+        return;
+      }
+      
+      // 检查余额是否足够投注
+      const requiredQuota = advancedBetAmount * 500000;
+      if (slotUserData.quota >= requiredQuota) {
+        advSpinBtn.disabled = false;
+        // console.log('[高级场] 投注按钮已启用');
+      } else {
+        advSpinBtn.disabled = true;
+        // console.log('[高级场] 投注按钮禁用：余额不足，需要', requiredQuota, '当前', slotUserData.quota);
+      }
     }
 
     // 🔥 更新投注限额进度条（独立函数）
@@ -2697,6 +2728,9 @@
         
         // 🔥 立即更新进度条显示（确保高级场进度条显示）
         updateBetLimitProgressBar();
+        
+        // 🔥 更新投注按钮状态（确保按钮在进入高级场后正确启用）
+        updateAdvancedSpinButtonState();
       } else {
         // 不在高级场：常驻显示入场券栏，隐藏高级场指示器和投注选择器
         ticketBar.classList.remove('hidden');
@@ -3538,6 +3572,9 @@
         freeSpinButton.classList.add('hidden');
         freeSpinButton.disabled = true;
       }
+
+      // 🔥 高级场投注按钮状态更新
+      updateAdvancedSpinButtonState();
 
       // 购买次数功能区
       const buySpinsSection = document.getElementById('buySpinsSection');
