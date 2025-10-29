@@ -474,12 +474,6 @@ export function initDatabase() {
     )
   `);
 
-    // 插入默认高级场配置
-    db.exec(`
-    INSERT OR IGNORE INTO advanced_slot_config (id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, daily_entry_limit, daily_ticket_grant_limit, updated_at)
-    VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, 2, 2, ${Date.now()})
-  `);
-
     // 高级场符号权重配置表（独立于初级场）
     db.exec(`
     CREATE TABLE IF NOT EXISTS advanced_slot_symbol_weights (
@@ -495,12 +489,6 @@ export function initDatabase() {
       weight_lsh INTEGER DEFAULT 50,
       updated_at INTEGER NOT NULL
     )
-  `);
-
-    // 插入默认高级场符号权重配置（律师函权重更高）
-    db.exec(`
-    INSERT OR IGNORE INTO advanced_slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, updated_at)
-    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${Date.now()})
   `);
 
     // 入场券掉落记录表
@@ -556,17 +544,56 @@ export function initDatabase() {
     }
     db.exec('CREATE INDEX IF NOT EXISTS idx_slot_records_mode ON slot_machine_records(slot_mode)');
 
-    console.log('✅ 数据库初始化完成（含高级场系统）');
+    console.log('✅ 数据库表结构创建完成');
 
-    // 执行数据库迁移
+    // 先执行数据库迁移（添加可能缺失的字段）
     try {
         addDailyLimits(db);
     } catch (error) {
-        console.warn('[迁移] 每日限制功能可能已存在:', error);
+        console.warn('[迁移] 迁移执行失败:', error);
     }
+
+    // 迁移完成后再插入默认数据
+    insertDefaultData();
+
+    console.log('✅ 数据库初始化完成（含高级场系统）');
 
     // 初始化预编译查询语句
     initQueries();
+}
+
+/**
+ * 插入默认数据
+ */
+function insertDefaultData() {
+    console.log('📝 插入默认数据...');
+
+    try {
+        // 插入默认高级场配置
+        db.exec(`
+            INSERT OR IGNORE INTO advanced_slot_config (
+                id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, 
+                rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, 
+                drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, 
+                daily_entry_limit, daily_ticket_grant_limit, updated_at
+            )
+            VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, 2, 2, ${Date.now()})
+        `);
+
+        // 插入默认高级场符号权重配置（律师函权重更高）
+        db.exec(`
+            INSERT OR IGNORE INTO advanced_slot_symbol_weights (
+                id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, 
+                weight_zft, weight_bdk, weight_lsh, updated_at
+            )
+            VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${Date.now()})
+        `);
+
+        console.log('✅ 默认数据插入完成');
+    } catch (error) {
+        console.error('❌ 插入默认数据失败:', error);
+        throw error; // 重新抛出错误，让调用者处理
+    }
 }
 
 // ========== 预编译查询语句（性能优化） ==========
