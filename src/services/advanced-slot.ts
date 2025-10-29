@@ -54,6 +54,8 @@ export function getAdvancedSlotConfig(): AdvancedSlotConfig {
             drop_rate_double: 1.0,
             max_tickets_hold: 2,
             daily_bet_limit: 5000000000,
+            daily_entry_limit: 2,         // 默认每日2次
+            daily_ticket_grant_limit: 2,  // 默认每日获得2张
             updated_at: Date.now()
         };
     }
@@ -64,17 +66,53 @@ export function getAdvancedSlotConfig(): AdvancedSlotConfig {
 /**
  * 添加入场券（最多持有N张，有效期24小时）
  */
-export function addTicket(linuxDoId: string, count: number = 1): void {
+export function addTicket(linuxDoId: string, count: number = 1): { success: boolean; message?: string; granted?: number } {
     const now = Date.now();
     const config = getAdvancedSlotConfig();
+    const today = getTodayDate();
+
+    // 检查今日获得限制
+    const todayGrant = advancedSlotQueries.getTodayGrant.get(linuxDoId, today);
+    const ticketsGrantedToday = todayGrant?.ticket_granted || 0;
+
+    if (ticketsGrantedToday >= config.daily_ticket_grant_limit) {
+        console.log(`[入场券] 用户 ${linuxDoId} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
+        return {
+            success: false,
+            message: `今日获得入场券已达上限（${config.daily_ticket_grant_limit}张）`
+        };
+    }
+
+    // 计算实际可获得数量
+    const remainingQuota = config.daily_ticket_grant_limit - ticketsGrantedToday;
+    const actualCount = Math.min(count, remainingQuota);
+
+    if (actualCount <= 0) {
+        return {
+            success: false,
+            message: '今日入场券获得配额已用完'
+        };
+    }
+
     const expiresAt = now + (config.ticket_valid_hours * 3600000);
 
     advancedSlotQueries.addTickets.run(
-        linuxDoId, count, expiresAt, now,
-        count, config.max_tickets_hold, expiresAt, now
+        linuxDoId, actualCount, expiresAt, now,
+        actualCount, config.max_tickets_hold, expiresAt, now
     );
 
-    console.log(`[入场券] 用户 ${linuxDoId} 获得 ${count} 张入场券，过期时间: ${new Date(expiresAt).toLocaleString()}`);
+    // 记录今日获得数量
+    advancedSlotQueries.updateTodayTicketGrant.run(
+        linuxDoId, today, actualCount, 0, now, actualCount, 0, now
+    );
+
+    console.log(`[入场券] 用户 ${linuxDoId} 获得 ${actualCount} 张入场券（今日已获得 ${ticketsGrantedToday + actualCount}/${config.daily_ticket_grant_limit}）`);
+
+    return {
+        success: true,
+        granted: actualCount,
+        message: actualCount < count ? `仅获得 ${actualCount} 张入场券（今日限额）` : undefined
+    };
 }
 
 /**
@@ -160,6 +198,14 @@ export function isInAdvancedMode(linuxDoId: string): boolean {
 }
 
 /**
+ * 获取今日日期（YYYY-MM-DD格式）
+ */
+function getTodayDate(): string {
+    const now = new Date();
+    return now.toISOString().split('T')[0];
+}
+
+/**
  * 进入高级场（消耗1张入场券）
  */
 export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
@@ -183,6 +229,19 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
         return {
             success: false,
             message: '高级场功能已关闭'
+        };
+    }
+
+    // 检查每日进入次数限制
+    const today = getTodayDate();
+    const todayEntry = advancedSlotQueries.getTodayEntry.get(linuxDoId, today);
+    const entryCount = todayEntry?.entry_count || 0;
+
+    if (entryCount >= config.daily_entry_limit) {
+        console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
+        return {
+            success: false,
+            message: `今日进入次数已达上限（${config.daily_entry_limit}次）`
         };
     }
 
@@ -226,9 +285,18 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
         };
     }
 
+    // 记录今日进入次数
+    try {
+        advancedSlotQueries.updateTodayEntry.run(linuxDoId, today, now, now);
+        console.log(`[高级场] 记录用户 ${linuxDoId} 今日第 ${entryCount + 1} 次进入高级场`);
+    } catch (error) {
+        console.error(`[高级场] 记录进入次数失败:`, error);
+        // 不影响进入成功
+    }
+
     return {
         success: true,
-        message: '成功进入高级场！',
+        message: `成功进入高级场！（今日第${entryCount + 1}次）`,
         validUntil
     };
 }

@@ -145,6 +145,8 @@ export interface AdvancedSlotConfig {
     drop_rate_double: number;       // 二连掉落概率
     max_tickets_hold: number;       // 最多持有入场券数
     daily_bet_limit: number;        // 每日投注上限
+    daily_entry_limit: number;      // 每日进入次数限制
+    daily_ticket_grant_limit: number; // 每日入场券获得数量限制
     updated_at: number;
 }
 
@@ -158,6 +160,25 @@ export interface TicketDropRecord {
     trigger_win_type: string;           // 触发的中奖类型
     timestamp: number;
     date: string;
+}
+
+// 用户每日进入高级场记录
+export interface UserAdvancedEntry {
+    id?: number;
+    linux_do_id: string;
+    entry_date: string;          // YYYY-MM-DD 格式
+    entry_count: number;         // 今日进入次数
+    last_entry_time: number;     // 最后进入时间戳
+}
+
+// 用户每日入场券获得记录
+export interface UserDailyTicketGrant {
+    id?: number;
+    linux_do_id: string;
+    grant_date: string;          // YYYY-MM-DD 格式
+    ticket_granted: number;      // 今日获得的入场券数量
+    fragment_granted: number;    // 今日获得的碎片数量
+    last_grant_time: number;     // 最后获得时间戳
 }
 
 // 高级场RTP统计

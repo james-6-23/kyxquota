@@ -13,7 +13,10 @@ import type {
     AdvancedSlotConfig,
     TicketDropRecord,
     AdvancedSlotRTPStats,
+    UserAdvancedEntry,
+    UserDailyTicketGrant,
 } from './types';
+import { addDailyLimits } from './migrations/add-daily-limits';
 
 // 创建数据库连接
 export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
@@ -465,14 +468,16 @@ export function initDatabase() {
       drop_rate_double REAL DEFAULT 1.0,
       max_tickets_hold INTEGER DEFAULT 2,
       daily_bet_limit INTEGER DEFAULT 5000000000,
+      daily_entry_limit INTEGER DEFAULT 2,
+      daily_ticket_grant_limit INTEGER DEFAULT 2,
       updated_at INTEGER NOT NULL
     )
   `);
 
     // 插入默认高级场配置
     db.exec(`
-    INSERT OR IGNORE INTO advanced_slot_config (id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, updated_at)
-    VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, ${Date.now()})
+    INSERT OR IGNORE INTO advanced_slot_config (id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, daily_entry_limit, daily_ticket_grant_limit, updated_at)
+    VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.95, 24, 24, 5, 1.0, 1.0, 2, 5000000000, 2, 2, ${Date.now()})
   `);
 
     // 高级场符号权重配置表（独立于初级场）
@@ -552,6 +557,13 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_slot_records_mode ON slot_machine_records(slot_mode)');
 
     console.log('✅ 数据库初始化完成（含高级场系统）');
+
+    // 执行数据库迁移
+    try {
+        addDailyLimits(db);
+    } catch (error) {
+        console.warn('[迁移] 每日限制功能可能已存在:', error);
+    }
 
     // 初始化预编译查询语句
     initQueries();
@@ -936,6 +948,8 @@ function initQueries() {
              drop_rate_double = ?,
              max_tickets_hold = ?,
              daily_bet_limit = ?,
+             daily_entry_limit = ?,
+             daily_ticket_grant_limit = ?,
              updated_at = ?
              WHERE id = 1`
         ),
@@ -975,6 +989,31 @@ function initQueries() {
         ),
         updateAdvancedWeights: db.query(
             'UPDATE advanced_slot_symbol_weights SET weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, updated_at = ? WHERE id = 1'
+        ),
+
+        // 用户每日进入高级场记录
+        getTodayEntry: db.query<UserAdvancedEntry, [string, string]>(
+            'SELECT * FROM user_advanced_entries WHERE linux_do_id = ? AND entry_date = ?'
+        ),
+        updateTodayEntry: db.query(
+            `INSERT INTO user_advanced_entries (linux_do_id, entry_date, entry_count, last_entry_time)
+             VALUES (?, ?, 1, ?)
+             ON CONFLICT(linux_do_id, entry_date) DO UPDATE SET
+             entry_count = entry_count + 1,
+             last_entry_time = ?`
+        ),
+
+        // 用户每日入场券获得记录
+        getTodayGrant: db.query<UserDailyTicketGrant, [string, string]>(
+            'SELECT * FROM user_daily_ticket_grants WHERE linux_do_id = ? AND grant_date = ?'
+        ),
+        updateTodayTicketGrant: db.query(
+            `INSERT INTO user_daily_ticket_grants (linux_do_id, grant_date, ticket_granted, fragment_granted, last_grant_time)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, grant_date) DO UPDATE SET
+             ticket_granted = ticket_granted + ?,
+             fragment_granted = fragment_granted + ?,
+             last_grant_time = ?`
         ),
     };
 

@@ -765,6 +765,7 @@
               <span class="text-white font-medium text-sm">
                 <span id="ticketCount">0</span>/<span id="ticketMax" class="text-white/70">2</span>
               </span>
+              <span id="dailyTicketGrantInfo" class="text-xs text-white/60 ml-1 hidden"></span>
             </div>
             
             <!-- 碎片 -->
@@ -772,6 +773,14 @@
               <span class="text-sm">🍀</span>
               <span class="text-white font-medium text-sm">
                 <span id="fragmentCount">0</span>/<span id="fragmentsNeeded" class="text-white/70">5</span>
+              </span>
+            </div>
+            
+            <!-- 每日进入次数 -->
+            <div id="dailyEntryInfo" class="flex items-center gap-1 bg-black/20 px-2 py-0.5 rounded hidden">
+              <span class="text-sm">📅</span>
+              <span class="text-white font-medium text-sm">
+                今日进入: <span id="todayEntryCount">0</span>/<span id="dailyEntryLimit" class="text-white/70">2</span>
               </span>
             </div>
             
@@ -2573,13 +2582,44 @@
     function updateAdvancedTicketsUI() {
       if (!advancedTicketsData) return;
       
-      const { tickets, fragments, can_synthesize, in_advanced_mode, fragments_needed, max_tickets_hold } = advancedTicketsData;
+      const { tickets, fragments, can_synthesize, in_advanced_mode, fragments_needed, max_tickets_hold, config } = advancedTicketsData;
       
       // 更新数据显示
       document.getElementById('ticketCount').textContent = tickets;
       document.getElementById('ticketMax').textContent = max_tickets_hold;
       document.getElementById('fragmentCount').textContent = fragments;
       document.getElementById('fragmentsNeeded').textContent = fragments_needed;
+      
+      // 🔥 更新每日限制信息（如果配置存在）
+      if (config) {
+        // 显示每日进入限制信息
+        const dailyEntryInfo = document.getElementById('dailyEntryInfo');
+        const dailyEntryLimit = document.getElementById('dailyEntryLimit');
+        const todayEntryCount = document.getElementById('todayEntryCount');
+        if (dailyEntryInfo && dailyEntryLimit && config.daily_entry_limit) {
+          dailyEntryLimit.textContent = config.daily_entry_limit;
+          // 更新今日已进入次数
+          if (todayEntryCount && advancedTicketsData.today_entry_count !== undefined) {
+            todayEntryCount.textContent = advancedTicketsData.today_entry_count;
+          }
+          // 只在未进入高级场时显示每日进入次数信息
+          if (!in_advanced_mode) {
+            dailyEntryInfo.classList.remove('hidden');
+          } else {
+            dailyEntryInfo.classList.add('hidden');
+          }
+        }
+        
+        // 显示每日入场券获得限制（作为工具提示）
+        const dailyTicketGrantInfo = document.getElementById('dailyTicketGrantInfo');
+        if (dailyTicketGrantInfo && config.daily_ticket_grant_limit) {
+          const grantedText = advancedTicketsData.today_ticket_granted !== undefined 
+            ? `(今日已获${advancedTicketsData.today_ticket_granted}/${config.daily_ticket_grant_limit}张)`
+            : `(每日限${config.daily_ticket_grant_limit}张)`;
+          dailyTicketGrantInfo.textContent = grantedText;
+          dailyTicketGrantInfo.classList.remove('hidden');
+        }
+      }
       
       // 更新过期时间
       const expiryEl = document.getElementById('ticketExpiry');

@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { userQueries, slotQueries, adminQueries, pendingRewardQueries } from '../database';
+import { userQueries, slotQueries, adminQueries, pendingRewardQueries, advancedSlotQueries } from '../database';
 import type { SessionData } from '../types';
 import { getCookie, getSession } from '../utils';
 import {
@@ -602,21 +602,35 @@ slot.post('/spin', requireAuth, async (c) => {
 
             // 四连 → 掉落1张入场券
             if (result.winType === WinType.QUAD && Math.random() < advancedConfig.drop_rate_triple) {
-                addTicket(session.linux_do_id, 1);
-                recordTicketDrop(session.linux_do_id, user.username, 'ticket', 1, result.winType);
-                ticketDropped = true;
-                dropType = 'ticket';
-                dropCount = 1;
-                console.log(`[掉落] 🎟️ 四连中奖！用户 ${user.username} 获得1张入场券`);
+                const addResult = addTicket(session.linux_do_id, 1);
+                if (addResult.success && addResult.granted && addResult.granted > 0) {
+                    recordTicketDrop(session.linux_do_id, user.username, 'ticket', addResult.granted, result.winType);
+                    ticketDropped = true;
+                    dropType = 'ticket';
+                    dropCount = addResult.granted;
+                    console.log(`[掉落] 🎟️ 四连中奖！用户 ${user.username} 获得${addResult.granted}张入场券`);
+                    if (addResult.message) {
+                        console.log(`[掉落] ${addResult.message}`);
+                    }
+                } else {
+                    console.log(`[掉落] ❌ 四连中奖但无法获得入场券: ${addResult.message}`);
+                }
             }
             // 三连 → 掉落1张入场券
             else if (result.winType === WinType.TRIPLE && Math.random() < advancedConfig.drop_rate_triple) {
-                addTicket(session.linux_do_id, 1);
-                recordTicketDrop(session.linux_do_id, user.username, 'ticket', 1, result.winType);
-                ticketDropped = true;
-                dropType = 'ticket';
-                dropCount = 1;
-                console.log(`[掉落] 🎟️ 三连中奖！用户 ${user.username} 获得1张入场券`);
+                const addResult = addTicket(session.linux_do_id, 1);
+                if (addResult.success && addResult.granted && addResult.granted > 0) {
+                    recordTicketDrop(session.linux_do_id, user.username, 'ticket', addResult.granted, result.winType);
+                    ticketDropped = true;
+                    dropType = 'ticket';
+                    dropCount = addResult.granted;
+                    console.log(`[掉落] 🎟️ 三连中奖！用户 ${user.username} 获得${addResult.granted}张入场券`);
+                    if (addResult.message) {
+                        console.log(`[掉落] ${addResult.message}`);
+                    }
+                } else {
+                    console.log(`[掉落] ❌ 三连中奖但无法获得入场券: ${addResult.message}`);
+                }
             }
             // 二连 → 掉落1个碎片
             else if (result.winType === WinType.DOUBLE && Math.random() < advancedConfig.drop_rate_double) {
@@ -1211,6 +1225,15 @@ slot.get('/tickets', requireAuth, async (c) => {
         const tickets = getUserTickets(session.linux_do_id);
         const config = getAdvancedSlotConfig();
 
+        // 获取今日进入次数
+        const today = new Date().toISOString().split('T')[0];
+        const todayEntry = advancedSlotQueries.getTodayEntry.get(session.linux_do_id, today);
+        const todayEntryCount = todayEntry?.entry_count || 0;
+
+        // 获取今日入场券获得数量
+        const todayGrant = advancedSlotQueries.getTodayGrant.get(session.linux_do_id, today);
+        const todayTicketGranted = todayGrant?.ticket_granted || 0;
+
         return c.json({
             success: true,
             data: {
@@ -1222,10 +1245,15 @@ slot.get('/tickets', requireAuth, async (c) => {
                 in_advanced_mode: isInAdvancedMode(session.linux_do_id),
                 fragments_needed: config.fragments_needed,
                 max_tickets_hold: config.max_tickets_hold,
+                today_entry_count: todayEntryCount,  // 🔥 今日已进入次数
+                today_ticket_granted: todayTicketGranted,  // 🔥 今日已获得入场券数
                 config: {  // 🔥 返回高级场配置
                     bet_min: config.bet_min,
                     bet_max: config.bet_max,
-                    reward_multiplier: config.reward_multiplier
+                    reward_multiplier: config.reward_multiplier,
+                    daily_bet_limit: config.daily_bet_limit,  // 🔥 添加每日投注限额
+                    daily_entry_limit: config.daily_entry_limit,  // 🔥 每日进入次数限制
+                    daily_ticket_grant_limit: config.daily_ticket_grant_limit  // 🔥 每日入场券获得限制
                 }
             }
         });
@@ -1317,7 +1345,8 @@ slot.get('/advanced/status', requireAuth, async (c) => {
                     bet_max: config.bet_max,
                     reward_multiplier: config.reward_multiplier,
                     penalty_weight_factor: config.penalty_weight_factor,
-                    session_valid_hours: config.session_valid_hours
+                    session_valid_hours: config.session_valid_hours,
+                    daily_bet_limit: config.daily_bet_limit  // 🔥 添加每日投注限额
                 }
             }
         });

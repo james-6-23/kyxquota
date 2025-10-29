@@ -1770,9 +1770,10 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
                 INSERT OR IGNORE INTO advanced_slot_config (
                     id, enabled, bet_min, bet_max, reward_multiplier, penalty_weight_factor, 
                     rtp_target, ticket_valid_hours, session_valid_hours, fragments_needed, 
-                    drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, updated_at
+                    drop_rate_triple, drop_rate_double, max_tickets_hold, daily_bet_limit, 
+                    daily_entry_limit, daily_ticket_grant_limit, updated_at
                 )
-                VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.88, 24, 24, 5, 1.0, 1.0, 2, 5000000000, ${now})
+                VALUES (1, 1, 50000000, 250000000, 4.0, 2.0, 0.88, 24, 24, 5, 1.0, 1.0, 2, 5000000000, 2, 2, ${now})
             `);
 
             // 重新查询
@@ -1795,6 +1796,8 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
             drop_rate_double: config?.drop_rate_double || 1.0,
             max_tickets_hold: config?.max_tickets_hold || 2,
             daily_bet_limit: config?.daily_bet_limit || 5000000000,
+            daily_entry_limit: config?.daily_entry_limit || 2,
+            daily_ticket_grant_limit: config?.daily_ticket_grant_limit || 2,
             updated_at: config?.updated_at || Date.now()
         };
 
@@ -1828,7 +1831,9 @@ app.post('/slot/advanced/config', requireAdmin, async (c) => {
             drop_rate_triple,
             drop_rate_double,
             max_tickets_hold,
-            daily_bet_limit
+            daily_bet_limit,
+            daily_entry_limit,
+            daily_ticket_grant_limit
         } = body;
 
         // 验证参数
@@ -1851,6 +1856,8 @@ app.post('/slot/advanced/config', requireAdmin, async (c) => {
             drop_rate_double,
             max_tickets_hold,
             daily_bet_limit,
+            daily_entry_limit || 2,         // 默认每日2次
+            daily_ticket_grant_limit || 2,  // 默认每日获得2张
             now
         );
 
