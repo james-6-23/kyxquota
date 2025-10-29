@@ -4,6 +4,7 @@
 
 import { advancedSlotQueries } from '../database';
 import type { UserTickets, AdvancedSlotConfig } from '../types';
+import { isBannedFromAdvanced, getKunbeiConfig } from './kunbei';
 
 /**
  * 获取用户入场券信息
@@ -237,6 +238,20 @@ function getTodayDate(): string {
  * 进入高级场（消耗1张入场券）
  */
 export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
+    // 🔥 检查坤呗逾期惩罚（禁止进入高级场）
+    const kunbeiConfig = getKunbeiConfig();
+    if (kunbeiConfig.overdue_ban_advanced) {
+        const banStatus = isBannedFromAdvanced(linuxDoId);
+        if (banStatus.banned) {
+            const remainingHours = Math.ceil((banStatus.until! - Date.now()) / 3600000);
+            console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 坤呗逾期惩罚中，剩余 ${remainingHours} 小时`);
+            return {
+                success: false,
+                message: `您因逾期未还款被禁止进入高级场，解禁时间：${new Date(banStatus.until!).toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`
+            };
+        }
+    }
+
     // 检查入场券是否过期
     checkTicketExpiry(linuxDoId);
 

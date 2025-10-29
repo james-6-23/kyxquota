@@ -17,6 +17,7 @@ import { CONFIG } from '../config';
 import { searchAndFindExactUser, pushKeysToGroup } from '../services/kyx-api';
 import { validateModelScopeKey } from '../services/keys';
 import { manualProcessRewards } from '../services/reward-processor';
+import { checkOverdueLoans } from '../services/kunbei';
 import type { DonateRecord } from '../types';
 
 const app = new Hono();
@@ -2301,6 +2302,9 @@ app.get('/kunbei/loans', requireAdmin, async (c) => {
  */
 app.get('/kunbei/all-loans', requireAdmin, async (c) => {
     try {
+        // 立即检查逾期状态（确保数据最新）
+        await checkOverdueLoans();
+
         const loans = kunbeiQueries.getAllLoans.all();
 
         // 获取所有相关用户信息

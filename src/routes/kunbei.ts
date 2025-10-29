@@ -72,6 +72,9 @@ kunbei.get('/status', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
+        // 立即检查逾期状态（确保及时更新）
+        await checkOverdueLoans();
+
         // 获取用户信息
         const user = userQueries.get.get(session.linux_do_id!);
         if (user) {
@@ -118,6 +121,9 @@ kunbei.post('/borrow', requireAuth, async (c) => {
         if (!amount || typeof amount !== 'number') {
             return c.json({ success: false, message: '参数错误' }, 400);
         }
+
+        // 立即检查逾期状态（确保借款前系统状态最新）
+        await checkOverdueLoans();
 
         // 获取用户信息
         const user = userQueries.get.get(session.linux_do_id!);
@@ -279,7 +285,7 @@ kunbei.get('/my-loans', requireAuth, async (c) => {
 });
 
 /**
- * 定时检查逾期借款（每小时执行）
+ * 定时检查逾期借款（每5分钟执行）
  */
 setInterval(() => {
     try {
@@ -287,7 +293,7 @@ setInterval(() => {
     } catch (error) {
         console.error('[坤呗] 逾期检查失败:', error);
     }
-}, 3600000);  // 每小时
+}, 300000);  // 每5分钟
 
 export default kunbei;
 
