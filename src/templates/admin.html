@@ -1573,7 +1573,7 @@
           </div>
 
           <!-- 概览统计 -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
             <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
               <div class="flex items-center justify-between mb-2">
                 <h3 class="text-sm font-semibold text-slate-600">总游戏次数</h3>
@@ -1607,6 +1607,105 @@
               <p id="analyticsNetProfit" class="text-3xl font-bold">$0</p>
               <p class="text-xs text-slate-500 mt-1">总赢得 <span id="analyticsTotalWin">$0</span></p>
             </div>
+            
+            <!-- 🔥 新增：RTP统计 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center justify-between mb-2">
+                <h3 class="text-sm font-semibold text-slate-600">实际RTP</h3>
+                <span class="text-2xl">📈</span>
+              </div>
+              <p id="analyticsRTP" class="text-3xl font-bold text-purple-600">0%</p>
+              <p class="text-xs text-slate-500 mt-1">返还玩家率</p>
+            </div>
+          </div>
+          
+          <!-- 🔥 RTP详细分析 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">📈 RTP详细分析</h3>
+            
+            <!-- RTP说明 -->
+            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div class="flex items-start gap-3">
+                <div class="text-2xl">💡</div>
+                <div class="flex-1">
+                  <h4 class="font-semibold text-purple-900 mb-2">什么是RTP？</h4>
+                  <p class="text-sm text-purple-800 mb-2">
+                    RTP (Return to Player) = 返还玩家率，表示玩家长期游戏能拿回的投注比例
+                  </p>
+                  <p class="text-sm text-purple-700">
+                    <strong>计算公式：</strong> RTP = (总赢得 ÷ 总投注) × 100%
+                  </p>
+                  <p class="text-xs text-purple-600 mt-2">
+                    例如：总投注$1000，总赢得$880 → RTP = 88%（玩家拿回88%，系统收益12%）
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- RTP统计卡片 -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 整体RTP -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-slate-700">整体RTP</span>
+                  <span id="rtpOverall" class="text-2xl font-bold text-purple-600">--</span>
+                </div>
+                <div class="text-xs text-slate-600">
+                  <div class="flex justify-between">
+                    <span>总投注:</span>
+                    <span id="rtpTotalBet" class="font-semibold">$0</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>总赢得:</span>
+                    <span id="rtpTotalWin" class="font-semibold">$0</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 中奖RTP -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-slate-700">中奖游戏RTP</span>
+                  <span id="rtpWinGames" class="text-2xl font-bold text-green-600">--</span>
+                </div>
+                <div class="text-xs text-slate-600">
+                  <div class="flex justify-between">
+                    <span>中奖次数:</span>
+                    <span id="rtpWinCount" class="font-semibold">0</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>中奖投注:</span>
+                    <span id="rtpWinBet" class="font-semibold">$0</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 未中奖RTP -->
+              <div class="border border-slate-200 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-slate-700">未中奖损失率</span>
+                  <span id="rtpLossRate" class="text-2xl font-bold text-red-600">--</span>
+                </div>
+                <div class="text-xs text-slate-600">
+                  <div class="flex justify-between">
+                    <span>未中奖次数:</span>
+                    <span id="rtpLossCount" class="font-semibold">0</span>
+                  </div>
+                  <div class="flex justify-between mt-1">
+                    <span>损失金额:</span>
+                    <span id="rtpLossAmount" class="font-semibold">$0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- RTP趋势（按中奖类型） -->
+            <div class="mt-6">
+              <h4 class="font-semibold text-slate-900 mb-3">各中奖类型RTP贡献</h4>
+              <div class="space-y-2" id="rtpByWinType">
+                <!-- 将通过JS填充 -->
+              </div>
+            </div>
           </div>
 
           <!-- 中奖类型分布 -->
@@ -1629,6 +1728,7 @@
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总投注</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">总赢得</th>
                     <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">净盈亏</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold text-slate-700">RTP</th>
                   </tr>
                 </thead>
                 <tbody id="dailyStatsBody" class="divide-y divide-slate-100">
@@ -4258,6 +4358,86 @@
           ? 'text-3xl font-bold text-green-600' 
           : 'text-3xl font-bold text-red-600';
 
+        // 🔥 计算并显示RTP数据
+        const overallRTP = summary.totalBet > 0 ? ((summary.totalWin / summary.totalBet) * 100).toFixed(2) : '0.00';
+        document.getElementById('analyticsRTP').textContent = overallRTP + '%';
+        
+        // RTP详细分析
+        document.getElementById('rtpOverall').textContent = overallRTP + '%';
+        document.getElementById('rtpTotalBet').textContent = '$' + (summary.totalBet / 500000).toFixed(2);
+        document.getElementById('rtpTotalWin').textContent = '$' + (summary.totalWin / 500000).toFixed(2);
+        
+        // 🔥 计算中奖游戏RTP
+        const winGames = Object.entries(winTypes)
+          .filter(([key]) => key !== 'none' && key !== 'punishment')
+          .reduce((sum, [key, data]) => sum + data.count, 0);
+        
+        const winGamesBet = Object.entries(winTypes)
+          .filter(([key]) => key !== 'none' && key !== 'punishment')
+          .reduce((sum, [key, data]) => {
+            // 假设平均投注为总投注/总次数
+            const avgBet = summary.totalBet / summary.totalCount;
+            return sum + (data.count * avgBet);
+          }, 0);
+        
+        const winGamesWin = Object.entries(winTypes)
+          .filter(([key]) => key !== 'none' && key !== 'punishment')
+          .reduce((sum, [key, data]) => sum + data.totalWin, 0);
+        
+        const winGamesRTP = winGamesBet > 0 ? ((winGamesWin / winGamesBet) * 100).toFixed(2) : '0.00';
+        document.getElementById('rtpWinGames').textContent = winGamesRTP + '%';
+        document.getElementById('rtpWinCount').textContent = winGames;
+        document.getElementById('rtpWinBet').textContent = '$' + (winGamesBet / 500000).toFixed(2);
+        
+        // 🔥 计算未中奖损失
+        const lossGames = (winTypes['none']?.count || 0) + (winTypes['punishment']?.count || 0);
+        const lossAmount = Math.abs((winTypes['none']?.totalWin || 0) + (winTypes['punishment']?.totalWin || 0));
+        const lossRate = summary.totalBet > 0 ? ((lossAmount / summary.totalBet) * 100).toFixed(2) : '0.00';
+        
+        document.getElementById('rtpLossRate').textContent = lossRate + '%';
+        document.getElementById('rtpLossCount').textContent = lossGames;
+        document.getElementById('rtpLossAmount').textContent = '$' + (lossAmount / 500000).toFixed(2);
+        
+        // 🔥 按中奖类型显示RTP贡献
+        const rtpByWinTypeHtml = Object.entries(winTypes)
+          .sort((a, b) => Math.abs(b[1].totalWin) - Math.abs(a[1].totalWin))
+          .map(([key, data]) => {
+            const avgBet = summary.totalBet / summary.totalCount;
+            const typeBet = data.count * avgBet;
+            const typeRTP = typeBet > 0 ? ((data.totalWin / typeBet) * 100).toFixed(2) : '0.00';
+            const contributionPercent = summary.totalBet > 0 ? ((data.totalWin / summary.totalBet) * 100).toFixed(2) : '0.00';
+            
+            const winTypeNames = {
+              'super_jackpot': '🏆 超级大奖',
+              'special_combo': '💎 特殊组合',
+              'quad': '🎰 四连',
+              'triple': '✨ 三连',
+              'double': '🎁 双连',
+              'punishment': '⚡ 律师函',
+              'none': '❌ 未中奖'
+            };
+            
+            const rtpColor = parseFloat(typeRTP) >= 100 ? 'text-green-600' : 
+                           parseFloat(typeRTP) >= 50 ? 'text-yellow-600' : 'text-red-600';
+            
+            return `
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                <div class="flex-1">
+                  <div class="font-medium text-slate-900">${winTypeNames[key]}</div>
+                  <div class="text-xs text-slate-600 mt-1">
+                    出现${data.count}次 · 总赢得$${(data.totalWin / 500000).toFixed(2)}
+                  </div>
+                </div>
+                <div class="text-right">
+                  <div class="text-lg font-bold ${rtpColor}">${typeRTP}%</div>
+                  <div class="text-xs text-slate-500">对整体贡献: ${contributionPercent >= 0 ? '+' : ''}${contributionPercent}%</div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        
+        document.getElementById('rtpByWinType').innerHTML = rtpByWinTypeHtml;
+
         // 渲染中奖类型分布
         const winTypeNames = {
           'super_jackpot': '🏆 超级大奖 (256x)',
@@ -4298,6 +4478,12 @@
           .sort((a, b) => b[0].localeCompare(a[0])) // 按日期倒序排序
           .map(([date, stats]) => {
             const profitColor = stats.profit >= 0 ? 'text-green-600' : 'text-red-600';
+            // 🔥 计算每日RTP
+            const dailyRTP = stats.bet > 0 ? ((stats.win / stats.bet) * 100).toFixed(2) : '0.00';
+            const rtpColor = parseFloat(dailyRTP) >= 100 ? 'text-green-600' : 
+                           parseFloat(dailyRTP) >= 90 ? 'text-yellow-600' : 
+                           parseFloat(dailyRTP) >= 80 ? 'text-orange-600' : 'text-red-600';
+            
             return `
               <tr>
                 <td class="px-4 py-3 text-sm text-slate-900">${date}</td>
@@ -4305,10 +4491,11 @@
                 <td class="px-4 py-3 text-sm text-red-600 text-right">$${(stats.bet / 500000).toFixed(2)}</td>
                 <td class="px-4 py-3 text-sm text-green-600 text-right">$${(stats.win / 500000).toFixed(2)}</td>
                 <td class="px-4 py-3 text-sm ${profitColor} text-right font-semibold">${stats.profit >= 0 ? '+' : ''}$${(stats.profit / 500000).toFixed(2)}</td>
+                <td class="px-4 py-3 text-sm ${rtpColor} text-right font-bold">${dailyRTP}%</td>
               </tr>
             `;
           }).join('');
-        document.getElementById('dailyStatsBody').innerHTML = dailyStatsHtml || '<tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
+        document.getElementById('dailyStatsBody').innerHTML = dailyStatsHtml || '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">暂无数据</td></tr>';
 
         showMessage('分析数据已更新', 'success');
       } catch (error) {
