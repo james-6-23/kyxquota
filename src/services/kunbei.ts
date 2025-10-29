@@ -372,9 +372,25 @@ export function forgiveLoan(loanId: number): { success: boolean; message: string
     );
 
     // 更新统计（不计入还款金额，但计入还款次数）
+    const stats = kunbeiQueries.getStats.get(loan.linux_do_id);
+    const today = new Date().toISOString().split('T')[0];
+
     kunbeiQueries.upsertStats.run(
-        loan.linux_do_id, 0, 0, 0, 1, 0, 100, 0, now,
-        0, 0, 0, 1, 0, 100, now
+        loan.linux_do_id, 0, 0, 0, 1, 0,
+        stats?.credit_score || 100, 0,
+        stats?.last_borrow_date || null,    // last_borrow_date
+        0,                                   // has_daily_buff
+        2.5,                                 // buff_multiplier  
+        0,                                   // buff_used
+        now,
+        // ON CONFLICT 部分
+        0, 0, 0, 1, 0,
+        stats?.credit_score || 100,
+        stats?.last_borrow_date || null,
+        0,
+        2.5,
+        0,
+        now
     );
 
     console.log(`[坤呗] 管理员豁免借款 - 用户: ${loan.username}, 借款ID: ${loanId}`);

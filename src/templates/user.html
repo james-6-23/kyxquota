@@ -5949,10 +5949,17 @@
         return;
       }
       
-      const statusLabels = {
-        'active': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">进行中</span>',
-        'repaid': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">已还款</span>',
-        'overdue': '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">已逾期</span>'
+      // 根据状态和实际还款金额判断显示的标签
+      const getStatusLabel = (loan) => {
+        if (loan.status === 'repaid' && loan.actual_repay_amount === 0) {
+          return '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">系统豁免</span>';
+        }
+        const labels = {
+          'active': '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">进行中</span>',
+          'repaid': '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">已还款</span>',
+          'overdue': '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">已逾期</span>'
+        };
+        return labels[loan.status] || '';
       };
       
       container.innerHTML = loans.map(loan => {
@@ -5970,16 +5977,18 @@
                   借款: ${borrowTime}<br>到期: ${dueTime}
                 </div>
               </div>
-              <div>${statusLabels[loan.status]}</div>
+              <div>${getStatusLabel(loan)}</div>
             </div>
-            ${loan.actual_repay_amount ? `
-              <div class="text-xs text-green-600">
+            ${loan.status === 'repaid' && loan.actual_repay_amount !== null ? (
+              loan.actual_repay_amount === 0 ? 
+              '<div class="text-xs text-purple-600">管理员已豁免此借款</div>' :
+              `<div class="text-xs text-green-600">
                 实还: $${loan.actual_repay_amount_usd}
                 ${loan.actual_repay_amount < loan.repay_amount ? 
                   `· 返现 $${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
                 }
-              </div>
-            ` : ''}
+              </div>`
+            ) : ''}
           </div>
         `;
       }).join('');

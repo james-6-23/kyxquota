@@ -5671,15 +5671,22 @@
       }
       
       tbody.innerHTML = loans.map(loan => {
+        // 判断是否是豁免的借款
+        const isForgiven = loan.status === 'repaid' && loan.actual_repay_amount === 0;
+        
         const statusBadge = loan.status === 'active' 
           ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 进行中</span>'
           : loan.status === 'overdue'
             ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>'
-            : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
+            : isForgiven
+              ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">🎁 系统豁免</span>'
+              : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
         
         const actionButton = (loan.status === 'active' || loan.status === 'overdue')
           ? `<button onclick="forgiveLoan(${loan.id}, '${loan.username}')" class="px-3 py-1 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-xs font-semibold">🎁 豁免</button>`
-          : '<span class="text-slate-400 text-xs">已完成</span>';
+          : isForgiven 
+            ? '<span class="text-purple-600 text-xs font-semibold">已豁免</span>'
+            : '<span class="text-slate-400 text-xs">已完成</span>';
         
         return `
           <tr class="border-b border-slate-100 hover:bg-slate-50">
