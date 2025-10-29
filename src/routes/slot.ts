@@ -409,8 +409,8 @@ slot.post('/spin', requireAuth, async (c) => {
         // 生成随机符号（高级场使用独立权重配置）
         const symbols = generateSymbols(inAdvancedMode);
 
-        // 计算中奖结果（高级场会放大奖励倍率和惩罚倍率）
-        const result = calculateWin(symbols, rewardMultiplier, penaltyMultiplier);
+        // 计算中奖结果（高级场会放大奖励倍率和惩罚倍率，且双连判定更严格）
+        const result = calculateWin(symbols, rewardMultiplier, penaltyMultiplier, inAdvancedMode);
 
         // 获取管理员配置（用于更新额度）
         const adminConfigForWin = adminQueries.get.get();

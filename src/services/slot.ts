@@ -187,8 +187,9 @@ function containsAll(arr: string[], target: string[]): boolean {
  * @param symbols 符号数组
  * @param rewardMultiplier 奖励倍率放大系数（高级场为4.0，初级场为1.0）
  * @param penaltyMultiplier 惩罚倍率放大系数（高级场为2.0，初级场为1.0）
+ * @param isAdvancedMode 是否为高级场模式（高级场双连判定更严格，需要相邻连续）
  */
-export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, penaltyMultiplier: number = 1.0): {
+export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, penaltyMultiplier: number = 1.0, isAdvancedMode: boolean = false): {
     winType: WinType;
     multiplier: number;
     freeSpinAwarded: boolean;
@@ -272,11 +273,38 @@ export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, 
     }
 
     if (maxCount === 2) {
-        return {
-            winType: WinType.DOUBLE,
-            multiplier: multipliers.double * rewardMultiplier,  // 🔥 高级场倍率放大
-            freeSpinAwarded: false
-        };
+        // 🔥 高级场：双连判定更严格，必须是相邻连续的两个相同符号
+        if (isAdvancedMode) {
+            // 检查是否有相邻连续的两个相同符号
+            let hasAdjacentPair = false;
+            for (let i = 0; i < symbols.length - 1; i++) {
+                if (symbols[i] === symbols[i + 1]) {
+                    hasAdjacentPair = true;
+                    break;
+                }
+            }
+
+            if (hasAdjacentPair) {
+                return {
+                    winType: WinType.DOUBLE,
+                    multiplier: multipliers.double * rewardMultiplier,
+                    freeSpinAwarded: false
+                };
+            }
+            // 高级场：不相邻则不算双连
+            return {
+                winType: WinType.NONE,
+                multiplier: 0,
+                freeSpinAwarded: false
+            };
+        } else {
+            // 初级场：任意两个相同即可
+            return {
+                winType: WinType.DOUBLE,
+                multiplier: multipliers.double * rewardMultiplier,
+                freeSpinAwarded: false
+            };
+        }
     }
 
     return {
