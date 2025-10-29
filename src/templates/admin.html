@@ -3867,12 +3867,12 @@
 
     // Admin记录筛选功能
     function filterAdminSlotRecords() {
-      const searchInput = document.getElementById('adminRecordSearchInput').value.toLowerCase();
+      const searchInput = document.getElementById('adminRecordSearchInput').value.trim().toLowerCase();
       const winTypeFilter = document.getElementById('adminWinTypeFilter').value;
       
       let filtered = allAdminSlotRecords;
       
-      // 按用户名筛选
+      // 🔥 按用户名筛选（留空则显示所有）
       if (searchInput) {
         filtered = filtered.filter(r => {
           const linuxDoUsername = (r.linux_do_username || '').toLowerCase();
@@ -3880,6 +3880,7 @@
           return linuxDoUsername.includes(searchInput) || kyxUsername.includes(searchInput);
         });
       }
+      // 如果searchInput为空，不过滤，显示所有记录
       
       // 按中奖类型筛选（修复：空字符串也要过滤）
       if (winTypeFilter && winTypeFilter !== 'all') {
@@ -3901,13 +3902,18 @@
         })));
       }
       
-      // 显示筛选结果提示
+      // 🔥 显示筛选结果提示（优化）
       const hintEl = document.getElementById('adminFilterResultHint');
-      if (searchInput || winTypeFilter !== 'all') {
-        hintEl.textContent = `🔍 找到 ${filtered.length} 条记录（共 ${allAdminSlotRecords.length} 条）`;
-        hintEl.classList.remove('hidden');
-      } else {
-        hintEl.textContent = `📊 总记录数: ${allAdminSlotRecords.length}`;
+      if (hintEl) {
+        let hintText = '';
+        if (searchInput || winTypeFilter !== 'all') {
+          hintText = `🔍 筛选到 ${filtered.length} 条记录（共 ${allAdminSlotRecords.length} 条）`;
+          if (searchInput) hintText += ` - 用户: "${document.getElementById('adminRecordSearchInput').value}"`;
+          if (winTypeFilter !== 'all') hintText += ` - 类型: ${winTypeFilter}`;
+        } else {
+          hintText = `📊 显示全部 ${allAdminSlotRecords.length} 条记录`;
+        }
+        hintEl.textContent = hintText;
         hintEl.classList.remove('hidden');
       }
       
@@ -3921,23 +3927,24 @@
     // 刷新记录（保留筛选条件）
     async function refreshAdminSlotRecords() {
       try {
-        // 重新加载所有记录
-        const analyticsRes = await fetch('/api/admin/slot/analytics');
-        const analyticsData = await analyticsRes.json();
+        // 🔥 重新加载所有初级场记录
+        const recordsRes = await fetch('/api/admin/slot/records?page=1&pageSize=1000');
+        const recordsData = await recordsRes.json();
         
-        if (analyticsData.success && analyticsData.data.allRecords) {
-          allAdminSlotRecords = analyticsData.data.allRecords;
+        if (recordsData.success) {
+          allAdminSlotRecords = recordsData.data;
+          allRecordsLoaded = true;
           
           // 应用筛选条件
           filterAdminSlotRecords();
           
           showToast('记录已刷新', 'success');
         } else {
-          showToast('刷新失败', 'error');
+          showToast('加载失败：' + (recordsData.message || '未知错误'), 'error');
         }
       } catch (error) {
         console.error('刷新记录失败:', error);
-        showToast('刷新失败', 'error');
+        showToast('刷新失败：' + error.message, 'error');
       }
     }
 
@@ -4015,13 +4022,17 @@
       document.getElementById('adminRecordSearchInput').value = '';
       document.getElementById('adminWinTypeFilter').value = 'all';
       
-      // 显示总记录数
-      const hintEl = document.getElementById('adminFilterResultHint');
-      hintEl.textContent = `📊 总记录数: ${allAdminSlotRecords.length}`;
-      hintEl.classList.remove('hidden');
-      
+      // 🔥 重新加载所有记录并显示
       filteredAdminSlotRecords = allAdminSlotRecords;
       document.getElementById('slotFiltered').textContent = filteredAdminSlotRecords.length;
+      
+      // 显示总记录数
+      const hintEl = document.getElementById('adminFilterResultHint');
+      if (hintEl) {
+        hintEl.textContent = `📊 已显示全部 ${allAdminSlotRecords.length} 条记录`;
+        hintEl.classList.remove('hidden');
+      }
+      
       renderFilteredSlotRecords(1);
     }
 
