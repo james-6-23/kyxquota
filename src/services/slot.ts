@@ -256,10 +256,59 @@ export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, 
     const symbolCounts = countSymbols(symbols);
     const maxCount = Math.max(...Object.values(symbolCounts));
 
+    // 🔥 高级场：使用严格的相邻连续判定（三连、四连也需要连续）
+    if (isAdvancedMode) {
+        // 查找最长的相邻连续相同符号序列
+        let maxConsecutive = 1;
+        let currentConsecutive = 1;
+
+        for (let i = 1; i < symbols.length; i++) {
+            if (symbols[i] === symbols[i - 1]) {
+                currentConsecutive++;
+                maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+            } else {
+                currentConsecutive = 1;
+            }
+        }
+
+        // 根据最长连续序列判定中奖
+        if (maxConsecutive === 4) {
+            return {
+                winType: WinType.QUAD,
+                multiplier: multipliers.quad * rewardMultiplier,
+                freeSpinAwarded: true
+            };
+        }
+
+        if (maxConsecutive === 3) {
+            return {
+                winType: WinType.TRIPLE,
+                multiplier: multipliers.triple * rewardMultiplier,
+                freeSpinAwarded: false
+            };
+        }
+
+        if (maxConsecutive === 2) {
+            return {
+                winType: WinType.DOUBLE,
+                multiplier: multipliers.double * rewardMultiplier,
+                freeSpinAwarded: false
+            };
+        }
+
+        // 高级场：没有连续则未中奖
+        return {
+            winType: WinType.NONE,
+            multiplier: 0,
+            freeSpinAwarded: false
+        };
+    }
+
+    // 🔥 初级场：使用宽松的判定（任意位置相同即可）
     if (maxCount === 4) {
         return {
             winType: WinType.QUAD,
-            multiplier: multipliers.quad * rewardMultiplier,  // 🔥 高级场倍率放大
+            multiplier: multipliers.quad * rewardMultiplier,
             freeSpinAwarded: true  // 奖励1次免费
         };
     }
@@ -267,44 +316,17 @@ export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, 
     if (maxCount === 3) {
         return {
             winType: WinType.TRIPLE,
-            multiplier: multipliers.triple * rewardMultiplier,  // 🔥 高级场倍率放大
+            multiplier: multipliers.triple * rewardMultiplier,
             freeSpinAwarded: false
         };
     }
 
     if (maxCount === 2) {
-        // 🔥 高级场：双连判定更严格，必须是相邻连续的两个相同符号
-        if (isAdvancedMode) {
-            // 检查是否有相邻连续的两个相同符号
-            let hasAdjacentPair = false;
-            for (let i = 0; i < symbols.length - 1; i++) {
-                if (symbols[i] === symbols[i + 1]) {
-                    hasAdjacentPair = true;
-                    break;
-                }
-            }
-
-            if (hasAdjacentPair) {
-                return {
-                    winType: WinType.DOUBLE,
-                    multiplier: multipliers.double * rewardMultiplier,
-                    freeSpinAwarded: false
-                };
-            }
-            // 高级场：不相邻则不算双连
-            return {
-                winType: WinType.NONE,
-                multiplier: 0,
-                freeSpinAwarded: false
-            };
-        } else {
-            // 初级场：任意两个相同即可
-            return {
-                winType: WinType.DOUBLE,
-                multiplier: multipliers.double * rewardMultiplier,
-                freeSpinAwarded: false
-            };
-        }
+        return {
+            winType: WinType.DOUBLE,
+            multiplier: multipliers.double * rewardMultiplier,
+            freeSpinAwarded: false
+        };
     }
 
     return {
