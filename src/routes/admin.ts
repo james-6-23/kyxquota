@@ -2259,6 +2259,7 @@ app.post('/kunbei/config', requireAdmin, async (c) => {
             config.overdue_penalty_hours,
             config.overdue_ban_advanced,
             config.max_active_loans,
+            config.deduct_all_quota_on_overdue || 0,
             now
         );
 
@@ -2332,14 +2333,14 @@ app.post('/kunbei/gradient-configs', requireAdmin, async (c) => {
     try {
         const body = await c.req.json();
         const { createGradientConfig } = await import('../services/kunbei');
-        
+
         const result = createGradientConfig({
             quota_threshold: body.quota_threshold,
             max_loan_amount: body.max_loan_amount,
             priority: body.priority || 0,
             is_active: body.is_active !== undefined ? body.is_active : 1
         });
-        
+
         return c.json(result);
     } catch (error: any) {
         console.error('[坤呗管理] 创建梯度配置失败:', error);
@@ -2355,14 +2356,14 @@ app.put('/kunbei/gradient-configs/:id', requireAdmin, async (c) => {
         const id = parseInt(c.req.param('id'));
         const body = await c.req.json();
         const { updateGradientConfig } = await import('../services/kunbei');
-        
+
         const result = updateGradientConfig(id, {
             quota_threshold: body.quota_threshold,
             max_loan_amount: body.max_loan_amount,
             priority: body.priority || 0,
             is_active: body.is_active !== undefined ? body.is_active : 1
         });
-        
+
         return c.json(result);
     } catch (error: any) {
         console.error('[坤呗管理] 更新梯度配置失败:', error);
@@ -2377,7 +2378,7 @@ app.delete('/kunbei/gradient-configs/:id', requireAdmin, async (c) => {
     try {
         const id = parseInt(c.req.param('id'));
         const { deleteGradientConfig } = await import('../services/kunbei');
-        
+
         const result = deleteGradientConfig(id);
         return c.json(result);
     } catch (error: any) {

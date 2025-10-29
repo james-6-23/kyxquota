@@ -5687,6 +5687,7 @@
     // 切换Tab
     function switchKunbeiTab(tab) {
       const tabs = { borrow: 'Borrow', repay: 'Repay', records: 'Records' };
+      const tabNames = { borrow: '借款', repay: '还款', records: '记录' };
       
       Object.keys(tabs).forEach(t => {
         const tabBtn = document.getElementById(`kunbeiTab${tabs[t]}`);
@@ -5694,9 +5695,11 @@
         
         if (t === tab) {
           tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-orange-500 text-orange-600';
+          tabBtn.innerHTML = `▣ ${tabNames[t]}`;  // 选中时使用实心方框
           panel.classList.remove('hidden');
         } else {
           tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400';
+          tabBtn.innerHTML = `▢ ${tabNames[t]}`;  // 未选中时使用空心方框
           panel.classList.add('hidden');
         }
       });

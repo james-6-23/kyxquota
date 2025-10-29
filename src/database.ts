@@ -23,6 +23,7 @@ import type {
 import { addDailyLimits } from './migrations/add-daily-limits';
 import { addKunbeiLoanTables } from './migrations/add-kunbei-loan';
 import { up as addKunbeiGradient } from './migrations/add-kunbei-gradient';
+import { up as updateKunbeiDurationType } from './migrations/update-kunbei-duration-type';
 
 // 创建数据库连接
 export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
@@ -563,6 +564,7 @@ export function initDatabase() {
     try {
         addKunbeiLoanTables(db);
         addKunbeiGradient(db);
+        updateKunbeiDurationType(db);
     } catch (error) {
         console.warn('[坤呗迁移] 迁移执行失败:', error);
     }
@@ -1074,7 +1076,7 @@ function initQueries() {
              enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
              repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
              overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
-             updated_at = ? WHERE id = 1`
+             deduct_all_quota_on_overdue = ?, updated_at = ? WHERE id = 1`
         ),
 
         // 借款记录管理
@@ -1140,7 +1142,7 @@ function initQueries() {
         useBuff: db.query(
             'UPDATE user_kunbei_stats SET buff_used = 1, updated_at = ? WHERE linux_do_id = ?'
         ),
-        
+
         // 梯度配置相关查询
         getGradientConfigs: db.query<KunbeiGradientConfig, never>(
             'SELECT * FROM kunbei_gradient_configs WHERE is_active = 1 ORDER BY priority DESC'

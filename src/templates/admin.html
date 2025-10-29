@@ -2497,8 +2497,8 @@
               <!-- 借款期限 -->
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">借款期限</label>
-                <input type="number" id="kunbeiDuration" min="1" max="720" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">单位：小时</p>
+                <input type="number" id="kunbeiDuration" min="0.5" max="720" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">单位：小时，支持小数（如2.5小时）</p>
               </div>
               
               <!-- 提前还款优惠 -->
@@ -5694,7 +5694,7 @@
           max_loan_amount: parseInt(document.getElementById('kunbeiMaxAmount').value) * 500000,
           min_loan_amount: 5000000,
           repay_multiplier: parseFloat(document.getElementById('kunbeiRepayMultiplier').value),
-          loan_duration_hours: parseInt(document.getElementById('kunbeiDuration').value),
+          loan_duration_hours: parseFloat(document.getElementById('kunbeiDuration').value),
           early_repay_discount: parseFloat(document.getElementById('kunbeiEarlyDiscount').value),
           overdue_penalty_hours: parseInt(document.getElementById('kunbeiOverduePenalty').value),
           overdue_ban_advanced: 1,
