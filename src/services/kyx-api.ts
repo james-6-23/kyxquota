@@ -549,3 +549,98 @@ export async function pushKeysToGroup(
     });
 }
 
+/**
+ * 增加用户额度（辅助函数）
+ */
+export async function addQuota(
+    userId: number,
+    amount: number,
+    session: string,
+    newApiUser: string = '1',
+    context: string = '增加额度'
+): Promise<any> {
+    try {
+        // 先获取用户当前信息
+        const userResult = await getKyxUserById(userId, session, newApiUser);
+        if (!userResult.success || !userResult.user) {
+            return {
+                success: false,
+                message: '获取用户信息失败'
+            };
+        }
+
+        const currentQuota = userResult.user.quota || 0;
+        const newQuota = currentQuota + amount;
+
+        console.log(`[${context}] 用户ID: ${userId}, 当前额度: ${currentQuota}, 增加: ${amount}, 新额度: ${newQuota}`);
+
+        // 更新额度
+        return await updateKyxUserQuota(
+            userId,
+            newQuota,
+            session,
+            newApiUser,
+            userResult.user.username,
+            userResult.user.group || 'default'
+        );
+    } catch (error: any) {
+        console.error(`[${context}] 增加额度失败:`, error);
+        return {
+            success: false,
+            message: `增加额度失败: ${error.message}`
+        };
+    }
+}
+
+/**
+ * 扣除用户额度（辅助函数）
+ */
+export async function deductQuota(
+    userId: number,
+    amount: number,
+    session: string,
+    newApiUser: string = '1',
+    context: string = '扣除额度'
+): Promise<any> {
+    try {
+        // 先获取用户当前信息
+        const userResult = await getKyxUserById(userId, session, newApiUser);
+        if (!userResult.success || !userResult.user) {
+            return {
+                success: false,
+                message: '获取用户信息失败'
+            };
+        }
+
+        const currentQuota = userResult.user.quota || 0;
+
+        // 检查额度是否足够
+        if (currentQuota < amount) {
+            return {
+                success: false,
+                message: `额度不足: 当前额度 ${currentQuota}, 需要 ${amount}`
+            };
+        }
+
+        const newQuota = currentQuota - amount;
+
+        console.log(`[${context}] 用户ID: ${userId}, 当前额度: ${currentQuota}, 扣除: ${amount}, 新额度: ${newQuota}`);
+
+        // 更新额度
+        return await updateKyxUserQuota(
+            userId,
+            newQuota,
+            session,
+            newApiUser,
+            userResult.user.username,
+            userResult.user.group || 'default'
+        );
+    } catch (error: any) {
+        console.error(`[${context}] 扣除额度失败:`, error);
+        return {
+            success: false,
+            message: `扣除额度失败: ${error.message}`
+        };
+    }
+}
+
