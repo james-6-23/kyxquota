@@ -41,6 +41,7 @@ import {
     recordTicketDrop
 } from '../services/advanced-slot';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
+import { getAndUseBuff } from '../services/kunbei';
 
 const slot = new Hono();
 
@@ -412,6 +413,13 @@ slot.post('/spin', requireAuth, async (c) => {
         // 计算中奖结果（高级场会放大奖励倍率和惩罚倍率，且双连判定更严格）
         const result = calculateWin(symbols, rewardMultiplier, penaltyMultiplier, inAdvancedMode);
 
+        // 🔥 检查并应用坤呗buff
+        const kunbeiBuff = getAndUseBuff(session.linux_do_id);
+        if (kunbeiBuff > 1) {
+            console.log(`[坤呗Buff] 应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
+            result.multiplier = result.multiplier * kunbeiBuff;
+        }
+
         // 获取管理员配置（用于更新额度）
         const adminConfigForWin = adminQueries.get.get();
         if (!adminConfigForWin) {
@@ -696,6 +704,11 @@ slot.post('/spin', requireAuth, async (c) => {
                     message += ' | 🧩 获得碎片×1！';
                 }
             }
+        }
+
+        // 🔥 如果使用了坤呗buff，添加提示
+        if (kunbeiBuff > 1 && result.multiplier > 0) {
+            message += ' | 🐔 坤呗buff已生效！';
         }
 
         // 获取最新的入场券信息

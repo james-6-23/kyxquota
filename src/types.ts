@@ -236,5 +236,9 @@ export interface UserKunbeiStats {
     overdue_loans: number;                // 逾期次数
     credit_score: number;                 // 信用分
     is_banned: number;                    // 是否禁用
+    last_borrow_date?: string;            // 最后借款日期
+    has_daily_buff: number;               // 今日是否有buff
+    buff_multiplier: number;              // buff倍率
+    buff_used: number;                    // buff是否已使用
     updated_at: number;
 }

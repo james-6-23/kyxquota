@@ -1107,8 +1107,8 @@ function initQueries() {
             'SELECT * FROM user_kunbei_stats WHERE linux_do_id = ?'
         ),
         upsertStats: db.query(
-            `INSERT INTO user_kunbei_stats (linux_do_id, total_borrowed, total_repaid, total_loans, repaid_loans, overdue_loans, credit_score, is_banned, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `INSERT INTO user_kunbei_stats (linux_do_id, total_borrowed, total_repaid, total_loans, repaid_loans, overdue_loans, credit_score, is_banned, last_borrow_date, has_daily_buff, buff_multiplier, buff_used, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON CONFLICT(linux_do_id) DO UPDATE SET
              total_borrowed = total_borrowed + ?,
              total_repaid = total_repaid + ?,
@@ -1116,6 +1116,10 @@ function initQueries() {
              repaid_loans = repaid_loans + ?,
              overdue_loans = overdue_loans + ?,
              credit_score = ?,
+             last_borrow_date = ?,
+             has_daily_buff = ?,
+             buff_multiplier = ?,
+             buff_used = ?,
              updated_at = ?`
         ),
         updateCreditScore: db.query(
@@ -1124,6 +1128,14 @@ function initQueries() {
              ON CONFLICT(linux_do_id) DO UPDATE SET
              credit_score = MAX(0, MIN(100, credit_score + ?)),
              updated_at = ?`
+        ),
+
+        // Buff相关查询
+        checkBuff: db.query<UserKunbeiStats, string>(
+            'SELECT * FROM user_kunbei_stats WHERE linux_do_id = ? AND has_daily_buff = 1 AND buff_used = 0'
+        ),
+        useBuff: db.query(
+            'UPDATE user_kunbei_stats SET buff_used = 1, updated_at = ? WHERE linux_do_id = ?'
         ),
     };
 

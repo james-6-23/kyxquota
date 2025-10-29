@@ -68,6 +68,10 @@ export function addKunbeiLoanTables(db: any) {
             overdue_loans INTEGER DEFAULT 0,                -- 逾期次数
             credit_score INTEGER DEFAULT 100,               -- 信用分（100为满分）
             is_banned INTEGER DEFAULT 0,                    -- 是否被禁用坤呗
+            last_borrow_date TEXT,                          -- 最后借款日期（YYYY-MM-DD）
+            has_daily_buff INTEGER DEFAULT 0,               -- 今日是否有buff（1=有）
+            buff_multiplier REAL DEFAULT 2.5,               -- buff倍率
+            buff_used INTEGER DEFAULT 0,                    -- buff是否已使用（1=已用）
             updated_at INTEGER NOT NULL
         )
     `);

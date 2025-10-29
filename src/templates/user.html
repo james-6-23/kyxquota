@@ -1129,7 +1129,7 @@
         <div class="text-center">
           <div class="text-5xl mb-2">🐔</div>
           <h3 class="text-2xl font-bold text-white">坤呗信用中心</h3>
-          <p class="text-sm text-white/90 mt-1">急需额度？坤呗帮您！</p>
+          <p class="text-sm text-white/90 mt-1">急用钱？坤呗懂你。</p>
         </div>
       </div>
       
@@ -3433,7 +3433,7 @@
         loadingOverlay.classList.add('hidden');
         loadingOverlay.style.animation = '';
 
-        // 6. 异步加载排行榜（不阻塞主界面）
+        // 6. 异步加载排行榜和坤呗状态（不阻塞主界面）
         setTimeout(() => {
           loadSidebarLeaderboard();
           // console.log('[初始化] 排行榜加载完成');
@@ -3446,6 +3446,9 @@
           
           // 🔥 加载完入场券后再次更新UI，确保进度条正确显示
           updateSlotUI();
+          
+          // 🐔 加载坤呗状态
+          loadKunbeiStatus();
           
           // 🔥 再次强制更新进度条（确保显示）
           setTimeout(() => {
@@ -5427,6 +5430,36 @@
     let kunbeiCurrentAmount = 25000000;  // 默认$50
     let kunbeiConfig = null;
     
+    // 加载坤呗状态（用于更新悬浮按钮）
+    async function loadKunbeiStatus() {
+      try {
+        const [configRes, statusRes] = await Promise.all([
+          fetch('/api/kunbei/config'),
+          fetch('/api/kunbei/status')
+        ]);
+        
+        const configData = await configRes.json();
+        const statusData = await statusRes.json();
+        
+        if (configData.success && statusData.success) {
+          kunbeiConfig = configData.data;
+          kunbeiData = statusData.data;
+          
+          // 更新悬浮按钮的title
+          const kunbeiFloatingButton = document.getElementById('kunbeiFloatingButton');
+          if (kunbeiFloatingButton) {
+            if (kunbeiData.has_active_loan) {
+              kunbeiFloatingButton.title = "点击还款";
+            } else {
+              kunbeiFloatingButton.title = "急用钱？坤呗懂你。";
+            }
+          }
+        }
+      } catch (error) {
+        console.error('加载坤呗状态失败:', error);
+      }
+    }
+    
     // 打开坤呗模态框
     async function openKunbeiModal() {
       try {
@@ -5522,6 +5555,16 @@
       }
       
       updateKunbeiPreview();
+      
+      // 更新悬浮按钮的title
+      const kunbeiFloatingButton = document.getElementById('kunbeiFloatingButton');
+      if (kunbeiFloatingButton) {
+        if (kunbeiData.has_active_loan) {
+          kunbeiFloatingButton.title = "点击还款";
+        } else {
+          kunbeiFloatingButton.title = "急用钱？坤呗懂你。";
+        }
+      }
     }
     
     // 设置借款金额
@@ -5595,6 +5638,14 @@
         
         if (data.success) {
           showToast(data.message, 'success');
+          
+          // 🔥 如果是首次借款，额外提示buff
+          if (data.is_first_today) {
+            setTimeout(() => {
+              showToast('下次抽奖倍率 ×2.5 🎰', 'success');
+            }, 1500);
+          }
+          
           closeKunbeiModal();
           loadQuota();
         } else {
