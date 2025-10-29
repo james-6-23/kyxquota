@@ -630,6 +630,7 @@ function initQueries() {
         ),
         getAll: db.query<User, never>('SELECT * FROM users'),
         getAllLinuxDoIds: db.query<{ linux_do_id: string }, never>('SELECT linux_do_id FROM users WHERE is_banned = 0'),
+        getBannedUsers: db.query<User, never>('SELECT * FROM users WHERE is_banned = 1 ORDER BY banned_at DESC'),
         ban: db.query(
             'UPDATE users SET is_banned = 1, banned_at = ?, banned_reason = ? WHERE linux_do_id = ?'
         ),
@@ -790,6 +791,9 @@ function initQueries() {
         // 免费次数
         getFreeSpin: db.query<UserFreeSpin, string>(
             'SELECT * FROM user_free_spins WHERE linux_do_id = ?'
+        ),
+        getAllFreeSpin: db.query<UserFreeSpin, never>(
+            'SELECT * FROM user_free_spins'
         ),
         setFreeSpin: db.query(
             'INSERT OR REPLACE INTO user_free_spins (linux_do_id, free_spins, banned_until, updated_at) VALUES (?, ?, ?, ?)'

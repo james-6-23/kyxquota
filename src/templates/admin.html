@@ -170,6 +170,9 @@
           <button onclick="showSection('pendingRewards')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>💰</span> 待发放奖金
           </button>
+          <button onclick="showSection('bannedUsers')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🚫</span> 封禁记录
+          </button>
         </nav>
       </aside>
 
@@ -669,8 +672,67 @@
           
           <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4 mb-4">
             <p class="text-sm text-red-800">
-              💡 <strong>高级场特色：</strong>投注金额$100-$500可选，奖励倍率×4，惩罚金额×2，目标RTP 88%
+              💡 <strong>高级场特色：</strong>投注金额$100-$1500可选，奖励倍率×4，惩罚金额×2，严格连续判定
             </p>
+          </div>
+          
+          <!-- 搜索和筛选栏 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <!-- 搜索用户名 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">搜索用户名</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="advancedRecordSearchInput" 
+                    placeholder="输入LinuxDo用户名或公益站用户名..." 
+                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  >
+                  <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              
+              <!-- 中奖类型筛选 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">中奖类型</label>
+                <select 
+                  id="advancedWinTypeFilter" 
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                >
+                  <option value="all">全部类型</option>
+                  <option value="super_jackpot">🏆 超级大奖</option>
+                  <option value="special_combo">💎 特殊组合</option>
+                  <option value="quad">🎰 四连</option>
+                  <option value="triple">✨ 三连</option>
+                  <option value="double">🎁 双连</option>
+                  <option value="punishment">⚡ 律师函</option>
+                  <option value="none">❌ 未中奖</option>
+                </select>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex items-end gap-2">
+                <button 
+                  onclick="filterAdvancedSlotRecords()" 
+                  class="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white rounded-lg transition-all font-semibold shadow-md"
+                >
+                  🔍 查询
+                </button>
+                <button 
+                  onclick="refreshAdvancedSlotRecordsKeepFilter()" 
+                  class="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-1"
+                  title="刷新数据（保留筛选条件）"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  刷新
+                </button>
+              </div>
+            </div>
           </div>
 
           <!-- 统计信息 -->
@@ -691,7 +753,7 @@
               <div>
                 <p class="text-sm text-slate-600">实际RTP</p>
                 <p id="advancedSlotRTP" class="text-2xl font-bold text-purple-600">0%</p>
-                <p class="text-xs text-slate-500 mt-1">目标: <span id="advancedSlotTargetRTP">95%</span></p>
+                <p class="text-xs text-slate-500 mt-1">返还玩家率 (总赢 ÷ 总投)</p>
               </div>
             </div>
             
@@ -805,15 +867,6 @@
                 </label>
                 <input type="number" step="0.1" id="advancedRewardMultiplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-green-600" placeholder="4.0">
                 <p class="text-xs text-slate-500 mt-1">奖励放大系数</p>
-              </div>
-              
-              <!-- 目标RTP -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  目标RTP <span class="text-blue-500" title="RTP = 返还玩家率">🛈</span>
-                </label>
-                <input type="number" step="0.01" min="0.5" max="1.5" id="advancedRTPTarget" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-blue-600" placeholder="0.88">
-                <p class="text-xs text-slate-500 mt-1">推荐: 0.88 (88%)</p>
               </div>
               
               <!-- 惩罚倍数 -->
@@ -1471,6 +1524,53 @@
               刷新数据
             </button>
           </div>
+          
+          <!-- 🔥 分析筛选栏 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <!-- 分析范围选择 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">📊 分析范围</label>
+                <select 
+                  id="analyticsRecordCount" 
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  onchange="loadSlotAnalytics()"
+                >
+                  <option value="100">最近100次游戏</option>
+                  <option value="500" selected>最近500次游戏</option>
+                  <option value="1000">最近1000次游戏</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">修改权重后选择100次可快速观察效果</p>
+              </div>
+              
+              <!-- 游戏模式筛选 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">🎮 游戏模式</label>
+                <select 
+                  id="analyticsSlotMode" 
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  onchange="loadSlotAnalytics()"
+                >
+                  <option value="all" selected>全部模式</option>
+                  <option value="normal">初级场（任意位置）</option>
+                  <option value="advanced">高级场（严格连续）</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-1">初级场和高级场使用不同权重配置</p>
+              </div>
+              
+              <!-- 说明信息 -->
+              <div class="flex items-center">
+                <div class="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                  <p class="text-xs text-blue-800">
+                    <strong>提示：</strong> 
+                    <br>• 初级场：任意位置相同即可
+                    <br>• 高级场：必须相邻连续
+                    <br>• 建议分别查看两种模式数据
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
 
           <!-- 概览统计 -->
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
@@ -2118,6 +2218,93 @@
                 <tbody id="pendingRewardsTableBody">
                   <tr>
                     <td colspan="8" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🚫 Banned Users Section -->
+        <div id="bannedUsersSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🚫 封禁记录管理</h2>
+            <button onclick="refreshBannedUsers()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+
+          <!-- 统计卡片 -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center text-2xl">🚫</div>
+                <div>
+                  <p class="text-sm text-slate-600">当前封禁用户</p>
+                  <p id="bannedUsersCount" class="text-2xl font-bold text-red-600">0</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center text-2xl">⏱️</div>
+                <div>
+                  <p class="text-sm text-slate-600">临时封禁</p>
+                  <p id="tempBannedCount" class="text-2xl font-bold text-yellow-600">0</p>
+                </div>
+              </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-2xl">🔒</div>
+                <div>
+                  <p class="text-sm text-slate-600">永久封禁</p>
+                  <p id="permBannedCount" class="text-2xl font-bold text-gray-700">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 说明提示 -->
+          <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl">⚠️</div>
+              <div class="flex-1">
+                <h3 class="font-semibold text-amber-900 mb-2">关于封禁系统</h3>
+                <ul class="text-sm text-amber-800 space-y-1">
+                  <li>• <strong>临时封禁</strong>：触发3个及以上律师函自动封禁60小时（从最后一次触发算起）</li>
+                  <li>• <strong>永久封禁</strong>：由管理员手动设置的永久封禁状态</li>
+                  <li>• <strong>自动解封</strong>：临时封禁到期后系统会自动解封</li>
+                  <li>• <strong>手动解封</strong>：管理员可以提前解除任何封禁</li>
+                  <li>• <strong>封禁影响</strong>：被封禁用户无法进行任何抽奖操作</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <!-- 封禁记录列表 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-red-50 to-orange-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户名</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">LinuxDo</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">封禁时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">解封时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">封禁原因</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">封禁类型</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="bannedUsersTableBody">
+                  <tr>
+                    <td colspan="9" class="text-center py-8 text-slate-500">加载中...</td>
                   </tr>
                 </tbody>
               </table>
@@ -3345,6 +3532,7 @@
       if (section === 'profitLeaderboard') loadProfitLeaderboard();
       if (section === 'lossLeaderboard') loadLossLeaderboard();
       if (section === 'pendingRewards') loadPendingRewards();
+      if (section === 'bannedUsers') loadBannedUsers();
     }
 
     // 老虎机配置管理
@@ -3908,7 +4096,11 @@
     // 老虎机抽奖分析
     async function loadSlotAnalytics() {
       try {
-        const res = await fetch('/api/admin/slot/analytics');
+        // 🔥 获取筛选参数
+        const recordCount = document.getElementById('analyticsRecordCount')?.value || '500';
+        const slotMode = document.getElementById('analyticsSlotMode')?.value || 'all';
+        
+        const res = await fetch(`/api/admin/slot/analytics?limit=${recordCount}&mode=${slotMode}`);
         const data = await res.json();
 
         if (!data.success) {
@@ -3921,6 +4113,12 @@
         const winTypes = analytics.winTypes;
         const dailyStats = analytics.dailyStats;
         const userStats = analytics.userStats;
+        const filters = analytics.filters || {};
+
+        // 🔥 显示当前筛选条件
+        const modeText = filters.mode === 'normal' ? '初级场' : 
+                        filters.mode === 'advanced' ? '高级场' : '全部模式';
+        console.log(`[抽奖分析] 正在分析: ${modeText} - 最近${filters.limit}条记录`);
 
         // 更新概览统计
         document.getElementById('analyticsTotal').textContent = summary.totalCount.toLocaleString();
@@ -4782,7 +4980,6 @@
           
           document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier || 4.0;
           document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor || 2.0;
-          document.getElementById('advancedRTPTarget').value = config.rtp_target || 0.88;
           
           // 时效设置
           document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours || 24;
@@ -4841,7 +5038,7 @@
           bet_max: betMaxUsd * 500000,  // 美元转聪
           reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value) || 4.0,
           penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value) || 2.0,
-          rtp_target: parseFloat(document.getElementById('advancedRTPTarget').value) || 0.88,
+          rtp_target: 0.88,  // 保留字段以兼容数据库
           ticket_valid_hours: parseInt(document.getElementById('advancedTicketValidHours').value) || 24,
           session_valid_hours: parseInt(document.getElementById('advancedSessionValidHours').value) || 24,
           fragments_needed: parseInt(document.getElementById('advancedFragmentsNeeded').value) || 5,
@@ -4879,9 +5076,160 @@
       }
     }
 
+    // ========== 封禁记录管理功能 ==========
+    
+    // 加载封禁用户列表
+    async function loadBannedUsers() {
+      try {
+        const res = await fetch('/api/admin/users/banned');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载封禁记录失败', 'error');
+          return;
+        }
+        
+        const bannedUsers = data.data.users;
+        const freeSpinsBans = data.data.freeSpinsBans || [];
+        
+        // 合并两种封禁记录
+        const allBans = [];
+        
+        // 用户表的封禁（永久封禁）
+        bannedUsers.forEach(user => {
+          allBans.push({
+            linux_do_id: user.linux_do_id,
+            username: user.username,
+            linux_do_username: user.linux_do_username,
+            banned_at: user.banned_at,
+            banned_until: null,  // 永久封禁
+            banned_reason: user.banned_reason || '管理员手动封禁',
+            type: 'permanent',
+            is_active: true
+          });
+        });
+        
+        // 老虎机免费次数表的封禁（临时封禁 - 律师函触发）
+        freeSpinsBans.forEach(ban => {
+          allBans.push({
+            linux_do_id: ban.linux_do_id,
+            username: ban.username || ban.linux_do_id,
+            linux_do_username: null,
+            banned_at: ban.banned_until - (60 * 60 * 1000),  // 推算封禁时间（60小时前）
+            banned_until: ban.banned_until,
+            banned_reason: '触发3个及以上律师函',
+            type: 'temporary',
+            is_active: ban.banned_until > Date.now()
+          });
+        });
+        
+        // 统计
+        const totalBanned = allBans.length;
+        const tempBanned = allBans.filter(b => b.type === 'temporary' && b.is_active).length;
+        const permBanned = allBans.filter(b => b.type === 'permanent').length;
+        
+        document.getElementById('bannedUsersCount').textContent = totalBanned;
+        document.getElementById('tempBannedCount').textContent = tempBanned;
+        document.getElementById('permBannedCount').textContent = permBanned;
+        
+        // 渲染表格
+        const tbody = document.getElementById('bannedUsersTableBody');
+        
+        if (allBans.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-green-600 font-semibold">🎉 当前没有被封禁的用户</td></tr>';
+          return;
+        }
+        
+        // 按封禁时间倒序排序
+        allBans.sort((a, b) => (b.banned_at || 0) - (a.banned_at || 0));
+        
+        tbody.innerHTML = allBans.map(ban => {
+          const bannedTime = ban.banned_at ? new Date(ban.banned_at).toLocaleString('zh-CN') : '--';
+          const unbanTime = ban.banned_until ? new Date(ban.banned_until).toLocaleString('zh-CN') : '永久';
+          const isExpired = ban.banned_until && ban.banned_until < Date.now();
+          
+          // 封禁类型
+          const typeBadge = ban.type === 'permanent' 
+            ? '<span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-semibold">🔒 永久</span>'
+            : '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏱️ 临时</span>';
+          
+          // 状态
+          const statusBadge = ban.is_active
+            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">🚫 封禁中</span>'
+            : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已过期</span>';
+          
+          // 操作按钮
+          const actionButtons = ban.is_active
+            ? `<button onclick="unbanUser('${ban.linux_do_id}', '${ban.username}')" class="px-3 py-1.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-all">🔓 解封</button>`
+            : '<span class="text-slate-400 text-xs">已过期</span>';
+          
+          return `
+            <tr class="border-b border-slate-100 hover:bg-slate-50">
+              <td class="px-4 py-3 font-mono text-slate-600 text-xs">${ban.linux_do_id.substring(0, 8)}...</td>
+              <td class="px-4 py-3">
+                <div class="font-semibold text-slate-900">${ban.username}</div>
+              </td>
+              <td class="px-4 py-3">
+                <div class="text-sm text-slate-700">${ban.linux_do_username || '--'}</div>
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-600">${bannedTime}</td>
+              <td class="px-4 py-3 text-sm ${isExpired ? 'text-green-600' : 'text-red-600'} font-semibold">${unbanTime}</td>
+              <td class="px-4 py-3">
+                <div class="text-sm text-slate-700">${ban.banned_reason}</div>
+              </td>
+              <td class="px-4 py-3 text-center">${typeBadge}</td>
+              <td class="px-4 py-3 text-center">${statusBadge}</td>
+              <td class="px-4 py-3 text-center">${actionButtons}</td>
+            </tr>
+          `;
+        }).join('');
+        
+        showToast('封禁记录已加载', 'success');
+      } catch (error) {
+        console.error('加载封禁记录失败:', error);
+        showToast('加载失败，请重试', 'error');
+      }
+    }
+    
+    // 刷新封禁记录
+    function refreshBannedUsers() {
+      loadBannedUsers();
+    }
+    
+    // 解封用户
+    async function unbanUser(linuxDoId, username) {
+      if (!confirm(`确认解封用户 "${username}" 吗？\n\n解封后该用户可以继续进行抽奖。`)) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/users/${linuxDoId}/unban`, {
+          method: 'POST'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ 用户 "${username}" 已解封`, 'success');
+          // 刷新列表
+          setTimeout(() => loadBannedUsers(), 500);
+        } else {
+          showToast(data.message || '解封失败', 'error');
+        }
+      } catch (error) {
+        console.error('解封用户失败:', error);
+        showToast('解封操作失败，请重试', 'error');
+      }
+    }
+
     // 高级场游戏记录
     let advancedSlotCurrentPage = 1;
     let advancedSlotPageSize = 50;
+    let advancedSlotAllRecords = [];  // 存储所有记录用于筛选
+    let advancedSlotFilters = {
+      username: '',
+      winType: 'all'
+    };
 
     async function loadAdvancedSlotRecords(page = 1) {
       try {
@@ -4890,7 +5238,25 @@
         const data = await res.json();
 
         if (data.success) {
-          const { records, total, stats } = data.data;
+          let { records, total, stats } = data.data;
+          
+          // 🔥 存储所有记录
+          advancedSlotAllRecords = records;
+          
+          // 🔥 应用筛选
+          if (advancedSlotFilters.username) {
+            records = records.filter(r => 
+              (r.linux_do_username && r.linux_do_username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase())) ||
+              (r.username && r.username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase()))
+            );
+          }
+          
+          if (advancedSlotFilters.winType !== 'all') {
+            records = records.filter(r => r.win_type === advancedSlotFilters.winType);
+          }
+          
+          // 更新总数（筛选后）
+          total = records.length;
           
           // 更新统计信息
           document.getElementById('advancedSlotTotal').textContent = stats.count;
@@ -4899,13 +5265,6 @@
           const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
           document.getElementById('advancedSlotRTP').textContent = `${rtp}%`;
           
-          // 🎯 显示目标RTP（从配置读取）
-          const configRes = await fetch('/api/admin/slot/advanced/config');
-          const configData = await configRes.json();
-          if (configData.success) {
-            const targetRtp = (configData.data.rtp_target * 100).toFixed(0);
-            document.getElementById('advancedSlotTargetRTP').textContent = `${targetRtp}%`;
-          }
           
           // 渲染表格
           const tbody = document.getElementById('advancedSlotRecordsBody');
@@ -4937,7 +5296,11 @@
                   <td class="px-4 py-3 text-sm font-semibold text-blue-600">$${(r.bet_amount / 500000).toFixed(2)}</td>
                   <td class="px-4 py-3 text-sm">
                     <div class="flex gap-1">
-                      ${symbols.map(s => `<img src="/slot-symbols/${s}.${['m','t','n','j','lsh'].includes(s) ? 'png' : 'jpg'}" class="w-8 h-8 object-contain" title="${s}">`).join('')}
+                      ${symbols.map(s => {
+                        // 🔥 修复：lq, bj, bdk 使用 jpg，其他符号使用 png
+                        const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
+                        return `<img src="/slot-symbols/${s}.${ext}" class="w-8 h-8 object-contain" title="${s}">`;
+                      }).join('')}
                     </div>
                   </td>
                   <td class="px-4 py-3 text-sm">${winTypeNames[r.win_type] || r.win_type}</td>
@@ -4976,6 +5339,20 @@
 
     function advancedSlotNextPage() {
       loadAdvancedSlotRecords(advancedSlotCurrentPage + 1);
+    }
+    
+    // 🔥 高级场记录筛选函数
+    function filterAdvancedSlotRecords() {
+      advancedSlotFilters.username = document.getElementById('advancedRecordSearchInput').value.trim();
+      advancedSlotFilters.winType = document.getElementById('advancedWinTypeFilter').value;
+      
+      advancedSlotCurrentPage = 1;
+      loadAdvancedSlotRecords(1);
+    }
+    
+    // 🔥 刷新并保留筛选条件
+    function refreshAdvancedSlotRecordsKeepFilter() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage);
     }
 
     // 入场券掉落记录
@@ -5214,9 +5591,8 @@ RTP (Return to Player)：
 • 律师函出现概率由权重配置单独控制
 
 推荐配置：
-• 奖励倍数：4.0
-• 惩罚倍数：2.0  
-• 目标RTP：0.88 (88%)`);
+• 奖励倍数：4.0（中奖金额放大）
+• 惩罚倍数：2.0（律师函惩罚放大）`);
     }
     
     function calculateAdvancedProbabilities() {

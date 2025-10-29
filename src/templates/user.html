@@ -884,6 +884,15 @@
                      oninput="updateAdvancedBetDisplay(this.value)">
             </div>
             
+            <!-- 🔥 高级场封禁状态提示 -->
+            <div id="advancedBannedNotice" class="hidden mb-3 p-3 bg-red-500/90 rounded-lg border border-red-300">
+              <p class="text-white text-sm text-center font-semibold">
+                🚫 您已被禁止抽奖
+                <br>
+                <span id="advancedBannedUntilText" class="text-xs">解禁时间：--</span>
+              </p>
+            </div>
+            
             <!-- 投注按钮 -->
             <button id="advancedSpinButton" onclick="spinSlot(false)" 
                     class="w-full px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
@@ -3507,16 +3516,32 @@
       // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
       updateBetLimitProgressBar();
 
-      // 显示禁止状态
+      // 显示禁止状态（初级场和高级场都显示）
       const bannedNotice = document.getElementById('bannedNotice');
       const bannedUntilText = document.getElementById('bannedUntilText');
+      const advancedBannedNotice = document.getElementById('advancedBannedNotice');
+      const advancedBannedUntilText = document.getElementById('advancedBannedUntilText');
+      
       if (slotUserData.is_banned && slotUserData.banned_until > Date.now()) {
-        bannedNotice.classList.remove('hidden');
         const bannedDate = new Date(slotUserData.banned_until);
         const remainingHours = Math.ceil((slotUserData.banned_until - Date.now()) / 3600000);
-        bannedUntilText.textContent = `解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`;
+        const banText = `解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`;
+        
+        // 🔥 初级场封禁提示
+        if (bannedNotice && bannedUntilText) {
+          bannedNotice.classList.remove('hidden');
+          bannedUntilText.textContent = banText;
+        }
+        
+        // 🔥 高级场封禁提示
+        if (advancedBannedNotice && advancedBannedUntilText) {
+          advancedBannedNotice.classList.remove('hidden');
+          advancedBannedUntilText.textContent = banText;
+        }
       } else {
-        bannedNotice.classList.add('hidden');
+        // 隐藏所有封禁提示
+        if (bannedNotice) bannedNotice.classList.add('hidden');
+        if (advancedBannedNotice) advancedBannedNotice.classList.add('hidden');
       }
 
       // 更新投注金额显示（根据管理员配置或高级场选择）
@@ -3868,12 +3893,12 @@
         } else if (result.win_type === 'triple') {
           // 三连：3秒
           displayDuration = 3000;
-        } else if (result.win_type === 'double') {
+        } else if (result.win_type === 'double'|| result.win_type === 'punishment') {
           // 双连：2.5秒
           displayDuration = 2500;
-        } else if (result.win_type === 'none' || result.win_type === 'punishment') {
+        } else if (result.win_type === 'none' ) {
           // 未中奖、惩罚：3秒（让玩家看清楚结果）
-          displayDuration = 2000;
+          displayDuration = 1000;
         }
         
         setTimeout(() => {

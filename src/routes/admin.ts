@@ -702,16 +702,28 @@ app.post('/slot/multipliers', requireAdmin, async (c) => {
  */
 app.get('/slot/analytics', requireAdmin, async (c) => {
     try {
+        // 🔥 获取筛选参数
+        const limit = parseInt(c.req.query('limit') || '500');  // 默认500条
+        const mode = c.req.query('mode') || 'all';  // all, normal, advanced
+
         // 获取所有老虎机记录
         const allRecords = slotQueries.getAllRecords.all();
 
-        // 筛选初级场记录（slot_mode = 'normal' 或 NULL）
-        const normalRecords = allRecords.filter(r => r.slot_mode === 'normal' || r.slot_mode === null);
+        // 🔥 根据模式筛选
+        let filteredRecords = allRecords;
+        if (mode === 'normal') {
+            filteredRecords = allRecords.filter(r => r.slot_mode === 'normal' || r.slot_mode === null);
+        } else if (mode === 'advanced') {
+            filteredRecords = allRecords.filter(r => r.slot_mode === 'advanced');
+        }
 
-        // 基础统计（基于初级场记录）
-        const totalCount = normalRecords.length;
-        const totalBet = normalRecords.reduce((sum, r) => sum + r.bet_amount, 0);
-        const totalWin = normalRecords.reduce((sum, r) => sum + r.win_amount, 0);
+        // 🔥 限制记录数量（取最新的N条）
+        const records = filteredRecords.slice(0, limit);
+
+        // 基础统计
+        const totalCount = records.length;
+        const totalBet = records.reduce((sum, r) => sum + r.bet_amount, 0);
+        const totalWin = records.reduce((sum, r) => sum + r.win_amount, 0);
         const netProfit = totalWin - totalBet;
 
         // 按中奖类型统计
@@ -725,7 +737,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             'none': { count: 0, totalWin: 0, avgWin: 0 }
         };
 
-        normalRecords.forEach(r => {
+        records.forEach(r => {
             if (winTypes[r.win_type]) {
                 winTypes[r.win_type].count++;
                 winTypes[r.win_type].totalWin += r.win_amount;
@@ -738,11 +750,11 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
         });
 
-        const winCount = normalRecords.filter(r => r.win_amount > 0).length;
+        const winCount = records.filter(r => r.win_amount > 0).length;
         const winRate = totalCount > 0 ? (winCount / totalCount) * 100 : 0;
 
         // 获取最近的游戏记录（最多100条）
-        const recentRecords = normalRecords.slice(0, 100).map(r => ({
+        const recentRecords = records.slice(0, 100).map(r => ({
             ...r,
             result_symbols: JSON.parse(r.result_symbols),
             timestamp: r.timestamp,
@@ -764,7 +776,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             dailyStats[dateStr] = { count: 0, bet: 0, win: 0, profit: 0 };
         }
 
-        normalRecords.forEach(r => {
+        records.forEach(r => {
             if (dailyStats[r.date]) {
                 dailyStats[r.date].count++;
                 dailyStats[r.date].bet += r.bet_amount;
@@ -788,8 +800,8 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
                 recentRecords,
                 userStats: userStats.slice(0, 100), // 盈利排行榜
                 lossStats: lossStats.slice(0, 100), // 亏损排行榜
-                allRecords: normalRecords, // 添加初级场记录（用于筛选）
-                dailyStats
+                dailyStats,
+                filters: { limit, mode }  // 🔥 返回当前筛选条件
             }
         });
     } catch (error: any) {
@@ -1174,14 +1186,55 @@ app.post('/users/:linuxDoId/ban', requireAdmin, async (c) => {
 });
 
 /**
- * 解封用户
+ * 获取封禁用户列表
+ */
+app.get('/users/banned', requireAdmin, async (c) => {
+    try {
+        // 获取用户表中的永久封禁用户
+        const bannedUsers = userQueries.getBannedUsers.all();
+
+        // 获取老虎机临时封禁（banned_until）
+        const freeSpinsBans = slotQueries.getAllFreeSpin.all()
+            .filter(fs => fs.banned_until && fs.banned_until > 0)
+            .map(fs => {
+                const user = userQueries.get.get(fs.linux_do_id);
+                return {
+                    linux_do_id: fs.linux_do_id,
+                    username: user?.username || fs.linux_do_id,
+                    linux_do_username: user?.linux_do_username || null,
+                    banned_until: fs.banned_until
+                };
+            });
+
+        return c.json({
+            success: true,
+            data: {
+                users: bannedUsers,
+                freeSpinsBans: freeSpinsBans
+            }
+        });
+    } catch (error: any) {
+        console.error('[管理员] 获取封禁用户列表失败:', error);
+        return c.json({ success: false, message: '获取封禁列表失败' }, 500);
+    }
+});
+
+/**
+ * 解封用户（同时清除永久封禁和临时封禁）
  */
 app.post('/users/:linuxDoId/unban', requireAdmin, async (c) => {
     const linuxDoId = c.req.param('linuxDoId');
 
     try {
         const user = userQueries.get.get(linuxDoId);
+
+        // 清除用户表的封禁
         userQueries.unban.run(linuxDoId);
+
+        // 🔥 同时清除老虎机临时封禁（banned_until）
+        const now = Date.now();
+        slotQueries.setFreeSpin.run(linuxDoId, 0, 0, now);  // 重置banned_until为0
+
         console.log(`[管理员] ✅ 解封用户 - 用户: ${user?.username || linuxDoId}`);
         return c.json({ success: true, message: '用户已解封' });
     } catch (e: any) {
