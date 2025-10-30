@@ -99,6 +99,23 @@
       -ms-user-select: none;
     }
     
+    /* 禁用文字选择时的背景高亮 */
+    .nav-link::selection {
+      background: transparent;
+    }
+    
+    .nav-link::-moz-selection {
+      background: transparent;
+    }
+    
+    .nav-link *::selection {
+      background: transparent;
+    }
+    
+    .nav-link *::-moz-selection {
+      background: transparent;
+    }
+    
     .nav-link::before {
       content: '';
       position: absolute;
@@ -4645,15 +4662,20 @@
         
         if (data.success) {
           const select = document.getElementById('normalSlotWeightConfigId');
-          select.innerHTML = data.data.map(w => 
-            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
-          ).join('');
           
-          // 获取当前配置
+          // 先获取当前配置
           const configRes = await fetch('/api/admin/slot/config');
           const configData = await configRes.json();
-          if (configData.success && configData.data.weight_config_id) {
-            select.value = configData.data.weight_config_id;
+          const currentWeightId = configData.success && configData.data.weight_config_id ? configData.data.weight_config_id : null;
+          
+          // 渲染选项，移除"使用中"标签
+          select.innerHTML = data.data.map(w => 
+            `<option value="${w.id}">${w.config_name}</option>`
+          ).join('');
+          
+          // 设置当前选中的配置
+          if (currentWeightId) {
+            select.value = currentWeightId;
             previewNormalWeightConfig();
           }
         }
@@ -4670,15 +4692,20 @@
         
         if (data.success) {
           const select = document.getElementById('normalSlotRewardSchemeId');
-          select.innerHTML = data.data.map(s =>
-            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
-          ).join('');
           
-          // 获取当前配置
+          // 先获取当前配置
           const configRes = await fetch('/api/admin/slot/config');
           const configData = await configRes.json();
-          if (configData.success && configData.data.reward_scheme_id) {
-            select.value = configData.data.reward_scheme_id;
+          const currentSchemeId = configData.success && configData.data.reward_scheme_id ? configData.data.reward_scheme_id : null;
+          
+          // 渲染选项，移除"使用中"标签
+          select.innerHTML = data.data.map(s =>
+            `<option value="${s.id}">${s.scheme_name}</option>`
+          ).join('');
+          
+          // 设置当前选中的配置
+          if (currentSchemeId) {
+            select.value = currentSchemeId;
             previewNormalRewardScheme();
           }
         }
@@ -6582,15 +6609,20 @@
         
         if (data.success) {
           const select = document.getElementById('advancedSlotWeightConfigId');
-          select.innerHTML = data.data.map(w => 
-            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
-          ).join('');
           
-          // 获取当前配置
+          // 先获取当前配置
           const configRes = await fetch('/api/admin/slot/advanced/config');
           const configData = await configRes.json();
-          if (configData.success && configData.data.weight_config_id) {
-            select.value = configData.data.weight_config_id;
+          const currentWeightId = configData.success && configData.data.weight_config_id ? configData.data.weight_config_id : null;
+          
+          // 渲染选项，移除"使用中"标签
+          select.innerHTML = data.data.map(w => 
+            `<option value="${w.id}">${w.config_name}</option>`
+          ).join('');
+          
+          // 设置当前选中的配置
+          if (currentWeightId) {
+            select.value = currentWeightId;
             previewAdvancedWeightConfig();
           }
         }
@@ -6607,15 +6639,20 @@
         
         if (data.success) {
           const select = document.getElementById('advancedSlotRewardSchemeId');
-          select.innerHTML = data.data.map(s =>
-            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
-          ).join('');
           
-          // 获取当前配置
+          // 先获取当前配置
           const configRes = await fetch('/api/admin/slot/advanced/config');
           const configData = await configRes.json();
-          if (configData.success && configData.data.reward_scheme_id) {
-            select.value = configData.data.reward_scheme_id;
+          const currentSchemeId = configData.success && configData.data.reward_scheme_id ? configData.data.reward_scheme_id : null;
+          
+          // 渲染选项，移除"使用中"标签
+          select.innerHTML = data.data.map(s =>
+            `<option value="${s.id}">${s.scheme_name}</option>`
+          ).join('');
+          
+          // 设置当前选中的配置
+          if (currentSchemeId) {
+            select.value = currentSchemeId;
             previewAdvancedRewardScheme();
           }
         }
@@ -6693,10 +6730,7 @@
           document.getElementById('kunbeiOverduePenalty').value = config.overdue_penalty_hours;
           document.getElementById('kunbeiOverdueDeductMultiplier').value = config.overdue_deduct_multiplier || 2.5;
           
-          // 设置逾期扣除配置（保留用于显示）
-          if (config.deduct_all_quota_on_overdue !== undefined) {
-            document.getElementById('deductAllQuotaOnOverdue').checked = !!config.deduct_all_quota_on_overdue;
-          }
+          // 逾期扣除配置已移除，使用倍数系统替代
         } else {
           console.error('加载坤呗配置失败:', configData.message);
           showToast('加载坤呗配置失败：' + (configData.message || '未知错误'), 'error');
@@ -7006,42 +7040,8 @@
       }
     }
     
-    // 保存逾期扣除配置
-    async function saveOverdueConfig() {
-      try {
-        const deductAll = document.getElementById('deductAllQuotaOnOverdue').checked;
-        
-        // 获取当前配置
-        const configRes = await fetch('/api/admin/kunbei/config');
-        const configData = await configRes.json();
-        
-        if (!configData.success) {
-          showToast('获取配置失败', 'error');
-          return;
-        }
-        
-        // 更新配置
-        const config = configData.data;
-        config.deduct_all_quota_on_overdue = deductAll ? 1 : 0;
-        
-        const res = await fetch('/api/admin/kunbei/config', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(config)
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          showToast('逾期惩罚配置已保存', 'success');
-        } else {
-          showToast(data.message || '保存失败', 'error');
-        }
-      } catch (error) {
-        console.error('保存逾期配置失败:', error);
-        showToast('保存失败', 'error');
-      }
-    }
+    // 保存逾期扣除配置已废弃，现在使用倍数系统，在saveKunbeiConfig中一起保存
+    // function saveOverdueConfig() - 已移除
 
     // ========== 贷款记录管理功能 ==========
     
@@ -9278,8 +9278,9 @@
         
         if (weightData.success) {
           const select = document.getElementById('supremeWeightConfigId');
+          // 移除"使用中"标签
           select.innerHTML = weightData.data.map(w => 
-            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
+            `<option value="${w.id}">${w.config_name}</option>`
           ).join('');
         }
         
@@ -9289,8 +9290,9 @@
         
         if (rewardData.success) {
           const select = document.getElementById('supremeRewardSchemeId');
+          // 移除"使用中"标签
           select.innerHTML = rewardData.data.map(s =>
-            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
+            `<option value="${s.id}">${s.scheme_name}</option>`
           ).join('');
         }
         

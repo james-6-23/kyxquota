@@ -578,19 +578,42 @@ app.post('/slot/config', requireAdmin, async (c) => {
         const now = Date.now();
         const currentConfig = slotQueries.getConfig.get();
 
+        const finalBetAmount = bet_amount !== undefined ? bet_amount : currentConfig!.bet_amount;
+        const finalMaxSpins = max_daily_spins !== undefined ? max_daily_spins : currentConfig!.max_daily_spins;
+        const finalMinQuota = min_quota_required !== undefined ? min_quota_required : currentConfig!.min_quota_required;
+        const finalEnabled = enabled !== undefined ? enabled : currentConfig!.enabled;
+        const finalBgType = background_type !== undefined ? background_type : currentConfig!.background_type;
+        const finalBuyEnabled = buy_spins_enabled !== undefined ? buy_spins_enabled : currentConfig!.buy_spins_enabled;
+        const finalBuyPrice = buy_spins_price !== undefined ? buy_spins_price : currentConfig!.buy_spins_price;
+        const finalMaxBuy = max_daily_buy_spins !== undefined ? max_daily_buy_spins : currentConfig!.max_daily_buy_spins;
+
         slotQueries.updateConfig.run(
-            bet_amount !== undefined ? bet_amount : currentConfig!.bet_amount,
-            max_daily_spins !== undefined ? max_daily_spins : currentConfig!.max_daily_spins,
-            min_quota_required !== undefined ? min_quota_required : currentConfig!.min_quota_required,
-            enabled !== undefined ? enabled : currentConfig!.enabled,
-            background_type !== undefined ? background_type : currentConfig!.background_type,
-            buy_spins_enabled !== undefined ? buy_spins_enabled : currentConfig!.buy_spins_enabled,
-            buy_spins_price !== undefined ? buy_spins_price : currentConfig!.buy_spins_price,
-            max_daily_buy_spins !== undefined ? max_daily_buy_spins : currentConfig!.max_daily_buy_spins,
+            finalBetAmount,
+            finalMaxSpins,
+            finalMinQuota,
+            finalEnabled,
+            finalBgType,
+            finalBuyEnabled,
+            finalBuyPrice,
+            finalMaxBuy,
             now
         );
 
-        console.log(`[管理员] ✅ 老虎机配置已更新 - 购买次数功能: ${buy_spins_enabled ? '开启' : '关闭'}`);
+        console.log('='.repeat(80));
+        console.log('🎰 [初级场] 保存基础配置');
+        console.log('='.repeat(80));
+        console.log(`💰 投注金额: $${finalBetAmount / 500000}`);
+        console.log(`🎮 每日次数: ${finalMaxSpins}`);
+        console.log(`📊 最低额度: $${finalMinQuota / 500000}`);
+        console.log(`🎬 背景类型: ${finalBgType}`);
+        console.log(`🛒 购买功能: ${finalBuyEnabled ? '✅ 开启' : '❌ 关闭'}`);
+        if (finalBuyEnabled) {
+            console.log(`   - 购买价格: $${finalBuyPrice / 500000}`);
+            console.log(`   - 每日上限: ${finalMaxBuy}次`);
+        }
+        console.log(`⏰ 保存时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 初级场基础配置已成功保存！');
+        console.log('='.repeat(80));
 
         return c.json({
             success: true,
@@ -598,7 +621,7 @@ app.post('/slot/config', requireAdmin, async (c) => {
             data: slotQueries.getConfig.get()
         });
     } catch (error: any) {
-        console.error('更新老虎机配置失败:', error);
+        console.error('❌ [初级场] 保存基础配置失败:', error);
         return c.json({ success: false, message: '更新失败' }, 500);
     }
 });
@@ -2134,7 +2157,23 @@ app.post('/slot/advanced/config', requireAdmin, async (c) => {
             now
         );
 
-        console.log('[管理员] ✅ 高级场配置已更新:', body);
+        console.log('='.repeat(80));
+        console.log('🔥 [高级场] 保存基础配置');
+        console.log('='.repeat(80));
+        console.log(`💰 投注范围: $${bet_min / 500000} - $${bet_max / 500000}`);
+        console.log(`📈 奖励倍数: ${reward_multiplier}x`);
+        console.log(`⚖️ 惩罚权重: ${penalty_weight_factor}x`);
+        console.log(`🎯 目标RTP: ${rtp_target}%`);
+        console.log(`🎟️ 入场券有效期: ${ticket_valid_hours}小时`);
+        console.log(`⏱️ 会话有效期: ${session_valid_hours}小时`);
+        console.log(`🧩 合成碎片数: ${fragments_needed}`);
+        console.log(`🎁 掉落率 - 三连: ${drop_rate_triple}% | 双连: ${drop_rate_double}%`);
+        console.log(`📦 最大持有: ${max_tickets_hold}张`);
+        console.log(`💵 每日投注限额: $${daily_bet_limit / 500000}`);
+        console.log(`📅 每日进入: ${daily_entry_limit || 2}次 | 每日获得券: ${daily_ticket_grant_limit || 2}张`);
+        console.log(`⏰ 保存时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 高级场基础配置已成功保存！');
+        console.log('='.repeat(80));
 
         return c.json({
             success: true,
@@ -3141,9 +3180,25 @@ app.post('/supreme/config', requireAdmin, async (c) => {
             daily_bet_limit, weight_config_id, reward_scheme_id, now
         );
 
+        console.log('='.repeat(80));
+        console.log('💎 [至尊场] 保存配置');
+        console.log('='.repeat(80));
+        console.log(`💰 投注范围: $${min_bet_amount / 500000} - $${max_bet_amount / 500000} (步长: $${bet_step / 500000})`);
+        console.log(`💠 碎片→令牌: ${fragments_to_token}个`);
+        console.log(`🎫 最大持有令牌: ${max_tokens_hold}个`);
+        console.log(`⏱️ 令牌有效期: ${token_valid_hours}小时`);
+        console.log(`⏳ 会话有效期: ${session_valid_hours}小时`);
+        console.log(`📅 每日进入: ${daily_entry_limit}次 | 每日获得令牌: ${daily_token_grant_limit}个`);
+        console.log(`💵 每日投注限额: $${daily_bet_limit / 500000}`);
+        console.log(`⚖️ 权重配置方案 ID: ${weight_config_id || '未设置'}`);
+        console.log(`🎁 奖励配置方案 ID: ${reward_scheme_id || '未设置'}`);
+        console.log(`⏰ 保存时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 至尊场配置已成功保存！');
+        console.log('='.repeat(80));
+
         return c.json({ success: true, message: '至尊场配置已更新' });
     } catch (error: any) {
-        console.error('[至尊场管理] 更新配置失败:', error);
+        console.error('❌ [至尊场] 保存配置失败:', error);
         return c.json({ success: false, message: '更新配置失败' }, 500);
     }
 });
