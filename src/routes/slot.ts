@@ -1400,32 +1400,3 @@ slot.get('/advanced/status', requireAuth, async (c) => {
 
 export default slot;
 
-
-        const tickets = getUserTickets(session.linux_do_id);
-        const config = getAdvancedSlotConfig();
-        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
-
-        return c.json({
-            success: true,
-            data: {
-                in_advanced_mode: inAdvancedMode,
-                advanced_mode_until: tickets.advanced_mode_until,
-                config: {
-                    enabled: config.enabled === 1,
-                    bet_min: config.bet_min,
-                    bet_max: config.bet_max,
-                    reward_multiplier: config.reward_multiplier,
-                    penalty_weight_factor: config.penalty_weight_factor,
-                    session_valid_hours: config.session_valid_hours,
-                    daily_bet_limit: config.daily_bet_limit  // 🔥 添加每日投注限额
-                }
-            }
-        });
-    } catch (error) {
-        console.error('获取高级场状态失败:', error);
-        return c.json({ success: false, message: '服务器错误' }, 500);
-    }
-});
-
-export default slot;
-
