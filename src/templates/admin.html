@@ -1037,20 +1037,123 @@
             </div>
           </details>
 
-          <!-- 🎲 符号权重配置（同初级场配置） -->
+          <!-- 🎲 符号权重配置方案 -->
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-slate-900">🎲 符号出现概率配置（高级场专用）</h3>
-              <button onclick="calculateAdvancedProbabilities()" class="text-sm text-red-600 hover:text-red-700 font-medium">
-                📊 计算概率
-              </button>
+              <h3 class="text-lg font-bold text-slate-900">⚖️ 符号权重配置方案（高级场）</h3>
             </div>
             
-            <div class="mb-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-              <p class="text-xs text-orange-800">
-                💡 <strong>说明：</strong>权重决定符号出现的概率。权重越高，出现概率越大。高级场可以单独配置符号权重，不影响初级场。
+            <div class="mb-4 p-4 bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-lg">
+              <p class="text-sm text-red-800 mb-2">
+                <strong>✨ 新配置方式：</strong>从配置方案中选择，无需手动填写！
+              </p>
+              <p class="text-xs text-red-700">
+                • 在"权重配置管理"中创建高级场专用权重方案<br>
+                • 修改方案后立即生效<br>
+                • 可与初级场使用不同的配置方案
               </p>
             </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择权重配置方案 *</label>
+              <select id="advancedSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedWeightConfig()">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 可与初级场使用相同或不同的权重方案</p>
+            </div>
+            
+            <!-- 预览权重 -->
+            <div id="advancedWeightPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">📊 当前配置预览</h4>
+              <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-xs">
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">美(m)</div>
+                  <div id="adv_preview_weight_m" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">坤(t)</div>
+                  <div id="adv_preview_weight_t" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">你(n)</div>
+                  <div id="adv_preview_weight_n" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">太(j)</div>
+                  <div id="adv_preview_weight_j" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">鲤鱼(lq)</div>
+                  <div id="adv_preview_weight_lq" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">背景(bj)</div>
+                  <div id="adv_preview_weight_bj" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">真粉头(zft)</div>
+                  <div id="adv_preview_weight_zft" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">不打工(bdk)</div>
+                  <div id="adv_preview_weight_bdk" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-red-100 rounded border border-red-300">
+                  <div class="text-red-700">律师函(lsh)</div>
+                  <div id="adv_preview_weight_lsh" class="font-bold text-red-700">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">🎁 中奖规则配置方案（高级场）</h3>
+            </div>
+            
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+              <p class="text-sm text-purple-800 mb-2">
+                <strong>✨ 新配置方式：</strong>使用预设规则模板，无需手动配置！
+              </p>
+              <p class="text-xs text-purple-700">
+                • 在"奖励配置管理"中创建方案并添加预设规则<br>
+                • 可与初级场使用相同或不同的奖励方案<br>
+                • 支持一键应用律师函惩罚
+              </p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
+              <select id="advancedSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedRewardScheme()">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
+            </div>
+            
+            <!-- 预览规则 -->
+            <div id="advancedRewardPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">🎯 包含规则</h4>
+              <div id="advancedRewardPreviewList" class="space-y-2 text-xs">
+                <!-- 动态填充 -->
+              </div>
+            </div>
+          </div>
+          
+          <!-- 旧版手动权重配置（折叠） -->
+          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
+                <span>🔧 旧版手动权重配置（不推荐）</span>
+              </span>
+              <span class="text-xs text-red-600">已弃用</span>
+            </summary>
+            <div class="px-6 pb-6 border-t border-slate-200">
+              <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 mt-4">
+                <p class="text-sm text-red-800">
+                  ⚠️ <strong>警告：</strong>建议使用上方的配置方案系统。手动修改可能与配置方案冲突。
+                </p>
+              </div>
             
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
               <!-- 普通符号 -->
@@ -1108,27 +1211,32 @@
               </p>
             </div>
             
-            <!-- 操作按钮 -->
-            <div class="flex gap-2 mt-4">
-              <button onclick="saveAdvancedSymbolWeights()" class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold transition-all">
-                保存权重配置
-              </button>
-              <button onclick="loadAdvancedSymbolWeights()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
-                重置
-              </button>
-              <button onclick="resetAdvancedWeightsToDefault()" class="px-4 py-2 bg-orange-100 hover:bg-orange-200 text-orange-700 rounded-lg font-medium transition-colors">
-                恢复默认值
-              </button>
-            </div>
+                <!-- 操作按钮 -->
+                <div class="flex gap-2 mt-4">
+                  <button onclick="saveAdvancedSymbolWeights()" class="flex-1 px-4 py-2 bg-slate-400 hover:bg-slate-500 text-white rounded-lg font-semibold transition-all">
+                    保存权重配置（旧版）
+                  </button>
+                  <button onclick="loadAdvancedSymbolWeights()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
+                    重置
+                  </button>
+                </div>
+              </div>
+            </details>
           </div>
 
-          <!-- 保存按钮 -->
-          <div class="flex gap-4">
-            <button onclick="saveAdvancedSlotConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transition-all">
-              💾 保存基础配置
+          <!-- 保存配置方案按钮 -->
+          <div class="flex gap-4 mb-6">
+            <button onclick="saveAdvancedSlotConfigSchemes()" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+              💾 保存高级场配置方案
             </button>
             <button onclick="loadAdvancedSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
               🔄 重置
+            </button>
+          </div>
+          
+          <div class="flex gap-4">
+            <button onclick="saveAdvancedSlotConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+              💾 保存基础配置（投注范围、倍率等）
             </button>
           </div>
         </div>
@@ -1306,22 +1414,135 @@
           
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-slate-900">🎲 符号出现概率配置</h3>
-              <button onclick="calculateProbabilities()" class="text-sm text-indigo-600 hover:text-indigo-700 font-medium">
-                📊 计算概率
-              </button>
+              <h3 class="text-lg font-semibold text-slate-900">⚖️ 符号权重配置方案</h3>
             </div>
             
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 mb-4">
               <p class="text-sm text-blue-800 mb-2">
-                <strong>💡 权重说明：</strong>权重决定符号出现的概率。权重越高，出现概率越大。
+                <strong>✨ 新配置方式：</strong>从配置方案中选择，无需手动填写权重值！
               </p>
               <p class="text-xs text-blue-700">
-                • 单个位置概率 = 符号权重 / 总权重<br>
-                • 建议范围：1-1000（普通符号推荐50-150，律师函推荐10-50）<br>
-                • 修改后立即生效，无需重启服务器
+                • 在"权重配置管理"中创建和管理配置方案<br>
+                • 修改方案后，所有使用该方案的场次立即生效<br>
+                • 支持多场次共用同一配置方案
               </p>
             </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择权重配置方案 *</label>
+              <select id="normalSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalWeightConfig()">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 在"权重配置管理"中可以创建新方案或编辑现有方案</p>
+            </div>
+            
+            <!-- 预览权重 -->
+            <div id="normalWeightPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">📊 当前配置预览</h4>
+              <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-xs">
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">美(m)</div>
+                  <div id="preview_weight_m" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">坤(t)</div>
+                  <div id="preview_weight_t" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">你(n)</div>
+                  <div id="preview_weight_n" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">太(j)</div>
+                  <div id="preview_weight_j" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">鲤鱼(lq)</div>
+                  <div id="preview_weight_lq" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">背景(bj)</div>
+                  <div id="preview_weight_bj" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">真粉头(zft)</div>
+                  <div id="preview_weight_zft" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">不打工(bdk)</div>
+                  <div id="preview_weight_bdk" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-red-50 rounded border border-red-200">
+                  <div class="text-red-600">律师函(lsh)</div>
+                  <div id="preview_weight_lsh" class="font-bold text-red-600">--</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-slate-900">🎁 中奖规则配置方案</h3>
+            </div>
+            
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4 mb-4">
+              <p class="text-sm text-purple-800 mb-2">
+                <strong>✨ 新配置方式：</strong>使用预设规则模板，无需手动配置复杂参数！
+              </p>
+              <p class="text-xs text-purple-700">
+                • 在"奖励配置管理"中创建方案并添加预设规则<br>
+                • 支持一键应用律师函惩罚配置<br>
+                • 同一方案可被多个场次复用
+              </p>
+            </div>
+            
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
+              <select id="normalSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalRewardScheme()">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
+            </div>
+            
+            <!-- 预览规则 -->
+            <div id="normalRewardPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">🎯 包含规则</h4>
+              <div id="normalRewardPreviewList" class="space-y-2 text-xs">
+                <!-- 动态填充 -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-amber-50 border-2 border-amber-300 rounded-lg p-4 mb-6">
+            <div class="flex items-start gap-3">
+              <span class="text-2xl">💡</span>
+              <div>
+                <p class="text-sm font-semibold text-amber-900 mb-1">快速配置指南</p>
+                <ol class="text-sm text-amber-800 space-y-1">
+                  <li>1. 在"权重配置管理"中创建权重方案（如：标准初级场配置）</li>
+                  <li>2. 在"奖励配置管理"中创建奖励方案并添加预设规则模板</li>
+                  <li>3. 在此处选择刚创建的方案</li>
+                  <li>4. 点击保存配置，立即生效！</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 旧版手动配置（折叠，兼容性保留） -->
+          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
+                <span>🔧 旧版手动配置（不推荐）</span>
+              </span>
+              <span class="text-xs text-red-600">已弃用</span>
+            </summary>
+            <div class="px-6 pb-6 border-t border-slate-200">
+              <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 mt-4">
+                <p class="text-sm text-red-800">
+                  ⚠️ <strong>警告：</strong>旧版手动配置已弃用，建议使用上方的配置方案系统。手动修改权重可能与配置方案冲突。
+                </p>
+              </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
               <!-- 美 -->
@@ -1416,53 +1637,48 @@
               <p class="text-xs text-slate-600">总权重 = 所有符号权重之和</p>
             </div>
 
-            <div class="flex gap-3">
-              <button onclick="updateSymbolWeights()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors">
-                保存权重配置
-              </button>
-              <button onclick="loadSymbolWeights()" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
-                重置
-              </button>
-              <button onclick="resetToDefault()" class="px-6 py-2 bg-orange-100 text-orange-700 rounded-lg font-semibold hover:bg-orange-200 transition-colors">
-                恢复默认值
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded-lg">
-            <div class="flex items-start">
-              <svg class="w-5 h-5 text-yellow-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-              </svg>
-              <div>
-                <p class="font-semibold text-yellow-800 mb-1">⚠️ 重要提示</p>
-                <ul class="text-sm text-yellow-700 space-y-1">
-                  <li>• 修改配置会立即生效，影响所有用户</li>
-                  <li>• 投注金额建议不要设置过高，避免用户损失过大</li>
-                  <li>• 符号权重调整会改变中奖概率，请谨慎操作</li>
-                  <li>• 律师函权重建议保持在10-50之间，过高会影响游戏体验</li>
-                  <li>• 500000 聪 = $1 USD</li>
-                </ul>
+                <div class="flex gap-3">
+                  <button onclick="updateSymbolWeights()" class="px-6 py-2 bg-slate-400 text-white rounded-lg font-semibold hover:bg-slate-500 transition-colors">
+                    保存权重配置（旧版）
+                  </button>
+                  <button onclick="loadSymbolWeights()" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
+                    重置
+                  </button>
+                </div>
               </div>
-            </div>
+            </details>
           </div>
 
-          <!-- 奖励倍数配置 -->
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-semibold text-slate-900">🎁 奖励倍数配置</h3>
-            </div>
+          <!-- 保存配置方案按钮 -->
+          <div class="flex gap-4">
+            <button onclick="saveNormalSlotConfigSchemes()" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+              💾 保存初级场配置方案
+            </button>
+            <button onclick="loadSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
+              🔄 重置
+            </button>
+          </div>
 
-            <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
-              <p class="text-sm text-amber-800 mb-2">
-                <strong>💡 倍数说明：</strong>设置不同中奖类型的奖励倍数。
-              </p>
-              <p class="text-xs text-amber-700">
-                • 实际奖金 = 投注金额 × 奖励倍数<br>
-                • 建议范围：1-10000（请根据实际情况合理设置）<br>
-                • 修改后立即生效，无需重启服务器
-              </p>
-            </div>
+          <!-- 奖励倍数配置（旧版，已由奖励配置方案替代） -->
+          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
+            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
+              <span class="flex items-center gap-2">
+                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
+                <span>🎁 旧版奖励倍数配置（不推荐）</span>
+              </span>
+              <span class="text-xs text-red-600">已弃用</span>
+            </summary>
+            <div class="px-6 pb-6 border-t border-slate-200">
+              <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 mt-4">
+                <p class="text-sm text-red-800 mb-2">
+                  ⚠️ <strong>警告：</strong>建议使用"奖励配置方案"系统管理中奖规则和倍率。
+                </p>
+                <p class="text-xs text-red-700">
+                  • 新系统支持预设规则模板，配置更简单<br>
+                  • 支持多场次共用同一配置方案<br>
+                  • 手动修改可能与配置方案冲突
+                </p>
+              </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               <!-- 超级大奖 -->
@@ -1511,23 +1727,13 @@
               </div>
             </div>
 
-            <div class="flex justify-end">
-              <button onclick="saveMultipliers()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:from-indigo-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg font-medium">
-                💾 保存倍数配置
-              </button>
-            </div>
-
-            <div class="bg-slate-50 rounded-lg p-4 mt-4">
-              <p class="text-xs font-semibold text-slate-700 mb-2">⚠️ 重要提示：</p>
-              <div class="text-xs text-slate-600 space-y-1">
-                <ul class="list-disc list-inside space-y-1">
-                  <li>• 倍数越高，中奖时奖金越多，但也会增加平台成本</li>
-                  <li>• 建议根据游戏难度合理设置倍数</li>
-                  <li>• 律师函惩罚：1个扣1倍，2个扣2倍，3个及以上扣相应倍数并禁止抽奖60小时</li>
-                  <li>• 500000 聪 = $1 USD</li>
-                </ul>
+                <div class="flex justify-end">
+                  <button onclick="saveMultipliers()" class="px-6 py-2.5 bg-slate-400 hover:bg-slate-500 text-white rounded-lg transition-all font-medium">
+                    💾 保存倍数配置（旧版）
+                  </button>
+                </div>
               </div>
-            </div>
+            </details>
           </div>
         </div>
 
@@ -4348,9 +4554,156 @@
           document.getElementById('slotMinQuotaDisplay').textContent = minQuotaUSD;
           document.getElementById('buySpinsPriceDisplay').textContent = buySpinsPriceUSD;
         }
+        
+        // 加载权重配置方案列表
+        await loadNormalWeightConfigOptions();
+        // 加载奖励配置方案列表  
+        await loadNormalRewardSchemeOptions();
       } catch (error) {
         console.error('加载老虎机配置失败:', error);
         showMessage('加载配置失败', 'error');
+      }
+    }
+    
+    //加载初级场权重配置方案选项
+    async function loadNormalWeightConfigOptions() {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          const select = document.getElementById('normalSlotWeightConfigId');
+          select.innerHTML = data.data.map(w => 
+            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+          
+          // 获取当前配置
+          const configRes = await fetch('/api/admin/slot/config');
+          const configData = await configRes.json();
+          if (configData.success && configData.data.weight_config_id) {
+            select.value = configData.data.weight_config_id;
+            previewNormalWeightConfig();
+          }
+        }
+      } catch (error) {
+        console.error('加载权重配置方案失败:', error);
+      }
+    }
+    
+    // 加载初级场奖励配置方案选项
+    async function loadNormalRewardSchemeOptions() {
+      try {
+        const res = await fetch('/api/admin/rewards/schemes');
+        const data = await res.json();
+        
+        if (data.success) {
+          const select = document.getElementById('normalSlotRewardSchemeId');
+          select.innerHTML = data.data.map(s =>
+            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+          
+          // 获取当前配置
+          const configRes = await fetch('/api/admin/slot/config');
+          const configData = await configRes.json();
+          if (configData.success && configData.data.reward_scheme_id) {
+            select.value = configData.data.reward_scheme_id;
+            previewNormalRewardScheme();
+          }
+        }
+      } catch (error) {
+        console.error('加载奖励配置方案失败:', error);
+      }
+    }
+    
+    // 预览初级场权重配置
+    async function previewNormalWeightConfig() {
+      const configId = document.getElementById('normalSlotWeightConfigId').value;
+      if (!configId) return;
+      
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          const config = data.data.find(c => c.id == configId);
+          if (config) {
+            document.getElementById('preview_weight_m').textContent = config.weight_m;
+            document.getElementById('preview_weight_t').textContent = config.weight_t;
+            document.getElementById('preview_weight_n').textContent = config.weight_n;
+            document.getElementById('preview_weight_j').textContent = config.weight_j;
+            document.getElementById('preview_weight_lq').textContent = config.weight_lq;
+            document.getElementById('preview_weight_bj').textContent = config.weight_bj;
+            document.getElementById('preview_weight_zft').textContent = config.weight_zft;
+            document.getElementById('preview_weight_bdk').textContent = config.weight_bdk;
+            document.getElementById('preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('normalWeightPreview').classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('预览权重配置失败:', error);
+      }
+    }
+    
+    // 预览初级场奖励配置
+    async function previewNormalRewardScheme() {
+      const schemeId = document.getElementById('normalSlotRewardSchemeId').value;
+      if (!schemeId) return;
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const rules = data.data.rules || [];
+          const previewList = document.getElementById('normalRewardPreviewList');
+          
+          if (rules.length === 0) {
+            previewList.innerHTML = '<div class="text-slate-500 text-center py-2">暂无规则</div>';
+          } else {
+            previewList.innerHTML = rules.map(rule => `
+              <div class="flex justify-between items-center bg-white p-2 rounded border">
+                <span class="font-semibold text-slate-900">${rule.rule_name}</span>
+                <span class="text-green-600 font-bold">${rule.win_multiplier}x</span>
+              </div>
+            `).join('');
+          }
+          document.getElementById('normalRewardPreview').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('预览奖励方案失败:', error);
+      }
+    }
+    
+    // 保存初级场配置方案选择
+    async function saveNormalSlotConfigSchemes() {
+      const weightConfigId = document.getElementById('normalSlotWeightConfigId').value;
+      const rewardSchemeId = document.getElementById('normalSlotRewardSchemeId').value;
+      
+      if (!weightConfigId || !rewardSchemeId) {
+        showToast('请选择权重配置方案和奖励配置方案', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/slot/config/schemes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight_config_id: parseInt(weightConfigId),
+            reward_scheme_id: parseInt(rewardSchemeId)
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('✅ 初级场配置方案已保存并生效', 'success');
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存初级场配置方案失败:', error);
+        showToast('保存失败', 'error');
       }
     }
 
@@ -5903,6 +6256,98 @@
 
     // ========== 高级场管理功能 ==========
 
+    // 预览高级场权重配置
+    async function previewAdvancedWeightConfig() {
+      const configId = document.getElementById('advancedSlotWeightConfigId').value;
+      if (!configId) return;
+      
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          const config = data.data.find(c => c.id == configId);
+          if (config) {
+            document.getElementById('adv_preview_weight_m').textContent = config.weight_m;
+            document.getElementById('adv_preview_weight_t').textContent = config.weight_t;
+            document.getElementById('adv_preview_weight_n').textContent = config.weight_n;
+            document.getElementById('adv_preview_weight_j').textContent = config.weight_j;
+            document.getElementById('adv_preview_weight_lq').textContent = config.weight_lq;
+            document.getElementById('adv_preview_weight_bj').textContent = config.weight_bj;
+            document.getElementById('adv_preview_weight_zft').textContent = config.weight_zft;
+            document.getElementById('adv_preview_weight_bdk').textContent = config.weight_bdk;
+            document.getElementById('adv_preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('advancedWeightPreview').classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('预览高级场权重配置失败:', error);
+      }
+    }
+    
+    // 预览高级场奖励配置
+    async function previewAdvancedRewardScheme() {
+      const schemeId = document.getElementById('advancedSlotRewardSchemeId').value;
+      if (!schemeId) return;
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const rules = data.data.rules || [];
+          const previewList = document.getElementById('advancedRewardPreviewList');
+          
+          if (rules.length === 0) {
+            previewList.innerHTML = '<div class="text-slate-500 text-center py-2">暂无规则</div>';
+          } else {
+            previewList.innerHTML = rules.map(rule => `
+              <div class="flex justify-between items-center bg-white p-2 rounded border">
+                <span class="font-semibold text-slate-900">${rule.rule_name}</span>
+                <span class="text-green-600 font-bold">${rule.win_multiplier}x</span>
+              </div>
+            `).join('');
+          }
+          document.getElementById('advancedRewardPreview').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('预览高级场奖励方案失败:', error);
+      }
+    }
+    
+    // 保存高级场配置方案选择
+    async function saveAdvancedSlotConfigSchemes() {
+      const weightConfigId = document.getElementById('advancedSlotWeightConfigId').value;
+      const rewardSchemeId = document.getElementById('advancedSlotRewardSchemeId').value;
+      
+      if (!weightConfigId || !rewardSchemeId) {
+        showToast('请选择权重配置方案和奖励配置方案', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/slot/advanced/config/schemes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight_config_id: parseInt(weightConfigId),
+            reward_scheme_id: parseInt(rewardSchemeId)
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('✅ 高级场配置方案已保存并生效', 'success');
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存高级场配置方案失败:', error);
+        showToast('保存失败', 'error');
+      }
+    }
+
     // 高级场配置管理
     async function loadAdvancedSlotConfig() {
       try {
@@ -5970,9 +6415,63 @@
             document.getElementById('advancedDailyBetLimitQuota').textContent = value * 500000;
           });
         }
+        
+        // 加载配置方案列表
+        await loadAdvancedWeightConfigOptions();
+        await loadAdvancedRewardSchemeOptions();
       } catch (error) {
         console.error('加载高级场配置失败:', error);
         showMessage('加载配置失败', 'error');
+      }
+    }
+    
+    // 加载高级场权重配置方案选项
+    async function loadAdvancedWeightConfigOptions() {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          const select = document.getElementById('advancedSlotWeightConfigId');
+          select.innerHTML = data.data.map(w => 
+            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+          
+          // 获取当前配置
+          const configRes = await fetch('/api/admin/slot/advanced/config');
+          const configData = await configRes.json();
+          if (configData.success && configData.data.weight_config_id) {
+            select.value = configData.data.weight_config_id;
+            previewAdvancedWeightConfig();
+          }
+        }
+      } catch (error) {
+        console.error('加载高级场权重配置方案失败:', error);
+      }
+    }
+    
+    // 加载高级场奖励配置方案选项
+    async function loadAdvancedRewardSchemeOptions() {
+      try {
+        const res = await fetch('/api/admin/rewards/schemes');
+        const data = await res.json();
+        
+        if (data.success) {
+          const select = document.getElementById('advancedSlotRewardSchemeId');
+          select.innerHTML = data.data.map(s =>
+            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+          
+          // 获取当前配置
+          const configRes = await fetch('/api/admin/slot/advanced/config');
+          const configData = await configRes.json();
+          if (configData.success && configData.data.reward_scheme_id) {
+            select.value = configData.data.reward_scheme_id;
+            previewAdvancedRewardScheme();
+          }
+        }
+      } catch (error) {
+        console.error('加载高级场奖励配置方案失败:', error);
       }
     }
 

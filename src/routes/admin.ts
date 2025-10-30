@@ -504,6 +504,44 @@ app.get('/slot/config', requireAdmin, async (c) => {
 });
 
 /**
+ * 更新初级场配置方案（权重+奖励）
+ */
+app.post('/slot/config/schemes', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { weight_config_id, reward_scheme_id } = body;
+
+        if (!weight_config_id || !reward_scheme_id) {
+            return c.json({ success: false, message: '请选择权重配置方案和奖励配置方案' }, 400);
+        }
+
+        console.log('='.repeat(80));
+        console.log('🎰 [初级场] 应用配置方案');
+        console.log('='.repeat(80));
+        console.log(`⚖️ 权重配置方案 ID: ${weight_config_id}`);
+        console.log(`🎁 奖励配置方案 ID: ${reward_scheme_id}`);
+
+        const now = Date.now();
+
+        // 更新初级场配置
+        db.prepare('UPDATE slot_machine_config SET weight_config_id = ?, reward_scheme_id = ?, updated_at = ? WHERE id = 1')
+            .run(weight_config_id, reward_scheme_id, now);
+
+        console.log(`⏰ 应用时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 初级场配置方案已成功应用！');
+        console.log('='.repeat(80));
+
+        return c.json({
+            success: true,
+            message: '初级场配置方案已应用'
+        });
+    } catch (e: any) {
+        console.error('❌ [初级场] 应用配置方案失败:', e);
+        return c.json({ success: false, message: '应用配置方案失败' }, 500);
+    }
+});
+
+/**
  * 更新老虎机配置
  */
 app.post('/slot/config', requireAdmin, async (c) => {
@@ -610,20 +648,61 @@ app.post('/slot/weights', requireAdmin, async (c) => {
         const now = Date.now();
         const currentWeights = slotQueries.getWeights.get();
 
+        console.log('='.repeat(80));
+        console.log('🎰 [初级场] 符号权重配置更新');
+        console.log('='.repeat(80));
+        console.log('📊 旧配置:');
+        console.log(`  • 美 (m):     ${currentWeights!.weight_m}`);
+        console.log(`  • 坤 (t):     ${currentWeights!.weight_t}`);
+        console.log(`  • 你 (n):     ${currentWeights!.weight_n}`);
+        console.log(`  • 太 (j):     ${currentWeights!.weight_j}`);
+        console.log(`  • 鲤鱼 (lq):  ${currentWeights!.weight_lq}`);
+        console.log(`  • 背景 (bj):  ${currentWeights!.weight_bj}`);
+        console.log(`  • 真粉头 (zft): ${currentWeights!.weight_zft}`);
+        console.log(`  • 不打工 (bdk): ${currentWeights!.weight_bdk}`);
+        console.log(`  • 律师函 (lsh): ${currentWeights!.weight_lsh}`);
+
+        const newWeights = {
+            weight_m: weight_m !== undefined ? weight_m : currentWeights!.weight_m,
+            weight_t: weight_t !== undefined ? weight_t : currentWeights!.weight_t,
+            weight_n: weight_n !== undefined ? weight_n : currentWeights!.weight_n,
+            weight_j: weight_j !== undefined ? weight_j : currentWeights!.weight_j,
+            weight_lq: weight_lq !== undefined ? weight_lq : currentWeights!.weight_lq,
+            weight_bj: weight_bj !== undefined ? weight_bj : currentWeights!.weight_bj,
+            weight_zft: weight_zft !== undefined ? weight_zft : currentWeights!.weight_zft,
+            weight_bdk: weight_bdk !== undefined ? weight_bdk : currentWeights!.weight_bdk,
+            weight_lsh: weight_lsh !== undefined ? weight_lsh : currentWeights!.weight_lsh
+        };
+
         slotQueries.updateWeights.run(
-            weight_m !== undefined ? weight_m : currentWeights!.weight_m,
-            weight_t !== undefined ? weight_t : currentWeights!.weight_t,
-            weight_n !== undefined ? weight_n : currentWeights!.weight_n,
-            weight_j !== undefined ? weight_j : currentWeights!.weight_j,
-            weight_lq !== undefined ? weight_lq : currentWeights!.weight_lq,
-            weight_bj !== undefined ? weight_bj : currentWeights!.weight_bj,
-            weight_zft !== undefined ? weight_zft : currentWeights!.weight_zft,
-            weight_bdk !== undefined ? weight_bdk : currentWeights!.weight_bdk,
-            weight_lsh !== undefined ? weight_lsh : currentWeights!.weight_lsh,
+            newWeights.weight_m,
+            newWeights.weight_t,
+            newWeights.weight_n,
+            newWeights.weight_j,
+            newWeights.weight_lq,
+            newWeights.weight_bj,
+            newWeights.weight_zft,
+            newWeights.weight_bdk,
+            newWeights.weight_lsh,
             now
         );
 
-        console.log('[管理员] 符号权重已更新:', body);
+        console.log('📊 新配置:');
+        console.log(`  • 美 (m):     ${newWeights.weight_m}     ${weight_m !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 坤 (t):     ${newWeights.weight_t}     ${weight_t !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 你 (n):     ${newWeights.weight_n}     ${weight_n !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 太 (j):     ${newWeights.weight_j}     ${weight_j !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 鲤鱼 (lq):  ${newWeights.weight_lq}   ${weight_lq !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 背景 (bj):  ${newWeights.weight_bj}   ${weight_bj !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 真粉头 (zft): ${newWeights.weight_zft} ${weight_zft !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 不打工 (bdk): ${newWeights.weight_bdk} ${weight_bdk !== undefined ? '✓ 已更新' : ''}`);
+        console.log(`  • 律师函 (lsh): ${newWeights.weight_lsh} ${weight_lsh !== undefined ? '✓ 已更新' : ''}`);
+
+        const totalWeight = Object.values(newWeights).reduce((sum, w) => sum + w, 0);
+        console.log(`📈 总权重: ${totalWeight}`);
+        console.log(`⏰ 更新时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 初级场符号权重配置已成功应用！');
+        console.log('='.repeat(80));
 
         return c.json({
             success: true,
@@ -631,7 +710,7 @@ app.post('/slot/weights', requireAdmin, async (c) => {
             data: slotQueries.getWeights.get()
         });
     } catch (error: any) {
-        console.error('更新符号权重失败:', error);
+        console.error('❌ [初级场] 更新符号权重失败:', error);
         return c.json({ success: false, message: '更新失败' }, 500);
     }
 });
@@ -1907,6 +1986,44 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
 });
 
 /**
+ * 更新高级场配置方案（权重+奖励）
+ */
+app.post('/slot/advanced/config/schemes', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { weight_config_id, reward_scheme_id } = body;
+
+        if (!weight_config_id || !reward_scheme_id) {
+            return c.json({ success: false, message: '请选择权重配置方案和奖励配置方案' }, 400);
+        }
+
+        console.log('='.repeat(80));
+        console.log('🔥 [高级场] 应用配置方案');
+        console.log('='.repeat(80));
+        console.log(`⚖️ 权重配置方案 ID: ${weight_config_id}`);
+        console.log(`🎁 奖励配置方案 ID: ${reward_scheme_id}`);
+
+        const now = Date.now();
+
+        // 更新高级场配置
+        db.prepare('UPDATE advanced_slot_config SET weight_config_id = ?, reward_scheme_id = ?, updated_at = ? WHERE id = 1')
+            .run(weight_config_id, reward_scheme_id, now);
+
+        console.log(`⏰ 应用时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 高级场配置方案已成功应用！');
+        console.log('='.repeat(80));
+
+        return c.json({
+            success: true,
+            message: '高级场配置方案已应用'
+        });
+    } catch (e: any) {
+        console.error('❌ [高级场] 应用配置方案失败:', e);
+        return c.json({ success: false, message: '应用配置方案失败' }, 500);
+    }
+});
+
+/**
  * 更新高级场配置
  */
 app.post('/slot/advanced/config', requireAdmin, async (c) => {
@@ -2484,14 +2601,39 @@ app.post('/weights', requireAdmin, async (c) => {
             return c.json({ success: false, message: '配置名称不能为空' }, 400);
         }
 
+        console.log('='.repeat(80));
+        console.log('➕ [权重配置] 添加新配置方案');
+        console.log('='.repeat(80));
+        console.log(`📝 配置名称: ${config_name}`);
+        console.log(`📊 符号权重:`);
+        console.log(`  • 美 (m):     ${weight_m}`);
+        console.log(`  • 坤 (t):     ${weight_t}`);
+        console.log(`  • 你 (n):     ${weight_n}`);
+        console.log(`  • 太 (j):     ${weight_j}`);
+        console.log(`  • 鲤鱼 (lq):  ${weight_lq}`);
+        console.log(`  • 背景 (bj):  ${weight_bj}`);
+        console.log(`  • 真粉头 (zft): ${weight_zft}`);
+        console.log(`  • 不打工 (bdk): ${weight_bdk}`);
+        console.log(`  • 律师函 (lsh): ${weight_lsh}`);
+
+        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh;
+        console.log(`📈 总权重: ${totalWeight}`);
+        if (description) {
+            console.log(`📝 描述: ${description}`);
+        }
+
         const now = Date.now();
         weightConfigQueries.insert.run(
             config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, now
         );
 
+        console.log(`⏰ 创建时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 新权重配置方案已成功添加！');
+        console.log('='.repeat(80));
+
         return c.json({ success: true, message: '配置已添加' });
     } catch (error: any) {
-        console.error('[权重配置] 添加配置失败:', error);
+        console.error('❌ [权重配置] 添加配置失败:', error);
         return c.json({ success: false, message: '添加配置失败: ' + error.message }, 500);
     }
 });
@@ -2506,14 +2648,39 @@ app.put('/weights/:id', requireAdmin, async (c) => {
         const body = await c.req.json();
         const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description } = body;
 
+        console.log('='.repeat(80));
+        console.log('⚙️ [权重配置] 更新配置方案');
+        console.log('='.repeat(80));
+        console.log(`📝 配置名称: ${config_name} (ID: ${id})`);
+        console.log(`📊 符号权重:`);
+        console.log(`  • 美 (m):     ${weight_m}`);
+        console.log(`  • 坤 (t):     ${weight_t}`);
+        console.log(`  • 你 (n):     ${weight_n}`);
+        console.log(`  • 太 (j):     ${weight_j}`);
+        console.log(`  • 鲤鱼 (lq):  ${weight_lq}`);
+        console.log(`  • 背景 (bj):  ${weight_bj}`);
+        console.log(`  • 真粉头 (zft): ${weight_zft}`);
+        console.log(`  • 不打工 (bdk): ${weight_bdk}`);
+        console.log(`  • 律师函 (lsh): ${weight_lsh}`);
+
+        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh;
+        console.log(`📈 总权重: ${totalWeight}`);
+        if (description) {
+            console.log(`📝 描述: ${description}`);
+        }
+
         const now = Date.now();
         weightConfigQueries.update.run(
             config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, id
         );
 
+        console.log(`⏰ 更新时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 权重配置方案已成功更新！');
+        console.log('='.repeat(80));
+
         return c.json({ success: true, message: '配置已更新' });
     } catch (error: any) {
-        console.error('[权重配置] 更新配置失败:', error);
+        console.error('❌ [权重配置] 更新配置失败:', error);
         return c.json({ success: false, message: '更新配置失败' }, 500);
     }
 });
@@ -2685,14 +2852,37 @@ app.post('/rewards/rules', requireAdmin, async (c) => {
         const body = await c.req.json();
         const { scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, description } = body;
 
+        console.log('='.repeat(80));
+        console.log('🎯 [奖励配置] 添加中奖规则');
+        console.log('='.repeat(80));
+
+        const scheme = rewardConfigQueries.getSchemeById.get(scheme_id);
+        console.log(`📋 方案: ${scheme?.scheme_name} (ID: ${scheme_id})`);
+        console.log(`🎲 规则名称: ${rule_name}`);
+        console.log(`📊 规则类型: ${rule_type}`);
+        console.log(`🏷️  规则分类: ${rule_category || '无'}`);
+        console.log(`🎯 匹配模式: ${match_pattern}`);
+        console.log(`🔢 匹配数量: ${match_count || '不限'}`);
+        console.log(`🎴 必需符号: ${required_symbols || '任意'}`);
+        console.log(`💰 中奖倍率: ${win_multiplier}x`);
+        console.log(`🎁 免费转数: ${grant_free_spin || 0}次`);
+        console.log(`⚡ 优先级: ${priority || 0}`);
+        if (description) {
+            console.log(`📝 描述: ${description}`);
+        }
+
         const now = Date.now();
         rewardConfigQueries.insertRule.run(
             scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, 1, description || null, now, now
         );
 
+        console.log(`⏰ 添加时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 中奖规则已成功添加到方案！');
+        console.log('='.repeat(80));
+
         return c.json({ success: true, message: '规则已添加' });
     } catch (error: any) {
-        console.error('[奖励配置] 添加规则失败:', error);
+        console.error('❌ [奖励配置] 添加规则失败:', error);
         return c.json({ success: false, message: '添加规则失败' }, 500);
     }
 });
@@ -2748,10 +2938,24 @@ app.post('/rewards/punishments', requireAdmin, async (c) => {
             return c.json({ success: false, message: '参数错误' }, 400);
         }
 
+        console.log('='.repeat(80));
+        console.log('⚖️ [奖励配置] 更新律师函惩罚配置');
+        console.log('='.repeat(80));
+
+        const scheme = rewardConfigQueries.getSchemeById.get(scheme_id);
+        console.log(`📋 方案: ${scheme?.scheme_name} (ID: ${scheme_id})`);
+        console.log(`🔧 配置数量: ${punishments.length}项`);
+        console.log('');
+
         const now = Date.now();
 
         // 批量更新律师函惩罚配置
         for (const p of punishments) {
+            console.log(`  ⚡ ${p.lsh_count}个律师函:`);
+            console.log(`     💸 扣除倍率: ${p.deduct_multiplier}倍`);
+            console.log(`     🔒 封禁时长: ${p.ban_hours || 0}小时`);
+            console.log(`     ${(p.is_active !== undefined ? p.is_active : 1) ? '✅ 启用' : '❌ 禁用'}`);
+
             rewardConfigQueries.upsertPunishment.run(
                 scheme_id, p.lsh_count, p.deduct_multiplier, p.ban_hours || 0, p.is_active !== undefined ? p.is_active : 1, now, now,
                 // ON CONFLICT部分
@@ -2759,9 +2963,14 @@ app.post('/rewards/punishments', requireAdmin, async (c) => {
             );
         }
 
+        console.log('');
+        console.log(`⏰ 更新时间: ${new Date(now).toLocaleString('zh-CN')}`);
+        console.log('✅ 律师函惩罚配置已成功应用！');
+        console.log('='.repeat(80));
+
         return c.json({ success: true, message: '律师函惩罚配置已更新' });
     } catch (error: any) {
-        console.error('[奖励配置] 更新律师函配置失败:', error);
+        console.error('❌ [奖励配置] 更新律师函配置失败:', error);
         return c.json({ success: false, message: '更新失败' }, 500);
     }
 });
