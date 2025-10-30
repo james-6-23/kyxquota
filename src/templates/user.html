@@ -3698,12 +3698,15 @@
           }
         }
 
-        // 3. 🔥 先加载入场券信息，判断是否在高级场（避免UI闪烁）
-        await loadAdvancedTickets();  // 这会设置 isInAdvancedMode
+        // 3. 🔥 先加载入场券信息和至尊令牌，判断是否在高级场/至尊场（避免UI闪烁）
+        await Promise.all([
+          loadAdvancedTickets(),  // 这会设置 isInAdvancedMode
+          loadSupremeTokens()      // 💎 加载至尊令牌信息
+        ]);
         
-        // 4. 初始化UI（此时已经知道是否在高级场）
+        // 4. 初始化UI（此时已经知道是否在高级场/至尊场）
         initSlotReels();
-        updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode 显示正确的UI
+        updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode/isInSupremeMode 显示正确的UI
         syncUserInfoToSlot();
         
         // 🎵 预初始化音效系统（首次播放时自动初始化）
@@ -4385,14 +4388,22 @@
 
       try {
         // 🎯 优化：先调用 API，扣款成功后再播放音效和动画
+        let apiEndpoint = '/api/slot/spin';
+        let requestBody = { useFreeSpinn };
+        
+        // 💎 至尊场使用专用API
+        if (isInSupremeMode) {
+          apiEndpoint = '/api/supreme/spin';
+          requestBody = { betAmount: supremeBetAmount * 500000 };  // 坤币转聪
+          // console.log(`[至尊场] 投注金额: ${supremeBetAmount}坤币 (${requestBody.betAmount}聪)`);
+        } 
         // 🔥 高级场传递自定义投注金额
-        const requestBody = { useFreeSpinn };
-        if (isInAdvancedMode) {
+        else if (isInAdvancedMode) {
           requestBody.advancedBetAmount = advancedBetAmount * 500000;  // 美元转聪
           // console.log(`[高级场] 投注金额: $${advancedBetAmount} (${requestBody.advancedBetAmount}聪)`);
         }
         
-        const res = await fetch('/api/slot/spin', {
+        const res = await fetch(apiEndpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody)
@@ -4441,7 +4452,7 @@
 
         updateSlotUI();
 
-        // 🔥 处理入场券/碎片掉落
+        // 🔥 处理入场券/碎片掉落 & 💎 至尊令牌/碎片掉落
         if (result.ticket_dropped && result.drop_type) {
           // console.log('[掉落] 检测到掉落:', result.drop_type, result.drop_count);
           // 延迟显示掉落动画（在旋转动画之后）
@@ -4449,9 +4460,10 @@
             playTicketDropAnimation(result.drop_type, result.drop_count);
           }, 500);
           
-          // 刷新入场券信息
+          // 刷新入场券信息和至尊令牌信息
           setTimeout(() => {
             loadAdvancedTickets();
+            loadSupremeTokens();  // 💎 刷新至尊令牌
           }, 1000);
         }
 
@@ -5669,6 +5681,350 @@
         }
       } catch (error) {
         console.error('加载待发放统计失败:', error);
+      }
+    }
+
+    // ========== 💎 至尊场系统 ==========
+    
+    // 💎 至尊场相关变量
+    let supremeTokensData = null;      // 至尊令牌数据
+    let supremeModeTimer = null;       // 至尊场倒计时定时器
+    let isInSupremeMode = false;       // 是否在至尊场
+    let supremeBetAmount = 1000;       // 至尊场投注金额（坤币，默认1000）
+    let supremeBetMin = 1000;          // 最小投注
+    let supremeBetMax = 10000;         // 最大投注
+    
+    // 💎 加载至尊令牌信息
+    async function loadSupremeTokens() {
+      try {
+        const res = await fetch('/api/supreme/tokens');
+        const data = await res.json();
+        
+        if (data.success) {
+          supremeTokensData = data.data;
+          updateSupremeTokensUI();
+          return data.data;
+        } else {
+          console.error('[至尊场] 加载令牌失败:', data.message);
+          return null;
+        }
+      } catch (error) {
+        console.error('[至尊场] 加载令牌失败:', error);
+        return null;
+      }
+    }
+    
+    // 💎 更新至尊令牌UI
+    function updateSupremeTokensUI() {
+      if (!supremeTokensData) return;
+      
+      const {
+        tokens,
+        fragments,
+        fragments_needed,
+        can_synthesize,
+        max_tokens_hold,
+        tokens_expires_at,
+        supreme_mode_until,
+        in_supreme_mode,
+        today_entry_count,
+        today_tokens_granted,
+        config
+      } = supremeTokensData;
+      
+      // 更新令牌栏显示
+      const tokenBar = document.getElementById('supremeTokenBar');
+      const tokenCount = document.getElementById('supremeTokenCount');
+      const tokenMax = document.getElementById('supremeTokenMax');
+      const fragmentCount = document.getElementById('supremeFragmentCount');
+      const fragmentsNeeded = document.getElementById('supremeFragmentsNeeded');
+      const todayEntry = document.getElementById('supremeTodayEntry');
+      const dailyLimit = document.getElementById('supremeDailyLimit');
+      
+      if (tokenCount) tokenCount.textContent = tokens || 0;
+      if (tokenMax) tokenMax.textContent = max_tokens_hold || 3;
+      if (fragmentCount) fragmentCount.textContent = fragments || 0;
+      if (fragmentsNeeded) fragmentsNeeded.textContent = fragments_needed || 10;
+      if (todayEntry) todayEntry.textContent = today_entry_count || 0;
+      if (dailyLimit) dailyLimit.textContent = config?.daily_entry_limit || 3;
+      
+      // 显示/隐藏令牌栏（只有拥有碎片或令牌时才显示）
+      if ((tokens > 0 || fragments > 0 || in_supreme_mode) && tokenBar) {
+        tokenBar.classList.remove('hidden');
+      } else if (tokenBar) {
+        tokenBar.classList.add('hidden');
+      }
+      
+      // 更新合成按钮状态
+      const synthesizeBtn = document.getElementById('synthesizeSupremeTokenButton');
+      const todayGranted = today_tokens_granted || 0;
+      const grantLimit = config?.daily_token_grant_limit || 1;
+      
+      if (synthesizeBtn) {
+        if (can_synthesize && tokens < max_tokens_hold && todayGranted < grantLimit) {
+          synthesizeBtn.disabled = false;
+          synthesizeBtn.title = '点击合成至尊令牌';
+        } else {
+          synthesizeBtn.disabled = true;
+          if (!can_synthesize) {
+            synthesizeBtn.title = `碎片不足（需要${fragments_needed}个）`;
+          } else if (tokens >= max_tokens_hold) {
+            synthesizeBtn.title = `已达持有上限（${max_tokens_hold}个）`;
+          } else if (todayGranted >= grantLimit) {
+            synthesizeBtn.title = `今日获得已达上限（${grantLimit}个）`;
+          }
+        }
+      }
+      
+      // 更新进入至尊场按钮状态
+      const enterBtn = document.getElementById('enterSupremeButton');
+      if (enterBtn) {
+        if (in_supreme_mode) {
+          enterBtn.textContent = '💎 退出至尊场';
+          enterBtn.onclick = exitSupremeMode;
+          enterBtn.disabled = false;
+          enterBtn.classList.remove('animate-pulse');
+        } else {
+          enterBtn.textContent = '💎 进入至尊场';
+          enterBtn.onclick = enterSupremeMode;
+          enterBtn.disabled = tokens < 1 || (today_entry_count >= config?.daily_entry_limit);
+          if (tokens >= 1 && today_entry_count < config?.daily_entry_limit) {
+            enterBtn.classList.add('animate-pulse');
+          } else {
+            enterBtn.classList.remove('animate-pulse');
+          }
+          if (tokens < 1) {
+            enterBtn.title = '令牌不足';
+          } else if (today_entry_count >= config?.daily_entry_limit) {
+            enterBtn.title = `今日进入次数已达上限（${config?.daily_entry_limit}次）`;
+          }
+        }
+      }
+      
+      // 更新至尊场UI状态
+      const betSelector = document.getElementById('supremeBetSelector');
+      const modeTitle = document.getElementById('supremeModeTitle');
+      const normalModeTitle = document.getElementById('normalModeTitle');
+      const advancedModeTitle = document.getElementById('advancedModeTitle');
+      
+      if (in_supreme_mode) {
+        isInSupremeMode = true;
+        if (betSelector) betSelector.classList.remove('hidden');
+        if (modeTitle) modeTitle.classList.remove('hidden');
+        if (normalModeTitle) normalModeTitle.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        
+        // 更新投注范围
+        if (config) {
+          supremeBetMin = config.min_bet_amount / 500000;
+          supremeBetMax = config.max_bet_amount / 500000;
+          generateSupremeBetOptions(supremeBetMin, supremeBetMax);
+        }
+        
+        // 启动倒计时
+        if (supreme_mode_until) {
+          startSupremeModeTimer();
+        }
+      } else {
+        isInSupremeMode = false;
+        if (betSelector) betSelector.classList.add('hidden');
+        if (modeTitle) modeTitle.classList.add('hidden');
+        stopSupremeModeTimer();
+      }
+    }
+    
+    // 💎 合成至尊令牌
+    async function synthesizeSupremeToken() {
+      if (!supremeTokensData || !supremeTokensData.can_synthesize) {
+        showToast('碎片不足，无法合成', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('synthesizeSupremeTokenButton');
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ 合成中...';
+      
+      try {
+        const res = await fetch('/api/supreme/tokens/synthesize', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('✨ ' + data.message, 'success');
+          await loadSupremeTokens();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('[至尊场] 合成失败:', error);
+        showToast('合成失败，请重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+    
+    // 💎 进入至尊场
+    async function enterSupremeMode() {
+      if (!supremeTokensData || supremeTokensData.tokens < 1) {
+        showToast('令牌不足', 'error');
+        return;
+      }
+      
+      const btn = document.getElementById('enterSupremeButton');
+      btn.disabled = true;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '⏳ 进入中...';
+      
+      try {
+        const res = await fetch('/api/supreme/enter', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('💎 ' + data.message, 'success');
+          isInSupremeMode = true;
+          
+          // 重新加载令牌和配置
+          await Promise.all([
+            loadSupremeTokens(),
+            fetch('/api/slot/config').then(res => res.json())
+          ]);
+          
+          updateSlotUI();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('[至尊场] 进入失败:', error);
+        showToast('进入失败，请重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+    
+    // 💎 退出至尊场
+    async function exitSupremeMode() {
+      if (!confirm('确定要退出至尊场吗？\n退出后本次会话将结束。')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/supreme/exit', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(data.message, 'success');
+          isInSupremeMode = false;
+          
+          await Promise.all([
+            loadSupremeTokens(),
+            fetch('/api/slot/config').then(res => res.json())
+          ]);
+          
+          updateSlotUI();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('[至尊场] 退出失败:', error);
+        showToast('退出失败，请重试', 'error');
+      }
+    }
+    
+    // 💎 启动至尊场倒计时
+    function startSupremeModeTimer() {
+      stopSupremeModeTimer();
+      
+      if (!supremeTokensData || !supremeTokensData.supreme_mode_until) return;
+      
+      supremeModeTimer = setInterval(() => {
+        const now = Date.now();
+        const remaining = supremeTokensData.supreme_mode_until - now;
+        
+        if (remaining <= 0) {
+          stopSupremeModeTimer();
+          showToast('至尊场时间已到，已自动退出', 'error');
+          isInSupremeMode = false;
+          
+          Promise.all([
+            loadSupremeTokens(),
+            fetch('/api/slot/config').then(res => res.json())
+          ]).then(() => {
+            updateSlotUI();
+          });
+        }
+      }, 1000);
+    }
+    
+    // 💎 停止至尊场倒计时
+    function stopSupremeModeTimer() {
+      if (supremeModeTimer) {
+        clearInterval(supremeModeTimer);
+        supremeModeTimer = null;
+      }
+    }
+    
+    // 💎 生成至尊场投注选项按钮
+    function generateSupremeBetOptions(minBet, maxBet) {
+      const container = document.getElementById('supremeBetOptions');
+      if (!container) return;
+      
+      container.innerHTML = '';
+      
+      const range = maxBet - minBet;
+      const options = [];
+      
+      if (range <= 2000) {
+        options.push(minBet, Math.floor((minBet + maxBet) / 2), maxBet);
+      } else {
+        const step = Math.floor(range / 4);
+        options.push(minBet, minBet + step, minBet + step * 2, minBet + step * 3, maxBet);
+      }
+      
+      const uniqueOptions = [...new Set(options)].sort((a, b) => a - b);
+      
+      uniqueOptions.forEach(amount => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200 text-sm';
+        btn.textContent = `${amount}坤币`;
+        btn.onclick = () => selectSupremeBet(amount);
+        container.appendChild(btn);
+      });
+      
+      // 更新滑块范围
+      const slider = document.getElementById('supremeBetSlider');
+      if (slider) {
+        slider.min = minBet;
+        slider.max = maxBet;
+        slider.value = supremeBetAmount || minBet;
+        slider.step = Math.max(100, Math.floor(range / 100));
+      }
+    }
+    
+    // 💎 选择至尊场投注金额
+    function selectSupremeBet(amount) {
+      supremeBetAmount = amount;
+      const slider = document.getElementById('supremeBetSlider');
+      const display = document.getElementById('supremeCurrentBet');
+      
+      if (slider) slider.value = amount;
+      if (display) display.textContent = `${amount}坤币`;
+    }
+    
+    // 💎 更新至尊场投注显示
+    function updateSupremeBetDisplay(value) {
+      supremeBetAmount = parseInt(value);
+      const display = document.getElementById('supremeCurrentBet');
+      if (display) {
+        display.textContent = `${supremeBetAmount}坤币`;
       }
     }
 
