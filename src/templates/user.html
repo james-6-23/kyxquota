@@ -992,43 +992,9 @@
           </div>
         </div>
 
-        <!-- 💎 至尊场投注按钮和状态（紧凑版，与高级场类似）-->
+        <!-- 💎 至尊场投注按钮和状态已移除 -->
         <div id="supremeBetSelector" class="hidden mb-6">
-          <div class="max-w-xl mx-auto">
-            <!-- 快捷金额按钮（动态生成）-->
-            <div id="supremeBetOptions" class="flex items-center justify-center gap-2 mb-3">
-              <!-- 按钮将通过 JavaScript 动态生成 -->
-            </div>
-            
-            <!-- 滑块（紧凑版）-->
-            <div class="px-4 mb-3">
-              <input type="range" id="supremeBetSlider" min="1000" max="10000" step="100" value="1000" 
-                     class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer"
-                     oninput="updateSupremeBetDisplay(this.value)">
-            </div>
-            
-            <!-- 至尊场封禁状态提示 -->
-            <div id="supremeBannedNotice" class="hidden mb-3 p-3 bg-red-500/90 rounded-lg border border-red-300">
-              <p class="text-white text-sm text-center font-semibold">
-                🚫 您已被禁止进入至尊场
-                <br>
-                <span id="supremeBannedUntilText" class="text-xs">解禁时间：--</span>
-              </p>
-            </div>
-            
-            <!-- 投注按钮 -->
-            <button id="supremeSpinButton" onclick="spinSupremeSlot()" 
-                    class="w-full px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
-                           text-white text-xl font-bold rounded-lg shadow-lg 
-                           transform hover:scale-105 transition-all duration-200
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-              <span class="flex items-center justify-center gap-2">
-                <span>🎰</span>
-                <span>投注</span>
-                <span id="supremeBetDisplay" class="text-yellow-300">$1000</span>
-              </span>
-            </button>
-          </div>
+          <!-- 至尊场投注选择器内容已移除 -->
         </div>
 
         <!-- 初级场控制按钮 - 响应式 -->
