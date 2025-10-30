@@ -7626,6 +7626,34 @@
                   </div>
                 </div>
                 
+                <!-- 律师函惩罚配置 -->
+                <div class="mb-6">
+                  <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-bold text-slate-900">⚖️ 律师函惩罚配置</h4>
+                    <button onclick="applyDefaultPunishment(${schemeId})" class="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold">
+                      ⚡ 应用默认惩罚
+                    </button>
+                  </div>
+                  
+                  <div id="punishmentConfigList" class="space-y-2">
+                    ${punishments.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">暂无律师函惩罚配置，点击"应用默认惩罚"快速添加</div>' : punishments.map(p => `
+                      <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div class="flex justify-between items-center">
+                          <div class="flex-1">
+                            <span class="font-semibold text-red-900">${p.lsh_count}个律师函</span>
+                            <span class="mx-2 text-slate-400">→</span>
+                            <span class="text-red-700">扣除 ${p.deduct_multiplier}倍</span>
+                            ${p.ban_hours > 0 ? `<span class="ml-2 text-orange-600">封禁${p.ban_hours}小时</span>` : ''}
+                          </div>
+                          <div class="flex gap-2">
+                            <button onclick="editPunishment(${p.lsh_count}, ${p.deduct_multiplier}, ${p.ban_hours}, ${schemeId})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-semibold">编辑</button>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                
                 <div class="flex gap-3 mt-6 sticky bottom-0 bg-white pt-4 border-t border-slate-200">
                   <button onclick="closeRewardSchemeEditModal()" class="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold">关闭</button>
                   <button onclick="closeRewardSchemeEditModal(); viewRewardSchemeDetails(${schemeId})" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">查看完整详情</button>
@@ -7677,82 +7705,344 @@
       if (modal) modal.remove();
     }
     
-    async function showAddRuleModal(schemeId) {
+    // 默认律师函惩罚配置
+    const DEFAULT_PUNISHMENT_CONFIG = [
+      { lsh_count: 1, deduct_multiplier: 1, ban_hours: 0 },
+      { lsh_count: 2, deduct_multiplier: 2, ban_hours: 0 },
+      { lsh_count: 3, deduct_multiplier: 3, ban_hours: 60 },
+      { lsh_count: 4, deduct_multiplier: 4, ban_hours: 60 }
+    ];
+    
+    async function applyDefaultPunishment(schemeId) {
+      if (!confirm('确定要应用默认律师函惩罚配置吗？\n\n默认配置：\n• 1个律师函：扣1倍，不封禁\n• 2个律师函：扣2倍，不封禁\n• 3个律师函：扣3倍，封禁60小时\n• 4个律师函：扣4倍，封禁60小时')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/rewards/punishments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheme_id: schemeId,
+            punishments: DEFAULT_PUNISHMENT_CONFIG
+          })
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('默认惩罚配置已应用', 'success');
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(result.message || '应用失败', 'error');
+        }
+      } catch (error) {
+        console.error('应用默认惩罚配置失败:', error);
+        showToast('应用失败', 'error');
+      }
+    }
+    
+    async function editPunishment(lshCount, deductMultiplier, banHours, schemeId) {
       const modalHtml = `
-        <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
-          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div class="p-6 border-b border-slate-200 bg-indigo-600">
-              <h3 class="text-xl font-bold text-white">➕ 添加中奖规则</h3>
+        <div id="editPunishmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
+          <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="p-6 border-b border-slate-200 bg-red-600">
+              <h3 class="text-xl font-bold text-white">⚖️ 编辑律师函惩罚</h3>
             </div>
             <div class="p-6 space-y-4">
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">规则名称 *</label>
-                <input type="text" id="newRuleName" placeholder="例如：三连美" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">规则类型 *</label>
-                  <select id="newRuleType" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    <option value="match">匹配规则</option>
-                    <option value="scatter">分散规则</option>
-                    <option value="bonus">奖励规则</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">规则分类</label>
-                  <select id="newRuleCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                    <option value="">无</option>
-                    <option value="normal">普通奖励</option>
-                    <option value="medium">中等奖励</option>
-                    <option value="high">高级奖励</option>
-                    <option value="jackpot">大奖</option>
-                  </select>
-                </div>
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                <p class="text-sm text-amber-800">配置 <strong>${lshCount}个律师函</strong> 的惩罚参数</p>
               </div>
               
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">匹配模式 *</label>
-                <input type="text" id="newMatchPattern" placeholder="例如：3-consecutive" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                <div class="text-xs text-slate-500 mt-1">常用：3-consecutive, 4-consecutive, 5-same, scatter-3+</div>
-              </div>
-              
-              <div class="grid grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">匹配数量</label>
-                  <input type="number" id="newMatchCount" placeholder="3" min="1" max="9" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                </div>
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
-                  <input type="number" id="newWinMultiplier" placeholder="5" min="0" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                </div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">扣除倍率 *</label>
+                <input type="number" id="editPunishmentMultiplier" value="${deductMultiplier}" min="0" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">例如：1倍表示扣除1倍投注额</p>
               </div>
               
               <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">必需符号（可选）</label>
-                <input type="text" id="newRequiredSymbols" placeholder="例如：m,t,n" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                <div class="text-xs text-slate-500 mt-1">多个符号用逗号分隔，例如：m,t,n</div>
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转次数</label>
-                <input type="number" id="newGrantFreeSpin" placeholder="0" min="0" max="100" value="0" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-              </div>
-              
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">规则描述</label>
-                <textarea id="newRuleDescription" rows="2" placeholder="简要描述此规则..." class="w-full px-4 py-2 border border-slate-300 rounded-lg"></textarea>
+                <label class="block text-sm font-medium text-slate-700 mb-2">封禁时长（小时）</label>
+                <input type="number" id="editPunishmentBanHours" value="${banHours}" min="0" step="1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">0表示不封禁，建议3-4个律师函设置60小时</p>
               </div>
               
               <div class="flex gap-3 mt-6">
-                <button onclick="closeAddRuleModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
-                <button onclick="saveNewRule(${schemeId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">保存规则</button>
+                <button onclick="closeEditPunishmentModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                <button onclick="savePunishmentEdit(${lshCount}, ${schemeId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg font-semibold">保存</button>
               </div>
             </div>
           </div>
         </div>
       `;
       document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function savePunishmentEdit(lshCount, schemeId) {
+      const deductMultiplier = parseFloat(document.getElementById('editPunishmentMultiplier').value);
+      const banHours = parseInt(document.getElementById('editPunishmentBanHours').value) || 0;
+      
+      if (isNaN(deductMultiplier) || deductMultiplier < 0) {
+        showToast('请输入有效的扣除倍率', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/rewards/punishments', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheme_id: schemeId,
+            punishments: [{ lsh_count: lshCount, deduct_multiplier: deductMultiplier, ban_hours: banHours, is_active: 1 }]
+          })
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('惩罚配置已更新', 'success');
+          closeEditPunishmentModal();
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(result.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新惩罚配置失败:', error);
+        showToast('更新失败', 'error');
+      }
+    }
+    
+    function closeEditPunishmentModal() {
+      const modal = document.getElementById('editPunishmentModal');
+      if (modal) modal.remove();
+    }
+    
+    // 预设规则模板
+    const RULE_TEMPLATES = [
+      {
+        id: 'jntm_sequence',
+        name: '🎯 按顺序JNTM',
+        description: '必须按照 j→n→t→m 顺序出现',
+        category: 'jackpot',
+        rule_type: 'match',
+        match_pattern: 'sequence',
+        required_symbols: 'j,n,t,m',
+        match_count: 4,
+        win_multiplier: 256,
+        grant_free_spin: 0,
+        priority: 100,
+        emoji: '🎯'
+      },
+      {
+        id: 'jntm_any',
+        name: '⭐ 不按顺序JNTM',
+        description: '包含 j、n、t、m 四个符号即可，顺序不限',
+        category: 'jackpot',
+        rule_type: 'match',
+        match_pattern: 'combination',
+        required_symbols: 'j,n,t,m',
+        match_count: 4,
+        win_multiplier: 16,
+        grant_free_spin: 0,
+        priority: 90,
+        emoji: '⭐'
+      },
+      {
+        id: 'bzlq_sequence',
+        name: '🔥 按顺序BJ→ZFT→BDK→LQ',
+        description: '必须按照 bj→zft→bdk→lq 顺序出现',
+        category: 'jackpot',
+        rule_type: 'match',
+        match_pattern: 'sequence',
+        required_symbols: 'bj,zft,bdk,lq',
+        match_count: 4,
+        win_multiplier: 256,
+        grant_free_spin: 0,
+        priority: 100,
+        emoji: '🔥'
+      },
+      {
+        id: 'bzlq_any',
+        name: '💫 不按顺序BJ→ZFT→BDK→LQ',
+        description: '包含 bj、zft、bdk、lq 四个符号即可',
+        category: 'jackpot',
+        rule_type: 'match',
+        match_pattern: 'combination',
+        required_symbols: 'bj,zft,bdk,lq',
+        match_count: 4,
+        win_multiplier: 16,
+        grant_free_spin: 0,
+        priority: 90,
+        emoji: '💫'
+      },
+      {
+        id: '4_consecutive',
+        name: '🎁 普通4连',
+        description: '任意4个相同符号连续出现',
+        category: 'high',
+        rule_type: 'match',
+        match_pattern: '4-consecutive',
+        required_symbols: null,
+        match_count: 4,
+        win_multiplier: 32,
+        grant_free_spin: 1,
+        priority: 80,
+        emoji: '🎁'
+      },
+      {
+        id: '3_consecutive_strict',
+        name: '💎 严格3连',
+        description: '任意3个相同符号连续出现（严格相邻）',
+        category: 'medium',
+        rule_type: 'match',
+        match_pattern: '3-consecutive',
+        required_symbols: null,
+        match_count: 3,
+        win_multiplier: 12,
+        grant_free_spin: 0,
+        priority: 70,
+        emoji: '💎'
+      },
+      {
+        id: '3_any',
+        name: '🎲 普通3连',
+        description: '任意3个相同符号（位置不限）',
+        category: 'medium',
+        rule_type: 'match',
+        match_pattern: '3-any',
+        required_symbols: null,
+        match_count: 3,
+        win_multiplier: 8,
+        grant_free_spin: 0,
+        priority: 60,
+        emoji: '🎲'
+      },
+      {
+        id: 'double_pair',
+        name: '🎰 两对2连',
+        description: '两对不同的相同符号',
+        category: 'normal',
+        rule_type: 'match',
+        match_pattern: 'double_pair',
+        required_symbols: null,
+        match_count: 4,
+        win_multiplier: 5,
+        grant_free_spin: 0,
+        priority: 50,
+        emoji: '🎰'
+      },
+      {
+        id: '2_consecutive',
+        name: '🌟 严格2连',
+        description: '任意2个相同符号连续出现',
+        category: 'normal',
+        rule_type: 'match',
+        match_pattern: '2-consecutive',
+        required_symbols: null,
+        match_count: 2,
+        win_multiplier: 3,
+        grant_free_spin: 0,
+        priority: 40,
+        emoji: '🌟'
+      },
+      {
+        id: '2_any',
+        name: '✨ 普通2连',
+        description: '任意2个相同符号（位置不限）',
+        category: 'normal',
+        rule_type: 'match',
+        match_pattern: '2-any',
+        required_symbols: null,
+        match_count: 2,
+        win_multiplier: 2,
+        grant_free_spin: 0,
+        priority: 30,
+        emoji: '✨'
+      }
+    ];
+
+    async function showAddRuleModal(schemeId) {
+      const modalHtml = `
+        <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
+          <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div class="p-6 border-b border-slate-200 bg-indigo-600">
+              <h3 class="text-xl font-bold text-white">➕ 选择预设规则模板</h3>
+              <p class="text-indigo-100 text-sm mt-1">从下方选择一个预设规则快速添加到方案中</p>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                ${RULE_TEMPLATES.map(template => `
+                  <div class="border-2 border-slate-200 rounded-lg p-4 hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group" onclick="selectRuleTemplate('${template.id}', ${schemeId})">
+                    <div class="flex items-start gap-3">
+                      <div class="text-3xl">${template.emoji}</div>
+                      <div class="flex-1">
+                        <h4 class="font-bold text-slate-900 group-hover:text-indigo-600 mb-1">${template.name}</h4>
+                        <p class="text-sm text-slate-600 mb-2">${template.description}</p>
+                        <div class="flex flex-wrap gap-2 text-xs">
+                          <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded">优先级 ${template.priority}</span>
+                          <span class="px-2 py-1 bg-green-100 text-green-700 rounded font-bold">倍率 ${template.win_multiplier}x</span>
+                          ${template.grant_free_spin > 0 ? `<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded">+${template.grant_free_spin}次免费</span>` : ''}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+              
+              <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <p class="text-sm text-amber-800"><strong>💡 提示：</strong>点击任意模板即可快速添加到方案中。添加后可在规则列表中编辑或删除。</p>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                <button onclick="closeAddRuleModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function selectRuleTemplate(templateId, schemeId) {
+      const template = RULE_TEMPLATES.find(t => t.id === templateId);
+      if (!template) {
+        showToast('模板不存在', 'error');
+        return;
+      }
+      
+      const data = {
+        scheme_id: schemeId,
+        rule_name: template.name,
+        rule_type: template.rule_type,
+        rule_category: template.category,
+        match_pattern: template.match_pattern,
+        match_count: template.match_count,
+        required_symbols: template.required_symbols,
+        win_multiplier: template.win_multiplier,
+        grant_free_spin: template.grant_free_spin,
+        priority: template.priority,
+        description: template.description
+      };
+      
+      try {
+        const res = await fetch('/api/admin/rewards/rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('规则已添加', 'success');
+          closeAddRuleModal();
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(result.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('添加规则失败:', error);
+        showToast('添加失败', 'error');
+      }
     }
     
     async function saveNewRule(schemeId) {
