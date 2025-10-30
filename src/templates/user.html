@@ -5387,7 +5387,10 @@
                         <span class="text-amber-300 font-bold">${index + 1}.</span>
                         <span class="text-white font-bold">${rule.rule_name}</span>
                       </div>
-                      <span class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</span>
+                      <div class="text-right">
+                        <div class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</div>
+                        ${rule.probability ? `<div class="text-xs text-purple-300 mt-1">📊 ${rule.probability}</div>` : ''}
+                      </div>
                     </div>
                     ${rule.description ? `<p class="text-sm text-green-200/70 mt-1 ml-6">${rule.description}</p>` : ''}
                     ${rule.grant_free_spin > 0 ? `<p class="text-xs text-amber-300 mt-1 ml-6">🎁 赠送${rule.grant_free_spin}次免费</p>` : ''}
@@ -5410,7 +5413,10 @@
                 rulesHTML += `
                   <div class="bg-red-500/20 border border-red-400/40 rounded-lg p-3">
                     <div class="flex justify-between items-center">
-                      <span class="text-red-200 font-semibold">${p.lsh_count}个律师函</span>
+                      <div>
+                        <span class="text-red-200 font-semibold">${p.lsh_count}个律师函</span>
+                        ${p.probability ? `<div class="text-xs text-purple-300 mt-1">📊 ${p.probability}</div>` : ''}
+                      </div>
                       <span class="text-red-300 font-bold">扣除${p.deduct_multiplier}倍</span>
                     </div>
                     <div class="text-xs text-red-200/70 mt-1">

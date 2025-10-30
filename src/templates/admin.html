@@ -1028,23 +1028,8 @@
                 <p class="text-xs text-slate-500 mt-1">美元 (当前: <span id="advancedBetMinQuota">50000000</span> 聪 至 <span id="advancedBetMaxQuota">250000000</span> 聪)</p>
               </div>
               
-              <!-- 奖励倍数 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">
-                  奖励倍数 <span class="text-blue-500" title="奖励倍数说明">🛈</span>
-                </label>
-                <input type="number" step="0.1" id="advancedRewardMultiplier" class="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-green-600" placeholder="4.0">
-                <p class="text-xs text-slate-500 mt-1">奖励放大系数</p>
-              </div>
-              
-              <!-- 惩罚倍数 -->
-              <div>
-                <label class="block text-sm font-medium text-red-700 mb-2">
-                  惩罚倍数 <span class="text-red-500" title="律师函惩罚金额倍数">🛈</span>
-                </label>
-                <input type="number" step="0.1" id="advancedPenaltyFactor" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 font-bold text-red-600" placeholder="2.0">
-                <p class="text-xs text-red-600 mt-1">律师函扣除金额倍数</p>
-              </div>
+              <!-- ❌ 已移除奖励倍数和惩罚倍数配置 -->
+              <!-- 现在每个场次使用独立的奖励配置方案，不再基于初级场翻倍 -->
               
               <!-- 每日投注上限 -->
               <div>
@@ -1206,7 +1191,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择权重配置方案 *</label>
-              <select id="advancedSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedWeightConfig()">
+              <select id="advancedSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedWeightConfig(); calculateAdvancedProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可与初级场使用相同或不同的权重方案</p>
@@ -1274,7 +1259,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
-              <select id="advancedSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedRewardScheme()">
+              <select id="advancedSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedRewardScheme(); calculateAdvancedProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
@@ -1286,6 +1271,41 @@
               <div id="advancedRewardPreviewList" class="space-y-2 text-xs">
                 <!-- 动态填充 -->
               </div>
+            </div>
+          </div>
+
+          <!-- 📊 概率分析卡片 -->
+          <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 mb-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span class="text-2xl">📊</span>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-purple-900">概率分析与RTP计算</h4>
+                  <p class="text-xs text-purple-700">根据选择的配置实时计算规则概率和玩家回报率</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 计算方式选择 -->
+            <div class="mb-4">
+              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="advancedCalcMethod" value="fast" checked onchange="calculateAdvancedProbability()">
+                  <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="advancedCalcMethod" value="monte-carlo" onchange="calculateAdvancedProbability()">
+                  <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- 概率显示区域 -->
+            <div id="advancedProbabilityDisplay" class="hidden">
+              <!-- 动态填充 -->
             </div>
           </div>
 
@@ -1529,7 +1549,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择权重配置方案 *</label>
-              <select id="normalSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalWeightConfig()">
+              <select id="normalSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalWeightConfig(); calculateNormalProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 在"权重配置管理"中可以创建新方案或编辑现有方案</p>
@@ -1597,7 +1617,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
-              <select id="normalSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalRewardScheme()">
+              <select id="normalSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalRewardScheme(); calculateNormalProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
@@ -1609,6 +1629,41 @@
               <div id="normalRewardPreviewList" class="space-y-2 text-xs">
                 <!-- 动态填充 -->
               </div>
+            </div>
+          </div>
+          
+          <!-- 📊 概率分析卡片 (初级场) -->
+          <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 mb-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span class="text-2xl">📊</span>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-purple-900">概率分析与RTP计算</h4>
+                  <p class="text-xs text-purple-700">根据选择的配置实时计算规则概率和玩家回报率</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 计算方式选择 -->
+            <div class="mb-4">
+              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="normalCalcMethod" value="fast" checked onchange="calculateNormalProbability()">
+                  <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="normalCalcMethod" value="monte-carlo" onchange="calculateNormalProbability()">
+                  <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- 概率显示区域 -->
+            <div id="normalProbabilityDisplay" class="hidden">
+              <!-- 动态填充 -->
             </div>
           </div>
           
@@ -1626,7 +1681,7 @@
               </div>
             </div>
           </div>
-
+          
           <!-- 统一操作区 -->
           <div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-2 border-indigo-300 rounded-xl p-6 mb-6 shadow-lg">
             <div class="flex items-center justify-between mb-5">
@@ -3168,21 +3223,56 @@
             <h3 class="text-lg font-bold text-slate-900 mb-4">⚖️ 符号权重方案</h3>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择权重方案</label>
-              <select id="supremeWeightConfigId" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              <select id="supremeWeightConfigId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="calculateSupremeProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可在"权重配置管理"中创建和编辑方案</p>
             </div>
           </div>
 
-          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
             <h3 class="text-lg font-bold text-slate-900 mb-4">🎁 奖励规则方案</h3>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励方案</label>
-              <select id="supremeRewardSchemeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              <select id="supremeRewardSchemeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="calculateSupremeProbability()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可在"奖励配置管理"中创建和编辑方案</p>
+            </div>
+          </div>
+          
+          <!-- 📊 概率分析卡片 (至尊场) -->
+          <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-300 rounded-xl p-6 mb-6 shadow-lg">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span class="text-2xl">📊</span>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-purple-900">概率分析与RTP计算</h4>
+                  <p class="text-xs text-purple-700">根据选择的配置实时计算规则概率和玩家回报率</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 计算方式选择 -->
+            <div class="mb-4">
+              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex gap-4">
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="supremeCalcMethod" value="fast" checked onchange="calculateSupremeProbability()">
+                  <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="radio" name="supremeCalcMethod" value="monte-carlo" onchange="calculateSupremeProbability()">
+                  <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
+                </label>
+              </div>
+            </div>
+            
+            <!-- 概率显示区域 -->
+            <div id="supremeProbabilityDisplay" class="hidden">
+              <!-- 动态填充 -->
             </div>
           </div>
         </div>
@@ -4754,22 +4844,127 @@
         
         if (data.success) {
           const rules = data.data.rules || [];
+          const punishments = data.data.punishments || [];
           const previewList = document.getElementById('normalRewardPreviewList');
           
-          if (rules.length === 0) {
-            previewList.innerHTML = '<div class="text-slate-500 text-center py-2">暂无规则</div>';
-          } else {
-            previewList.innerHTML = rules.map(rule => `
-              <div class="flex justify-between items-center bg-white p-2 rounded border">
-                <span class="font-semibold text-slate-900">${rule.rule_name}</span>
-                <span class="text-green-600 font-bold">${rule.win_multiplier}x</span>
+          let html = '';
+          
+          // 🎁 中奖规则（4列网格）
+          if (rules.length > 0) {
+            html += `
+              <div class="mb-4">
+                <h5 class="text-xs font-bold text-green-700 mb-2">🎁 中奖规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${rules.map(rule => `
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1 truncate" title="${rule.rule_name}">${rule.rule_name}</div>
+                      <div class="text-lg font-bold text-green-600">${rule.win_multiplier}x</div>
+                      ${rule.grant_free_spin > 0 ? `<div class="text-xs text-amber-600 mt-1">🎁 +${rule.grant_free_spin}次免费</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
               </div>
-            `).join('');
+            `;
           }
+          
+          // ⚠️ 惩罚规则（4列网格）
+          if (punishments.length > 0) {
+            html += `
+              <div>
+                <h5 class="text-xs font-bold text-red-700 mb-2">⚠️ 惩罚规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${punishments.map(p => `
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-lg border border-red-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1">律师函×${p.lsh_count}</div>
+                      <div class="text-lg font-bold text-red-600">-${p.deduct_multiplier}x</div>
+                      ${p.ban_hours > 0 ? `<div class="text-xs text-red-600 mt-1">🚫 禁${p.ban_hours}小时</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+          
+          if (rules.length === 0 && punishments.length === 0) {
+            html = '<div class="text-slate-500 text-center py-4">暂无规则</div>';
+          }
+          
+          previewList.innerHTML = html;
           document.getElementById('normalRewardPreview').classList.remove('hidden');
         }
       } catch (error) {
         console.error('预览奖励方案失败:', error);
+      }
+    }
+    
+    // 计算初级场概率
+    async function calculateNormalProbability() {
+      const weightConfigId = document.getElementById('normalSlotWeightConfigId').value;
+      const rewardSchemeId = document.getElementById('normalSlotRewardSchemeId').value;
+      
+      if (!weightConfigId || !rewardSchemeId) {
+        document.getElementById('normalProbabilityDisplay').classList.add('hidden');
+        return;
+      }
+      
+      const method = document.querySelector('input[name="normalCalcMethod"]:checked').value;
+      const displayDiv = document.getElementById('normalProbabilityDisplay');
+      const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
+      
+      // 🔥 检查缓存
+      if (probabilityCache.has(cacheKey)) {
+        console.log('[缓存命中] 使用缓存的概率数据');
+        const cachedResult = probabilityCache.get(cacheKey);
+        renderProbabilityDisplay('normalProbabilityDisplay', cachedResult);
+        return;
+      }
+      
+      // 🔄 显示计算中状态（带进度条）
+      let progressPercent = 0;
+      const progressInterval = method === 'monte-carlo' ? setInterval(() => {
+        if (progressPercent < 95) {
+          progressPercent += Math.random() * 10;
+          if (progressPercent > 95) progressPercent = 95;
+          updateProgressBar(displayDiv, progressPercent, method);
+        }
+      }, 200) : null;
+      
+      updateProgressBar(displayDiv, 0, method);
+      displayDiv.classList.remove('hidden');
+      
+      try {
+        const res = await fetch('/api/admin/calculate-probability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight_config_id: parseInt(weightConfigId),
+            reward_scheme_id: parseInt(rewardSchemeId),
+            method: method,
+            simulation_count: method === 'monte-carlo' ? 1000000 : undefined
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          updateProgressBar(displayDiv, 100, method);
+        }
+        
+        if (data.success) {
+          const result = data.data;
+          // 🔥 缓存结果
+          probabilityCache.set(cacheKey, result);
+          setTimeout(() => {
+            renderProbabilityDisplay('normalProbabilityDisplay', result);
+          }, 300);
+        } else {
+          displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败: ${data.message}</div>`;
+        }
+      } catch (error) {
+        if (progressInterval) clearInterval(progressInterval);
+        console.error('计算概率失败:', error);
+        displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败，请重试</div>`;
       }
     }
     
@@ -4800,6 +4995,8 @@
           // 🔥 重新加载配置以刷新下拉框显示
           await loadNormalWeightConfigOptions();
           await loadNormalRewardSchemeOptions();
+          // 🔥 重新计算概率
+          await calculateNormalProbability();
         } else {
           showToast(data.message || '保存失败', 'error');
         }
@@ -6469,23 +6666,256 @@
         
         if (data.success) {
           const rules = data.data.rules || [];
+          const punishments = data.data.punishments || [];
           const previewList = document.getElementById('advancedRewardPreviewList');
           
-          if (rules.length === 0) {
-            previewList.innerHTML = '<div class="text-slate-500 text-center py-2">暂无规则</div>';
-          } else {
-            previewList.innerHTML = rules.map(rule => `
-              <div class="flex justify-between items-center bg-white p-2 rounded border">
-                <span class="font-semibold text-slate-900">${rule.rule_name}</span>
-                <span class="text-green-600 font-bold">${rule.win_multiplier}x</span>
+          let html = '';
+          
+          // 🎁 中奖规则（4列网格）
+          if (rules.length > 0) {
+            html += `
+              <div class="mb-4">
+                <h5 class="text-xs font-bold text-green-700 mb-2">🎁 中奖规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${rules.map(rule => `
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1 truncate" title="${rule.rule_name}">${rule.rule_name}</div>
+                      <div class="text-lg font-bold text-green-600">${rule.win_multiplier}x</div>
+                      ${rule.grant_free_spin > 0 ? `<div class="text-xs text-amber-600 mt-1">🎁 +${rule.grant_free_spin}次免费</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
               </div>
-            `).join('');
+            `;
           }
+          
+          // ⚠️ 惩罚规则（4列网格）
+          if (punishments.length > 0) {
+            html += `
+              <div>
+                <h5 class="text-xs font-bold text-red-700 mb-2">⚠️ 惩罚规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${punishments.map(p => `
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-lg border border-red-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1">律师函×${p.lsh_count}</div>
+                      <div class="text-lg font-bold text-red-600">-${p.deduct_multiplier}x</div>
+                      ${p.ban_hours > 0 ? `<div class="text-xs text-red-600 mt-1">🚫 禁${p.ban_hours}小时</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+          
+          if (rules.length === 0 && punishments.length === 0) {
+            html = '<div class="text-slate-500 text-center py-4">暂无规则</div>';
+          }
+          
+          previewList.innerHTML = html;
           document.getElementById('advancedRewardPreview').classList.remove('hidden');
         }
       } catch (error) {
         console.error('预览高级场奖励方案失败:', error);
       }
+    }
+    
+    // 计算高级场概率
+    async function calculateAdvancedProbability() {
+      const weightConfigId = document.getElementById('advancedSlotWeightConfigId').value;
+      const rewardSchemeId = document.getElementById('advancedSlotRewardSchemeId').value;
+      
+      if (!weightConfigId || !rewardSchemeId) {
+        document.getElementById('advancedProbabilityDisplay').classList.add('hidden');
+        return;
+      }
+      
+      const method = document.querySelector('input[name="advancedCalcMethod"]:checked').value;
+      const displayDiv = document.getElementById('advancedProbabilityDisplay');
+      const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
+      
+      // 🔥 检查缓存
+      if (probabilityCache.has(cacheKey)) {
+        console.log('[缓存命中] 使用缓存的概率数据');
+        const cachedResult = probabilityCache.get(cacheKey);
+        renderProbabilityDisplay('advancedProbabilityDisplay', cachedResult);
+        return;
+      }
+      
+      // 🔄 显示计算中状态（带进度条）
+      let progressPercent = 0;
+      const progressInterval = method === 'monte-carlo' ? setInterval(() => {
+        if (progressPercent < 95) {
+          progressPercent += Math.random() * 10;
+          if (progressPercent > 95) progressPercent = 95;
+          updateProgressBar(displayDiv, progressPercent, method);
+        }
+      }, 200) : null;
+      
+      updateProgressBar(displayDiv, 0, method);
+      displayDiv.classList.remove('hidden');
+      
+      try {
+        const res = await fetch('/api/admin/calculate-probability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight_config_id: parseInt(weightConfigId),
+            reward_scheme_id: parseInt(rewardSchemeId),
+            method: method,
+            simulation_count: method === 'monte-carlo' ? 1000000 : undefined
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          updateProgressBar(displayDiv, 100, method);
+        }
+        
+        if (data.success) {
+          const result = data.data;
+          // 🔥 缓存结果
+          probabilityCache.set(cacheKey, result);
+          setTimeout(() => {
+            renderProbabilityDisplay('advancedProbabilityDisplay', result);
+          }, 300);
+        } else {
+          displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败: ${data.message}</div>`;
+        }
+      } catch (error) {
+        if (progressInterval) clearInterval(progressInterval);
+        console.error('计算概率失败:', error);
+        displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败，请重试</div>`;
+      }
+    }
+    
+    // 🔄 更新进度条
+    function updateProgressBar(displayDiv, percent, method) {
+      displayDiv.innerHTML = `
+        <div class="text-center py-8">
+          <div class="w-full max-w-md mx-auto mb-4">
+            <div class="relative h-6 bg-slate-200 rounded-full overflow-hidden">
+              <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 ease-out flex items-center justify-center" style="width: ${percent}%">
+                <span class="text-xs text-white font-bold">${Math.round(percent)}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="animate-spin inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mb-3"></div>
+          <p class="text-sm text-purple-700 font-semibold">🔄 计算中...</p>
+          <p class="text-xs text-slate-500 mt-1">${method === 'monte-carlo' ? `蒙特卡洛模拟 1,000,000 次 (${Math.round(percent)}%)` : '快速估算'}</p>
+          ${percent > 0 ? `<p class="text-xs text-purple-600 mt-2">⏱️ 预计剩余时间: ${Math.max(0, Math.round((100 - percent) / 100 * 3))}秒</p>` : ''}
+        </div>
+      `;
+    }
+    
+    // 渲染概率显示
+    function renderProbabilityDisplay(displayId, result) {
+      const displayDiv = document.getElementById(displayId);
+      const { rules, punishments, noWin, rtp, houseEdge, totalExpectedValue, method, simulationCount, calculationTime } = result;
+      
+      let html = `
+        <div class="bg-white rounded-lg p-4 border border-purple-200">
+          <!-- 中奖规则概率 -->
+          <div class="mb-4">
+            <h5 class="text-sm font-bold text-green-700 mb-3">🎁 中奖规则概率</h5>
+            <div class="grid grid-cols-4 gap-2">
+              ${rules.map(rule => `
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
+                  <div class="text-xs font-semibold text-slate-900 mb-1 truncate" title="${rule.ruleName}">${rule.ruleName}</div>
+                  <div class="text-lg font-bold text-green-600">${rule.multiplier}x</div>
+                  <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${rule.probability.toFixed(2)}%</div>
+                  <div class="text-xs ${rule.expectedValue >= 0 ? 'text-green-600' : 'text-red-600'} mt-0.5">期望: ${rule.expectedValue >= 0 ? '+' : ''}${rule.expectedValue.toFixed(2)}</div>
+                </div>
+              `).join('')}
+              <div class="bg-gradient-to-br from-slate-50 to-gray-50 p-3 rounded-lg border border-slate-300">
+                <div class="text-xs font-semibold text-slate-700 mb-1">未中奖</div>
+                <div class="text-lg font-bold text-slate-600">0x</div>
+                <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${noWin.probability.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500 mt-0.5">期望: 0</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 惩罚规则概率 -->
+          ${punishments.length > 0 ? `
+            <div class="mb-4">
+              <h5 class="text-sm font-bold text-red-700 mb-3">⚠️ 惩罚规则概率</h5>
+              <div class="grid grid-cols-4 gap-2">
+                ${punishments.map(p => `
+                  <div class="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-lg border border-red-200">
+                    <div class="text-xs font-semibold text-slate-900 mb-1">${p.ruleName}</div>
+                    <div class="text-lg font-bold text-red-600">${p.multiplier}x</div>
+                    <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${p.probability.toFixed(2)}%</div>
+                    <div class="text-xs text-red-600 mt-0.5">期望: ${p.expectedValue.toFixed(2)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+          
+          <!-- RTP分析 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border-2 border-indigo-300">
+            <h5 class="text-sm font-bold text-indigo-900 mb-3">💎 RTP (玩家回报率) 分析</h5>
+            <div class="grid grid-cols-3 gap-4 mb-3">
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">总期望收益</div>
+                <div class="text-2xl font-bold ${totalExpectedValue >= 0 ? 'text-green-600' : 'text-red-600'}">${totalExpectedValue >= 0 ? '+' : ''}${totalExpectedValue.toFixed(2)}</div>
+                <div class="text-xs text-slate-500">投注1单位</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">玩家RTP</div>
+                <div class="text-2xl font-bold ${rtp >= 85 && rtp <= 98 ? 'text-green-600' : 'text-red-600'}">${rtp.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500">${rtp >= 85 && rtp <= 98 ? '✅ 健康范围' : '⚠️ 需调整'}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">庄家优势</div>
+                <div class="text-2xl font-bold ${houseEdge > 0 ? 'text-green-600' : 'text-red-600'}">${houseEdge > 0 ? '+' : ''}${houseEdge.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500">${houseEdge > 0 ? '✅ 可盈利' : '⚠️ 会亏损'}</div>
+              </div>
+            </div>
+            
+            <!-- 健康度指标 -->
+            <div class="bg-white rounded-lg p-3 border border-indigo-200">
+              <div class="text-xs text-slate-600 mb-2">💡 健康RTP范围: 85% - 98%</div>
+              <div class="text-xs text-slate-500 space-y-1">
+                <div>• 低于85%: 玩家体验差，流失率高</div>
+                <div>• 85%-95%: 平衡良好，推荐范围</div>
+                <div>• 95%-98%: 玩家友好，略微薄利</div>
+                <div>• 高于98%: 庄家亏损，不可持续</div>
+              </div>
+            </div>
+            
+            ${rtp < 85 || rtp > 98 ? `
+              <div class="mt-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <div class="text-xs font-bold text-amber-900 mb-2">🎯 配置建议:</div>
+                <div class="text-xs text-amber-800 space-y-1">
+                  ${rtp > 98 ? `
+                    <div>⚠️ RTP过高，建议:</div>
+                    <div>• 降低高倍率规则的倍数</div>
+                    <div>• 提高律师函权重</div>
+                    <div>• 移除部分高倍率规则</div>
+                  ` : `
+                    <div>⚠️ RTP过低，建议:</div>
+                    <div>• 提高奖励规则倍数</div>
+                    <div>• 降低律师函权重</div>
+                    <div>• 添加更多中奖规则</div>
+                  `}
+                </div>
+              </div>
+            ` : ''}
+            
+            <!-- 计算信息 -->
+            <div class="mt-3 text-xs text-slate-500 text-center">
+              🔄 计算方式: ${method === 'monte-carlo' ? `蒙特卡洛模拟 ${simulationCount?.toLocaleString()} 次` : '快速估算'} | 
+              ⏱️ 耗时: ${calculationTime}ms
+            </div>
+          </div>
+        </div>
+      `;
+      
+      displayDiv.innerHTML = html;
+      displayDiv.classList.remove('hidden');
     }
     
     // 保存高级场配置方案选择
@@ -6515,6 +6945,8 @@
           // 🔥 重新加载配置以刷新下拉框显示
           await loadAdvancedWeightConfigOptions();
           await loadAdvancedRewardSchemeOptions();
+          // 🔥 重新计算概率
+          await calculateAdvancedProbability();
         } else {
           showToast(data.message || '保存失败', 'error');
         }
@@ -6550,8 +6982,9 @@
           document.getElementById('advancedBetMaxQuota').textContent = config.bet_max || 250000000;
           document.getElementById('advancedDailyBetLimitQuota').textContent = config.daily_bet_limit || 5000000000;
           
-          document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier || 4.0;
-          document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor || 2.0;
+          // ❌ 已移除倍率配置加载
+          // document.getElementById('advancedRewardMultiplier').value = config.reward_multiplier || 4.0;
+          // document.getElementById('advancedPenaltyFactor').value = config.penalty_weight_factor || 2.0;
           
           // 时效设置
           document.getElementById('advancedTicketValidHours').value = config.ticket_valid_hours || 24;
@@ -6672,8 +7105,8 @@
           enabled: document.getElementById('advancedEnabled').checked ? 1 : 0,
           bet_min: betMinUsd * 500000,  // 美元转聪
           bet_max: betMaxUsd * 500000,  // 美元转聪
-          reward_multiplier: parseFloat(document.getElementById('advancedRewardMultiplier').value) || 4.0,
-          penalty_weight_factor: parseFloat(document.getElementById('advancedPenaltyFactor').value) || 2.0,
+          reward_multiplier: 1.0,  // ❌ 固定为1.0，不再使用倍率放大
+          penalty_weight_factor: 1.0,  // ❌ 固定为1.0，不再使用倍率放大
           rtp_target: 0.88,  // 保留字段以兼容数据库
           ticket_valid_hours: parseInt(document.getElementById('advancedTicketValidHours').value) || 24,
           session_valid_hours: parseInt(document.getElementById('advancedSessionValidHours').value) || 24,
@@ -9342,6 +9775,77 @@
       }
     }
     
+    // 计算至尊场概率
+    async function calculateSupremeProbability() {
+      const weightConfigId = document.getElementById('supremeWeightConfigId').value;
+      const rewardSchemeId = document.getElementById('supremeRewardSchemeId').value;
+      
+      if (!weightConfigId || !rewardSchemeId) {
+        document.getElementById('supremeProbabilityDisplay').classList.add('hidden');
+        return;
+      }
+      
+      const method = document.querySelector('input[name="supremeCalcMethod"]:checked').value;
+      const displayDiv = document.getElementById('supremeProbabilityDisplay');
+      const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
+      
+      // 🔥 检查缓存
+      if (probabilityCache.has(cacheKey)) {
+        console.log('[缓存命中] 使用缓存的概率数据');
+        const cachedResult = probabilityCache.get(cacheKey);
+        renderProbabilityDisplay('supremeProbabilityDisplay', cachedResult);
+        return;
+      }
+      
+      // 🔄 显示计算中状态（带进度条）
+      let progressPercent = 0;
+      const progressInterval = method === 'monte-carlo' ? setInterval(() => {
+        if (progressPercent < 95) {
+          progressPercent += Math.random() * 10;
+          if (progressPercent > 95) progressPercent = 95;
+          updateProgressBar(displayDiv, progressPercent, method);
+        }
+      }, 200) : null;
+      
+      updateProgressBar(displayDiv, 0, method);
+      displayDiv.classList.remove('hidden');
+      
+      try {
+        const res = await fetch('/api/admin/calculate-probability', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            weight_config_id: parseInt(weightConfigId),
+            reward_scheme_id: parseInt(rewardSchemeId),
+            method: method,
+            simulation_count: method === 'monte-carlo' ? 1000000 : undefined
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (progressInterval) {
+          clearInterval(progressInterval);
+          updateProgressBar(displayDiv, 100, method);
+        }
+        
+        if (data.success) {
+          const result = data.data;
+          // 🔥 缓存结果
+          probabilityCache.set(cacheKey, result);
+          setTimeout(() => {
+            renderProbabilityDisplay('supremeProbabilityDisplay', result);
+          }, 300);
+        } else {
+          displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败: ${data.message}</div>`;
+        }
+      } catch (error) {
+        if (progressInterval) clearInterval(progressInterval);
+        console.error('计算概率失败:', error);
+        displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败，请重试</div>`;
+      }
+    }
+    
     async function saveSupremeConfig() {
       try {
         const config = {
@@ -9377,7 +9881,8 @@
         
         if (data.success) {
           showToast('至尊场配置已保存', 'success');
-          loadSupremeConfig(); // 重新加载配置
+          await loadSupremeConfig(); // 重新加载配置
+          await calculateSupremeProbability(); // 🔥 重新计算概率
         } else {
           showToast(data.message || '保存失败', 'error');
         }

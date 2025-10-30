@@ -3241,5 +3241,50 @@ app.get('/supreme/drop-records', requireAdmin, async (c) => {
     }
 });
 
+// ========== 概率计算 API ==========
+
+/**
+ * 计算规则概率和RTP
+ */
+app.post('/calculate-probability', requireAdmin, async (c) => {
+    try {
+        const { weight_config_id, reward_scheme_id, method, simulation_count } = await c.req.json();
+
+        if (!weight_config_id || !reward_scheme_id) {
+            return c.json({
+                success: false,
+                message: '缺少必要参数'
+            }, 400);
+        }
+
+        const { calculateProbabilityMonteCarlo, calculateProbabilityFast } = await import('../services/probability-calculator');
+
+        let result;
+        if (method === 'monte-carlo') {
+            result = calculateProbabilityMonteCarlo(
+                weight_config_id,
+                reward_scheme_id,
+                simulation_count || 1000000
+            );
+        } else {
+            result = calculateProbabilityFast(
+                weight_config_id,
+                reward_scheme_id
+            );
+        }
+
+        return c.json({
+            success: true,
+            data: result
+        });
+    } catch (error: any) {
+        console.error('[概率计算] 失败:', error);
+        return c.json({
+            success: false,
+            message: '计算失败: ' + error.message
+        }, 500);
+    }
+});
+
 export default app;
 

@@ -349,6 +349,16 @@ supreme.get('/rules', requireAuth, async (c) => {
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
+        // 🔥 使用快速计算获取概率
+        const { calculateProbabilityFast } = await import('../services/probability-calculator');
+        let probabilityData;
+        try {
+            probabilityData = calculateProbabilityFast(weightConfigId, schemeId);
+        } catch (e) {
+            console.error('[至尊场规则概率] 计算失败:', e);
+            probabilityData = null;
+        }
+
         // 计算权重总和
         const totalWeight = weightConfig
             ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
@@ -360,19 +370,32 @@ supreme.get('/rules', requireAuth, async (c) => {
         const lshSingleProb = lshWeight / totalWeight;
         const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
 
+        // 🔥 将概率数据附加到规则上
+        const rulesWithProb = rules.filter(r => r.is_active).map(r => {
+            const probData = probabilityData?.rules.find(p => p.ruleName === r.rule_name);
+            return {
+                ...r,
+                probability: probData ? probData.probability.toFixed(2) + '%' : '计算中'
+            };
+        });
+        
+        const punishmentsWithProb = punishments.filter(p => p.is_active).map(p => {
+            const probData = probabilityData?.punishments.find(pr => pr.ruleName === `律师函×${p.lsh_count}`);
+            return {
+                ...p,
+                probability: probData ? probData.probability.toFixed(2) + '%' : lshAtLeastOneProb.toFixed(2) + '%'
+            };
+        });
+
         return c.json({
             success: true,
             data: {
                 mode: 'supreme',
                 in_supreme_mode: inSupremeMode,
-                rules: rules.filter(r => r.is_active).map(r => ({
-                    ...r,
-                    probability: '需模拟计算'
-                })),
-                punishments: punishments.filter(p => p.is_active).map(p => ({
-                    ...p,
-                    probability: lshAtLeastOneProb.toFixed(2) + '%'
-                })),
+                rules: rulesWithProb,
+                punishments: punishmentsWithProb,
+                noWinProbability: probabilityData ? probabilityData.noWin.probability.toFixed(2) + '%' : null,
+                rtp: probabilityData ? probabilityData.rtp.toFixed(2) + '%' : null,
                 weightConfig: weightConfig,
                 totalWeight: totalWeight,
                 config: {

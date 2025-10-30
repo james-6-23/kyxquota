@@ -424,14 +424,15 @@ slot.post('/spin', requireAuth, async (c) => {
         // 计算中奖结果（使用配置方案，高级场使用严格连续判定）
         const result = calculateWinByScheme(symbols, schemeId, inAdvancedMode);
         
-        // 🔥 应用场次倍率（高级场放大奖励和惩罚）
-        if (inAdvancedMode) {
-            if (result.multiplier > 0) {
-                result.multiplier = result.multiplier * rewardMultiplier;
-            } else if (result.multiplier < 0) {
-                result.multiplier = result.multiplier * penaltyMultiplier;
-            }
-        }
+        // ❌ 已移除场次倍率应用
+        // 现在每个场次使用独立的奖励配置方案，不再基于初级场翻倍
+        // if (inAdvancedMode) {
+        //     if (result.multiplier > 0) {
+        //         result.multiplier = result.multiplier * rewardMultiplier;
+        //     } else if (result.multiplier < 0) {
+        //         result.multiplier = result.multiplier * penaltyMultiplier;
+        //     }
+        // }
 
         // 🔥 检查并应用坤呗buff
         const kunbeiBuff = getAndUseBuff(session.linux_do_id);
@@ -1448,6 +1449,16 @@ slot.get('/rules', requireAuth, async (c) => {
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const weightConfig = weightConfigQueries.getById.get(weightConfigId);
         
+        // 🔥 使用快速计算获取概率
+        const { calculateProbabilityFast } = await import('../services/probability-calculator');
+        let probabilityData;
+        try {
+            probabilityData = calculateProbabilityFast(weightConfigId, schemeId);
+        } catch (e) {
+            console.error('[规则概率] 计算失败:', e);
+            probabilityData = null;
+        }
+        
         // 计算权重总和
         const totalWeight = weightConfig 
             ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j + 
@@ -1459,19 +1470,32 @@ slot.get('/rules', requireAuth, async (c) => {
         const lshSingleProb = lshWeight / totalWeight;
         const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
         
+        // 🔥 将概率数据附加到规则上
+        const rulesWithProb = rules.filter(r => r.is_active).map(r => {
+            const probData = probabilityData?.rules.find(p => p.ruleName === r.rule_name);
+            return {
+                ...r,
+                probability: probData ? probData.probability.toFixed(2) + '%' : '计算中'
+            };
+        });
+        
+        const punishmentsWithProb = punishments.filter(p => p.is_active).map(p => {
+            const probData = probabilityData?.punishments.find(pr => pr.ruleName === `律师函×${p.lsh_count}`);
+            return {
+                ...p,
+                probability: probData ? probData.probability.toFixed(2) + '%' : lshAtLeastOneProb.toFixed(2) + '%'
+            };
+        });
+        
         return c.json({
             success: true,
             data: {
                 mode: inAdvancedMode ? 'advanced' : 'normal',
                 in_advanced_mode: inAdvancedMode,  // 🔥 添加场次状态标识
-                rules: rules.filter(r => r.is_active).map(r => ({
-                    ...r,
-                    probability: '计算中'  // TODO: 实际概率计算需要模拟大量游戏
-                })),
-                punishments: punishments.filter(p => p.is_active).map(p => ({
-                    ...p,
-                    probability: lshAtLeastOneProb.toFixed(2) + '%'
-                })),
+                rules: rulesWithProb,
+                punishments: punishmentsWithProb,
+                noWinProbability: probabilityData ? probabilityData.noWin.probability.toFixed(2) + '%' : null,
+                rtp: probabilityData ? probabilityData.rtp.toFixed(2) + '%' : null,
                 weightConfig: weightConfig,
                 totalWeight: totalWeight
             }
