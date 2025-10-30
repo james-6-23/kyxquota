@@ -6581,6 +6581,10 @@
           if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
             if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
           }
+          // 🔥 初级场：如果有至尊令牌或碎片，显示至尊令牌横条
+          if (supremeTokensData && (supremeTokensData.tokens > 0 || supremeTokensData.fragments > 0)) {
+            if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
+          }
         }
       } catch (error) {
         console.error('[updateModeTitles] 错误:', error);
