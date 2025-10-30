@@ -2188,7 +2188,15 @@
       slotModal.classList.add('hidden');
       slotModal.classList.remove('fade-exit');
       
+      // 确保 loadingPage 完全隐藏
+      const loadingPage = document.getElementById('loadingPage');
+      if (loadingPage) {
+        loadingPage.style.display = 'none';
+        loadingPage.classList.add('hidden');
+      }
+      
       mainSection.classList.remove('hidden');
+      mainSection.style.display = 'block';  // 强制显示
       mainSection.classList.add('fade-enter');
       
       // 触发进入动画
@@ -6706,7 +6714,11 @@
       const isOAuthCallback = document.referrer.includes('connect.linux.do') || sessionStorage.getItem('oauth_loading');
 
       if (!isOAuthCallback) {
-        document.getElementById('loadingPage').classList.add('hidden');
+        const loadingPage = document.getElementById('loadingPage');
+        if (loadingPage) {
+          loadingPage.style.display = 'none';  // 强制隐藏
+          loadingPage.classList.add('hidden');
+        }
       }
 
       try {
@@ -6714,7 +6726,12 @@
         const data = await res.json();
         
         if (res.ok) {
-          document.getElementById('loadingPage').classList.add('hidden');
+          // 确保 loadingPage 完全隐藏
+          const loadingPage = document.getElementById('loadingPage');
+          if (loadingPage) {
+            loadingPage.style.display = 'none';  // 强制隐藏
+            loadingPage.classList.add('hidden');
+          }
           
           // 恢复之前的模式
           const restoredMode = restoreMode();
@@ -6722,6 +6739,13 @@
           
           if (restoredMode === 'entertain') {
             // 如果之前在老虎机页面，直接打开老虎机
+            // 确保 loadingPage 完全隐藏
+            const loadingPageEnt = document.getElementById('loadingPage');
+            if (loadingPageEnt) {
+              loadingPageEnt.style.display = 'none';  // 强制隐藏
+              loadingPageEnt.classList.add('hidden');
+            }
+            
             document.getElementById('mainSection').classList.add('hidden');
             await loadQuota();
             updateSwitchButtons('entertain');
@@ -6730,7 +6754,19 @@
             loadPendingRewardsSummary();
           } else {
             // 默认显示加油站
-            document.getElementById('mainSection').classList.remove('hidden');
+            // 确保 loadingPage 完全隐藏
+            const loadingPage = document.getElementById('loadingPage');
+            if (loadingPage) {
+              loadingPage.style.display = 'none';  // 强制隐藏
+              loadingPage.classList.add('hidden');
+            }
+            
+            const mainSection = document.getElementById('mainSection');
+            if (mainSection) {
+              mainSection.classList.remove('hidden');
+              mainSection.style.display = 'block';  // 强制显示
+            }
+            
             await loadQuota();
             updateSwitchButtons('refuel');
             // 加载待发放记录统计
@@ -6743,18 +6779,34 @@
           }
         } else if (res.status === 403 && data.banned) {
           // 用户被封禁
-          document.getElementById('loadingPage').classList.add('hidden');
+          const loadingPage = document.getElementById('loadingPage');
+          if (loadingPage) {
+            loadingPage.style.display = 'none';  // 强制隐藏
+            loadingPage.classList.add('hidden');
+          }
           document.getElementById('loginSection').classList.remove('hidden');
           alert('⚠️ ' + data.message);
         } else if (res.status === 400) {
-          document.getElementById('loadingPage').classList.add('hidden');
+          const loadingPage = document.getElementById('loadingPage');
+          if (loadingPage) {
+            loadingPage.style.display = 'none';  // 强制隐藏
+            loadingPage.classList.add('hidden');
+          }
           document.getElementById('bindSection').classList.remove('hidden');
         } else {
-          document.getElementById('loadingPage').classList.add('hidden');
+          const loadingPage = document.getElementById('loadingPage');
+          if (loadingPage) {
+            loadingPage.style.display = 'none';  // 强制隐藏
+            loadingPage.classList.add('hidden');
+          }
           document.getElementById('loginSection').classList.remove('hidden');
         }
       } catch (e) {
-        document.getElementById('loadingPage').classList.add('hidden');
+        const loadingPage = document.getElementById('loadingPage');
+        if (loadingPage) {
+          loadingPage.style.display = 'none';  // 强制隐藏
+          loadingPage.classList.add('hidden');
+        }
         document.getElementById('loginSection').classList.remove('hidden');
       }
     };
