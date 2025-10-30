@@ -2585,11 +2585,10 @@ app.get('/weights', requireAdmin, async (c) => {
         // 获取每个配置的使用情况
         const configsWithUsage = configs.map((config: any) => {
             const usageInfo = weightConfigQueries.getUsageInfo.get(config.id, config.id, config.id);
-            const usageCount = usageInfo?.usage_count || 0;
-
-            // 查询具体使用场次
-            const { slotQueries, advancedSlotQueries, supremeSlotQueries } = weightConfigQueries;
-            // 简化：通过数据库查询获取使用场次
+            let usageCount = usageInfo?.usage_count || 0;
+            
+            // 🔥 修复：usage_count 可能会累加重复，取最大值为3（初级、高级、至尊）
+            usageCount = Math.min(usageCount, 3);
 
             return {
                 ...config,
@@ -2745,12 +2744,16 @@ app.get('/rewards/schemes', requireAdmin, async (c) => {
             const rules = rewardConfigQueries.getRulesByScheme.all(scheme.id);
             const punishments = rewardConfigQueries.getPunishmentsByScheme.all(scheme.id);
             const usageInfo = rewardConfigQueries.getSchemeUsageInfo.get(scheme.id, scheme.id, scheme.id);
+            
+            // 🔥 修复：usage_count 可能累加重复，限制最大为3
+            let usageCount = usageInfo?.usage_count || 0;
+            usageCount = Math.min(usageCount, 3);
 
             return {
                 ...scheme,
                 rules_count: rules.length,
                 has_punishment: punishments.length > 0,
-                usage_count: usageInfo?.usage_count || 0
+                usage_count: usageCount
             };
         });
 

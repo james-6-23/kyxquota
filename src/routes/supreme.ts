@@ -188,9 +188,22 @@ supreme.post('/spin', requireAuth, async (c) => {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
-        // TODO: 获取用户当前额度（需要从缓存或API获取）
-        // 这里需要集成 getUserQuota 或类似功能
-        // 暂时先继续实现逻辑
+        // 🔥 获取用户当前额度
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({ success: false, message: '系统配置未找到' }, 500);
+        }
+
+        const { getUserQuota } = await import('../services/kyx-api');
+        const userQuota = getUserQuota(user.kyx_user_id);
+
+        // 检查额度是否足够
+        if (userQuota < betAmount) {
+            return c.json({
+                success: false,
+                message: `额度不足，当前额度: $${(userQuota / 500000).toFixed(2)}，需要: $${(betAmount / 500000).toFixed(2)}`
+            }, 400);
+        }
 
         // 生成符号
         const symbols = generateSupremeSymbols();
@@ -208,25 +221,7 @@ supreme.post('/spin', requireAuth, async (c) => {
             winAmount = Math.floor(betAmount * winResult.multiplier);
         }
 
-        // 记录游戏
-        recordSupremeGame(
-            session.linux_do_id!,
-            session.username || user.username,
-            session.username || null,
-            betAmount,
-            symbols,
-            winResult.winType,
-            winResult.multiplier,
-            winAmount
-        );
-
-        // 处理额度变化
-        const adminConfig = adminQueries.get.get();
-        if (!adminConfig) {
-            return c.json({ success: false, message: '系统配置未找到' }, 500);
-        }
-
-        // 扣除投注
+        // 🔥 先扣除投注（投注必须成功才能记录游戏）
         const deductResult = await updateKyxUserQuota(
             user.kyx_user_id,
             -betAmount,
@@ -242,6 +237,18 @@ supreme.post('/spin', requireAuth, async (c) => {
                 message: '扣除投注失败: ' + deductResult.message
             }, 500);
         }
+
+        // 记录游戏
+        recordSupremeGame(
+            session.linux_do_id!,
+            session.username || user.username,
+            session.username || null,
+            betAmount,
+            symbols,
+            winResult.winType,
+            winResult.multiplier,
+            winAmount
+        );
 
         let quotaAfter = deductResult.quota;
 
@@ -314,6 +321,67 @@ supreme.get('/records', requireAuth, async (c) => {
     } catch (error: any) {
         console.error('[至尊场] 获取记录失败:', error);
         return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 获取至尊场游戏规则（用于前端展示）
+ */
+supreme.get('/rules', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+
+        // 检查是否在至尊场
+        const inSupremeMode = isInSupremeMode(session.linux_do_id!);
+
+        // 获取配置
+        const config = getSupremeSlotConfig();
+        const schemeId = config.reward_scheme_id || 1;
+        const weightConfigId = config.weight_config_id || 1;
+
+        // 获取规则和惩罚
+        const { rewardConfigQueries, weightConfigQueries } = await import('../database');
+        const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
+        const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
+        const weightConfig = weightConfigQueries.getById.get(weightConfigId);
+
+        // 计算权重总和
+        const totalWeight = weightConfig
+            ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
+                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + weightConfig.weight_lsh)
+            : 825;
+
+        // 计算律师函概率
+        const lshWeight = weightConfig?.weight_lsh || 25;
+        const lshSingleProb = lshWeight / totalWeight;
+        const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
+
+        return c.json({
+            success: true,
+            data: {
+                mode: 'supreme',
+                in_supreme_mode: inSupremeMode,
+                rules: rules.filter(r => r.is_active).map(r => ({
+                    ...r,
+                    probability: '需模拟计算'
+                })),
+                punishments: punishments.filter(p => p.is_active).map(p => ({
+                    ...p,
+                    probability: lshAtLeastOneProb.toFixed(2) + '%'
+                })),
+                weightConfig: weightConfig,
+                totalWeight: totalWeight,
+                config: {
+                    min_bet: config.min_bet_amount / 500000,
+                    max_bet: config.max_bet_amount / 500000,
+                    daily_entry_limit: config.daily_entry_limit,
+                    session_valid_hours: config.session_valid_hours
+                }
+            }
+        });
+    } catch (error: any) {
+        console.error('[至尊场规则] 获取失败:', error);
+        return c.json({ success: false, message: '获取规则失败' }, 500);
     }
 });
 

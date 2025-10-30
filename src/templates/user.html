@@ -1081,6 +1081,11 @@
           📖 查看游戏规则
         </button>
         
+        <!-- 💎 至尊场规则按钮（在至尊场模式下显示）-->
+        <button id="supremeRulesButton" onclick="showSupremeRules()" class="hidden mt-4 sm:mt-6 text-amber-300/90 hover:text-amber-200 text-sm sm:text-base transition-colors font-bold">
+          💎 至尊场规则
+        </button>
+        
         <!-- 🔥 投注限额进度条（仅高级场显示，在规则按钮下方）-->
         <div id="dailyBetLimitBar" class="hidden mt-6 max-w-xl mx-auto">
           <div class="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3">
@@ -1857,6 +1862,28 @@
     </div>
   </div>
 
+  <!-- 💎 至尊场规则弹窗 -->
+  <div id="supremeRulesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
+    <div class="bg-gradient-to-br from-purple-900 to-pink-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border-2 border-amber-400">
+      <div class="flex justify-between items-center p-6 border-b border-amber-400/30 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500">
+        <h2 class="text-2xl font-bold text-white flex items-center gap-2">
+          <span>💎</span>
+          <span>至尊场游戏规则</span>
+        </h2>
+        <button onclick="closeSupremeRules()" class="text-white hover:text-amber-200 transition-colors">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto max-h-[calc(90vh-100px)] bg-gradient-to-b from-purple-900/50 to-black/50">
+        <div id="supremeRulesDisplay" class="space-y-4 text-white">
+          <div class="text-center text-amber-300 py-4">加载中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- 老虎机规则弹窗 -->
   <div id="slotRulesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
@@ -1870,6 +1897,13 @@
       </div>
       <div class="p-8 overflow-y-auto max-h-[calc(90vh-100px)]">
         <div class="space-y-6">
+          <!-- 🔥 当前场次规则（动态加载）-->
+          <div id="currentRulesDisplay" class="mb-6">
+            <div class="text-center text-slate-400 py-4">加载中...</div>
+          </div>
+          
+          <div class="border-t-2 border-slate-200 my-6"></div>
+          
           <div>
             <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
             <ul class="list-disc list-inside space-y-2 text-slate-700" id="basicRules">
@@ -2898,6 +2932,14 @@
     let advancedBetAmount = 100;     // 高级场投注金额（美元，默认$100）
     let advancedBetMin = 100;        // 高级场最小投注
     let advancedBetMax = 500;        // 高级场最大投注
+    
+    // 💎 至尊场相关变量
+    let supremeTokensData = null;    // 至尊令牌和碎片数据
+    let supremeModeTimer = null;     // 至尊场倒计时定时器
+    let isInSupremeMode = false;     // 是否在至尊场
+    let supremeBetAmount = 1000;     // 至尊场投注金额（坤币，默认1000）
+    let supremeBetMin = 1000;        // 至尊场最小投注
+    let supremeBetMax = 10000;       // 至尊场最大投注
 
     // 🔥 动态生成投注选项按钮
     function generateAdvancedBetOptions(minBet, maxBet) {
@@ -3215,6 +3257,7 @@
         const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
         const normalTitle = document.getElementById('normalModeTitle');
         const advancedTitle = document.getElementById('advancedModeTitle');
+        const supremeBar = document.getElementById('supremeTokenBar');
         
         // 先设置初级场元素为平滑隐藏
         if (normalSpinsDisplay) {
@@ -3244,11 +3287,17 @@
           betSelector.classList.remove('hidden');
           if (advancedTitle) advancedTitle.classList.remove('hidden');
           
+          // 🔥 在高级场模式下显示至尊场令牌栏
+          if (supremeBar) {
+            supremeBar.classList.remove('hidden');
+          }
+          
           // 触发平滑显示
           requestAnimationFrame(() => {
             modeIndicator.classList.add('smooth-show');
             betSelector.classList.add('smooth-show');
             if (advancedTitle) advancedTitle.classList.add('smooth-show');
+            if (supremeBar) supremeBar.classList.add('smooth-show');
           });
         }, 150);
         
@@ -3287,16 +3336,23 @@
         const normalSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
         const normalTitle = document.getElementById('normalModeTitle');
         const advancedTitle = document.getElementById('advancedModeTitle');
+        const supremeBar = document.getElementById('supremeTokenBar');
         
         // 先设置高级场元素为平滑隐藏
         modeIndicator.classList.add('smooth-hide');
         betSelector.classList.add('smooth-hide');
         if (advancedTitle) advancedTitle.classList.add('smooth-hide');
         
+        // 🔥 退出高级场时也隐藏至尊场令牌栏
+        if (supremeBar && !isInSupremeMode) {
+          supremeBar.classList.add('smooth-hide');
+        }
+        
         setTimeout(() => {
           modeIndicator.classList.add('hidden');
           betSelector.classList.add('hidden');
           if (advancedTitle) advancedTitle.classList.add('hidden');
+          if (supremeBar && !isInSupremeMode) supremeBar.classList.add('hidden');
         }, 300);
         
         // 延迟显示初级场元素（等待高级场元素隐藏）
@@ -5165,7 +5221,70 @@
     }
 
     // 显示游戏规则
-    function showSlotRules() {
+    async function showSlotRules() {
+      // 🔥 加载当前场次的实际配置规则
+      try {
+        const res = await fetch('/api/slot/rules');
+        const data = await res.json();
+        
+        if (data.success) {
+          const { mode, rules, punishments, weightConfig, totalWeight } = data.data;
+          
+          // 更新规则列表显示
+          const rulesContainer = document.getElementById('currentRulesDisplay');
+          if (rulesContainer) {
+            const modeText = mode === 'advanced' ? '🔥 高级场模式' : '🎰 初级场模式';
+            
+            let rulesHTML = `
+              <div class="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                <h4 class="font-bold text-blue-900 mb-2">当前场次：${modeText}</h4>
+                <p class="text-sm text-blue-800">以下是当前场次实际生效的中奖规则</p>
+              </div>
+            `;
+            
+            if (rules.length > 0) {
+              rulesHTML += '<div class="space-y-2">';
+              rules.forEach((rule, index) => {
+                rulesHTML += `
+                  <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3">
+                    <div class="flex justify-between items-center">
+                      <span class="font-bold text-slate-900">${index + 1}. ${rule.rule_name}</span>
+                      <span class="text-green-600 font-bold text-lg">${rule.win_multiplier}x</span>
+                    </div>
+                    ${rule.description ? `<p class="text-xs text-slate-600 mt-1">${rule.description}</p>` : ''}
+                  </div>
+                `;
+              });
+              rulesHTML += '</div>';
+            } else {
+              rulesHTML += '<div class="text-center py-4 text-slate-500">当前场次没有配置中奖规则</div>';
+            }
+            
+            // 显示律师函惩罚
+            if (punishments.length > 0) {
+              rulesHTML += '<div class="mt-4"><h4 class="font-bold text-red-900 mb-2">⚖️ 律师函惩罚</h4>';
+              rulesHTML += '<div class="space-y-2">';
+              punishments.forEach(p => {
+                rulesHTML += `
+                  <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                    <div class="flex justify-between items-center">
+                      <span class="text-red-900 font-semibold">${p.lsh_count}个律师函</span>
+                      <span class="text-red-600 font-bold">扣除${p.deduct_multiplier}倍</span>
+                    </div>
+                    ${p.ban_hours > 0 ? `<p class="text-xs text-red-600 mt-1">封禁${p.ban_hours}小时</p>` : ''}
+                  </div>
+                `;
+              });
+              rulesHTML += '</div></div>';
+            }
+            
+            rulesContainer.innerHTML = rulesHTML;
+          }
+        }
+      } catch (error) {
+        console.error('[游戏规则] 加载失败:', error);
+      }
+      
       // 更新规则中的动态配置显示
       if (slotConfig) {
         const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
@@ -5233,7 +5352,168 @@
     function closeSlotRules() {
       document.getElementById('slotRulesModal').classList.add('hidden');
     }
-
+    
+    // 💎 显示至尊场游戏规则
+    async function showSupremeRules() {
+      try {
+        const res = await fetch('/api/supreme/rules');
+        const data = await res.json();
+        
+        if (data.success) {
+          const { mode, in_supreme_mode, rules, punishments, weightConfig, totalWeight, config } = data.data;
+          
+          const rulesContainer = document.getElementById('supremeRulesDisplay');
+          if (!rulesContainer) return;
+          
+          let html = `
+            <div class="bg-gradient-to-r from-amber-500/20 to-purple-500/20 backdrop-blur-md rounded-xl p-5 border-2 border-amber-400/50 mb-6">
+              <div class="flex items-center justify-center gap-3 mb-3">
+                <span class="text-3xl">💎</span>
+                <h3 class="text-2xl font-bold text-amber-300">至尊场</h3>
+                <span class="text-3xl">💎</span>
+              </div>
+              <p class="text-center text-amber-200 text-sm">超高倍率 · 顶级奖励 · 至尊体验</p>
+            </div>
+            
+            <div class="bg-purple-900/50 rounded-xl p-4 mb-4 border border-purple-500/30">
+              <h4 class="font-bold text-amber-300 mb-3 text-lg">⚙️ 基础配置</h4>
+              <div class="grid grid-cols-2 gap-3 text-sm">
+                <div class="bg-black/30 p-3 rounded-lg">
+                  <p class="text-purple-300">投注范围</p>
+                  <p class="text-white font-bold">$${config.min_bet} - $${config.max_bet}</p>
+                </div>
+                <div class="bg-black/30 p-3 rounded-lg">
+                  <p class="text-purple-300">每日进入</p>
+                  <p class="text-white font-bold">${config.daily_entry_limit}次</p>
+                </div>
+                <div class="bg-black/30 p-3 rounded-lg col-span-2">
+                  <p class="text-purple-300">会话时长</p>
+                  <p class="text-white font-bold">${config.session_valid_hours}小时</p>
+                </div>
+              </div>
+            </div>
+          `;
+          
+          // 显示中奖规则
+          if (rules.length > 0) {
+            html += '<div class="bg-green-900/30 rounded-xl p-4 mb-4 border border-green-500/30">';
+            html += '<h4 class="font-bold text-green-300 mb-3 text-lg">🎁 中奖规则</h4>';
+            html += '<div class="space-y-2">';
+            
+            rules.forEach((rule, index) => {
+              html += `
+                <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/40 rounded-lg p-3">
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                      <span class="text-amber-300 font-bold">${index + 1}.</span>
+                      <span class="text-white font-bold">${rule.rule_name}</span>
+                    </div>
+                    <span class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</span>
+                  </div>
+                  ${rule.description ? `<p class="text-sm text-green-200/70 mt-1 ml-6">${rule.description}</p>` : ''}
+                  ${rule.grant_free_spin > 0 ? `<p class="text-xs text-amber-300 mt-1 ml-6">🎁 赠送${rule.grant_free_spin}次免费</p>` : ''}
+                </div>
+              `;
+            });
+            
+            html += '</div></div>';
+          } else {
+            html += `
+              <div class="bg-yellow-900/30 rounded-xl p-6 mb-4 border border-yellow-500/30 text-center">
+                <p class="text-yellow-300 font-bold">⚠️ 当前至尊场没有配置中奖规则</p>
+                <p class="text-yellow-200/70 text-sm mt-2">请联系管理员配置</p>
+              </div>
+            `;
+          }
+          
+          // 显示律师函惩罚
+          if (punishments.length > 0) {
+            html += '<div class="bg-red-900/30 rounded-xl p-4 mb-4 border border-red-500/30">';
+            html += '<h4 class="font-bold text-red-300 mb-3 text-lg">⚖️ 律师函惩罚</h4>';
+            html += '<div class="space-y-2">';
+            
+            punishments.forEach(p => {
+              html += `
+                <div class="bg-red-500/20 border border-red-400/40 rounded-lg p-3">
+                  <div class="flex justify-between items-center">
+                    <span class="text-red-200 font-semibold">${p.lsh_count}个律师函</span>
+                    <span class="text-red-300 font-bold">扣除${p.deduct_multiplier}倍</span>
+                  </div>
+                  <div class="text-xs text-red-200/70 mt-1">
+                    ${p.ban_hours > 0 ? `🔒 封禁${p.ban_hours}小时` : '不封禁'}
+                    <span class="mx-2">·</span>
+                    概率: ${p.probability}
+                  </div>
+                </div>
+              `;
+            });
+            
+            html += '</div></div>';
+          }
+          
+          // 显示符号权重
+          if (weightConfig) {
+            html += '<div class="bg-blue-900/30 rounded-xl p-4 border border-blue-500/30">';
+            html += '<h4 class="font-bold text-blue-300 mb-3 text-lg">⚖️ 符号权重配置</h4>';
+            html += '<div class="grid grid-cols-3 gap-2 text-xs">';
+            
+            const symbols = [
+              { key: 'm', name: '美', weight: weightConfig.weight_m },
+              { key: 't', name: '坤', weight: weightConfig.weight_t },
+              { key: 'n', name: '你', weight: weightConfig.weight_n },
+              { key: 'j', name: '太', weight: weightConfig.weight_j },
+              { key: 'lq', name: '鲤鱼', weight: weightConfig.weight_lq },
+              { key: 'bj', name: '背景', weight: weightConfig.weight_bj },
+              { key: 'zft', name: '真粉头', weight: weightConfig.weight_zft },
+              { key: 'bdk', name: '不打工', weight: weightConfig.weight_bdk },
+              { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh }
+            ];
+            
+            symbols.forEach(s => {
+              const prob = ((s.weight / totalWeight) * 100).toFixed(2);
+              const isLsh = s.key === 'lsh';
+              html += `
+                <div class="${isLsh ? 'bg-red-500/20 border-red-400/50' : 'bg-blue-500/20 border-blue-400/50'} border rounded-lg p-2">
+                  <div class="${isLsh ? 'text-red-300' : 'text-blue-200'} font-medium">${s.name}</div>
+                  <div class="text-white font-bold">${s.weight}</div>
+                  <div class="${isLsh ? 'text-red-200/70' : 'text-blue-200/70'}">${prob}%</div>
+                </div>
+              `;
+            });
+            
+            html += '</div>';
+            html += `<p class="text-xs text-blue-200/70 mt-3 text-center">总权重: ${totalWeight}</p>`;
+            html += '</div>';
+          }
+          
+          // 提示信息
+          html += `
+            <div class="bg-amber-500/20 border-2 border-amber-400/50 rounded-xl p-4">
+              <p class="font-bold text-amber-300 mb-2">💡 温馨提示</p>
+              <ul class="text-sm text-amber-200 space-y-1">
+                <li>• 至尊场需要消耗至尊令牌进入</li>
+                <li>• 每次会话时长有限，请合理安排</li>
+                <li>• 投注金额可自定义选择</li>
+                <li>• 理性游戏，适度娱乐！</li>
+              </ul>
+            </div>
+          `;
+          
+          rulesContainer.innerHTML = html;
+        }
+      } catch (error) {
+        console.error('[至尊场规则] 加载失败:', error);
+        showToast('加载规则失败', 'error');
+      }
+      
+      document.getElementById('supremeRulesModal').classList.remove('hidden');
+    }
+    
+    // 💎 关闭至尊场规则
+    function closeSupremeRules() {
+      document.getElementById('supremeRulesModal').classList.add('hidden');
+    }
+    
     // 显示排行榜
     async function showLeaderboard() {
       try {
@@ -5686,14 +5966,6 @@
 
     // ========== 💎 至尊场系统 ==========
     
-    // 💎 至尊场相关变量
-    let supremeTokensData = null;      // 至尊令牌数据
-    let supremeModeTimer = null;       // 至尊场倒计时定时器
-    let isInSupremeMode = false;       // 是否在至尊场
-    let supremeBetAmount = 1000;       // 至尊场投注金额（坤币，默认1000）
-    let supremeBetMin = 1000;          // 最小投注
-    let supremeBetMax = 10000;         // 最大投注
-    
     // 💎 加载至尊令牌信息
     async function loadSupremeTokens() {
       try {
@@ -5748,11 +6020,15 @@
       if (todayEntry) todayEntry.textContent = today_entry_count || 0;
       if (dailyLimit) dailyLimit.textContent = config?.daily_entry_limit || 3;
       
-      // 显示/隐藏令牌栏（只有拥有碎片或令牌时才显示）
-      if ((tokens > 0 || fragments > 0 || in_supreme_mode) && tokenBar) {
-        tokenBar.classList.remove('hidden');
-      } else if (tokenBar) {
-        tokenBar.classList.add('hidden');
+      // 🔥 显示/隐藏令牌栏
+      // 在高级场模式下始终显示（让用户看到至尊场入口）
+      // 在初级场模式下，只有拥有碎片或令牌时才显示
+      if (tokenBar) {
+        if (isInAdvancedMode || tokens > 0 || fragments > 0 || in_supreme_mode) {
+          tokenBar.classList.remove('hidden');
+        } else {
+          tokenBar.classList.add('hidden');
+        }
       }
       
       // 更新合成按钮状态
@@ -5806,6 +6082,8 @@
       const modeTitle = document.getElementById('supremeModeTitle');
       const normalModeTitle = document.getElementById('normalModeTitle');
       const advancedModeTitle = document.getElementById('advancedModeTitle');
+      const normalRulesBtn = document.querySelector('button[onclick="showSlotRules()"]');
+      const supremeRulesBtn = document.getElementById('supremeRulesButton');
       
       if (in_supreme_mode) {
         isInSupremeMode = true;
@@ -5813,6 +6091,10 @@
         if (modeTitle) modeTitle.classList.remove('hidden');
         if (normalModeTitle) normalModeTitle.classList.add('hidden');
         if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        
+        // 🔥 至尊场模式下：显示至尊场规则按钮，隐藏普通规则按钮
+        if (supremeRulesBtn) supremeRulesBtn.classList.remove('hidden');
+        if (normalRulesBtn) normalRulesBtn.classList.add('hidden');
         
         // 更新投注范围
         if (config) {
@@ -5829,6 +6111,11 @@
         isInSupremeMode = false;
         if (betSelector) betSelector.classList.add('hidden');
         if (modeTitle) modeTitle.classList.add('hidden');
+        
+        // 🔥 退出至尊场：显示普通规则按钮，隐藏至尊场规则按钮
+        if (supremeRulesBtn) supremeRulesBtn.classList.add('hidden');
+        if (normalRulesBtn) normalRulesBtn.classList.remove('hidden');
+        
         stopSupremeModeTimer();
       }
     }
@@ -5894,6 +6181,8 @@
             fetch('/api/slot/config').then(res => res.json())
           ]);
           
+          // 🔥 更新至尊场UI显示
+          updateSupremeTokensUI();
           updateSlotUI();
         } else {
           showToast(data.message, 'error');
@@ -5904,6 +6193,71 @@
       } finally {
         btn.disabled = false;
         btn.innerHTML = originalText;
+      }
+    }
+    
+    // 💎 至尊场旋转
+    async function spinSupremeSlot() {
+      if (!isInSupremeMode) {
+        showToast('您还未进入至尊场', 'error');
+        return;
+      }
+      
+      const button = document.getElementById('supremeSpinButton');
+      if (!button || button.disabled) return;
+      
+      button.disabled = true;
+      const originalText = button.innerHTML;
+      button.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="animate-spin">⚙️</span><span>转动中...</span></span>';
+      
+      // 获取当前选择的投注金额（坤币）
+      const betAmount = parseInt(document.getElementById('supremeBetSlider')?.value || '1000') * 500000;
+      
+      try {
+        const res = await fetch('/api/supreme/spin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ betAmount })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          const { symbols, winType, multiplier, winAmount, quotaAfter } = data.data;
+          
+          // 播放转动动画
+          await animateSlotReels(symbols);
+          
+          // 更新用户额度
+          if (slotUserData) {
+            slotUserData.quota = quotaAfter;
+            updateSlotUI();
+          }
+          
+          // 显示中奖结果
+          const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
+          if (multiplier > 0) {
+            playSound('win');
+            showToast(`💎 恭喜中奖！${multiplier}x 赢得 $${winAmountUSD}`, 'success');
+          } else if (multiplier < 0) {
+            playSound('lose');
+            showToast(`⚖️ 律师函惩罚！扣除 $${winAmountUSD}`, 'error');
+          } else {
+            playSound('lose');
+            showToast('未中奖', 'error');
+          }
+          
+          // 重新加载至尊令牌信息
+          await loadSupremeTokens();
+        } else {
+          showToast(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('[至尊场] 旋转失败:', error);
+        showToast('旋转失败，请重试', 'error');
+      } finally {
+        button.disabled = false;
+        button.innerHTML = originalText;
       }
     }
     

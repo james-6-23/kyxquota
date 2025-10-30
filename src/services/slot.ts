@@ -21,13 +21,12 @@ const DEFAULT_SYMBOL_WEIGHTS: Record<string, number> = {
     'lsh': 25  // 中度概率，约2.94%每个位置，至少1个约11.3%
 };
 
-// 从数据库获取符号权重
+// 从数据库获取符号权重（兼容旧代码，新代码请使用 scheme-loader）
 export function getSymbolWeights(isAdvancedMode: boolean = false): Record<string, number> {
     try {
-        // 🔥 高级场使用独立的权重配置
-        const weights = isAdvancedMode
-            ? advancedSlotQueries.getAdvancedWeights.get()
-            : slotQueries.getWeights.get();
+        // 🔥 优先使用配置方案，兼容旧逻辑
+        const { getNormalSlotWeights, getAdvancedSlotWeights } = require('./scheme-loader');
+        const weights = isAdvancedMode ? getAdvancedSlotWeights() : getNormalSlotWeights();
 
         if (weights) {
             return {

@@ -414,14 +414,37 @@ slot.post('/spin', requireAuth, async (c) => {
         // 生成随机符号（高级场使用独立权重配置）
         const symbols = generateSymbols(inAdvancedMode);
 
-        // 计算中奖结果（高级场会放大奖励倍率和惩罚倍率，且双连判定更严格）
-        const result = calculateWin(symbols, rewardMultiplier, penaltyMultiplier, inAdvancedMode);
+        // 🔥 使用配置方案进行中奖判定
+        const { calculateWinByScheme } = await import('../services/reward-calculator');
+        const slotConfig = inAdvancedMode 
+            ? advancedSlotQueries.getAdvancedConfig.get()
+            : slotQueries.getConfig.get();
+        const schemeId = slotConfig?.reward_scheme_id || 1;
+        
+        // 计算中奖结果（使用配置方案，高级场使用严格连续判定）
+        const result = calculateWinByScheme(symbols, schemeId, inAdvancedMode);
+        
+        // 🔥 应用场次倍率（高级场放大奖励和惩罚）
+        if (inAdvancedMode) {
+            if (result.multiplier > 0) {
+                result.multiplier = result.multiplier * rewardMultiplier;
+            } else if (result.multiplier < 0) {
+                result.multiplier = result.multiplier * penaltyMultiplier;
+            }
+        }
 
         // 🔥 检查并应用坤呗buff
         const kunbeiBuff = getAndUseBuff(session.linux_do_id);
         if (kunbeiBuff > 1) {
             console.log(`[坤呗Buff] 应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
             result.multiplier = result.multiplier * kunbeiBuff;
+        }
+        
+        // 🔥 检查是否需要封禁（3个及以上律师函）
+        const shouldBan = result.punishmentCount && result.punishmentCount >= 3;
+        if (shouldBan && result.banHours) {
+            const bannedUntil = Date.now() + (result.banHours * 3600000);
+            banUserFromSlot(session.linux_do_id, bannedUntil);
         }
 
         // 获取管理员配置（用于更新额度）
@@ -573,16 +596,19 @@ slot.post('/spin', requireAuth, async (c) => {
             addUserFreeSpins(session.linux_do_id, 1);
         }
 
-        // 保存游戏记录
+        // 🔥 保存游戏记录（记录 winType，兼容配置方案）
         // 优先使用session中的LinuxDo用户名（最新），其次使用数据库中的
         const linuxDoUsername = session.username || user.linux_do_username || null;
+        
+        console.log(`[中奖判定] 符号: ${symbols.join(',')}, 规则: ${result.ruleName || result.winType}, 倍率: ${result.multiplier}`);
+        
         saveGameRecord(
             session.linux_do_id,
             user.username,
             linuxDoUsername,
             betAmount,
             symbols,
-            result.winType,
+            result.winType as any,  // 使用配置方案返回的 winType
             result.multiplier,
             winAmount,
             result.freeSpinAwarded,
@@ -1395,6 +1421,63 @@ slot.get('/advanced/status', requireAuth, async (c) => {
     } catch (error) {
         console.error('获取高级场状态失败:', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+/**
+ * 获取当前场次的游戏规则（用于前端展示）
+ */
+slot.get('/rules', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+        
+        // 检查是否在高级场
+        const inAdvancedMode = isInAdvancedMode(session.linux_do_id!);
+        
+        // 获取配置
+        const slotConfig = inAdvancedMode 
+            ? advancedSlotQueries.getAdvancedConfig.get()
+            : slotQueries.getConfig.get();
+        
+        const schemeId = slotConfig?.reward_scheme_id || 1;
+        const weightConfigId = slotConfig?.weight_config_id || 1;
+        
+        // 获取规则和惩罚
+        const { rewardConfigQueries, weightConfigQueries } = await import('../database');
+        const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
+        const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
+        const weightConfig = weightConfigQueries.getById.get(weightConfigId);
+        
+        // 计算权重总和
+        const totalWeight = weightConfig 
+            ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j + 
+               weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + weightConfig.weight_lsh)
+            : 825;
+        
+        // 计算律师函概率
+        const lshWeight = weightConfig?.weight_lsh || 25;
+        const lshSingleProb = lshWeight / totalWeight;
+        const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
+        
+        return c.json({
+            success: true,
+            data: {
+                mode: inAdvancedMode ? 'advanced' : 'normal',
+                rules: rules.filter(r => r.is_active).map(r => ({
+                    ...r,
+                    probability: '计算中'  // TODO: 实际概率计算需要模拟大量游戏
+                })),
+                punishments: punishments.filter(p => p.is_active).map(p => ({
+                    ...p,
+                    probability: lshAtLeastOneProb.toFixed(2) + '%'
+                })),
+                weightConfig: weightConfig,
+                totalWeight: totalWeight
+            }
+        });
+    } catch (error: any) {
+        console.error('[游戏规则] 获取失败:', error);
+        return c.json({ success: false, message: '获取规则失败' }, 500);
     }
 });
 

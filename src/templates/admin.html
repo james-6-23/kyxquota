@@ -4762,6 +4762,9 @@
         
         if (data.success) {
           showToast('✅ 初级场配置方案已保存并生效', 'success');
+          // 🔥 重新加载配置以刷新下拉框显示
+          await loadNormalWeightConfigOptions();
+          await loadNormalRewardSchemeOptions();
         } else {
           showToast(data.message || '保存失败', 'error');
         }
@@ -6403,6 +6406,9 @@
         
         if (data.success) {
           showToast('✅ 高级场配置方案已保存并生效', 'success');
+          // 🔥 重新加载配置以刷新下拉框显示
+          await loadAdvancedWeightConfigOptions();
+          await loadAdvancedRewardSchemeOptions();
         } else {
           showToast(data.message || '保存失败', 'error');
         }
@@ -7034,7 +7040,12 @@
       
       tbody.innerHTML = pageRecords.map(record => {
         const isForgiven = record.status === 'repaid' && record.actual_repay_amount === 0;
-        const hasOverduePenalty = record.overdue_penalty_until && record.overdue_penalty_until > Date.now();
+        
+        // 🔥 优化：只有逾期且有惩罚时间且未过期时才认为有逾期惩罚
+        const now = Date.now();
+        const hasOverduePenalty = record.status === 'overdue' && 
+                                   record.overdue_penalty_until && 
+                                   record.overdue_penalty_until > now;
         
         const statusBadge = record.status === 'active' 
           ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 借款中</span>'
@@ -7052,7 +7063,7 @@
         
         const isChecked = selectedRecords.has(record.id);
         
-        // 🔥 优化操作按钮：添加解封按钮
+        // 🔥 优化操作按钮：只在有有效的逾期惩罚时显示解封按钮
         let actionButtons = '';
         if (record.status === 'active' || record.status === 'overdue') {
           actionButtons = `
@@ -7060,10 +7071,15 @@
             <button onclick="forgiveSingleLoan(${record.id}, '${record.username}')" class="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium mb-1">免除</button>
           `;
           
-          // 如果有逾期惩罚，显示解封按钮
+          // 🔥 只有当前有有效的逾期惩罚时才显示解封按钮
           if (hasOverduePenalty) {
+            const remainingHours = Math.ceil((record.overdue_penalty_until - now) / 3600000);
             actionButtons += `
-            <button onclick="clearOverduePenaltyBtn(${record.id}, '${record.username}')" class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium">🔓 解封</button>
+            <button onclick="clearOverduePenaltyBtn(${record.id}, '${record.username}')" 
+                    class="px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium"
+                    title="解除高级场禁入（剩余${remainingHours}小时）">
+              🔓 解封
+            </button>
             `;
           }
         } else {
