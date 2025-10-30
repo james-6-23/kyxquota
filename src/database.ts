@@ -951,9 +951,19 @@ function insertDefaultData() {
             INSERT OR IGNORE INTO kunbei_config (
                 id, enabled, max_loan_amount, min_loan_amount, repay_multiplier,
                 loan_duration_hours, early_repay_discount, overdue_penalty_hours,
-                overdue_ban_advanced, max_active_loans, deduct_all_quota_on_overdue, updated_at
+                overdue_ban_advanced, max_active_loans, deduct_all_quota_on_overdue,
+                overdue_deduct_multiplier, updated_at
             )
-            VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, ${Date.now()})
+            VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, ${Date.now()})
+        `);
+        
+        // 🔥 确保坤呗配置字段完整（修复缺失字段）
+        db.exec(`
+            UPDATE kunbei_config 
+            SET 
+                overdue_deduct_multiplier = COALESCE(overdue_deduct_multiplier, 2.5),
+                updated_at = ${Date.now()}
+            WHERE id = 1
         `);
 
         // 插入默认坤呗梯度配置（仅在表为空时）

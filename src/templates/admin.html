@@ -69,6 +69,54 @@
         transform: translateX(100px) scale(0.8);
       }
     }
+    
+    /* 🔥 自定义滚动条样式 */
+    .scrollbar-thin::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    
+    .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    
+    /* 侧边栏导航项动画 */
+    .nav-link {
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .nav-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom, #6366f1, #8b5cf6);
+      transform: scaleY(0);
+      transition: transform 0.2s ease;
+    }
+    
+    .nav-link:hover::before,
+    .nav-link.active::before {
+      transform: scaleY(1);
+    }
+    
+    /* 搜索高亮 */
+    .nav-link.search-highlight {
+      background-color: #fef3c7 !important;
+      animation: pulse 1s ease-in-out 2;
+    }
   </style>
 </head>
 <body class="bg-slate-50">
@@ -120,82 +168,163 @@
 
     <!-- Sidebar Navigation -->
     <div class="flex">
-      <aside class="w-64 bg-white min-h-screen border-r border-slate-200">
-        <nav class="p-4">
-          <button onclick="showSection('dashboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 bg-indigo-100 text-indigo-700 font-semibold flex items-center gap-2">
-            <span>📊</span> 仪表板
-          </button>
-          <button onclick="showSection('config')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>⚙️</span> 系统配置
-          </button>
-          <button onclick="showSection('keys')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🔑</span> Keys 管理
-          </button>
-          <button onclick="showSection('claims')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>📥</span> 领取记录
-          </button>
-          <button onclick="showSection('donates')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎁</span> 投喂记录
-          </button>
-          <button onclick="showSection('slotRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎰</span> 初级场记录
-          </button>
-          <button onclick="showSection('advancedSlotRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🔥</span> 高级场记录
-          </button>
-          <button onclick="showSection('slotConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>⚙️</span> 老虎机配置
-          </button>
-          <button onclick="showSection('advancedSlotConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🔥</span> 高级场配置
-          </button>
-          <button onclick="showSection('ticketDropRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎟️</span> 入场券掉落
-          </button>
-          <button onclick="showSection('slotAnalytics')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>📈</span> 抽奖分析
-          </button>
-          <button onclick="showSection('profitLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🏆</span> 盈利排行榜
-          </button>
-          <button onclick="showSection('lossLeaderboard')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>📉</span> 亏损排行榜
-          </button>
-          <button onclick="showSection('users')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>👥</span> 用户列表
-          </button>
-          <button onclick="showSection('grantFreeSpins')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎁</span> 发放免费次数
-          </button>
-          <button onclick="showSection('pendingRewards')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>💰</span> 待发放奖金
-          </button>
-          <button onclick="showSection('bannedUsers')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🚫</span> 封禁记录
-          </button>
-          <button onclick="showSection('kunbeiManagement')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🐔</span> 坤呗贷款管理
-          </button>
-          <button onclick="showSection('kunbeiRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>📋</span> 贷款记录
-          </button>
-          <button onclick="showSection('weightConfigs')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>⚖️</span> 权重配置管理
-          </button>
-          <button onclick="showSection('rewardConfigs')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🎁</span> 奖励配置管理
-          </button>
-          <button onclick="showSection('supremeConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>💎</span> 至尊场配置
-          </button>
-          <button onclick="showSection('supremeRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
-            <span>🏆</span> 至尊场记录
-          </button>
+      <!-- 🔥 固定侧边栏 + 自定义滚动条 -->
+      <aside class="w-64 bg-white border-r border-slate-200 fixed left-0 top-16 bottom-0 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-slate-100">
+        <!-- 搜索栏 -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
+          <div class="relative">
+            <input type="text" 
+                   id="sidebarSearch" 
+                   placeholder="🔍 搜索功能..." 
+                   oninput="filterSidebar(this.value)"
+                   class="w-full px-3 py-2 pr-8 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+            <button onclick="clearSidebarSearch()" class="absolute right-2 top-2 text-slate-400 hover:text-slate-600">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <nav class="p-3">
+          <!-- 📊 基础管理 -->
+          <div class="mb-4">
+            <div class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider">📊 基础管理</div>
+            <button onclick="showSection('dashboard')" data-search="仪表板 dashboard 首页" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 bg-indigo-100 text-indigo-700 font-semibold flex items-center gap-2 hover:bg-indigo-200 transition-all">
+              <span>📊</span> <span>仪表板</span>
+            </button>
+            <button onclick="showSection('config')" data-search="系统配置 config 设置" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+              <span>⚙️</span> <span>系统配置</span>
+            </button>
+            <button onclick="showSection('keys')" data-search="keys 管理" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+              <span>🔑</span> <span>Keys 管理</span>
+            </button>
+            <button onclick="showSection('users')" data-search="用户列表 users 用户管理" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+              <span>👥</span> <span>用户列表</span>
+            </button>
+            <button onclick="showSection('bannedUsers')" data-search="封禁记录 banned 黑名单" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+              <span>🚫</span> <span>封禁记录</span>
+            </button>
+          </div>
+          
+          <!-- 📋 记录查询 -->
+          <details class="mb-4 group" open>
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>📋 记录查询</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('claims')" data-search="领取记录 claims 领取" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>📥</span> <span>领取记录</span>
+              </button>
+              <button onclick="showSection('donates')" data-search="投喂记录 donates 投喂" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎁</span> <span>投喂记录</span>
+              </button>
+              <button onclick="showSection('slotRecords')" data-search="初级场记录 slot 老虎机" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎰</span> <span>初级场记录</span>
+              </button>
+              <button onclick="showSection('advancedSlotRecords')" data-search="高级场记录 advanced 高级" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🔥</span> <span>高级场记录</span>
+              </button>
+              <button onclick="showSection('supremeRecords')" data-search="至尊场记录 supreme 至尊" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🏆</span> <span>至尊场记录</span>
+              </button>
+              <button onclick="showSection('ticketDropRecords')" data-search="入场券掉落 ticket 掉落" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎟️</span> <span>入场券掉落</span>
+              </button>
+            </div>
+          </details>
+          
+          <!-- 🎰 游戏配置 -->
+          <details class="mb-4 group" open>
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>🎰 游戏配置</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('slotConfig')" data-search="老虎机配置 slot 初级场" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>⚙️</span> <span>老虎机配置</span>
+              </button>
+              <button onclick="showSection('advancedSlotConfig')" data-search="高级场配置 advanced 高级" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🔥</span> <span>高级场配置</span>
+              </button>
+              <button onclick="showSection('supremeConfig')" data-search="至尊场配置 supreme 至尊" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>💎</span> <span>至尊场配置</span>
+              </button>
+              <button onclick="showSection('weightConfigs')" data-search="权重配置管理 weight 权重" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>⚖️</span> <span>权重配置</span>
+              </button>
+              <button onclick="showSection('rewardConfigs')" data-search="奖励配置管理 reward 奖励" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎁</span> <span>奖励配置</span>
+              </button>
+            </div>
+          </details>
+          
+          <!-- 📈 数据分析 -->
+          <details class="mb-4 group">
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>📈 数据分析</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('slotAnalytics')" data-search="抽奖分析 analytics 数据" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>📈</span> <span>抽奖分析</span>
+              </button>
+              <button onclick="showSection('profitLeaderboard')" data-search="盈利排行榜 profit 盈利" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🏆</span> <span>盈利排行榜</span>
+              </button>
+              <button onclick="showSection('lossLeaderboard')" data-search="亏损排行榜 loss 亏损" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>📉</span> <span>亏损排行榜</span>
+              </button>
+            </div>
+          </details>
+          
+          <!-- 🐔 坤呗系统 -->
+          <details class="mb-4 group">
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>🐔 坤呗系统</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('kunbeiManagement')" data-search="坤呗贷款管理 kunbei 贷款" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🐔</span> <span>贷款管理</span>
+              </button>
+              <button onclick="showSection('kunbeiRecords')" data-search="贷款记录 kunbei records" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>📋</span> <span>贷款记录</span>
+              </button>
+            </div>
+          </details>
+          
+          <!-- 🎁 运营工具 -->
+          <details class="mb-4 group">
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>🎁 运营工具</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('grantFreeSpins')" data-search="发放免费次数 grant 发放" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎁</span> <span>发放免费次数</span>
+              </button>
+              <button onclick="showSection('pendingRewards')" data-search="待发放奖金 pending 奖金" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>💰</span> <span>待发放奖金</span>
+              </button>
+            </div>
+          </details>
         </nav>
       </aside>
 
-      <!-- Main Content -->
-      <main class="flex-1 p-6">
+      <!-- Main Content - 添加左边距以避免被侧边栏遮挡 -->
+      <main class="flex-1 p-6 ml-64">
         <!-- Dashboard -->
         <div id="dashboardSection">
           <h2 class="text-2xl font-bold text-slate-900 mb-6">仪表板</h2>
@@ -4595,12 +4724,65 @@
       await loadUsersList(usersCurrentPage);
     }
 
+    // 🔥 侧边栏搜索功能
+    function filterSidebar(searchTerm) {
+      const term = searchTerm.toLowerCase().trim();
+      const allNavLinks = document.querySelectorAll('.nav-link[data-search]');
+      const allGroups = document.querySelectorAll('details');
+      
+      if (!term) {
+        // 清空搜索：显示所有
+        allNavLinks.forEach(link => {
+          link.classList.remove('hidden', 'search-highlight');
+          link.style.display = '';
+        });
+        return;
+      }
+      
+      let hasMatch = false;
+      
+      allNavLinks.forEach(link => {
+        const searchData = link.getAttribute('data-search') || '';
+        const matches = searchData.toLowerCase().includes(term);
+        
+        if (matches) {
+          link.classList.remove('hidden');
+          link.classList.add('search-highlight');
+          link.style.display = '';
+          hasMatch = true;
+          
+          // 展开包含匹配项的分组
+          let parent = link.closest('details');
+          if (parent) {
+            parent.setAttribute('open', 'true');
+          }
+        } else {
+          link.classList.add('hidden');
+          link.classList.remove('search-highlight');
+        }
+      });
+      
+      // 如果没有匹配，显示提示
+      if (!hasMatch) {
+        console.log('没有找到匹配的功能');
+      }
+    }
+    
+    // 🔥 清空搜索
+    function clearSidebarSearch() {
+      document.getElementById('sidebarSearch').value = '';
+      filterSidebar('');
+    }
+
     function showSection(section) {
+      // 移除所有活动状态
       document.querySelectorAll('.nav-link').forEach(link => {
-        link.classList.remove('bg-indigo-100', 'text-indigo-700', 'font-semibold');
+        link.classList.remove('bg-indigo-100', 'text-indigo-700', 'font-semibold', 'active');
         link.classList.add('text-slate-700');
       });
-      event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
+      
+      // 添加活动状态到当前按钮
+      event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold', 'active');
       event.target.classList.remove('text-slate-700');
 
       ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement', 'kunbeiRecords', 'weightConfigs', 'rewardConfigs', 'supremeConfig', 'supremeRecords'].forEach(s => {

@@ -2414,9 +2414,56 @@ app.post('/slot/advanced/weights', requireAdmin, async (c) => {
 app.get('/kunbei/config', requireAdmin, async (c) => {
     try {
         const config = kunbeiQueries.getConfig.get();
+        
+        // 🔥 如果配置不存在，返回默认配置
+        if (!config) {
+            console.warn('[坤呗配置] 配置不存在，返回默认值');
+            
+            // 尝试插入默认配置
+            const now = Date.now();
+            try {
+                db.exec(`
+                    INSERT OR IGNORE INTO kunbei_config (
+                        id, enabled, max_loan_amount, min_loan_amount, repay_multiplier,
+                        loan_duration_hours, early_repay_discount, overdue_penalty_hours,
+                        overdue_ban_advanced, max_active_loans, deduct_all_quota_on_overdue,
+                        overdue_deduct_multiplier, updated_at
+                    )
+                    VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, ${now})
+                `);
+                console.log('[坤呗配置] ✅ 已插入默认配置');
+                
+                // 重新获取
+                const newConfig = kunbeiQueries.getConfig.get();
+                return c.json({ success: true, data: newConfig });
+            } catch (insertError) {
+                console.error('[坤呗配置] 插入默认配置失败:', insertError);
+            }
+            
+            return c.json({
+                success: true,
+                data: {
+                    id: 1,
+                    enabled: 1,
+                    max_loan_amount: 50000000,
+                    min_loan_amount: 5000000,
+                    repay_multiplier: 2.5,
+                    loan_duration_hours: 72,
+                    early_repay_discount: 0.025,
+                    overdue_penalty_hours: 60,
+                    overdue_ban_advanced: 1,
+                    max_active_loans: 1,
+                    deduct_all_quota_on_overdue: 1,
+                    overdue_deduct_multiplier: 2.5,
+                    updated_at: now
+                }
+            });
+        }
+        
         return c.json({ success: true, data: config });
     } catch (error: any) {
-        return c.json({ success: false, message: '获取配置失败' }, 500);
+        console.error('[坤呗配置] 获取失败:', error);
+        return c.json({ success: false, message: '获取配置失败: ' + error.message }, 500);
     }
 });
 
