@@ -6540,46 +6540,53 @@
     
     // 🎯 统一更新场式标题（避免重叠）
     function updateModeTitles() {
-      const normalModeTitle = document.getElementById('normalModeTitle');
-      const advancedModeTitle = document.getElementById('advancedModeTitle');
-      const supremeModeTitle = document.getElementById('supremeModeTitle');
-      const advancedModeIndicator = document.getElementById('advancedModeIndicator');
-      const advancedBetSelector = document.getElementById('advancedBetSelector');
-      const supremeBetSelector = document.getElementById('supremeBetSelector');
-      const advancedTicketBar = document.getElementById('advancedTicketBar');
-      const supremeTokenBar = document.getElementById('supremeTokenBar');
-      
-      // 🔥 先隐藏所有标题和UI元素
-      if (normalModeTitle) normalModeTitle.classList.add('hidden');
-      if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-      if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
-      if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
-      if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
-      if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
-      if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
-      if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
-      
-      // 根据当前状态显示相应标题和UI
-      if (isInSupremeMode) {
-        // 💎 至尊场优先级最高
-        if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
-        if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 显示至尊场横条
-        // 🔥 至尊场时不显示高级场任何元素
-      } else if (isInAdvancedMode) {
-        // 🔥 高级场其次
-        if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
-        if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
-        if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
-        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');  // 🔥 显示入场券横条
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌横条
-      } else {
-        // 🎰 初级场默认
-        if (normalModeTitle) normalModeTitle.classList.remove('hidden');
-        // 🔥 初级场：如果有入场券或碎片，显示入场券横条
-        if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
-          if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
+      try {
+        const normalModeTitle = document.getElementById('normalModeTitle');
+        const advancedModeTitle = document.getElementById('advancedModeTitle');
+        const supremeModeTitle = document.getElementById('supremeModeTitle');
+        const advancedModeIndicator = document.getElementById('advancedModeIndicator');
+        const advancedBetSelector = document.getElementById('advancedBetSelector');
+        const supremeBetSelector = document.getElementById('supremeBetSelector');
+        const advancedTicketBar = document.getElementById('advancedTicketBar');
+        const supremeTokenBar = document.getElementById('supremeTokenBar');
+        
+        // 🔥 先隐藏所有标题和UI元素
+        if (normalModeTitle) normalModeTitle.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
+        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+        if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
+        if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
+        if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
+        
+        // 根据当前状态显示相应标题和UI
+        if (isInSupremeMode) {
+          // 💎 至尊场优先级最高
+          if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
+          if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
+          if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 显示至尊场横条
+          // 🔥 至尊场时不显示高级场任何元素
+        } else if (isInAdvancedMode) {
+          // 🔥 高级场其次
+          if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
+          if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
+          if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
+          if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');  // 🔥 显示入场券横条
+          if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌横条
+        } else {
+          // 🎰 初级场默认
+          if (normalModeTitle) normalModeTitle.classList.remove('hidden');
+          // 🔥 初级场：如果有入场券或碎片，显示入场券横条
+          if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
+            if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
+          }
         }
+      } catch (error) {
+        console.error('[updateModeTitles] 错误:', error);
+        // 出错时至少显示初级场标题
+        const normalModeTitle = document.getElementById('normalModeTitle');
+        if (normalModeTitle) normalModeTitle.classList.remove('hidden');
       }
     }
     

@@ -637,7 +637,7 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🔥 使用新的掉落配置系统
         const { handleDrops } = await import('../services/drop-config');
         const slotMode = inAdvancedMode ? 'advanced' : 'normal';
-        const dropResult = handleDrops(session.linux_do_id, user.username, slotMode, result.ruleName);
+        const dropResult = await handleDrops(session.linux_do_id, user.username, slotMode, result.ruleName);
         
         if (dropResult.dropped) {
             ticketDropped = true;

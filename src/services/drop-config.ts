@@ -3,7 +3,6 @@
  * 统一管理所有场次的物品掉落规则
  */
 
-import { dropConfigQueries } from '../database';
 import { addTicket, addFragment } from './advanced-slot';
 import { addSupremeToken, addSupremeFragment } from './supreme-slot';
 
@@ -40,34 +39,37 @@ export interface DropResult {
 /**
  * 获取所有掉落配置
  */
-export function getAllDropConfigs(): DropConfig[] {
+export async function getAllDropConfigs(): Promise<DropConfig[]> {
+    const { dropConfigQueries } = await import('../database');
     return dropConfigQueries.getAll.all();
 }
 
 /**
  * 根据场次获取掉落配置
  */
-export function getDropConfigsByMode(slotMode: string): DropConfig[] {
+export async function getDropConfigsByMode(slotMode: string): Promise<DropConfig[]> {
+    const { dropConfigQueries } = await import('../database');
     return dropConfigQueries.getByMode.all(slotMode);
 }
 
 /**
  * 根据场次和规则名称获取掉落配置
  */
-export function getDropConfigsByRule(slotMode: string, ruleName: string): DropConfig[] {
+export async function getDropConfigsByRule(slotMode: string, ruleName: string): Promise<DropConfig[]> {
+    const { dropConfigQueries } = await import('../database');
     return dropConfigQueries.getByModeAndRule.all(slotMode, ruleName);
 }
 
 /**
  * 处理掉落逻辑
  */
-export function handleDrops(
+export async function handleDrops(
     linuxDoId: string,
     username: string,
     slotMode: string,
     ruleName: string
-): DropResult {
-    const configs = getDropConfigsByRule(slotMode, ruleName);
+): Promise<DropResult> {
+    const configs = await getDropConfigsByRule(slotMode, ruleName);
     
     if (!configs || configs.length === 0) {
         return { dropped: false, items: [] };
@@ -129,9 +131,11 @@ export function handleDrops(
 /**
  * 创建掉落配置
  */
-export function createDropConfig(config: Omit<DropConfig, 'id' | 'created_at' | 'updated_at'>): { success: boolean; message: string; id?: number } {
+export async function createDropConfig(config: Omit<DropConfig, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string; id?: number }> {
+    const now = Date.now();
+    
     try {
-        const now = Date.now();
+        const { dropConfigQueries } = await import('../database');
         
         const result = dropConfigQueries.insert.run(
             config.slot_mode,
@@ -146,15 +150,23 @@ export function createDropConfig(config: Omit<DropConfig, 'id' | 'created_at' | 
             now
         );
         
+        console.log('[掉落配置] 创建成功:', {
+            mode: config.slot_mode,
+            rule: config.trigger_rule_name,
+            item: config.drop_item_type,
+            probability: config.drop_probability
+        });
+        
         return {
             success: true,
             message: '掉落配置已创建',
-            id: result.lastInsertRowid as number
+            id: result?.lastInsertRowid as number
         };
     } catch (error: any) {
         console.error('[掉落配置] 创建失败:', error);
         
-        if (error.message?.includes('UNIQUE constraint')) {
+        // 检查是否是唯一约束冲突
+        if (error.code === 'SQLITE_CONSTRAINT_UNIQUE' || error.message?.includes('UNIQUE constraint')) {
             return {
                 success: false,
                 message: '该场次的该规则已配置此物品掉落，请勿重复添加'
@@ -163,7 +175,7 @@ export function createDropConfig(config: Omit<DropConfig, 'id' | 'created_at' | 
         
         return {
             success: false,
-            message: '创建失败: ' + error.message
+            message: '创建失败: ' + (error.message || '未知错误')
         };
     }
 }
@@ -171,8 +183,9 @@ export function createDropConfig(config: Omit<DropConfig, 'id' | 'created_at' | 
 /**
  * 更新掉落配置
  */
-export function updateDropConfig(id: number, config: Omit<DropConfig, 'id' | 'created_at' | 'updated_at'>): { success: boolean; message: string } {
+export async function updateDropConfig(id: number, config: Omit<DropConfig, 'id' | 'created_at' | 'updated_at'>): Promise<{ success: boolean; message: string }> {
     try {
+        const { dropConfigQueries } = await import('../database');
         const now = Date.now();
         
         dropConfigQueries.update.run(
@@ -204,8 +217,10 @@ export function updateDropConfig(id: number, config: Omit<DropConfig, 'id' | 'cr
 /**
  * 删除掉落配置
  */
-export function deleteDropConfig(id: number): { success: boolean; message: string } {
+export async function deleteDropConfig(id: number): Promise<{ success: boolean; message: string }> {
     try {
+        const { dropConfigQueries } = await import('../database');
+        
         dropConfigQueries.delete.run(id);
         
         return {

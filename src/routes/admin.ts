@@ -3293,7 +3293,7 @@ app.post('/drop-configs', requireAdmin, async (c) => {
         const body = await c.req.json();
         const { createDropConfig } = await import('../services/drop-config');
         
-        const result = createDropConfig(body);
+        const result = await createDropConfig(body);
         
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
@@ -3311,7 +3311,7 @@ app.put('/drop-configs/:id', requireAdmin, async (c) => {
         const body = await c.req.json();
         const { updateDropConfig } = await import('../services/drop-config');
         
-        const result = updateDropConfig(id, body);
+        const result = await updateDropConfig(id, body);
         
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
@@ -3328,7 +3328,7 @@ app.delete('/drop-configs/:id', requireAdmin, async (c) => {
         const id = parseInt(c.req.param('id'));
         const { deleteDropConfig } = await import('../services/drop-config');
         
-        const result = deleteDropConfig(id);
+        const result = await deleteDropConfig(id);
         
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
