@@ -2056,6 +2056,8 @@ app.get('/slot/advanced/config', requireAdmin, async (c) => {
             daily_bet_limit: config?.daily_bet_limit || 5000000000,
             daily_entry_limit: config?.daily_entry_limit || 2,
             daily_ticket_grant_limit: config?.daily_ticket_grant_limit || 2,
+            weight_config_id: config?.weight_config_id || 1,  // 🔥 添加权重配置方案ID
+            reward_scheme_id: config?.reward_scheme_id || 1,  // 🔥 添加奖励配置方案ID
             updated_at: config?.updated_at || Date.now()
         };
 

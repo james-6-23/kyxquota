@@ -1463,6 +1463,7 @@ slot.get('/rules', requireAuth, async (c) => {
             success: true,
             data: {
                 mode: inAdvancedMode ? 'advanced' : 'normal',
+                in_advanced_mode: inAdvancedMode,  // 🔥 添加场次状态标识
                 rules: rules.filter(r => r.is_active).map(r => ({
                     ...r,
                     probability: '计算中'  // TODO: 实际概率计算需要模拟大量游戏

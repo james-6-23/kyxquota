@@ -147,6 +147,8 @@ export interface AdvancedSlotConfig {
     daily_bet_limit: number;        // 每日投注上限
     daily_entry_limit: number;      // 每日进入次数限制
     daily_ticket_grant_limit: number; // 每日入场券获得数量限制
+    weight_config_id?: number;      // 权重配置方案ID
+    reward_scheme_id?: number;      // 奖励配置方案ID
     updated_at: number;
 }
 
