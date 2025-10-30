@@ -182,10 +182,10 @@ export function getSchemeRulesWithProbability(
 } {
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
-    
+
     // TODO: 计算每个规则的中奖概率（基于权重配置）
     // 这需要根据权重配置计算符号分布，然后模拟计算每个规则的中奖概率
-    
+
     return {
         rules: rules.filter(r => r.is_active),
         punishments: punishments.filter(p => p.is_active),

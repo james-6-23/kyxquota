@@ -3382,6 +3382,11 @@
         // 🔥 更新进度条显示（确保初级场进度条隐藏）
         updateBetLimitProgressBar();
       }
+      
+      // 🎯 延迟调用统一更新函数，确保最终状态正确（等待动画完成）
+      setTimeout(() => {
+        updateGameRulesButton();
+      }, 400);
     }
 
     // 🔥 合成入场券
@@ -3448,18 +3453,21 @@
           isInAdvancedMode = true;
           
           // 🔥 并行加载配置和入场券信息
-          const [configRes] = await Promise.all([
+          const [configRes, _] = await Promise.all([
             fetch('/api/slot/config').then(res => res.json()),
             loadAdvancedTickets()  // 这会调用 updateAdvancedTicketsUI
           ]);
           
+          // 🔥 保存加载的配置数据
           if (configRes && configRes.success) {
             slotConfig = configRes.data.config;
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 再次更新UI确保所有状态正确
+          // 🔥 统一更新UI确保所有状态正确
           updateSlotUI();
+          updateModeTitles();
+          updateGameRulesButton();
           
           // 🔥 强制更新高级场UI（确保显示正确）
           if (advancedTicketsData) {
@@ -3482,7 +3490,7 @@
 
     // 🔥 退出高级场
     async function exitAdvancedMode() {
-      if (!confirm('确定要退出高级场吗？\n退出后需要重新使用入场券才能进入。')) {
+      if (!confirm('确定要退出高级场吗？\n退出后将返回初级场，需要重新使用入场券才能进入。')) {
         return;
       }
       
@@ -3499,11 +3507,12 @@
           isInAdvancedMode = false;
           
           // 🔥 并行加载配置和入场券信息
-          const [configRes] = await Promise.all([
+          const [configRes, _] = await Promise.all([
             fetch('/api/slot/config').then(res => res.json()),
             loadAdvancedTickets()  // 这会调用 updateAdvancedTicketsUI
           ]);
           
+          // 🔥 保存加载的配置数据
           if (configRes && configRes.success) {
             slotConfig = configRes.data.config;
             slotUserData = configRes.data.user;
@@ -3512,6 +3521,7 @@
           // 🔥 更新UI确保显示正确的投注金额
           updateSlotUI();
           updateModeTitles();
+          updateGameRulesButton();
           
           // 🔥 强制更新UI（确保退出高级场后UI正确）
           if (advancedTicketsData) {
@@ -3761,8 +3771,9 @@
         updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode/isInSupremeMode 显示正确的UI
         syncUserInfoToSlot();
         
-        // 🔥 初始化场式标题显示
+        // 🔥 统一初始化场次UI显示（避免重叠）
         updateModeTitles();
+        updateGameRulesButton();
         
         // 🎵 预初始化音效系统（首次播放时自动初始化）
         soundManager.init();
@@ -6286,13 +6297,6 @@
       if (in_supreme_mode) {
         isInSupremeMode = true;
         if (betSelector) betSelector.classList.remove('hidden');
-        if (modeTitle) modeTitle.classList.remove('hidden');
-        if (normalModeTitle) normalModeTitle.classList.add('hidden');
-        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-        
-        // 🔥 至尊场模式下：显示至尊场规则按钮，隐藏普通规则按钮
-        if (supremeRulesBtn) supremeRulesBtn.classList.remove('hidden');
-        if (normalRulesBtn) normalRulesBtn.classList.add('hidden');
         
         // 🔥 更新投注范围并生成选项
         if (config) {
@@ -6320,11 +6324,6 @@
       } else {
         isInSupremeMode = false;
         if (betSelector) betSelector.classList.add('hidden');
-        if (modeTitle) modeTitle.classList.add('hidden');
-        
-        // 🔥 退出至尊场：显示普通规则按钮，隐藏至尊场规则按钮
-        if (supremeRulesBtn) supremeRulesBtn.classList.add('hidden');
-        if (normalRulesBtn) normalRulesBtn.classList.remove('hidden');
         
         stopSupremeModeTimer();
         
@@ -6332,8 +6331,9 @@
         updateBetLimitProgressBar();
       }
       
-      // 🎯 统一更新场式标题
+      // 🎯 统一更新场式标题和UI元素（避免重叠）
       updateModeTitles();
+      updateGameRulesButton();
     }
     
     // 💎 合成至尊令牌
@@ -6391,16 +6391,23 @@
           showToast('💎 ' + data.message, 'success');
           isInSupremeMode = true;
           
-          // 重新加载令牌和配置
-          await Promise.all([
+          // 🔥 并行加载令牌和配置，并正确保存配置
+          const [_, configRes] = await Promise.all([
             loadSupremeTokens(),
             fetch('/api/slot/config').then(res => res.json())
           ]);
           
-          // 🔥 更新至尊场UI显示
+          // 🔥 保存加载的配置数据
+          if (configRes && configRes.success) {
+            slotConfig = configRes.data.config;
+            slotUserData = configRes.data.user;
+          }
+          
+          // 🔥 统一更新UI显示
           updateSupremeTokensUI();
           updateSlotUI();
           updateModeTitles();
+          updateGameRulesButton();
         } else {
           showToast(data.message, 'error');
         }
@@ -6480,7 +6487,7 @@
     
     // 💎 退出至尊场
     async function exitSupremeMode() {
-      if (!confirm('确定要退出至尊场吗？\n退出后本次会话将结束。')) {
+      if (!confirm('确定要退出至尊场吗？\n退出后将返回高级场。')) {
         return;
       }
       
@@ -6494,14 +6501,23 @@
           showToast(data.message, 'success');
           isInSupremeMode = false;
           
-          await Promise.all([
+          // 🔥 并行加载配置和状态，并正确保存配置
+          const [_, configRes, __] = await Promise.all([
             loadSupremeTokens(),
             fetch('/api/slot/config').then(res => res.json()),
             loadAdvancedTickets()  // 检查是否还在高级场
           ]);
           
+          // 🔥 保存加载的配置数据
+          if (configRes && configRes.success) {
+            slotConfig = configRes.data.config;
+            slotUserData = configRes.data.user;
+          }
+          
+          // 🔥 统一更新UI，确保显示正确
           updateSlotUI();
           updateModeTitles();
+          updateGameRulesButton();
         } else {
           showToast(data.message, 'error');
         }
@@ -6532,6 +6548,25 @@
       } else {
         // 🎰 初级场默认
         if (normalModeTitle) normalModeTitle.classList.remove('hidden');
+      }
+    }
+    
+    // 🎯 统一更新游戏规则按钮显示（避免重叠）
+    function updateGameRulesButton() {
+      const normalRulesBtn = document.querySelector('button[onclick="showSlotRules()"]');
+      const supremeRulesBtn = document.getElementById('supremeRulesButton');
+      
+      // 先隐藏所有规则按钮
+      if (normalRulesBtn) normalRulesBtn.classList.add('hidden');
+      if (supremeRulesBtn) supremeRulesBtn.classList.add('hidden');
+      
+      // 根据当前状态显示相应的规则按钮
+      if (isInSupremeMode) {
+        // 💎 至尊场：显示至尊场规则按钮
+        if (supremeRulesBtn) supremeRulesBtn.classList.remove('hidden');
+      } else {
+        // 🔥 高级场或初级场：显示通用规则按钮（会根据场次动态加载规则）
+        if (normalRulesBtn) normalRulesBtn.classList.remove('hidden');
       }
     }
     
