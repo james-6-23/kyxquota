@@ -49,12 +49,16 @@ supreme.get('/tokens', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
+        // 🔥 先获取原始数据，再检查过期（避免刚发放就被清除）
+        const tokensBeforeCheck = getSupremeTokens(session.linux_do_id!);
+        const config = getSupremeSlotConfig();
+        
         // 检查并清理过期
         checkTokenExpiry(session.linux_do_id!);
         checkSupremeModeExpiry(session.linux_do_id!);
-
+        
+        // 🔥 重新获取（可能已被清理）
         const tokens = getSupremeTokens(session.linux_do_id!);
-        const config = getSupremeSlotConfig();
 
         const canSynthesize = tokens && tokens.fragments >= config.fragments_to_token && tokens.tokens < config.max_tokens_hold;
         const inSupremeMode = isInSupremeMode(session.linux_do_id!);

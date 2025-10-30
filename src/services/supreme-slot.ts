@@ -38,6 +38,7 @@ export function getSupremeSlotConfig(): any {
     const config = supremeSlotQueries.getConfig.get();
 
     if (!config) {
+        console.warn('[至尊场] 配置未找到，使用默认配置');
         // 返回默认配置
         return {
             id: 1,
@@ -57,8 +58,21 @@ export function getSupremeSlotConfig(): any {
             updated_at: Date.now()
         };
     }
+    
+    // 🔥 确保关键字段有默认值
+    const safeConfig = {
+        ...config,
+        token_valid_hours: config.token_valid_hours || 168,
+        session_valid_hours: config.session_valid_hours || 2,
+        max_tokens_hold: config.max_tokens_hold || 3,
+        fragments_to_token: config.fragments_to_token || 10,
+        daily_entry_limit: config.daily_entry_limit || 3,
+        daily_token_grant_limit: config.daily_token_grant_limit || 1
+    };
+    
+    console.log(`[至尊场] 配置加载成功 - token_valid_hours: ${safeConfig.token_valid_hours}, max_tokens_hold: ${safeConfig.max_tokens_hold}`);
 
-    return config;
+    return safeConfig;
 }
 
 /**
@@ -70,18 +84,26 @@ export function checkTokenExpiry(linuxDoId: string): void {
 
     const now = Date.now();
 
-    if (tokens.tokens > 0 && tokens.tokens_expires_at && tokens.tokens_expires_at < now) {
-        // 令牌已过期，清零
-        supremeSlotQueries.upsertTokens.run(
-            linuxDoId,
-            0,  // tokens
-            tokens.fragments,
-            null,  // tokens_expires_at
-            tokens.supreme_mode_until,
-            tokens.created_at || now,
-            now
-        );
-        console.log(`[至尊场] 用户 ${linuxDoId} 的令牌已过期并清除`);
+    // 🔥 只有当令牌有过期时间且已过期时才清理
+    // 如果没有设置过期时间(tokens_expires_at为null)，则认为永不过期
+    if (tokens.tokens > 0 && tokens.tokens_expires_at) {
+        const isExpired = tokens.tokens_expires_at < now;
+        
+        console.log(`[至尊场] 检查令牌过期 - 用户: ${linuxDoId}, 令牌数: ${tokens.tokens}, 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString()}, 当前时间: ${new Date(now).toLocaleString()}, 是否过期: ${isExpired}`);
+        
+        if (isExpired) {
+            // 令牌已过期，清零
+            supremeSlotQueries.upsertTokens.run(
+                linuxDoId,
+                0,  // tokens
+                tokens.fragments,
+                null,  // tokens_expires_at
+                tokens.supreme_mode_until,
+                tokens.created_at || now,
+                now
+            );
+            console.log(`[至尊场] 用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString()}`);
+        }
     }
 }
 
@@ -133,7 +155,12 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     
     // 计算实际可发放数量（不超过持有上限）
     const actualGrant = Math.min(count, maxHold - currentTokens);
-    const expiresAt = now + (config.token_valid_hours * 3600000);
+    
+    // 🔥 计算过期时间（确保有足够长的有效期）
+    const validHours = config.token_valid_hours || 168;  // 默认7天
+    const expiresAt = now + (validHours * 3600000);
+    
+    console.log(`[至尊场] 发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString()}`);
     
     supremeSlotQueries.upsertTokens.run(
         linuxDoId,
@@ -145,7 +172,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
         now
     );
 
-    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个`);
+    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString()}`);
     
     return {
         success: true,

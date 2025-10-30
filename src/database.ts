@@ -1027,6 +1027,16 @@ function insertDefaultData() {
             )
             VALUES (1, 1, 10, 3, 168, 2, 500000000, 5000000000, 100000000, 3, 1, 50000000000, 1, 1, ${Date.now()})
         `);
+        
+        // 🔥 确保至尊场配置存在（修复：如果INSERT OR IGNORE没有插入，则UPDATE）
+        db.exec(`
+            UPDATE supreme_slot_config 
+            SET 
+                token_valid_hours = COALESCE(token_valid_hours, 168),
+                session_valid_hours = COALESCE(session_valid_hours, 2),
+                updated_at = ${Date.now()}
+            WHERE id = 1
+        `);
 
         console.log('✅ 默认数据插入完成（含配置方案和至尊场）');
     } catch (error) {
