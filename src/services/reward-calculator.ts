@@ -48,7 +48,7 @@ export function calculateWinByScheme(
 
     // 3. 按优先级检查规则
     for (const rule of activeRules) {
-        const matched = checkRuleMatch(symbols, rule, isAdvancedMode);
+        const matched = checkRuleMatch(symbols, rule, isStrictConsecutive);
 
         if (matched) {
             return {
