@@ -808,17 +808,27 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
     try {
         // 🔥 获取筛选参数
         const limit = parseInt(c.req.query('limit') || '500');  // 默认500条
-        const mode = c.req.query('mode') || 'all';  // all, normal, advanced
+        const mode = c.req.query('mode') || 'all';  // all, normal, advanced, supreme
 
         // 获取所有老虎机记录
         const allRecords = slotQueries.getAllRecords.all();
+        
+        // 🔥 获取至尊场记录
+        const { supremeSlotQueries } = await import('../database');
+        const supremeRecords = supremeSlotQueries.getAllRecords.all();
 
         // 🔥 根据模式筛选
-        let filteredRecords = allRecords;
+        let filteredRecords = [];
         if (mode === 'normal') {
             filteredRecords = allRecords.filter(r => r.slot_mode === 'normal' || r.slot_mode === null);
         } else if (mode === 'advanced') {
             filteredRecords = allRecords.filter(r => r.slot_mode === 'advanced');
+        } else if (mode === 'supreme') {
+            // 至尊场使用独立的记录表
+            filteredRecords = supremeRecords;
+        } else {
+            // all: 合并所有记录
+            filteredRecords = [...allRecords, ...supremeRecords];
         }
 
         // 🔥 限制记录数量（取最新的N条）
@@ -830,29 +840,32 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
         const totalWin = records.reduce((sum, r) => sum + r.win_amount, 0);
         const netProfit = totalWin - totalBet;
 
-        // 按中奖类型统计
-        const winTypes: Record<string, { count: number; totalWin: number; avgWin: number }> = {
-            'super_jackpot': { count: 0, totalWin: 0, avgWin: 0 },
-            'special_combo': { count: 0, totalWin: 0, avgWin: 0 },
-            'quad': { count: 0, totalWin: 0, avgWin: 0 },
-            'triple': { count: 0, totalWin: 0, avgWin: 0 },
-            'double': { count: 0, totalWin: 0, avgWin: 0 },
-            'punishment': { count: 0, totalWin: 0, avgWin: 0 },
-            'none': { count: 0, totalWin: 0, avgWin: 0 }
-        };
+        // 🔥 动态统计所有中奖类型（不硬编码）
+        const winTypes: Record<string, { count: number; totalWin: number; totalBet: number; avgWin: number; rtp: number }> = {};
 
         records.forEach(r => {
-            if (winTypes[r.win_type]) {
-                winTypes[r.win_type].count++;
-                winTypes[r.win_type].totalWin += r.win_amount;
+            const winType = r.win_type || 'none';
+            
+            if (!winTypes[winType]) {
+                winTypes[winType] = { count: 0, totalWin: 0, totalBet: 0, avgWin: 0, rtp: 0 };
             }
+            
+            winTypes[winType].count++;
+            winTypes[winType].totalWin += r.win_amount;
+            winTypes[winType].totalBet += r.bet_amount;
         });
 
-        // 计算平均值和概率
+        // 计算平均值、RTP和概率
         Object.keys(winTypes).forEach(key => {
             const type = winTypes[key];
             type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
+            type.rtp = type.totalBet > 0 ? (type.totalWin / type.totalBet) * 100 : 0;
         });
+        
+        // 🔥 按出现次数排序
+        const sortedWinTypes = Object.entries(winTypes)
+            .map(([name, stats]) => ({ name, ...stats }))
+            .sort((a, b) => b.count - a.count);
 
         const winCount = records.filter(r => r.win_amount > 0).length;
         const winRate = totalCount > 0 ? (winCount / totalCount) * 100 : 0;
@@ -900,7 +913,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
                     winCount,
                     winRate
                 },
-                winTypes,
+                winTypes: sortedWinTypes,  // 🔥 返回排序后的数组
                 recentRecords,
                 userStats: userStats.slice(0, 100), // 盈利排行榜
                 lossStats: lossStats.slice(0, 100), // 亏损排行榜

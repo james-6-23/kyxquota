@@ -1780,10 +1780,11 @@
                   onchange="loadSlotAnalytics()"
                 >
                   <option value="all" selected>全部模式</option>
-                  <option value="normal">初级场（任意位置）</option>
-                  <option value="advanced">高级场（严格连续）</option>
+                  <option value="normal">初级场</option>
+                  <option value="advanced">高级场</option>
+                  <option value="supreme">至尊场</option>
                 </select>
-                <p class="text-xs text-slate-500 mt-1">初级场和高级场使用不同权重配置</p>
+                <p class="text-xs text-slate-500 mt-1">各场次使用独立的权重和奖励配置</p>
               </div>
               
               <!-- 说明信息 -->
@@ -1793,7 +1794,8 @@
                     <strong>提示：</strong> 
                     <br>• 初级场：任意位置相同即可
                     <br>• 高级场：必须相邻连续
-                    <br>• 建议分别查看两种模式数据
+                    <br>• 至尊场：使用独立配置方案
+                    <br>• 建议分别查看各模式数据
                   </p>
                 </div>
               </div>
@@ -5261,9 +5263,21 @@
     // 刷新记录（保留筛选条件）
     async function refreshAdminSlotRecords() {
       try {
+        // 🔥 找到刷新按钮并添加旋转动画
+        const refreshBtn = event?.target?.closest('button');
+        const refreshIcon = refreshBtn?.querySelector('svg');
+        if (refreshIcon) {
+          refreshIcon.classList.add('animate-spin');
+        }
+        
         // 🔥 重新加载所有初级场记录（修复：正确的API路径）
         const recordsRes = await fetch('/api/admin/records/slot?page=1&pageSize=1000');
         const recordsData = await recordsRes.json();
+        
+        // 🔥 停止动画
+        if (refreshIcon) {
+          refreshIcon.classList.remove('animate-spin');
+        }
         
         if (recordsData.success) {
           allAdminSlotRecords = recordsData.data;
@@ -5554,12 +5568,23 @@
     // 老虎机抽奖分析
     async function loadSlotAnalytics() {
       try {
+        // 🔥 刷新按钮动画
+        const refreshIcon = document.getElementById('analyticsRefreshIcon');
+        if (refreshIcon) {
+          refreshIcon.classList.add('animate-spin');
+        }
+        
         // 🔥 获取筛选参数
         const recordCount = document.getElementById('analyticsRecordCount')?.value || '500';
         const slotMode = document.getElementById('analyticsSlotMode')?.value || 'all';
         
         const res = await fetch(`/api/admin/slot/analytics?limit=${recordCount}&mode=${slotMode}`);
         const data = await res.json();
+        
+        // 🔥 停止动画
+        if (refreshIcon) {
+          refreshIcon.classList.remove('animate-spin');
+        }
 
         if (!data.success) {
           showMessage('加载分析数据失败', 'error');
@@ -5601,69 +5626,65 @@
         document.getElementById('rtpTotalBet').textContent = '$' + (summary.totalBet / 500000).toFixed(2);
         document.getElementById('rtpTotalWin').textContent = '$' + (summary.totalWin / 500000).toFixed(2);
         
-        // 🔥 计算中奖游戏RTP
-        const winGames = Object.entries(winTypes)
-          .filter(([key]) => key !== 'none' && key !== 'punishment')
-          .reduce((sum, [key, data]) => sum + data.count, 0);
-        
-        const winGamesBet = Object.entries(winTypes)
-          .filter(([key]) => key !== 'none' && key !== 'punishment')
-          .reduce((sum, [key, data]) => {
-            // 假设平均投注为总投注/总次数
-            const avgBet = summary.totalBet / summary.totalCount;
-            return sum + (data.count * avgBet);
-          }, 0);
-        
-        const winGamesWin = Object.entries(winTypes)
-          .filter(([key]) => key !== 'none' && key !== 'punishment')
-          .reduce((sum, [key, data]) => sum + data.totalWin, 0);
+        // 🔥 计算中奖游戏RTP（动态）
+        const winGameTypes = winTypes.filter(t => t.name !== 'none' && !t.name.includes('律师函') && t.name !== 'punishment');
+        const winGames = winGameTypes.reduce((sum, t) => sum + t.count, 0);
+        const winGamesBet = winGameTypes.reduce((sum, t) => sum + t.totalBet, 0);
+        const winGamesWin = winGameTypes.reduce((sum, t) => sum + t.totalWin, 0);
         
         const winGamesRTP = winGamesBet > 0 ? ((winGamesWin / winGamesBet) * 100).toFixed(2) : '0.00';
         document.getElementById('rtpWinGames').textContent = winGamesRTP + '%';
         document.getElementById('rtpWinCount').textContent = winGames;
         document.getElementById('rtpWinBet').textContent = '$' + (winGamesBet / 500000).toFixed(2);
         
-        // 🔥 计算未中奖损失
-        const lossGames = (winTypes['none']?.count || 0) + (winTypes['punishment']?.count || 0);
-        const lossAmount = Math.abs((winTypes['none']?.totalWin || 0) + (winTypes['punishment']?.totalWin || 0));
+        // 🔥 计算未中奖损失（动态）
+        const lossTypes = winTypes.filter(t => t.name === 'none' || t.name.includes('律师函') || t.name === 'punishment');
+        const lossGames = lossTypes.reduce((sum, t) => sum + t.count, 0);
+        const lossAmount = Math.abs(lossTypes.reduce((sum, t) => sum + t.totalWin, 0));
         const lossRate = summary.totalBet > 0 ? ((lossAmount / summary.totalBet) * 100).toFixed(2) : '0.00';
         
         document.getElementById('rtpLossRate').textContent = lossRate + '%';
         document.getElementById('rtpLossCount').textContent = lossGames;
         document.getElementById('rtpLossAmount').textContent = '$' + (lossAmount / 500000).toFixed(2);
         
-        // 🔥 按中奖类型显示RTP贡献
-        const rtpByWinTypeHtml = Object.entries(winTypes)
-          .sort((a, b) => Math.abs(b[1].totalWin) - Math.abs(a[1].totalWin))
-          .map(([key, data]) => {
-            const avgBet = summary.totalBet / summary.totalCount;
-            const typeBet = data.count * avgBet;
-            const typeRTP = typeBet > 0 ? ((data.totalWin / typeBet) * 100).toFixed(2) : '0.00';
-            const contributionPercent = summary.totalBet > 0 ? ((data.totalWin / summary.totalBet) * 100).toFixed(2) : '0.00';
+        // 🔥 按中奖类型显示RTP贡献（动态显示所有规则）
+        const rtpByWinTypeHtml = winTypes
+          .map(type => {
+            const contributionPercent = summary.totalBet > 0 ? ((type.totalWin / summary.totalBet) * 100).toFixed(2) : '0.00';
             
-            const winTypeNames = {
-              'super_jackpot': '🏆 超级大奖',
-              'special_combo': '💎 特殊组合',
-              'quad': '🎰 四连',
-              'triple': '✨ 三连',
-              'double': '🎁 双连',
-              'punishment': '⚡ 律师函',
-              'none': '❌ 未中奖'
-            };
+            // 🔥 动态获取规则图标和名称
+            let icon = '🎯';
+            let displayName = type.name;
             
-            const rtpColor = parseFloat(typeRTP) >= 100 ? 'text-green-600' : 
-                           parseFloat(typeRTP) >= 50 ? 'text-yellow-600' : 'text-red-600';
+            // 根据规则名称自动选择图标
+            if (type.name.includes('律师函')) {
+              icon = '⚡';
+            } else if (type.name === 'none' || type.name === '未中奖') {
+              icon = '❌';
+              displayName = '未中奖';
+            } else if (type.name.includes('jntm')) {
+              icon = type.name.includes('按顺序') ? '🏆' : '💎';
+            } else if (type.name.includes('四连')) {
+              icon = '🎰';
+            } else if (type.name.includes('三连') || type.name.includes('3连')) {
+              icon = '✨';
+            } else if (type.name.includes('双连') || type.name.includes('2连') || type.name.includes('两对')) {
+              icon = '🎁';
+            }
+            
+            const rtpColor = type.rtp >= 100 ? 'text-green-600' : 
+                           type.rtp >= 50 ? 'text-yellow-600' : 'text-red-600';
             
             return `
-              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors">
                 <div class="flex-1">
-                  <div class="font-medium text-slate-900">${winTypeNames[key]}</div>
+                  <div class="font-medium text-slate-900">${icon} ${displayName}</div>
                   <div class="text-xs text-slate-600 mt-1">
-                    出现${data.count}次 · 总赢得$${(data.totalWin / 500000).toFixed(2)}
+                    出现${type.count}次 · 总赢得$${(type.totalWin / 500000).toFixed(2)}
                   </div>
                 </div>
                 <div class="text-right">
-                  <div class="text-lg font-bold ${rtpColor}">${typeRTP}%</div>
+                  <div class="text-lg font-bold ${rtpColor}">${type.rtp.toFixed(2)}%</div>
                   <div class="text-xs text-slate-500">对整体贡献: ${contributionPercent >= 0 ? '+' : ''}${contributionPercent}%</div>
                 </div>
               </div>
@@ -5672,35 +5693,56 @@
         
         document.getElementById('rtpByWinType').innerHTML = rtpByWinTypeHtml;
 
-        // 渲染中奖类型分布
-        const winTypeNames = {
-          'super_jackpot': '🏆 超级大奖 (256x)',
-          'special_combo': '💎 特殊组合 (32x)',
-          'quad': '🎰 四连 (16x)',
-          'triple': '✨ 三连 (8x)',
-          'double': '🎁 双连 (4x)',
-          'punishment': '⚡ 律师函',
-          'none': '❌ 未中奖'
-        };
-
-        const winTypesHtml = Object.entries(winTypes)
-          .sort((a, b) => b[1].count - a[1].count)
-          .map(([key, data]) => {
-            const percentage = summary.totalCount > 0 ? (data.count / summary.totalCount * 100).toFixed(2) : '0.00';
-            const barWidth = summary.totalCount > 0 ? (data.count / summary.totalCount * 100) : 0;
+        // 🔥 渲染中奖类型分布（动态显示所有规则）
+        const winTypesHtml = winTypes
+          .map(type => {
+            const percentage = summary.totalCount > 0 ? (type.count / summary.totalCount * 100).toFixed(2) : '0.00';
+            const barWidth = summary.totalCount > 0 ? (type.count / summary.totalCount * 100) : 0;
+            
+            // 🔥 动态获取规则图标和名称
+            let icon = '🎯';
+            let displayName = type.name;
+            
+            if (type.name.includes('律师函')) {
+              icon = '⚡';
+            } else if (type.name === 'none' || type.name === '未中奖') {
+              icon = '❌';
+              displayName = '未中奖';
+            } else if (type.name.includes('jntm')) {
+              icon = type.name.includes('按顺序') ? '🏆' : '💎';
+            } else if (type.name.includes('四连') || type.name === 'quad') {
+              icon = '🎰';
+              if (type.name === 'quad') displayName = '四连';
+            } else if (type.name.includes('三连') || type.name.includes('3连') || type.name === 'triple') {
+              icon = '✨';
+              if (type.name === 'triple') displayName = '三连';
+            } else if (type.name.includes('双连') || type.name.includes('2连') || type.name.includes('两对') || type.name === 'double') {
+              icon = '🎁';
+              if (type.name === 'double') displayName = '双连';
+            } else if (type.name === 'super_jackpot') {
+              icon = '🏆';
+              displayName = '超级大奖';
+            } else if (type.name === 'special_combo') {
+              icon = '💎';
+              displayName = '特殊组合';
+            } else if (type.name === 'punishment') {
+              icon = '⚡';
+              displayName = '律师函';
+            }
             
             return `
-              <div class="border border-slate-200 rounded-lg p-4">
+              <div class="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                 <div class="flex items-center justify-between mb-2">
-                  <span class="font-semibold text-slate-900">${winTypeNames[key]}</span>
-                  <span class="text-sm font-bold text-slate-700">${data.count} 次 (${percentage}%)</span>
+                  <span class="font-semibold text-slate-900">${icon} ${displayName}</span>
+                  <span class="text-sm font-bold text-slate-700">${type.count} 次 (${percentage}%)</span>
                 </div>
                 <div class="h-2 bg-slate-100 rounded-full overflow-hidden mb-2">
-                  <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style="width: ${barWidth}%"></div>
+                  <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all" style="width: ${barWidth}%"></div>
                 </div>
                 <div class="flex items-center justify-between text-xs text-slate-600">
-                  <span>总${data.totalWin >= 0 ? '赢得' : '扣除'}: $${(Math.abs(data.totalWin) / 500000).toFixed(2)}</span>
-                  <span>平均: $${(Math.abs(data.avgWin) / 500000).toFixed(2)}</span>
+                  <span>总${type.totalWin >= 0 ? '赢得' : '扣除'}: $${(Math.abs(type.totalWin) / 500000).toFixed(2)}</span>
+                  <span>平均: $${(Math.abs(type.avgWin) / 500000).toFixed(2)}</span>
+                  <span class="font-semibold ${type.rtp >= 100 ? 'text-green-600' : 'text-red-600'}">RTP: ${type.rtp.toFixed(1)}%</span>
                 </div>
               </div>
             `;
@@ -6653,6 +6695,142 @@
       } catch (error) {
         console.error('预览高级场权重配置失败:', error);
       }
+    }
+    
+    // 🔥 概率计算结果缓存（全局变量，需要在所有函数之前定义）
+    const probabilityCache = new Map();
+    
+    // 生成缓存键
+    function getCacheKey(weightConfigId, rewardSchemeId, method) {
+      return `${weightConfigId}-${rewardSchemeId}-${method}`;
+    }
+    
+    // 🔄 更新进度条
+    function updateProgressBar(displayDiv, percent, method) {
+      displayDiv.innerHTML = `
+        <div class="text-center py-8">
+          <div class="w-full max-w-md mx-auto mb-4">
+            <div class="relative h-6 bg-slate-200 rounded-full overflow-hidden">
+              <div class="absolute top-0 left-0 h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all duration-300 ease-out flex items-center justify-center" style="width: ${percent}%">
+                <span class="text-xs text-white font-bold">${Math.round(percent)}%</span>
+              </div>
+            </div>
+          </div>
+          <div class="animate-spin inline-block w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mb-3"></div>
+          <p class="text-sm text-purple-700 font-semibold">🔄 计算中...</p>
+          <p class="text-xs text-slate-500 mt-1">${method === 'monte-carlo' ? `蒙特卡洛模拟 1,000,000 次 (${Math.round(percent)}%)` : '快速估算'}</p>
+          ${percent > 0 ? `<p class="text-xs text-purple-600 mt-2">⏱️ 预计剩余时间: ${Math.max(0, Math.round((100 - percent) / 100 * 3))}秒</p>` : ''}
+        </div>
+      `;
+    }
+    
+    // 渲染概率显示（需要在所有调用它的函数之前定义）
+    function renderProbabilityDisplay(displayId, result) {
+      const displayDiv = document.getElementById(displayId);
+      const { rules, punishments, noWin, rtp, houseEdge, totalExpectedValue, method, simulationCount, calculationTime } = result;
+      
+      let html = `
+        <div class="bg-white rounded-lg p-4 border border-purple-200">
+          <!-- 中奖规则概率 -->
+          <div class="mb-4">
+            <h5 class="text-sm font-bold text-green-700 mb-3">🎁 中奖规则概率</h5>
+            <div class="grid grid-cols-4 gap-2">
+              ${rules.map(rule => `
+                <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200">
+                  <div class="text-xs font-semibold text-slate-900 mb-1 truncate" title="${rule.ruleName}">${rule.ruleName}</div>
+                  <div class="text-lg font-bold text-green-600">${rule.multiplier}x</div>
+                  <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${rule.probability.toFixed(2)}%</div>
+                  <div class="text-xs ${rule.expectedValue >= 0 ? 'text-green-600' : 'text-red-600'} mt-0.5">期望: ${rule.expectedValue >= 0 ? '+' : ''}${rule.expectedValue.toFixed(2)}</div>
+                </div>
+              `).join('')}
+              <div class="bg-gradient-to-br from-slate-50 to-gray-50 p-3 rounded-lg border border-slate-300">
+                <div class="text-xs font-semibold text-slate-700 mb-1">未中奖</div>
+                <div class="text-lg font-bold text-slate-600">0x</div>
+                <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${noWin.probability.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500 mt-0.5">期望: 0</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- 惩罚规则概率 -->
+          ${punishments.length > 0 ? `
+            <div class="mb-4">
+              <h5 class="text-sm font-bold text-red-700 mb-3">⚠️ 惩罚规则概率</h5>
+              <div class="grid grid-cols-4 gap-2">
+                ${punishments.map(p => `
+                  <div class="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-lg border border-red-200">
+                    <div class="text-xs font-semibold text-slate-900 mb-1">${p.ruleName}</div>
+                    <div class="text-lg font-bold text-red-600">${p.multiplier}x</div>
+                    <div class="text-xs text-purple-700 font-semibold mt-1">📊 ${p.probability.toFixed(2)}%</div>
+                    <div class="text-xs text-red-600 mt-0.5">期望: ${p.expectedValue.toFixed(2)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+          
+          <!-- RTP分析 -->
+          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 border-2 border-indigo-300">
+            <h5 class="text-sm font-bold text-indigo-900 mb-3">💎 RTP (玩家回报率) 分析</h5>
+            <div class="grid grid-cols-3 gap-4 mb-3">
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">总期望收益</div>
+                <div class="text-2xl font-bold ${totalExpectedValue >= 0 ? 'text-green-600' : 'text-red-600'}">${totalExpectedValue >= 0 ? '+' : ''}${totalExpectedValue.toFixed(2)}</div>
+                <div class="text-xs text-slate-500">投注1单位</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">玩家RTP</div>
+                <div class="text-2xl font-bold ${rtp >= 85 && rtp <= 98 ? 'text-green-600' : 'text-red-600'}">${rtp.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500">${rtp >= 85 && rtp <= 98 ? '✅ 健康范围' : '⚠️ 需调整'}</div>
+              </div>
+              <div class="text-center">
+                <div class="text-xs text-slate-600 mb-1">庄家优势</div>
+                <div class="text-2xl font-bold ${houseEdge > 0 ? 'text-green-600' : 'text-red-600'}">${houseEdge > 0 ? '+' : ''}${houseEdge.toFixed(2)}%</div>
+                <div class="text-xs text-slate-500">${houseEdge > 0 ? '✅ 可盈利' : '⚠️ 会亏损'}</div>
+              </div>
+            </div>
+            
+            <!-- 健康度指标 -->
+            <div class="bg-white rounded-lg p-3 border border-indigo-200">
+              <div class="text-xs text-slate-600 mb-2">💡 健康RTP范围: 85% - 98%</div>
+              <div class="text-xs text-slate-500 space-y-1">
+                <div>• 低于85%: 玩家体验差，流失率高</div>
+                <div>• 85%-95%: 平衡良好，推荐范围</div>
+                <div>• 95%-98%: 玩家友好，略微薄利</div>
+                <div>• 高于98%: 庄家亏损，不可持续</div>
+              </div>
+            </div>
+            
+            ${rtp < 85 || rtp > 98 ? `
+              <div class="mt-3 bg-amber-50 border border-amber-300 rounded-lg p-3">
+                <div class="text-xs font-bold text-amber-900 mb-2">🎯 配置建议:</div>
+                <div class="text-xs text-amber-800 space-y-1">
+                  ${rtp > 98 ? `
+                    <div>⚠️ RTP过高，建议:</div>
+                    <div>• 降低高倍率规则的倍数</div>
+                    <div>• 提高律师函权重</div>
+                    <div>• 移除部分高倍率规则</div>
+                  ` : `
+                    <div>⚠️ RTP过低，建议:</div>
+                    <div>• 提高奖励规则倍数</div>
+                    <div>• 降低律师函权重</div>
+                    <div>• 添加更多中奖规则</div>
+                  `}
+                </div>
+              </div>
+            ` : ''}
+            
+            <!-- 计算信息 -->
+            <div class="mt-3 text-xs text-slate-500 text-center">
+              🔄 计算方式: ${method === 'monte-carlo' ? `蒙特卡洛模拟 ${simulationCount?.toLocaleString()} 次` : '快速估算'} | 
+              ⏱️ 耗时: ${calculationTime}ms
+            </div>
+          </div>
+        </div>
+      `;
+      
+      displayDiv.innerHTML = html;
+      displayDiv.classList.remove('hidden');
     }
     
     // 预览高级场奖励配置
@@ -10300,8 +10478,20 @@
     }
     
     // 🔥 刷新并保留筛选条件
-    function refreshAdvancedSlotRecordsKeepFilter() {
-      loadAdvancedSlotRecords(advancedSlotCurrentPage);
+    async function refreshAdvancedSlotRecordsKeepFilter() {
+      // 🔥 找到刷新按钮并添加旋转动画
+      const refreshBtn = event?.target?.closest('button');
+      const refreshIcon = refreshBtn?.querySelector('svg');
+      if (refreshIcon) {
+        refreshIcon.classList.add('animate-spin');
+      }
+      
+      await loadAdvancedSlotRecords(advancedSlotCurrentPage);
+      
+      // 🔥 停止动画
+      if (refreshIcon) {
+        refreshIcon.classList.remove('animate-spin');
+      }
     }
 
     // 入场券掉落记录
