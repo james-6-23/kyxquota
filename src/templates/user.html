@@ -780,66 +780,14 @@
               </button>
             </div>
             
-            <!-- 🎟️ 入场券信息卡片（悬浮在导航栏内）-->
-            <div id="advancedTicketCard" class="hidden ml-3 px-3 py-1.5 bg-gradient-to-r from-purple-600/95 to-blue-600/95 backdrop-blur-md rounded-xl shadow-lg border border-white/20">
-              <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 text-xs">
-                  <span>🎟️</span>
-                  <span class="text-white font-bold"><span id="ticketCountNav">0</span>/<span class="text-white/70">2</span></span>
-                </div>
-                <div class="w-px h-3 bg-white/30"></div>
-                <div class="flex items-center gap-1.5 text-xs">
-                  <span>🍀</span>
-                  <span class="text-white font-bold"><span id="fragmentCountNav">0</span>/<span class="text-white/70">5</span></span>
-                </div>
-                <div class="w-px h-3 bg-white/30"></div>
-                <button id="synthesizeButtonNav" onclick="synthesizeTicket()" 
-                        class="px-2 py-0.5 bg-yellow-400 hover:bg-yellow-300 text-black text-xs font-bold rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="合成入场券">
-                  🔨
-                </button>
-                <button id="enterAdvancedButtonNav" onclick="enterAdvancedMode()" 
-                        class="px-2 py-0.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-xs font-bold rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="进入高级场">
-                  🔥
-                </button>
-              </div>
-            </div>
-            
-            <!-- 💎 至尊令牌信息卡片（悬浮在导航栏内）-->
-            <div id="supremeTokenCard" class="hidden ml-3 px-3 py-1.5 bg-gradient-to-r from-purple-900/95 via-pink-900/95 to-amber-900/95 backdrop-blur-md rounded-xl shadow-lg border border-amber-400/30">
-              <div class="flex items-center gap-2">
-                <div class="flex items-center gap-1.5 text-xs">
-                  <span>💎</span>
-                  <span class="text-amber-300 font-bold"><span id="supremeTokenCountNav">0</span>/<span class="text-amber-400/70">3</span></span>
-                </div>
-                <div class="w-px h-3 bg-white/30"></div>
-                <div class="flex items-center gap-1.5 text-xs">
-                  <span>💠</span>
-                  <span class="text-blue-300 font-bold"><span id="supremeFragmentCountNav">0</span>/<span class="text-blue-400/70">10</span></span>
-                </div>
-                <div class="w-px h-3 bg-white/30"></div>
-                <button id="synthesizeSupremeButtonNav" onclick="synthesizeSupremeToken()" 
-                        class="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white text-xs font-bold rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="合成至尊令牌">
-                  🔨
-                </button>
-                <button id="enterSupremeButtonNav" onclick="enterSupremeMode()" 
-                        class="px-2 py-0.5 bg-gradient-to-r from-purple-600 to-amber-500 hover:from-purple-700 hover:to-amber-600 text-white text-xs font-bold rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="进入至尊场">
-                  💎
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- 🔥 入场券信息栏（保留原有横条，备用）-->
+    <!-- 🔥 入场券信息栏（优化长度，居中显示）-->
     <div id="advancedTicketBar" class="hidden bg-gradient-to-r from-purple-600/90 to-blue-600/90 backdrop-blur-md border-b border-white/20">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="flex items-center justify-center py-1.5">
+      <div class="flex items-center justify-center py-1.5">
           <!-- 紧凑且清晰的布局 -->
           <div class="flex items-center gap-2 sm:gap-3">
             <!-- 入场券 -->
@@ -894,10 +842,9 @@
       </div>
     </div>
 
-    <!-- 💎 至尊场令牌信息栏（在导航栏下方）-->
+    <!-- 💎 至尊场令牌信息栏（优化长度，居中显示）-->
     <div id="supremeTokenBar" class="hidden bg-gradient-to-r from-purple-900/90 via-pink-900/90 to-amber-900/90 backdrop-blur-md border-b border-amber-400/30">
-      <div class="max-w-7xl mx-auto px-4">
-        <div class="flex items-center justify-center py-1.5">
+      <div class="flex items-center justify-center py-1.5">
           <div class="flex items-center gap-2 sm:gap-3">
             <!-- 至尊令牌 -->
             <div class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-amber-400/50">
@@ -3289,23 +3236,6 @@
       // 更新进入高级场按钮状态
       const enterBtn = document.getElementById('enterAdvancedButton');
       enterBtn.disabled = tickets < 1;
-      
-      // 🔥 同步数据到导航栏卡片
-      const ticketCountNav = document.getElementById('ticketCountNav');
-      const fragmentCountNav = document.getElementById('fragmentCountNav');
-      const synthesizeButtonNav = document.getElementById('synthesizeButtonNav');
-      const enterAdvancedButtonNav = document.getElementById('enterAdvancedButtonNav');
-      
-      if (ticketCountNav) ticketCountNav.textContent = tickets;
-      if (fragmentCountNav) fragmentCountNav.textContent = fragments;
-      
-      // 更新导航栏按钮状态
-      if (synthesizeButtonNav) {
-        synthesizeButtonNav.disabled = !can_synthesize || tickets >= max_tickets_hold || todayGranted >= dailyLimit;
-      }
-      if (enterAdvancedButtonNav) {
-        enterAdvancedButtonNav.disabled = tickets < 1;
-      }
       
       // 🎯 改进：显示/隐藏入场券栏和高级场指示器
       const ticketBar = document.getElementById('advancedTicketBar');
@@ -6304,32 +6234,6 @@
       if (todayEntry) todayEntry.textContent = today_entry_count || 0;
       if (dailyLimit) dailyLimit.textContent = config?.daily_entry_limit || 3;
       
-      // 🔥 同步数据到导航栏卡片
-      const supremeTokenCountNav = document.getElementById('supremeTokenCountNav');
-      const supremeFragmentCountNav = document.getElementById('supremeFragmentCountNav');
-      const synthesizeSupremeButtonNav = document.getElementById('synthesizeSupremeButtonNav');
-      const enterSupremeButtonNav = document.getElementById('enterSupremeButtonNav');
-      
-      if (supremeTokenCountNav) supremeTokenCountNav.textContent = tokens || 0;
-      if (supremeFragmentCountNav) supremeFragmentCountNav.textContent = fragments || 0;
-      
-      // 更新导航栏按钮状态
-      if (synthesizeSupremeButtonNav) {
-        synthesizeSupremeButtonNav.disabled = !can_synthesize || tokens >= max_tokens_hold || todayGranted >= grantLimit;
-      }
-      if (enterSupremeButtonNav) {
-        if (in_supreme_mode) {
-          enterSupremeButtonNav.textContent = '🚪';
-          enterSupremeButtonNav.title = '退出至尊场';
-          enterSupremeButtonNav.onclick = exitSupremeMode;
-        } else {
-          enterSupremeButtonNav.textContent = '💎';
-          enterSupremeButtonNav.title = '进入至尊场';
-          enterSupremeButtonNav.onclick = enterSupremeMode;
-          enterSupremeButtonNav.disabled = tokens < 1 || (today_entry_count >= config?.daily_entry_limit);
-        }
-      }
-      
       // 🔥 显示/隐藏令牌栏
       // 在高级场模式下始终显示（让用户看到至尊场入口）
       // 在初级场模式下，只有拥有碎片或令牌时才显示
@@ -6642,8 +6546,6 @@
       const advancedModeIndicator = document.getElementById('advancedModeIndicator');
       const advancedBetSelector = document.getElementById('advancedBetSelector');
       const supremeBetSelector = document.getElementById('supremeBetSelector');
-      const advancedTicketCard = document.getElementById('advancedTicketCard');
-      const supremeTokenCard = document.getElementById('supremeTokenCard');
       const advancedTicketBar = document.getElementById('advancedTicketBar');
       const supremeTokenBar = document.getElementById('supremeTokenBar');
       
@@ -6654,8 +6556,6 @@
       if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
       if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
       if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
-      if (advancedTicketCard) advancedTicketCard.classList.add('hidden');
-      if (supremeTokenCard) supremeTokenCard.classList.add('hidden');
       if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
       if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
       
@@ -6664,21 +6564,21 @@
         // 💎 至尊场优先级最高
         if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
         if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
-        if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 显示至尊场导航卡片
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 显示至尊场横条
         // 🔥 至尊场时不显示高级场任何元素
       } else if (isInAdvancedMode) {
         // 🔥 高级场其次
         if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
         if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
-        if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');  // 🔥 显示入场券导航卡片
-        if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌卡片
+        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');  // 🔥 显示入场券横条
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌横条
       } else {
         // 🎰 初级场默认
         if (normalModeTitle) normalModeTitle.classList.remove('hidden');
-        // 🔥 初级场：如果有入场券或碎片，显示入场券卡片
+        // 🔥 初级场：如果有入场券或碎片，显示入场券横条
         if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
-          if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');
+          if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
         }
       }
     }

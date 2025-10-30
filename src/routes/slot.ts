@@ -634,53 +634,30 @@ slot.post('/spin', requireAuth, async (c) => {
         let dropType: 'ticket' | 'fragment' | null = null;
         let dropCount = 0;
 
-        // 初级场掉落入场券/碎片
-        if (!inAdvancedMode) {
-            const advancedConfig = getAdvancedSlotConfig();
-
-            // 四连 → 掉落1张入场券
-            if (result.winType === WinType.QUAD && Math.random() < advancedConfig.drop_rate_triple) {
-                const addResult = addTicket(session.linux_do_id, 1);
-                if (addResult.success && addResult.granted && addResult.granted > 0) {
-                    recordTicketDrop(session.linux_do_id, user.username, 'ticket', addResult.granted, result.winType);
-                    ticketDropped = true;
-                    dropType = 'ticket';
-                    dropCount = addResult.granted;
-                    console.log(`[掉落] 🎟️ 四连中奖！用户 ${user.username} 获得${addResult.granted}张入场券`);
-                    if (addResult.message) {
-                        console.log(`[掉落] ${addResult.message}`);
-                    }
-                } else {
-                    console.log(`[掉落] ❌ 四连中奖但无法获得入场券: ${addResult.message}`);
-                }
-            }
-            // 三连 → 掉落1张入场券
-            else if (result.winType === WinType.TRIPLE && Math.random() < advancedConfig.drop_rate_triple) {
-                const addResult = addTicket(session.linux_do_id, 1);
-                if (addResult.success && addResult.granted && addResult.granted > 0) {
-                    recordTicketDrop(session.linux_do_id, user.username, 'ticket', addResult.granted, result.winType);
-                    ticketDropped = true;
-                    dropType = 'ticket';
-                    dropCount = addResult.granted;
-                    console.log(`[掉落] 🎟️ 三连中奖！用户 ${user.username} 获得${addResult.granted}张入场券`);
-                    if (addResult.message) {
-                        console.log(`[掉落] ${addResult.message}`);
-                    }
-                } else {
-                    console.log(`[掉落] ❌ 三连中奖但无法获得入场券: ${addResult.message}`);
-                }
-            }
-            // 二连 → 掉落1个碎片
-            else if (result.winType === WinType.DOUBLE && Math.random() < advancedConfig.drop_rate_double) {
-                addFragment(session.linux_do_id, 1);
-                recordTicketDrop(session.linux_do_id, user.username, 'fragment', 1, result.winType);
-                ticketDropped = true;
-                dropType = 'fragment';
-                dropCount = 1;
-                console.log(`[掉落] 🧩 二连中奖！用户 ${user.username} 获得1个碎片`);
+        // 🔥 使用新的掉落配置系统
+        const { handleDrops } = await import('../services/drop-config');
+        const slotMode = inAdvancedMode ? 'advanced' : 'normal';
+        const dropResult = handleDrops(session.linux_do_id, user.username, slotMode, result.ruleName);
+        
+        if (dropResult.dropped) {
+            ticketDropped = true;
+            // 记录第一个成功掉落的物品（用于提示）
+            const firstDrop = dropResult.items.find(item => item.triggered);
+            if (firstDrop) {
+                dropType = firstDrop.type;
+                dropCount = firstDrop.count;
             }
         }
-        // 高级场中掉落至尊令牌/碎片
+        
+        // ❌ 旧的硬编码掉落逻辑已被上面的新系统替代
+        // 保留注释以供参考
+        // if (!inAdvancedMode) {
+        //     if (result.winType === WinType.QUAD && Math.random() < advancedConfig.drop_rate_triple) {
+        //         addTicket(session.linux_do_id, 1);
+        //     }
+        // }
+        
+        // 高级场中掉落至尊令牌/碎片（现在也由新系统处理）
         else if (inAdvancedMode) {
             const advancedConfig = getAdvancedSlotConfig();
             

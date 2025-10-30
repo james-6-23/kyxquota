@@ -3254,6 +3254,89 @@ app.get('/supreme/drop-records', requireAdmin, async (c) => {
     }
 });
 
+// ========== 掉落配置 API ==========
+
+/**
+ * 获取所有掉落配置
+ */
+app.get('/drop-configs', requireAdmin, async (c) => {
+    try {
+        const mode = c.req.query('mode');  // 可选筛选场次
+        const type = c.req.query('type');  // 可选筛选物品类型
+        
+        const { dropConfigQueries } = await import('../database');
+        let configs;
+        
+        if (mode && type) {
+            configs = dropConfigQueries.getByModeAndType.all(mode, type);
+        } else if (mode) {
+            configs = dropConfigQueries.getByMode.all(mode);
+        } else {
+            configs = dropConfigQueries.getAll.all();
+        }
+        
+        return c.json({
+            success: true,
+            data: configs
+        });
+    } catch (error: any) {
+        console.error('[掉落配置] 获取失败:', error);
+        return c.json({ success: false, message: '获取失败' }, 500);
+    }
+});
+
+/**
+ * 创建掉落配置
+ */
+app.post('/drop-configs', requireAdmin, async (c) => {
+    try {
+        const body = await c.req.json();
+        const { createDropConfig } = await import('../services/drop-config');
+        
+        const result = createDropConfig(body);
+        
+        return c.json(result, result.success ? 200 : 400);
+    } catch (error: any) {
+        console.error('[掉落配置] 创建失败:', error);
+        return c.json({ success: false, message: '创建失败' }, 500);
+    }
+});
+
+/**
+ * 更新掉落配置
+ */
+app.put('/drop-configs/:id', requireAdmin, async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { updateDropConfig } = await import('../services/drop-config');
+        
+        const result = updateDropConfig(id, body);
+        
+        return c.json(result, result.success ? 200 : 400);
+    } catch (error: any) {
+        console.error('[掉落配置] 更新失败:', error);
+        return c.json({ success: false, message: '更新失败' }, 500);
+    }
+});
+
+/**
+ * 删除掉落配置
+ */
+app.delete('/drop-configs/:id', requireAdmin, async (c) => {
+    try {
+        const id = parseInt(c.req.param('id'));
+        const { deleteDropConfig } = await import('../services/drop-config');
+        
+        const result = deleteDropConfig(id);
+        
+        return c.json(result, result.success ? 200 : 400);
+    } catch (error: any) {
+        console.error('[掉落配置] 删除失败:', error);
+        return c.json({ success: false, message: '删除失败' }, 500);
+    }
+});
+
 // ========== 概率计算 API ==========
 
 /**

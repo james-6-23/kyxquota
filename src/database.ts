@@ -538,6 +538,27 @@ export function initDatabase() {
   `);
 
     // 入场券掉落记录表
+    // ========== 掉落配置表 (统一掉落系统) ==========
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS drop_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            slot_mode TEXT NOT NULL,
+            trigger_rule_name TEXT NOT NULL,
+            drop_item_type TEXT NOT NULL,
+            drop_probability REAL NOT NULL,
+            drop_count INTEGER DEFAULT 1,
+            is_active INTEGER DEFAULT 1,
+            priority INTEGER DEFAULT 0,
+            description TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(slot_mode, trigger_rule_name, drop_item_type)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_drop_configs_mode ON drop_configs(slot_mode)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_drop_configs_active ON drop_configs(is_active)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_drop_configs_rule ON drop_configs(trigger_rule_name)');
+
     db.exec(`
     CREATE TABLE IF NOT EXISTS ticket_drop_records (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1071,6 +1092,7 @@ export let kunbeiQueries: any;  // 坤呗借款查询
 export let weightConfigQueries: any;  // 权重配置查询
 export let rewardConfigQueries: any;  // 奖励配置查询
 export let supremeSlotQueries: any;  // 至尊场查询
+export let dropConfigQueries: any;  // 掉落配置查询
 
 /**
  * 初始化预编译查询语句
@@ -2225,6 +2247,37 @@ function initQueries() {
         ),
     };
 
+    // ========== 掉落配置查询 ==========
+    dropConfigQueries = {
+        getAll: db.query<any, never>(
+            'SELECT * FROM drop_configs ORDER BY slot_mode, priority DESC, id ASC'
+        ),
+        getByMode: db.query<any, string>(
+            'SELECT * FROM drop_configs WHERE slot_mode = ? AND is_active = 1 ORDER BY priority DESC'
+        ),
+        getByModeAndRule: db.query<any, [string, string]>(
+            'SELECT * FROM drop_configs WHERE slot_mode = ? AND trigger_rule_name = ? AND is_active = 1 ORDER BY priority DESC'
+        ),
+        getByModeAndType: db.query<any, [string, string]>(
+            'SELECT * FROM drop_configs WHERE slot_mode = ? AND drop_item_type = ? AND is_active = 1 ORDER BY priority DESC'
+        ),
+        getById: db.query<any, number>(
+            'SELECT * FROM drop_configs WHERE id = ?'
+        ),
+        insert: db.query(
+            `INSERT INTO drop_configs (slot_mode, trigger_rule_name, drop_item_type, drop_probability, drop_count, is_active, priority, description, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ),
+        update: db.query(
+            `UPDATE drop_configs SET 
+             slot_mode = ?, trigger_rule_name = ?, drop_item_type = ?, drop_probability = ?, drop_count = ?, is_active = ?, priority = ?, description = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        delete: db.query(
+            'DELETE FROM drop_configs WHERE id = ?'
+        ),
+    };
+
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
         const now = Date.now();
@@ -2234,6 +2287,6 @@ function initQueries() {
         }
     }, 3600000);
 
-    console.log('✅ 数据库查询语句已预编译（含高级场、至尊场和配置方案系统）');
+    console.log('✅ 数据库查询语句已预编译（含高级场、至尊场、配置方案和掉落系统）');
 }
 

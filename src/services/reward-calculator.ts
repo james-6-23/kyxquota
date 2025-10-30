@@ -78,7 +78,23 @@ export function calculateWinByScheme(
 function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boolean): boolean {
     const pattern = rule.match_pattern;
     const matchCount = rule.match_count;
-    const requiredSymbols = rule.required_symbols ? JSON.parse(rule.required_symbols) : null;
+    
+    // 🔥 安全解析 required_symbols
+    let requiredSymbols = null;
+    if (rule.required_symbols) {
+        try {
+            // 如果已经是数组，直接使用
+            if (Array.isArray(rule.required_symbols)) {
+                requiredSymbols = rule.required_symbols;
+            } else if (typeof rule.required_symbols === 'string') {
+                // 如果是字符串，尝试解析
+                requiredSymbols = JSON.parse(rule.required_symbols);
+            }
+        } catch (error) {
+            console.error('[规则匹配] JSON解析失败:', rule.required_symbols, error);
+            requiredSymbols = null;
+        }
+    }
 
     switch (pattern) {
         case 'sequence':

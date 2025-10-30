@@ -282,6 +282,9 @@
               <button onclick="showSection('rewardConfigs')" data-search="奖励配置管理 reward 奖励" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
                 <span>🎁</span> <span>奖励配置</span>
               </button>
+              <button onclick="showSection('dropConfigs')" data-search="掉落配置管理 drop 掉落" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>🎲</span> <span>掉落配置</span>
+              </button>
             </div>
           </details>
           
@@ -3169,6 +3172,175 @@
           </div>
         </div>
 
+        <!-- 🎲 Drop Configs Section -->
+        <div id="dropConfigsSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">🎲 掉落配置管理</h2>
+          <p class="text-sm text-slate-600 mb-6">统一管理所有场次的物品掉落规则，支持跨场次配置</p>
+          
+          <div class="bg-gradient-to-r from-purple-50 to-blue-50 border-2 border-purple-200 rounded-xl p-6 mb-6">
+            <div class="flex items-center gap-3 mb-4">
+              <span class="text-3xl">💡</span>
+              <div>
+                <h3 class="font-bold text-purple-900">功能说明</h3>
+                <p class="text-sm text-purple-800 mt-1">
+                  • 可为任意场次的任意中奖规则配置掉落<br>
+                  • 支持掉落：入场券、碎片、至尊令牌、至尊碎片<br>
+                  • 一个规则可配置掉落多种物品，每种物品独立概率判定
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-bold text-slate-900">掉落规则列表</h3>
+              <button onclick="openAddDropConfigModal()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+                ➕ 添加掉落规则
+              </button>
+            </div>
+            
+            <div id="dropConfigsList" class="space-y-4">
+              <div class="text-center py-8 text-slate-500">加载中...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🎲 添加/编辑掉落配置弹窗 -->
+        <div id="dropConfigModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 p-6 border-b border-purple-500">
+              <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-white">🎲 配置掉落规则</h3>
+                <button onclick="closeDropConfigModal()" class="text-white hover:text-gray-200 transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div class="p-6 space-y-6">
+              <!-- 选择游戏场次 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">1️⃣ 选择游戏场次</label>
+                <div class="flex gap-3">
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="dropSlotMode" value="normal" checked onchange="updateDropRulesList()" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-blue-500 peer-checked:bg-blue-50 rounded-lg text-center transition-all">
+                      <div class="text-2xl mb-1">🎰</div>
+                      <div class="font-semibold">初级场</div>
+                    </div>
+                  </label>
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="dropSlotMode" value="advanced" onchange="updateDropRulesList()" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-red-500 peer-checked:bg-red-50 rounded-lg text-center transition-all">
+                      <div class="text-2xl mb-1">🔥</div>
+                      <div class="font-semibold">高级场</div>
+                    </div>
+                  </label>
+                  <label class="flex-1 cursor-pointer">
+                    <input type="radio" name="dropSlotMode" value="supreme" onchange="updateDropRulesList()" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-purple-500 peer-checked:bg-purple-50 rounded-lg text-center transition-all">
+                      <div class="text-2xl mb-1">💎</div>
+                      <div class="font-semibold">至尊场</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- 选择触发规则 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">2️⃣ 选择中奖规则</label>
+                <select id="dropTriggerRule" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                  <option value="">加载中...</option>
+                </select>
+                <p class="text-xs text-slate-500 mt-2">💡 规则列表来自该场次当前使用的奖励配置方案</p>
+              </div>
+              
+              <!-- 选择掉落物品 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">3️⃣ 选择掉落物品类型</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <label class="cursor-pointer">
+                    <input type="radio" name="dropItemType" value="ticket" checked class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-purple-500 peer-checked:bg-purple-50 rounded-lg text-center transition-all">
+                      <div class="text-3xl mb-1">🎟️</div>
+                      <div class="font-semibold">入场券</div>
+                      <div class="text-xs text-slate-500 mt-1">高级场门票</div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="dropItemType" value="fragment" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-purple-500 peer-checked:bg-purple-50 rounded-lg text-center transition-all">
+                      <div class="text-3xl mb-1">🍀</div>
+                      <div class="font-semibold">碎片</div>
+                      <div class="text-xs text-slate-500 mt-1">合成入场券</div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="dropItemType" value="supreme_token" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-purple-500 peer-checked:bg-purple-50 rounded-lg text-center transition-all">
+                      <div class="text-3xl mb-1">💎</div>
+                      <div class="font-semibold">至尊令牌</div>
+                      <div class="text-xs text-slate-500 mt-1">至尊场门票</div>
+                    </div>
+                  </label>
+                  <label class="cursor-pointer">
+                    <input type="radio" name="dropItemType" value="supreme_fragment" class="peer hidden">
+                    <div class="p-4 border-2 border-slate-300 peer-checked:border-purple-500 peer-checked:bg-purple-50 rounded-lg text-center transition-all">
+                      <div class="text-3xl mb-1">💠</div>
+                      <div class="font-semibold">至尊碎片</div>
+                      <div class="text-xs text-slate-500 mt-1">合成至尊令牌</div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+              
+              <!-- 设置掉落概率 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">4️⃣ 设置掉落概率</label>
+                <input type="range" id="dropProbabilitySlider" min="0" max="100" step="1" value="50" 
+                       class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                       oninput="updateDropProbabilityDisplay(this.value)">
+                <div class="flex items-center justify-between mt-2">
+                  <input type="number" id="dropProbability" min="0" max="100" step="1" value="50" 
+                         class="w-24 px-3 py-2 border border-slate-300 rounded-lg text-center font-bold"
+                         oninput="document.getElementById('dropProbabilitySlider').value = this.value; updateDropProbabilityDisplay(this.value)">
+                  <div class="flex-1 ml-4">
+                    <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+                      <div id="dropProbBar" class="h-full bg-gradient-to-r from-purple-500 to-indigo-500 transition-all" style="width: 50%"></div>
+                    </div>
+                  </div>
+                </div>
+                <p class="text-xs text-slate-500 mt-2">💡 触发该规则时有 <span id="dropProbPercent" class="font-bold text-purple-600">50</span>% 概率掉落</p>
+              </div>
+              
+              <!-- 设置掉落数量 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">5️⃣ 设置掉落数量</label>
+                <input type="number" id="dropCount" min="1" max="10" value="1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-2">💡 每次掉落时获得的数量</p>
+              </div>
+              
+              <!-- 说明 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">描述（可选）</label>
+                <input type="text" id="dropDescription" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="例如：二连50%掉落碎片">
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex gap-3 pt-4 border-t">
+                <button onclick="closeDropConfigModal()" class="flex-1 px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold transition-all">
+                  取消
+                </button>
+                <button onclick="saveDropConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-semibold shadow-lg transition-all">
+                  确认添加
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- 💎 Supreme Slot Config Section -->
         <div id="supremeConfigSection" class="hidden">
           <h2 class="text-2xl font-bold text-slate-900 mb-6">💎 至尊场配置</h2>
@@ -4704,6 +4876,7 @@
       if (section === 'rewardConfigs') loadRewardConfigs();
       if (section === 'supremeConfig') loadSupremeConfig();
       if (section === 'supremeRecords') loadSupremeRecords();
+      if (section === 'dropConfigs') loadDropConfigs();
     }
 
     // 老虎机配置管理
@@ -10021,6 +10194,210 @@
         if (progressInterval) clearInterval(progressInterval);
         console.error('计算概率失败:', error);
         displayDiv.innerHTML = `<div class="text-center py-4 text-red-600">计算失败，请重试</div>`;
+      }
+    }
+    
+    // ========== 掉落配置管理 ==========
+    
+    async function loadDropConfigs() {
+      try {
+        const res = await fetch('/api/admin/drop-configs');
+        const data = await res.json();
+        
+        if (!data.success) {
+          document.getElementById('dropConfigsList').innerHTML = '<div class="text-center py-4 text-red-600">加载失败</div>';
+          return;
+        }
+        
+        const configs = data.data || [];
+        const container = document.getElementById('dropConfigsList');
+        
+        if (configs.length === 0) {
+          container.innerHTML = `
+            <div class="text-center py-12">
+              <p class="text-slate-500 text-lg mb-3">暂无掉落配置</p>
+              <p class="text-slate-400 text-sm">点击右上角"添加掉落规则"开始配置</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // 按物品类型分组
+        const grouped = configs.reduce((acc, config) => {
+          if (!acc[config.drop_item_type]) acc[config.drop_item_type] = [];
+          acc[config.drop_item_type].push(config);
+          return acc;
+        }, {});
+        
+        const typeNames = {
+          'ticket': '🎟️ 入场券',
+          'fragment': '🍀 碎片',
+          'supreme_token': '💎 至尊令牌',
+          'supreme_fragment': '💠 至尊碎片'
+        };
+        
+        const modeNames = {
+          'normal': '🎰 初级场',
+          'advanced': '🔥 高级场',
+          'supreme': '💎 至尊场'
+        };
+        
+        let html = '';
+        for (const [type, typeConfigs] of Object.entries(grouped)) {
+          html += `
+            <div class="border-2 border-slate-200 rounded-xl p-5">
+              <h4 class="font-bold text-lg text-slate-900 mb-4">${typeNames[type]} 掉落配置 (${typeConfigs.length}条)</h4>
+              <div class="space-y-3">
+                ${typeConfigs.map(config => `
+                  <div class="flex items-center justify-between p-4 bg-gradient-to-r from-slate-50 to-gray-50 rounded-lg border border-slate-200 hover:shadow-md transition-shadow">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3 mb-2">
+                        <span class="font-semibold text-slate-900">${modeNames[config.slot_mode]} → ${config.trigger_rule_name}</span>
+                        <span class="px-2 py-0.5 bg-${config.is_active ? 'green' : 'red'}-100 text-${config.is_active ? 'green' : 'red'}-700 rounded-full text-xs font-bold">
+                          ${config.is_active ? '✅ 启用' : '❌ 禁用'}
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-4 text-sm text-slate-600">
+                        <span>📊 概率: <strong class="text-purple-600">${(config.drop_probability * 100).toFixed(1)}%</strong></span>
+                        <span>📦 数量: <strong>${config.drop_count}</strong></span>
+                        <span class="text-xs text-slate-500">${config.description || ''}</span>
+                      </div>
+                    </div>
+                    <div class="flex gap-2">
+                      <button onclick="editDropConfig(${config.id})" class="px-3 py-1.5 bg-blue-500 hover:bg-blue-600 text-white rounded text-sm transition-colors">
+                        ✏️ 编辑
+                      </button>
+                      <button onclick="deleteDropConfig(${config.id})" class="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded text-sm transition-colors">
+                        🗑️ 删除
+                      </button>
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+        
+        container.innerHTML = html;
+      } catch (error) {
+        console.error('加载掉落配置失败:', error);
+        document.getElementById('dropConfigsList').innerHTML = '<div class="text-center py-4 text-red-600">加载失败，请重试</div>';
+      }
+    }
+    
+    function openAddDropConfigModal() {
+      document.getElementById('dropConfigModal').classList.remove('hidden');
+      updateDropRulesList();
+    }
+    
+    function closeDropConfigModal() {
+      document.getElementById('dropConfigModal').classList.add('hidden');
+    }
+    
+    async function updateDropRulesList() {
+      const mode = document.querySelector('input[name="dropSlotMode"]:checked').value;
+      const select = document.getElementById('dropTriggerRule');
+      
+      try {
+        // 获取该场次的配置
+        let configRes;
+        if (mode === 'normal') {
+          configRes = await fetch('/api/admin/slot/config');
+        } else if (mode === 'advanced') {
+          configRes = await fetch('/api/admin/slot/advanced/config');
+        } else if (mode === 'supreme') {
+          configRes = await fetch('/api/admin/supreme/config');
+        }
+        
+        const configData = await configRes.json();
+        const schemeId = configData.data?.reward_scheme_id || 1;
+        
+        // 获取奖励方案的规则列表
+        const schemeRes = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const schemeData = await schemeRes.json();
+        
+        if (schemeData.success) {
+          const rules = schemeData.data.rules || [];
+          select.innerHTML = rules.map(r => 
+            `<option value="${r.rule_name}">${r.rule_name}</option>`
+          ).join('');
+        }
+      } catch (error) {
+        console.error('加载规则列表失败:', error);
+        select.innerHTML = '<option value="">加载失败</option>';
+      }
+    }
+    
+    function updateDropProbabilityDisplay(value) {
+      document.getElementById('dropProbability').value = value;
+      document.getElementById('dropProbabilitySlider').value = value;
+      document.getElementById('dropProbBar').style.width = value + '%';
+      document.getElementById('dropProbPercent').textContent = value;
+    }
+    
+    async function saveDropConfig() {
+      const mode = document.querySelector('input[name="dropSlotMode"]:checked').value;
+      const ruleName = document.getElementById('dropTriggerRule').value;
+      const itemType = document.querySelector('input[name="dropItemType"]:checked').value;
+      const probability = parseFloat(document.getElementById('dropProbability').value) / 100;
+      const count = parseInt(document.getElementById('dropCount').value);
+      const description = document.getElementById('dropDescription').value;
+      
+      if (!ruleName) {
+        showToast('请选择中奖规则', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/drop-configs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            slot_mode: mode,
+            trigger_rule_name: ruleName,
+            drop_item_type: itemType,
+            drop_probability: probability,
+            drop_count: count,
+            description: description
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('✅ 掉落配置已添加', 'success');
+          closeDropConfigModal();
+          loadDropConfigs();
+        } else {
+          showToast(data.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存失败:', error);
+        showToast('保存失败', 'error');
+      }
+    }
+    
+    function editDropConfig(id) {
+      showToast('编辑功能开发中，请先删除后重新添加', 'info');
+      // TODO: 实现编辑功能
+    }
+    
+    async function deleteDropConfig(id) {
+      if (!confirm('确定要删除此掉落配置吗？')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/drop-configs/${id}`, { method: 'DELETE' });
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('删除成功', 'success');
+          loadDropConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除失败:', error);
+        showToast('删除失败', 'error');
       }
     }
     

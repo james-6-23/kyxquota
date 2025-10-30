@@ -97,12 +97,19 @@ function generateSymbols(weightConfig: WeightConfig): string[] {
 function checkRuleMatch(symbols: string[], rule: any): boolean {
     const { match_pattern, match_count, required_symbols } = rule;
     
-    // 解析required_symbols
+    // 🔥 安全解析 required_symbols
     let requiredArr: string[] = [];
     if (required_symbols) {
         try {
-            requiredArr = JSON.parse(required_symbols);
+            // 如果已经是数组，直接使用
+            if (Array.isArray(required_symbols)) {
+                requiredArr = required_symbols;
+            } else if (typeof required_symbols === 'string') {
+                // 如果是字符串，尝试解析
+                requiredArr = JSON.parse(required_symbols);
+            }
         } catch (e) {
+            console.error('[概率计算] JSON解析失败:', required_symbols, e);
             return false;
         }
     }
