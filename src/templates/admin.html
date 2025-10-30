@@ -93,6 +93,10 @@
     .nav-link {
       position: relative;
       overflow: hidden;
+      user-select: none; /* 禁止文字被选中 */
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
     }
     
     .nav-link::before {
@@ -1267,118 +1271,63 @@
               </div>
             </div>
           </div>
-          
-          <!-- 旧版手动权重配置（折叠） -->
-          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
-              <span class="flex items-center gap-2">
-                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
-                <span>🔧 旧版手动权重配置（不推荐）</span>
-              </span>
-              <span class="text-xs text-red-600">已弃用</span>
-            </summary>
-            <div class="px-6 pb-6 border-t border-slate-200">
-              <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 mt-4">
-                <p class="text-sm text-red-800">
-                  ⚠️ <strong>警告：</strong>建议使用上方的配置方案系统。手动修改可能与配置方案冲突。
-              </p>
-            </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-              <!-- 普通符号 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">🎵 美 (m)</label>
-                <input type="number" id="advWeight_m" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_m" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">⚡ 太 (t)</label>
-                <input type="number" id="advWeight_t" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_t" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">👀 你 (n)</label>
-                <input type="number" id="advWeight_n" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_n" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">🐔 鸡 (j)</label>
-                <input type="number" id="advWeight_j" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_j" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">🏀 篮球 (lq)</label>
-                <input type="number" id="advWeight_lq" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_lq" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">🎬 背景 (bj)</label>
-                <input type="number" id="advWeight_bj" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_bj" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">💇 中分头 (zft)</label>
-                <input type="number" id="advWeight_zft" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_zft" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">👖 背带裤 (bdk)</label>
-                <input type="number" id="advWeight_bdk" class="w-full px-3 py-2 border border-slate-300 rounded-lg" min="1" max="1000">
-                <p id="advProb_bdk" class="text-xs text-slate-500 mt-1">概率: 0%</p>
-              </div>
-              <div class="md:col-span-3">
-                <label class="block text-sm font-medium text-red-700 mb-2">⚖️ 律师函 (lsh) - 惩罚符号</label>
-                <input type="number" id="advWeight_lsh" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50" min="1" max="1000">
-                <p id="advProb_lsh" class="text-xs text-red-600 mt-1">概率: 0% | 4个位置至少出现1次: 0%</p>
-              </div>
-            </div>
-            
-            <!-- 总权重显示 -->
-            <div class="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-300">
-              <p class="text-sm text-slate-700">
-                📊 当前总权重: <span id="advTotalWeight" class="font-bold text-indigo-600">825</span>
-              </p>
-            </div>
-            
-            <!-- 操作按钮 -->
-            <div class="flex gap-2 mt-4">
-              <button onclick="saveAdvancedSymbolWeights()" class="flex-1 px-4 py-2 bg-slate-400 hover:bg-slate-500 text-white rounded-lg font-semibold transition-all">
-                保存权重配置（旧版）
-              </button>
-              <button onclick="loadAdvancedSymbolWeights()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
-                重置
-              </button>
-            </div>
-            </div>
-          </details>
 
-          <!-- 保存配置方案按钮 -->
-          <div class="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-300 rounded-xl p-5 mb-6">
-            <h4 class="text-md font-bold text-red-900 mb-3 flex items-center gap-2">
-              <span class="text-xl">💾</span>
-              保存配置方案（推荐）
-            </h4>
-            <p class="text-sm text-red-700 mb-4">应用权重和奖励配置方案到高级场</p>
-            <div class="flex gap-3">
-              <button onclick="saveAdvancedSlotConfigSchemes()" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold shadow-lg transition-all">
-                💾 保存高级场配置方案
-              </button>
-              <button onclick="loadAdvancedSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
-                🔄 重新加载
+          <!-- 统一操作区 -->
+          <div class="bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 border-2 border-red-300 rounded-xl p-6 mb-6 shadow-lg">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span class="text-2xl">💾</span>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-red-900">保存高级场配置</h4>
+                  <p class="text-xs text-red-700">配置修改后请点击保存</p>
+                </div>
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <!-- 配置方案 -->
+              <div class="bg-white rounded-lg p-5 border-2 border-red-200 hover:border-red-300 transition-all shadow-sm hover:shadow-md">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-2xl">🎯</span>
+                  <h5 class="text-sm font-bold text-red-800">方案配置</h5>
+                  <span class="ml-auto px-2 py-0.5 bg-gradient-to-r from-red-100 to-orange-100 text-red-700 rounded-full text-xs font-bold">★ 推荐</span>
+                </div>
+                <p class="text-xs text-slate-600 mb-4">应用权重和奖励配置方案</p>
+                <button onclick="saveAdvancedSlotConfigSchemes()" class="w-full px-5 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                  <span class="flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>保存方案配置</span>
+                  </span>
+                </button>
+              </div>
+              
+              <!-- 基础参数 -->
+              <div class="bg-white rounded-lg p-5 border-2 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-2xl">⚙️</span>
+                  <h5 class="text-sm font-bold text-blue-800">基础参数</h5>
+                </div>
+                <p class="text-xs text-slate-600 mb-4">投注范围、掉落率等</p>
+                <button onclick="saveAdvancedSlotConfig()" class="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                  <span class="flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>保存基础参数</span>
+                  </span>
+                </button>
+              </div>
+            </div>
+            
+            <!-- 重新加载按钮 -->
+            <div class="flex justify-end">
+              <button onclick="loadAdvancedSlotConfig()" class="px-5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all border border-slate-300 shadow-sm hover:shadow flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>重新加载配置</span>
               </button>
             </div>
-          </div>
-          
-          <!-- 保存基础配置按钮 -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 mb-6">
-            <h4 class="text-md font-bold text-blue-900 mb-3 flex items-center gap-2">
-              <span class="text-xl">⚙️</span>
-              保存基础配置
-            </h4>
-            <p class="text-sm text-blue-700 mb-4">保存投注范围、奖励倍数、掉落率等基础参数</p>
-            <button onclick="saveAdvancedSlotConfig()" class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold shadow-lg transition-all">
-              💾 保存基础配置
-            </button>
           </div>
         </div>
 
@@ -1543,18 +1492,6 @@
               </div>
             </div>
             
-            <div class="mt-6 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
-              <h4 class="text-sm font-bold text-blue-900 mb-3">💾 保存基本配置</h4>
-              <p class="text-xs text-blue-700 mb-3">保存投注金额、每日次数、购买功能等基础参数</p>
-              <div class="flex gap-3">
-                <button onclick="updateSlotConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all">
-                  💾 保存基本配置
-                </button>
-                <button onclick="loadSlotConfig()" class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg font-semibold hover:bg-slate-300 transition-colors">
-                  🔄 重新加载
-                </button>
-              </div>
-            </div>
           </div>
           
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
@@ -1672,219 +1609,64 @@
               </div>
             </div>
           </div>
-          
-          <!-- 旧版手动配置（折叠，兼容性保留） -->
-          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
-              <span class="flex items-center gap-2">
-                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
-                <span>🔧 旧版手动配置（不推荐）</span>
-              </span>
-              <span class="text-xs text-red-600">已弃用</span>
-            </summary>
-            <div class="px-6 pb-6 border-t border-slate-200">
-              <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 mt-4">
-                <p class="text-sm text-red-800">
-                  ⚠️ <strong>警告：</strong>旧版手动配置已弃用，建议使用上方的配置方案系统。手动修改权重可能与配置方案冲突。
-              </p>
-            </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <!-- 美 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🎵 美 (m) 权重
-                </label>
-                <input type="number" id="weight_m" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_m" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 太 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  ⚡ 太 (t) 权重
-                </label>
-                <input type="number" id="weight_t" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_t" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 你 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  👀 你 (n) 权重
-                </label>
-                <input type="number" id="weight_n" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_n" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 鸡 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🐔 鸡 (j) 权重
-                </label>
-                <input type="number" id="weight_j" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_j" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 篮球 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🏀 篮球 (lq) 权重
-                </label>
-                <input type="number" id="weight_lq" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_lq" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 背景 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🎬 背景 (bj) 权重
-                </label>
-                <input type="number" id="weight_bj" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_bj" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 中分头 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  💇 中分头 (zft) 权重
-                </label>
-                <input type="number" id="weight_zft" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_zft" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 背带裤 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  👖 背带裤 (bdk) 权重
-                </label>
-                <input type="number" id="weight_bdk" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="100">
-                <p id="prob_bdk" class="text-xs text-slate-500 mt-1">概率: --</p>
-              </div>
-
-              <!-- 律师函 -->
-              <div class="md:col-span-3">
-                <label class="block text-sm font-medium text-red-700 mb-1">
-                  ⚖️ 律师函 (lsh) 权重 <span class="text-xs text-red-600">(惩罚符号)</span>
-                </label>
-                <div class="flex gap-4 items-center">
-                  <input type="number" id="weight_lsh" min="1" max="1000" class="flex-1 px-3 py-2 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 bg-red-50" placeholder="25">
-                  <div class="flex-1">
-                    <p id="prob_lsh" class="text-sm font-medium text-red-700">概率: --</p>
-                    <p id="prob_lsh_appear" class="text-xs text-red-600">4个位置至少出现1次: --</p>
-                  </div>
+          <!-- 统一操作区 -->
+          <div class="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 border-2 border-indigo-300 rounded-xl p-6 mb-6 shadow-lg">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-md">
+                  <span class="text-2xl">💾</span>
+                </div>
+                <div>
+                  <h4 class="text-lg font-bold text-indigo-900">保存初级场配置</h4>
+                  <p class="text-xs text-indigo-700">配置修改后请点击保存</p>
                 </div>
               </div>
             </div>
-
-            <div class="bg-slate-50 rounded-lg p-4 mb-4">
-              <p class="text-sm font-semibold text-slate-700 mb-2">📊 当前总权重: <span id="totalWeight" class="text-indigo-600">--</span></p>
-              <p class="text-xs text-slate-600">总权重 = 所有符号权重之和</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <!-- 配置方案 -->
+              <div class="bg-white rounded-lg p-5 border-2 border-indigo-200 hover:border-indigo-300 transition-all shadow-sm hover:shadow-md">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-2xl">🎯</span>
+                  <h5 class="text-sm font-bold text-indigo-800">方案配置</h5>
+                  <span class="ml-auto px-2 py-0.5 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 rounded-full text-xs font-bold">★ 推荐</span>
+                </div>
+                <p class="text-xs text-slate-600 mb-4">应用权重和奖励配置方案</p>
+                <button onclick="saveNormalSlotConfigSchemes()" class="w-full px-5 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                  <span class="flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>保存方案配置</span>
+                  </span>
+                </button>
+              </div>
+              
+              <!-- 基础参数 -->
+              <div class="bg-white rounded-lg p-5 border-2 border-blue-200 hover:border-blue-300 transition-all shadow-sm hover:shadow-md">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="text-2xl">⚙️</span>
+                  <h5 class="text-sm font-bold text-blue-800">基础参数</h5>
+                </div>
+                <p class="text-xs text-slate-600 mb-4">投注金额、每日次数等</p>
+                <button onclick="updateSlotConfig()" class="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-bold shadow-lg hover:shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+                  <span class="flex items-center justify-center gap-2">
+                    <span>💾</span>
+                    <span>保存基础参数</span>
+                  </span>
+                </button>
+              </div>
             </div>
-
-            <div class="flex gap-3">
-              <button onclick="updateSymbolWeights()" class="px-6 py-2 bg-slate-400 text-white rounded-lg font-semibold hover:bg-slate-500 transition-colors">
-                保存权重配置（旧版）
-              </button>
-              <button onclick="loadSymbolWeights()" class="px-6 py-2 bg-slate-100 text-slate-700 rounded-lg font-semibold hover:bg-slate-200 transition-colors">
-                重置
-              </button>
-            </div>
-            </div>
-          </details>
-
-          <!-- 保存配置方案按钮 -->
-          <div class="bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-300 rounded-xl p-5 mb-6">
-            <h4 class="text-md font-bold text-indigo-900 mb-3 flex items-center gap-2">
-              <span class="text-xl">💾</span>
-              保存配置方案（推荐）
-            </h4>
-            <p class="text-sm text-indigo-700 mb-4">应用权重和奖励配置方案到初级场</p>
-            <div class="flex gap-3">
-              <button onclick="saveNormalSlotConfigSchemes()" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg font-semibold shadow-lg transition-all">
-                💾 保存初级场配置方案
-              </button>
-              <button onclick="loadSlotConfig()" class="px-6 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors">
-                🔄 重新加载
+            
+            <!-- 重新加载按钮 -->
+            <div class="flex justify-end">
+              <button onclick="loadSlotConfig()" class="px-5 py-2 bg-white hover:bg-slate-50 text-slate-700 rounded-lg font-medium transition-all border border-slate-300 shadow-sm hover:shadow flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span>重新加载配置</span>
               </button>
             </div>
           </div>
-
-          <!-- 奖励倍数配置（旧版，已由奖励配置方案替代） -->
-          <details class="bg-white rounded-xl shadow-sm border border-slate-200 mb-6">
-            <summary class="cursor-pointer px-6 py-4 font-bold text-slate-700 hover:bg-slate-50 transition-colors flex items-center justify-between">
-              <span class="flex items-center gap-2">
-                <span class="text-lg transform transition-transform group-open:rotate-90">▶</span>
-                <span>🎁 旧版奖励倍数配置（不推荐）</span>
-              </span>
-              <span class="text-xs text-red-600">已弃用</span>
-            </summary>
-            <div class="px-6 pb-6 border-t border-slate-200">
-              <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-4 mt-4">
-                <p class="text-sm text-red-800 mb-2">
-                  ⚠️ <strong>警告：</strong>建议使用"奖励配置方案"系统管理中奖规则和倍率。
-                </p>
-                <p class="text-xs text-red-700">
-                  • 新系统支持预设规则模板，配置更简单<br>
-                  • 支持多场次共用同一配置方案<br>
-                  • 手动修改可能与配置方案冲突
-              </p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
-              <!-- 超级大奖 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  💎 超级大奖（顺序四连）
-                </label>
-                <input type="number" id="super_jackpot_multiplier" min="1" max="10000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="256">
-                <p class="text-xs text-slate-500 mt-1">j→n→t→m 或 bj→zft→bdk→lq</p>
-              </div>
-
-              <!-- 特殊四异符 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  ✨ 特殊四异符（乱序）
-                </label>
-                <input type="number" id="special_combo_multiplier" min="1" max="10000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="16">
-                <p class="text-xs text-slate-500 mt-1">包含所有4个特殊符号但不按顺序</p>
-              </div>
-
-              <!-- 四连 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🎯 四连（相同符号×4）
-                </label>
-                <input type="number" id="quad_multiplier" min="1" max="10000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="32">
-                <p class="text-xs text-slate-500 mt-1">任意相同符号出现4次，赠送1次免费</p>
-              </div>
-
-              <!-- 三连 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  🔥 三连（相同符号×3）
-                </label>
-                <input type="number" id="triple_multiplier" min="1" max="10000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="8">
-                <p class="text-xs text-slate-500 mt-1">任意相同符号出现3次</p>
-              </div>
-
-              <!-- 双连 -->
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-1">
-                  ⭐ 双连（相同符号×2）
-                </label>
-                <input type="number" id="double_multiplier" min="1" max="10000" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" placeholder="4">
-                <p class="text-xs text-slate-500 mt-1">任意相同符号出现2次</p>
-              </div>
-            </div>
-
-            <div class="flex justify-end">
-              <button onclick="saveMultipliers()" class="px-6 py-2.5 bg-slate-400 hover:bg-slate-500 text-white rounded-lg transition-all font-medium">
-                💾 保存倍数配置（旧版）
-              </button>
-            </div>
-            </div>
-          </details>
         </div>
 
         <!-- Slot Analytics Section -->
@@ -4796,12 +4578,11 @@
       if (section === 'ticketDropRecords') loadTicketDropRecords(1);
       if (section === 'slotConfig') {
         loadSlotConfig();
-        loadSymbolWeights();
-        loadMultipliers();
+        // 旧版手动配置已移除，不再加载
       }
       if (section === 'advancedSlotConfig') {
         loadAdvancedSlotConfig();
-        loadAdvancedSymbolWeights();  // 🔥 加载高级场权重
+        // 旧版手动配置已移除，不再加载
       }
       if (section === 'slotAnalytics') loadSlotAnalytics();
       if (section === 'profitLeaderboard') loadProfitLeaderboard();
@@ -6916,6 +6697,9 @@
           if (config.deduct_all_quota_on_overdue !== undefined) {
             document.getElementById('deductAllQuotaOnOverdue').checked = !!config.deduct_all_quota_on_overdue;
           }
+        } else {
+          console.error('加载坤呗配置失败:', configData.message);
+          showToast('加载坤呗配置失败：' + (configData.message || '未知错误'), 'error');
         }
         
         // 加载统计数据
@@ -6924,13 +6708,16 @@
         
         if (loansData.success) {
           updateKunbeiMainStats(loansData.data.stats);
+        } else {
+          console.error('加载坤呗统计失败:', loansData.message);
+          showToast('加载坤呗统计失败：' + (loansData.message || '未知错误'), 'error');
         }
         
         // 加载梯度配置
-        loadGradientConfigs();
+        await loadGradientConfigs();
       } catch (error) {
         console.error('加载坤呗数据失败:', error);
-        showToast('加载失败', 'error');
+        showToast('加载坤呗数据失败：' + error.message, 'error');
       }
     }
     
@@ -7014,9 +6801,37 @@
         
         if (data.success && data.data) {
           renderGradientConfigsTable(data.data);
+        } else {
+          console.error('加载梯度配置失败:', data.message);
+          showToast(data.message || '加载梯度配置失败', 'error');
+          // 显示空状态
+          const tbody = document.getElementById('gradientConfigsTable');
+          if (tbody) {
+            tbody.innerHTML = `
+              <tr>
+                <td colspan="4" class="text-center py-8 text-red-500">
+                  <div class="text-4xl mb-2">⚠️</div>
+                  <p>加载失败：${data.message || '未知错误'}</p>
+                </td>
+              </tr>
+            `;
+          }
         }
       } catch (error) {
         console.error('加载梯度配置失败:', error);
+        showToast('加载梯度配置失败，请检查网络连接', 'error');
+        // 显示错误状态
+        const tbody = document.getElementById('gradientConfigsTable');
+        if (tbody) {
+          tbody.innerHTML = `
+            <tr>
+              <td colspan="4" class="text-center py-8 text-red-500">
+                <div class="text-4xl mb-2">⚠️</div>
+                <p>网络错误，请重试</p>
+              </td>
+            </tr>
+          `;
+        }
       }
     }
     
@@ -7060,6 +6875,12 @@
     }
     
     function showGradientConfigModal(config = null) {
+      // 🔥 修复：先移除已存在的模态框，避免重复添加
+      const existingModal = document.getElementById('gradientConfigModal');
+      if (existingModal) {
+        existingModal.remove();
+      }
+      
       const isEdit = !!config;
       const modalHtml = `
         <div id="gradientConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
