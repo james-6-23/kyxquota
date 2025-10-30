@@ -7163,13 +7163,25 @@
                                    record.overdue_penalty_until && 
                                    record.overdue_penalty_until > now;
         
-        const statusBadge = record.status === 'active' 
-          ? '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 借款中</span>'
-          : record.status === 'overdue'
-            ? '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>'
-            : isForgiven
-              ? '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">🤝 已免除</span>'
-              : '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
+        // 🔥 状态标签和额外信息
+        let statusBadge = '';
+        let extraInfo = '';
+        
+        if (record.status === 'active') {
+          statusBadge = '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">⏳ 借款中</span>';
+        } else if (record.status === 'overdue') {
+          statusBadge = '<span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-semibold">⚠️ 已逾期</span>';
+          // 🔥 显示逾期自动扣款信息
+          if (record.auto_deducted_amount && record.auto_deducted_amount > 0) {
+            extraInfo = `<div class="text-xs text-orange-600 mt-1">系统自动扣款 $${(record.auto_deducted_amount / 500000).toFixed(2)}</div>`;
+          }
+        } else if (isForgiven) {
+          statusBadge = '<span class="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-semibold">🤝 已免除</span>';
+          // 🔥 显示豁免信息
+          extraInfo = '<div class="text-xs text-purple-600 mt-1">管理员已豁免此借款</div>';
+        } else {
+          statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
+        }
         
         // 🔥 显示自动扣款金额
         const autoDeductDisplay = record.auto_deducted_amount && record.auto_deducted_amount > 0
@@ -7222,7 +7234,10 @@
             <td class="px-4 py-3 text-right">${autoDeductDisplay}</td>
             <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.borrowed_at).toLocaleString('zh-CN', { hour12: false })}</td>
             <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.due_at).toLocaleString('zh-CN', { hour12: false })}</td>
-            <td class="px-4 py-3 text-center">${statusBadge}</td>
+            <td class="px-4 py-3 text-center">
+              <div>${statusBadge}</div>
+              ${extraInfo}
+            </td>
             <td class="px-4 py-3 text-center">
               <div class="flex flex-col gap-1 items-center">
                 ${actionButtons}
