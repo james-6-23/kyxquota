@@ -14,6 +14,7 @@ import {
     checkOverdueLoans,
     getLoanDetails,
     forgiveLoan,
+    clearOverduePenalty,
 } from '../services/kunbei';
 import { kunbeiQueries, userQueries, adminQueries } from '../database';
 import { addQuota, deductQuota, getKyxUserById } from '../services/kyx-api';

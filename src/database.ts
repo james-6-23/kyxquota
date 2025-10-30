@@ -717,6 +717,14 @@ export function initDatabase() {
             updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
         )
     `);
+    
+    // 添加逾期扣款倍数字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE kunbei_config ADD COLUMN overdue_deduct_multiplier REAL DEFAULT 2.5');
+        console.log('✅ 已添加 overdue_deduct_multiplier 字段（逾期扣款倍数）');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 用户借款记录表
     db.exec(`
@@ -740,6 +748,14 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_status ON user_loans(status)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_due_at ON user_loans(due_at)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_created_at ON user_loans(created_at)');
+    
+    // 添加逾期自动扣款字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE user_loans ADD COLUMN auto_deducted_amount INTEGER DEFAULT 0');
+        console.log('✅ 已添加 auto_deducted_amount 字段（逾期自动扣款记录）');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 用户坤呗统计表
     db.exec(`
@@ -1486,7 +1502,7 @@ function initQueries() {
              enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
              repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
              overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
-             deduct_all_quota_on_overdue = ?, updated_at = ? WHERE id = 1`
+             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, updated_at = ? WHERE id = 1`
         ),
 
         // 借款记录管理
@@ -1514,6 +1530,14 @@ function initQueries() {
         ),
         updateLoanStatus: db.query(
             `UPDATE user_loans SET status = ?, actual_repay_amount = ?, repaid_at = ?, overdue_penalty_until = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        updateLoanOverdue: db.query(
+            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        clearOverduePenalty: db.query(
+            `UPDATE user_loans SET overdue_penalty_until = NULL, updated_at = ?
              WHERE id = ?`
         ),
 
@@ -1929,7 +1953,7 @@ function initQueries() {
              enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
              repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
              overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
-             deduct_all_quota_on_overdue = ?, updated_at = ? WHERE id = 1`
+             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, updated_at = ? WHERE id = 1`
         ),
 
         // 借款记录管理
@@ -1957,6 +1981,14 @@ function initQueries() {
         ),
         updateLoanStatus: db.query(
             `UPDATE user_loans SET status = ?, actual_repay_amount = ?, repaid_at = ?, overdue_penalty_until = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        updateLoanOverdue: db.query(
+            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        clearOverduePenalty: db.query(
+            `UPDATE user_loans SET overdue_penalty_until = NULL, updated_at = ?
              WHERE id = ?`
         ),
 

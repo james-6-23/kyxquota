@@ -206,7 +206,8 @@ export interface KunbeiConfig {
     overdue_penalty_hours: number;        // 逾期惩罚时长（小时）
     overdue_ban_advanced: number;         // 逾期是否禁止高级场
     max_active_loans: number;             // 最多同时借款数
-    deduct_all_quota_on_overdue?: number; // 逾期是否扣除所有额度
+    deduct_all_quota_on_overdue?: number; // 逾期是否扣除所有额度（已废弃，使用overdue_deduct_multiplier）
+    overdue_deduct_multiplier?: number;   // 逾期扣款倍数（默认2.5倍）
     updated_at: number;
 }
 
@@ -223,6 +224,7 @@ export interface UserLoan {
     due_at: number;                       // 应还时间
     repaid_at?: number;                   // 实际还款时间
     overdue_penalty_until?: number;       // 逾期惩罚截止时间
+    auto_deducted_amount?: number;        // 逾期自动扣款金额
     created_at: number;
     updated_at: number;
 }

@@ -419,11 +419,36 @@ export async function checkOverdueLoans(): Promise<number> {
             // 标记为逾期
             const penaltyUntil = now + (config.overdue_penalty_hours * 3600000);
 
-            kunbeiQueries.updateLoanStatus.run(
+            // 🔥 计算逾期扣款金额（欠款金额 * 倍数）
+            const deductMultiplier = config.overdue_deduct_multiplier || 2.5;
+            const deductAmount = Math.floor(loan.repay_amount * deductMultiplier);
+            
+            // 获取用户当前额度
+            const userQuota = getUserQuota(loan.linux_do_id);
+            
+            // 实际扣款金额：不超过用户额度，不扣为负数
+            const actualDeductAmount = Math.min(deductAmount, Math.max(0, userQuota));
+            
+            let autoDeductedAmount = 0;
+            
+            // 如果有额度可扣，执行扣款
+            if (actualDeductAmount > 0) {
+                const deductResult = await deductQuota(loan.linux_do_id, actualDeductAmount);
+                if (deductResult.success) {
+                    autoDeductedAmount = actualDeductAmount;
+                    console.log(`[坤呗] 逾期扣款 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}`);
+                } else {
+                    console.error(`[坤呗] 逾期扣除额度失败: ${deductResult.message}`);
+                }
+            } else {
+                console.log(`[坤呗] 逾期但用户额度不足 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}, 应扣: $${(deductAmount / 500000).toFixed(2)}`);
+            }
+
+            // 更新借款状态（使用新的查询）
+            kunbeiQueries.updateLoanOverdue.run(
                 'overdue',
-                null,
-                null,
                 penaltyUntil,
+                autoDeductedAmount,
                 now,
                 loan.id
             );
@@ -456,20 +481,7 @@ export async function checkOverdueLoans(): Promise<number> {
             );
 
             overdueCount++;
-            console.log(`[坤呗] 借款逾期 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}`);
-
-            // 🔥 如果配置启用了逾期扣除所有额度
-            if (config.deduct_all_quota_on_overdue) {
-                const userQuota = getUserQuota(loan.linux_do_id);
-                if (userQuota > 0) {
-                    const result = await deductQuota(loan.linux_do_id, userQuota);
-                    if (result.success) {
-                        console.log(`[坤呗] 逾期扣除用户 ${loan.username} 所有额度 $${(userQuota / 500000).toFixed(2)}`);
-                    } else {
-                        console.error(`[坤呗] 逾期扣除额度失败: ${result.message}`);
-                    }
-                }
-            }
+            console.log(`[坤呗] 借款逾期处理完成 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}`);
         }
     }
 
@@ -497,6 +509,36 @@ export function isBannedFromAdvanced(linuxDoId: string): { banned: boolean; unti
     }
 
     return { banned: false };
+}
+
+/**
+ * 解除逾期惩罚（管理员功能）
+ */
+export function clearOverduePenalty(loanId: number): { success: boolean; message: string } {
+    try {
+        const loan = kunbeiQueries.getLoanById.get(loanId);
+        
+        if (!loan) {
+            return { success: false, message: '借款记录不存在' };
+        }
+        
+        if (!loan.overdue_penalty_until) {
+            return { success: false, message: '该借款没有逾期惩罚' };
+        }
+        
+        const now = Date.now();
+        kunbeiQueries.clearOverduePenalty.run(now, loanId);
+        
+        console.log(`[坤呗] 管理员解除逾期惩罚 - 用户: ${loan.username}, 借款ID: ${loanId}`);
+        
+        return { 
+            success: true, 
+            message: `已解除用户 ${loan.username} 的逾期惩罚（高级场禁入已解除）` 
+        };
+    } catch (error: any) {
+        console.error('[坤呗] 解除逾期惩罚失败:', error);
+        return { success: false, message: '解除失败: ' + error.message };
+    }
 }
 
 /**

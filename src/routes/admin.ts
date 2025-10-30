@@ -2378,8 +2378,11 @@ app.post('/kunbei/config', requireAdmin, async (c) => {
             config.overdue_ban_advanced,
             config.max_active_loans,
             config.deduct_all_quota_on_overdue || 0,
+            config.overdue_deduct_multiplier || 2.5,
             now
         );
+
+        console.log('[坤呗管理] 配置已更新，逾期扣款倍数:', config.overdue_deduct_multiplier || 2.5);
 
         return c.json({ success: true, message: '配置已保存' });
     } catch (error: any) {
@@ -2475,6 +2478,22 @@ app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {
     } catch (error: any) {
         console.error('[坤呗管理] 豁免失败:', error);
         return c.json({ success: false, message: '豁免失败' }, 500);
+    }
+});
+
+/**
+ * 解除逾期惩罚（解封高级场禁入）
+ */
+app.post('/kunbei/loans/:id/clear-penalty', requireAdmin, async (c) => {
+    try {
+        const loanId = parseInt(c.req.param('id'));
+        const { clearOverduePenalty } = await import('../services/kunbei');
+
+        const result = clearOverduePenalty(loanId);
+        return c.json(result);
+    } catch (error: any) {
+        console.error('[坤呗管理] 解除惩罚失败:', error);
+        return c.json({ success: false, message: '解除惩罚失败' }, 500);
     }
 });
 
