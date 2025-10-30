@@ -179,6 +179,18 @@
           <button onclick="showSection('kunbeiRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
             <span>📋</span> 贷款记录
           </button>
+          <button onclick="showSection('weightConfigs')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>⚖️</span> 权重配置管理
+          </button>
+          <button onclick="showSection('rewardConfigs')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🎁</span> 奖励配置管理
+          </button>
+          <button onclick="showSection('supremeConfig')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>💎</span> 至尊场配置
+          </button>
+          <button onclick="showSection('supremeRecords')" class="nav-link w-full text-left px-4 py-3 rounded-lg mb-2 hover:bg-slate-100 text-slate-700 flex items-center gap-2">
+            <span>🏆</span> 至尊场记录
+          </button>
         </nav>
       </aside>
 
@@ -2826,6 +2838,183 @@
             </div>
           </div>
         </div>
+
+        <!-- ⚖️ Weight Configs Section -->
+        <div id="weightConfigsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">⚖️ 符号权重配置管理</h2>
+            <button onclick="showAddWeightConfigModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+              ➕ 添加新配置
+            </button>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">配置名称</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">使用场次</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">描述</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="weightConfigsTableBody">
+                  <tr>
+                    <td colspan="5" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-amber-800">
+              <strong>💡 说明：</strong>权重配置方案可被初级场、高级场、至尊场引用。修改配置后，使用该配置的所有场次将立即生效。
+            </p>
+          </div>
+        </div>
+
+        <!-- 🎁 Reward Configs Section -->
+        <div id="rewardConfigsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">🎁 奖励配置管理</h2>
+            <button onclick="showAddRewardSchemeModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+              ➕ 添加新方案
+            </button>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">ID</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">方案名称</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">规则数量</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">使用场次</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">描述</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
+                  </tr>
+                </thead>
+                <tbody id="rewardSchemesTableBody">
+                  <tr>
+                    <td colspan="6" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p class="text-sm text-amber-800">
+              <strong>💡 说明：</strong>奖励配置方案包含多条中奖规则和律师函惩罚配置。修改方案后，使用该方案的所有场次将立即生效。
+            </p>
+          </div>
+        </div>
+
+        <!-- 💎 Supreme Slot Config Section -->
+        <div id="supremeConfigSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">💎 至尊场配置</h2>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">⚙️ 基础配置</h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">启用状态</label>
+                <select id="supremeEnabled" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <option value="1">✅ 启用</option>
+                  <option value="0">❌ 禁用</option>
+                </select>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">合成所需碎片</label>
+                <input type="number" id="supremeFragmentsToToken" min="1" max="100" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">令牌持有上限</label>
+                <input type="number" id="supremeMaxTokens" min="1" max="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">投注范围（美元）</label>
+                <div class="flex gap-2">
+                  <input type="number" id="supremeMinBet" placeholder="最小" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
+                  <input type="number" id="supremeMaxBet" placeholder="最大" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日进入限制</label>
+                <input type="number" id="supremeDailyEntry" min="1" max="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日投注限额（美元）</label>
+                <input type="number" id="supremeDailyBetLimit" min="1000" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+            </div>
+            
+            <div class="flex justify-end mt-4">
+              <button onclick="saveSupremeConfig()" class="px-6 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                💾 保存配置
+              </button>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">⚖️ 符号权重方案</h3>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择权重方案</label>
+              <select id="supremeWeightConfigId" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 可在"权重配置管理"中创建和编辑方案</p>
+            </div>
+          </div>
+
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h3 class="text-lg font-bold text-slate-900 mb-4">🎁 奖励规则方案</h3>
+            <div>
+              <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励方案</label>
+              <select id="supremeRewardSchemeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <option value="">加载中...</option>
+              </select>
+              <p class="text-xs text-slate-500 mt-2">💡 可在"奖励配置管理"中创建和编辑方案</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 💎 Supreme Slot Records Section -->
+        <div id="supremeRecordsSection" class="hidden">
+          <h2 class="text-2xl font-bold text-slate-900 mb-6">💎 至尊场记录</h2>
+          
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead class="bg-gradient-to-r from-purple-50 to-gold-50 border-b border-slate-200">
+                  <tr>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">投注</th>
+                    <th class="px-4 py-3 text-right font-semibold text-slate-700">赢得</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">倍率</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">中奖类型</th>
+                  </tr>
+                </thead>
+                <tbody id="supremeRecordsTableBody">
+                  <tr>
+                    <td colspan="6" class="text-center py-8 text-slate-500">加载中...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   </div>
@@ -4099,7 +4288,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement', 'kunbeiRecords'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'kunbeiManagement', 'kunbeiRecords', 'weightConfigs', 'rewardConfigs', 'supremeConfig', 'supremeRecords'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -4124,6 +4313,10 @@
       if (section === 'bannedUsers') loadBannedUsers();
       if (section === 'kunbeiManagement') loadKunbeiManagement();
       if (section === 'kunbeiRecords') loadKunbeiRecords();
+      if (section === 'weightConfigs') loadWeightConfigs();
+      if (section === 'rewardConfigs') loadRewardConfigs();
+      if (section === 'supremeConfig') loadSupremeConfig();
+      if (section === 'supremeRecords') loadSupremeRecords();
     }
 
     // 老虎机配置管理
@@ -4244,10 +4437,11 @@
       // 第一次加载时，获取所有记录（用于筛选）
       if (!allRecordsLoaded) {
         try {
-          const analyticsRes = await fetch('/api/admin/slot/analytics');
-          const analyticsData = await analyticsRes.json();
-          if (analyticsData.success && analyticsData.data.allRecords) {
-            allAdminSlotRecords = analyticsData.data.allRecords;
+          // 🔥 修复：使用正确的API路径加载所有记录
+          const recordsRes = await fetch('/api/admin/records/slot?page=1&pageSize=1000');
+          const recordsData = await recordsRes.json();
+          if (recordsData.success && recordsData.data) {
+            allAdminSlotRecords = recordsData.data;
             filteredAdminSlotRecords = allAdminSlotRecords;
             allRecordsLoaded = true;
           }
@@ -4334,7 +4528,17 @@
     async function refreshSlotRecords() {
       const icon = document.getElementById('slotRefreshIcon');
       icon.classList.add('animate-spin');
-      await loadSlotRecords(slotCurrentPage);
+      
+      try {
+        // 🔥 修复：重新加载所有数据
+        allRecordsLoaded = false;  // 强制重新加载
+        await loadSlotRecords(1);  // 从第一页开始
+        showToast('记录已刷新', 'success');
+      } catch (error) {
+        console.error('刷新失败:', error);
+        showToast('刷新失败', 'error');
+      }
+      
       setTimeout(() => icon.classList.remove('animate-spin'), 500);
     }
 
@@ -4405,8 +4609,8 @@
     // 刷新记录（保留筛选条件）
     async function refreshAdminSlotRecords() {
       try {
-        // 🔥 重新加载所有初级场记录
-        const recordsRes = await fetch('/api/admin/slot/records?page=1&pageSize=1000');
+        // 🔥 重新加载所有初级场记录（修复：正确的API路径）
+        const recordsRes = await fetch('/api/admin/records/slot?page=1&pageSize=1000');
         const recordsData = await recordsRes.json();
         
         if (recordsData.success) {
@@ -6475,6 +6679,1700 @@
       showToast('导出成功', 'success');
     }
 
+    // ========== 权重配置管理功能 ==========
+    
+    async function loadWeightConfigs() {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderWeightConfigsTable(data.data);
+        }
+      } catch (error) {
+        console.error('加载权重配置失败:', error);
+        showToast('加载失败', 'error');
+      }
+    }
+    
+    function renderWeightConfigsTable(configs) {
+      const tbody = document.getElementById('weightConfigsTableBody');
+      
+      if (!configs || configs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">暂无权重配置</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = configs.map(config => {
+        const usageText = config.usage_count > 0 ? `${config.usage_count}个场次` : '未使用';
+        const canDelete = config.usage_count === 0;
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-slate-600">#${config.id}</td>
+            <td class="px-4 py-3 font-semibold text-slate-900">${config.config_name}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">${usageText}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">${config.description || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              <button onclick="showEditWeightConfigModal(${config.id})" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium mr-1">编辑</button>
+              <button onclick="viewWeightConfigDetails(${config.id})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium mr-1">详情</button>
+              ${canDelete ? `<button onclick="deleteWeightConfig(${config.id})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium">删除</button>` : '<span class="text-xs text-slate-400">使用中</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function showAddWeightConfigModal() {
+      const modalHtml = `
+        <div id="weightConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-600 to-purple-600">
+              <h3 class="text-xl font-bold text-white">➕ 添加权重配置</h3>
+            </div>
+            <div class="p-6">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-slate-700 mb-2">配置名称 *</label>
+                  <input type="text" id="weightConfigName" placeholder="例如：周末活动配置" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                <div class="md:col-span-2">
+                  <label class="block text-sm font-medium text-slate-700 mb-2">配置描述</label>
+                  <textarea id="weightConfigDesc" placeholder="简要描述这个配置的特点" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg"></textarea>
+                </div>
+              </div>
+              
+              <h4 class="font-bold text-slate-900 mb-4">符号权重设置</h4>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                <div><label class="text-sm text-slate-700">🎵 美 (m)</label><input type="number" id="newWeight_m" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">⚡ 太 (t)</label><input type="number" id="newWeight_t" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">👀 你 (n)</label><input type="number" id="newWeight_n" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">🐔 鸡 (j)</label><input type="number" id="newWeight_j" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">🏀 篮球 (lq)</label><input type="number" id="newWeight_lq" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">🎬 背景 (bj)</label><input type="number" id="newWeight_bj" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">💇 中分头 (zft)</label><input type="number" id="newWeight_zft" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">👖 背带裤 (bdk)</label><input type="number" id="newWeight_bdk" value="100" min="1" max="1000" class="w-full px-3 py-2 border rounded-lg"></div>
+                <div><label class="text-sm text-slate-700">⚖️ 律师函 (lsh)</label><input type="number" id="newWeight_lsh" value="25" min="1" max="1000" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50"></div>
+              </div>
+              
+              <div class="flex gap-3">
+                <button onclick="saveNewWeightConfig()" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">
+                  ✅ 创建配置
+                </button>
+                <button onclick="closeWeightConfigModal()" class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    function showEditWeightConfigModal(configId) {
+      // 待实现：编辑配置的模态框
+      showToast('编辑功能开发中...', 'info');
+    }
+    
+    function viewWeightConfigDetails(configId) {
+      // 待实现：查看配置详情
+      showToast('查看详情功能开发中...', 'info');
+    }
+    
+    async function saveNewWeightConfig() {
+      const configName = document.getElementById('weightConfigName').value.trim();
+      if (!configName) {
+        showToast('请输入配置名称', 'error');
+        return;
+      }
+      
+      const data = {
+        config_name: configName,
+        description: document.getElementById('weightConfigDesc').value.trim(),
+        weight_m: parseInt(document.getElementById('newWeight_m').value),
+        weight_t: parseInt(document.getElementById('newWeight_t').value),
+        weight_n: parseInt(document.getElementById('newWeight_n').value),
+        weight_j: parseInt(document.getElementById('newWeight_j').value),
+        weight_lq: parseInt(document.getElementById('newWeight_lq').value),
+        weight_bj: parseInt(document.getElementById('newWeight_bj').value),
+        weight_zft: parseInt(document.getElementById('newWeight_zft').value),
+        weight_bdk: parseInt(document.getElementById('newWeight_bdk').value),
+        weight_lsh: parseInt(document.getElementById('newWeight_lsh').value)
+      };
+      
+      try {
+        const res = await fetch('/api/admin/weights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast('权重配置已添加', 'success');
+          closeWeightConfigModal();
+          loadWeightConfigs();
+        } else {
+          showToast(result.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('添加权重配置失败:', error);
+        showToast('添加失败', 'error');
+      }
+    }
+    
+    async function deleteWeightConfig(configId) {
+      if (!confirm('确定要删除此权重配置吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/weights/${configId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('配置已删除', 'success');
+          loadWeightConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除权重配置失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+    
+    function closeWeightConfigModal() {
+      const modal = document.getElementById('weightConfigModal');
+      if (modal) modal.remove();
+    }
+    
+    // ========== 奖励配置管理功能 ==========
+    
+    async function loadRewardConfigs() {
+      try {
+        const res = await fetch('/api/admin/rewards/schemes');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderRewardSchemesTable(data.data);
+        }
+      } catch (error) {
+        console.error('加载奖励配置失败:', error);
+        showToast('加载失败', 'error');
+      }
+    }
+    
+    function renderRewardSchemesTable(schemes) {
+      const tbody = document.getElementById('rewardSchemesTableBody');
+      
+      if (!schemes || schemes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">暂无奖励方案</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = schemes.map(scheme => {
+        const usageText = scheme.usage_count > 0 ? `${scheme.usage_count}个场次` : '未使用';
+        const canDelete = scheme.usage_count === 0;
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-slate-600">#${scheme.id}</td>
+            <td class="px-4 py-3 font-semibold text-slate-900">${scheme.scheme_name}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">${scheme.rules_count}条规则</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-600">${usageText}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">${scheme.description || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              <button onclick="editRewardScheme(${scheme.id})" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium mr-1">编辑</button>
+              <button onclick="viewSchemeDetails(${scheme.id})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-medium mr-1">详情</button>
+              ${canDelete ? `<button onclick="deleteRewardScheme(${scheme.id})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-medium">删除</button>` : '<span class="text-xs text-slate-400">使用中</span>'}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function showAddRewardSchemeModal() {
+      const modalHtml = `
+        <div id="rewardSchemeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-indigo-600 to-purple-600">
+              <h3 class="text-xl font-bold text-white">➕ 添加奖励方案</h3>
+            </div>
+            <div class="p-6">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">方案名称 *</label>
+                  <input type="text" id="rewardSchemeName" placeholder="例如：高倍率模式" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">方案描述</label>
+                  <textarea id="rewardSchemeDesc" placeholder="简要描述这个方案的特点" rows="3" class="w-full px-4 py-2 border border-slate-300 rounded-lg"></textarea>
+                </div>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                <button onclick="saveNewRewardScheme()" class="flex-1 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">
+                  ✅ 创建方案
+                </button>
+                <button onclick="closeRewardSchemeModal()" class="px-6 py-3 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300">
+                  取消
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function saveNewRewardScheme() {
+      const schemeName = document.getElementById('rewardSchemeName').value.trim();
+      if (!schemeName) {
+        showToast('请输入方案名称', 'error');
+        return;
+      }
+      
+      const data = {
+        scheme_name: schemeName,
+        description: document.getElementById('rewardSchemeDesc').value.trim()
+      };
+      
+      try {
+        const res = await fetch('/api/admin/rewards/schemes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast('奖励方案已添加，请继续添加规则', 'success');
+          closeRewardSchemeModal();
+          loadRewardConfigs();
+        } else {
+          showToast(result.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('添加奖励方案失败:', error);
+        showToast('添加失败', 'error');
+      }
+    }
+    
+    function editRewardScheme(schemeId) {
+      // 待实现：编辑方案（含规则管理）
+      showToast('编辑功能开发中，请使用API或数据库直接操作', 'info');
+    }
+    
+    function viewSchemeDetails(schemeId) {
+      // 待实现：查看方案详情
+      showToast('查看详情功能开发中...', 'info');
+    }
+    
+    async function deleteRewardScheme(schemeId) {
+      if (!confirm('确定要删除此奖励方案吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('方案已删除', 'success');
+          loadRewardConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除奖励方案失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+    
+    function closeRewardSchemeModal() {
+      const modal = document.getElementById('rewardSchemeModal');
+      if (modal) modal.remove();
+    }
+
+    // ========== 权重配置管理功能 ==========
+    
+    async function loadWeightConfigs() {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderWeightConfigsTable(data.data);
+        }
+      } catch (error) {
+        console.error('加载权重配置失败:', error);
+        showToast('加载权重配置失败', 'error');
+      }
+    }
+    
+    function renderWeightConfigsTable(configs) {
+      const tbody = document.getElementById('weightConfigsTableBody');
+      
+      if (!configs || configs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-slate-500">暂无权重配置</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = configs.map(config => {
+        const usageText = config.usage_count > 0 ? `被 ${config.usage_count} 个场次使用` : '未使用';
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-slate-600">#${config.id}</td>
+            <td class="px-4 py-3 font-semibold text-slate-900">${config.config_name}</td>
+            <td class="px-4 py-3 text-sm text-slate-600">${usageText}</td>
+            <td class="px-4 py-3 text-sm text-slate-500">${config.description || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              <button onclick="showEditWeightConfigModal(${config.id})" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold mr-1">编辑</button>
+              <button onclick="viewWeightConfigDetails(${config.id})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-semibold mr-1">详情</button>
+              ${config.usage_count === 0 ? `
+                <button onclick="deleteWeightConfig(${config.id})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-semibold">删除</button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function showAddWeightConfigModal() {
+      const modalHtml = `
+        <div id="weightConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6">
+              <h3 class="text-xl font-bold text-slate-900 mb-4">➕ 添加权重配置</h3>
+              
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">配置名称 *</label>
+                  <input type="text" id="weightConfigName" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="例如：周末活动配置">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">配置描述</label>
+                  <textarea id="weightConfigDesc" class="w-full px-4 py-2 border border-slate-300 rounded-lg" rows="2" placeholder="简要描述这个配置的特点"></textarea>
+                </div>
+                
+                <div class="border-t pt-4">
+                  <h4 class="font-semibold text-slate-900 mb-3">符号权重设置</h4>
+                  <div class="grid grid-cols-3 gap-3">
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">🎵 美(m)</label>
+                      <input type="number" id="weight_m_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">⚡ 太(t)</label>
+                      <input type="number" id="weight_t_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">👀 你(n)</label>
+                      <input type="number" id="weight_n_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">🐔 鸡(j)</label>
+                      <input type="number" id="weight_j_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">🏀 篮球(lq)</label>
+                      <input type="number" id="weight_lq_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">🎬 背景(bj)</label>
+                      <input type="number" id="weight_bj_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">💇 中分头(zft)</label>
+                      <input type="number" id="weight_zft_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">👖 背带裤(bdk)</label>
+                      <input type="number" id="weight_bdk_new" value="100" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded text-sm">
+                    </div>
+                    <div>
+                      <label class="block text-xs text-slate-600 mb-1">⚖️ 律师函(lsh)</label>
+                      <input type="number" id="weight_lsh_new" value="25" min="1" max="1000" class="w-full px-3 py-2 border border-red-300 rounded text-sm bg-red-50">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                <button onclick="closeWeightConfigModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                <button onclick="saveNewWeightConfig()" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">保存</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function saveNewWeightConfig() {
+      const name = document.getElementById('weightConfigName').value.trim();
+      const desc = document.getElementById('weightConfigDesc').value.trim();
+      
+      if (!name) {
+        showToast('请输入配置名称', 'error');
+        return;
+      }
+      
+      const config = {
+        config_name: name,
+        weight_m: parseInt(document.getElementById('weight_m_new').value),
+        weight_t: parseInt(document.getElementById('weight_t_new').value),
+        weight_n: parseInt(document.getElementById('weight_n_new').value),
+        weight_j: parseInt(document.getElementById('weight_j_new').value),
+        weight_lq: parseInt(document.getElementById('weight_lq_new').value),
+        weight_bj: parseInt(document.getElementById('weight_bj_new').value),
+        weight_zft: parseInt(document.getElementById('weight_zft_new').value),
+        weight_bdk: parseInt(document.getElementById('weight_bdk_new').value),
+        weight_lsh: parseInt(document.getElementById('weight_lsh_new').value),
+        description: desc
+      };
+      
+      try {
+        const res = await fetch('/api/admin/weights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('权重配置已添加', 'success');
+          closeWeightConfigModal();
+          loadWeightConfigs();
+        } else {
+          showToast(data.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('添加权重配置失败:', error);
+        showToast('添加失败', 'error');
+      }
+    }
+    
+    function closeWeightConfigModal() {
+      const modal = document.getElementById('weightConfigModal');
+      if (modal) modal.remove();
+    }
+    
+    async function showEditWeightConfigModal(configId) {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载配置失败', 'error');
+          return;
+        }
+        
+        const config = data.data.find(c => c.id === configId);
+        if (!config) {
+          showToast('配置不存在', 'error');
+          return;
+        }
+        
+        const modalHtml = `
+          <div id="weightConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div class="p-6">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">✏️ 编辑权重配置</h3>
+                
+                <div class="space-y-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">配置名称 *</label>
+                    <input type="text" id="editWeightConfigName" value="${config.config_name}" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="例如：周末活动配置">
+                  </div>
+                  
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">配置描述</label>
+                    <textarea id="editWeightConfigDesc" class="w-full px-4 py-2 border border-slate-300 rounded-lg" rows="2" placeholder="简要描述这个配置的特点">${config.description || ''}</textarea>
+                  </div>
+                  
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-3">符号权重设置</h4>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      <div>
+                        <label class="text-xs text-slate-600">🎵 美 (m)</label>
+                        <input type="number" id="editWeight_m" value="${config.weight_m}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">⚡ 太 (t)</label>
+                        <input type="number" id="editWeight_t" value="${config.weight_t}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">👀 你 (n)</label>
+                        <input type="number" id="editWeight_n" value="${config.weight_n}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">🐔 鸡 (j)</label>
+                        <input type="number" id="editWeight_j" value="${config.weight_j}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">🏀 篮球 (lq)</label>
+                        <input type="number" id="editWeight_lq" value="${config.weight_lq}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">🎬 背景 (bj)</label>
+                        <input type="number" id="editWeight_bj" value="${config.weight_bj}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">💇 中分头 (zft)</label>
+                        <input type="number" id="editWeight_zft" value="${config.weight_zft}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">👖 背带裤 (bdk)</label>
+                        <input type="number" id="editWeight_bdk" value="${config.weight_bdk}" min="1" max="1000" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm">
+                      </div>
+                      <div>
+                        <label class="text-xs text-slate-600">⚖️ 律师函 (lsh)</label>
+                        <input type="number" id="editWeight_lsh" value="${config.weight_lsh}" min="1" max="1000" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 text-sm">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                  <button onclick="closeWeightConfigModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                  <button onclick="saveEditWeightConfig(${configId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">保存修改</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载配置失败:', error);
+        showToast('加载配置失败', 'error');
+      }
+    }
+    
+    async function saveEditWeightConfig(configId) {
+      const configName = document.getElementById('editWeightConfigName').value.trim();
+      if (!configName) {
+        showToast('请输入配置名称', 'error');
+        return;
+      }
+      
+      const data = {
+        config_name: configName,
+        description: document.getElementById('editWeightConfigDesc').value.trim(),
+        weight_m: parseInt(document.getElementById('editWeight_m').value),
+        weight_t: parseInt(document.getElementById('editWeight_t').value),
+        weight_n: parseInt(document.getElementById('editWeight_n').value),
+        weight_j: parseInt(document.getElementById('editWeight_j').value),
+        weight_lq: parseInt(document.getElementById('editWeight_lq').value),
+        weight_bj: parseInt(document.getElementById('editWeight_bj').value),
+        weight_zft: parseInt(document.getElementById('editWeight_zft').value),
+        weight_bdk: parseInt(document.getElementById('editWeight_bdk').value),
+        weight_lsh: parseInt(document.getElementById('editWeight_lsh').value)
+      };
+      
+      try {
+        const res = await fetch(`/api/admin/weights/${configId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        
+        if (result.success) {
+          showToast('配置已更新', 'success');
+          closeWeightConfigModal();
+          loadWeightConfigs();
+        } else {
+          showToast(result.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新权重配置失败:', error);
+        showToast('更新失败', 'error');
+      }
+    }
+    
+    async function viewWeightConfigDetails(configId) {
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载配置失败', 'error');
+          return;
+        }
+        
+        const config = data.data.find(c => c.id === configId);
+        if (!config) {
+          showToast('配置不存在', 'error');
+          return;
+        }
+        
+        const modalHtml = `
+          <div id="weightConfigModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div class="p-6">
+                <h3 class="text-xl font-bold text-slate-900 mb-4">📊 权重配置详情</h3>
+                
+                <div class="space-y-4">
+                  <div class="bg-slate-50 rounded-lg p-4">
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span class="text-slate-600">配置ID：</span>
+                        <span class="font-mono font-semibold text-slate-900">#${config.id}</span>
+                      </div>
+                      <div>
+                        <span class="text-slate-600">配置名称：</span>
+                        <span class="font-semibold text-slate-900">${config.config_name}</span>
+                      </div>
+                      <div class="col-span-2">
+                        <span class="text-slate-600">描述：</span>
+                        <span class="text-slate-900">${config.description || '无'}</span>
+                      </div>
+                      <div>
+                        <span class="text-slate-600">使用场次：</span>
+                        <span class="font-semibold ${config.usage_count > 0 ? 'text-green-600' : 'text-slate-400'}">${config.usage_count > 0 ? config.usage_count + '个场次' : '未使用'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h4 class="text-sm font-bold text-slate-900 mb-3">符号权重明细</h4>
+                    <div class="grid grid-cols-3 gap-2 text-sm">
+                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="text-xs text-blue-600 mb-1">🎵 美 (m)</div>
+                        <div class="text-lg font-bold text-blue-900">${config.weight_m}</div>
+                      </div>
+                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="text-xs text-blue-600 mb-1">⚡ 太 (t)</div>
+                        <div class="text-lg font-bold text-blue-900">${config.weight_t}</div>
+                      </div>
+                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="text-xs text-blue-600 mb-1">👀 你 (n)</div>
+                        <div class="text-lg font-bold text-blue-900">${config.weight_n}</div>
+                      </div>
+                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <div class="text-xs text-purple-600 mb-1">🐔 鸡 (j)</div>
+                        <div class="text-lg font-bold text-purple-900">${config.weight_j}</div>
+                      </div>
+                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <div class="text-xs text-purple-600 mb-1">🏀 篮球 (lq)</div>
+                        <div class="text-lg font-bold text-purple-900">${config.weight_lq}</div>
+                      </div>
+                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                        <div class="text-xs text-purple-600 mb-1">🎬 背景 (bj)</div>
+                        <div class="text-lg font-bold text-purple-900">${config.weight_bj}</div>
+                      </div>
+                      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="text-xs text-amber-600 mb-1">💇 中分头 (zft)</div>
+                        <div class="text-lg font-bold text-amber-900">${config.weight_zft}</div>
+                      </div>
+                      <div class="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                        <div class="text-xs text-amber-600 mb-1">👖 背带裤 (bdk)</div>
+                        <div class="text-lg font-bold text-amber-900">${config.weight_bdk}</div>
+                      </div>
+                      <div class="bg-red-50 border border-red-300 rounded-lg p-3">
+                        <div class="text-xs text-red-600 mb-1">⚖️ 律师函 (lsh)</div>
+                        <div class="text-lg font-bold text-red-900">${config.weight_lsh}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                  <button onclick="closeWeightConfigModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">关闭</button>
+                  <button onclick="closeWeightConfigModal(); showEditWeightConfigModal(${configId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">编辑配置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载配置详情失败:', error);
+        showToast('加载详情失败', 'error');
+      }
+    }
+    
+    async function deleteWeightConfig(configId) {
+      if (!confirm('确定要删除此权重配置吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/weights/${configId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('配置已删除', 'success');
+          loadWeightConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除权重配置失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+    
+    // ========== 奖励配置管理功能 ==========
+    
+    async function loadRewardConfigs() {
+      try {
+        const res = await fetch('/api/admin/rewards/schemes');
+        const data = await res.json();
+        
+        if (data.success) {
+          renderRewardSchemesTable(data.data);
+        }
+      } catch (error) {
+        console.error('加载奖励配置失败:', error);
+        showToast('加载奖励配置失败', 'error');
+      }
+    }
+    
+    function renderRewardSchemesTable(schemes) {
+      const tbody = document.getElementById('rewardSchemesTableBody');
+      
+      if (!schemes || schemes.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">暂无奖励方案</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = schemes.map(scheme => {
+        const usageText = scheme.usage_count > 0 ? `被 ${scheme.usage_count} 个场次使用` : '未使用';
+        
+        return `
+          <tr class="border-b border-slate-100 hover:bg-slate-50">
+            <td class="px-4 py-3 font-mono text-slate-600">#${scheme.id}</td>
+            <td class="px-4 py-3 font-semibold text-slate-900">${scheme.scheme_name}</td>
+            <td class="px-4 py-3 text-center">
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-semibold">${scheme.rules_count}条</span>
+            </td>
+            <td class="px-4 py-3 text-sm text-slate-600">${usageText}</td>
+            <td class="px-4 py-3 text-sm text-slate-500">${scheme.description || '-'}</td>
+            <td class="px-4 py-3 text-center">
+              <button onclick="editRewardScheme(${scheme.id})" class="px-3 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold mr-1">编辑</button>
+              <button onclick="viewRewardSchemeDetails(${scheme.id})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-xs font-semibold mr-1">详情</button>
+              ${scheme.usage_count === 0 ? `
+                <button onclick="deleteRewardScheme(${scheme.id})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg text-xs font-semibold">删除</button>
+              ` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function showAddRewardSchemeModal() {
+      const modalHtml = `
+        <div id="rewardSchemeModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+            <div class="p-6">
+              <h3 class="text-xl font-bold text-slate-900 mb-4">➕ 添加奖励方案</h3>
+              
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">方案名称 *</label>
+                  <input type="text" id="rewardSchemeName" class="w-full px-4 py-2 border border-slate-300 rounded-lg" placeholder="例如：初级场标准">
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">方案描述</label>
+                  <textarea id="rewardSchemeDesc" class="w-full px-4 py-2 border border-slate-300 rounded-lg" rows="2" placeholder="简要描述这个方案的特点"></textarea>
+                </div>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                <button onclick="closeRewardSchemeModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                <button onclick="saveNewRewardScheme()" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">创建</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function saveNewRewardScheme() {
+      const name = document.getElementById('rewardSchemeName').value.trim();
+      const desc = document.getElementById('rewardSchemeDesc').value.trim();
+      
+      if (!name) {
+        showToast('请输入方案名称', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/rewards/schemes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scheme_name: name, description: desc })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('奖励方案已创建，现在可以添加规则', 'success');
+          closeRewardSchemeModal();
+          loadRewardConfigs();
+        } else {
+          showToast(data.message || '创建失败', 'error');
+        }
+      } catch (error) {
+        console.error('创建奖励方案失败:', error);
+        showToast('创建失败', 'error');
+      }
+    }
+    
+    function closeRewardSchemeModal() {
+      const modal = document.getElementById('rewardSchemeModal');
+      if (modal) modal.remove();
+    }
+    
+    async function editRewardScheme(schemeId) {
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载方案失败', 'error');
+          return;
+        }
+        
+        const { scheme, rules } = data.data;
+        
+        const modalHtml = `
+          <div id="rewardSchemeEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto my-8">
+              <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 p-6 border-b border-slate-200 z-10">
+                <h3 class="text-xl font-bold text-white">✏️ 编辑奖励方案：${scheme.scheme_name}</h3>
+              </div>
+              
+              <div class="p-6">
+                <!-- 基础信息 -->
+                <div class="mb-6">
+                  <h4 class="text-lg font-bold text-slate-900 mb-4">基础信息</h4>
+                  <div class="grid grid-cols-1 gap-4">
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 mb-2">方案名称 *</label>
+                      <input type="text" id="editSchemeName" value="${scheme.scheme_name}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="block text-sm font-medium text-slate-700 mb-2">方案描述</label>
+                      <textarea id="editSchemeDesc" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg">${scheme.description || ''}</textarea>
+                    </div>
+                  </div>
+                  <button onclick="updateSchemeBasicInfo(${schemeId})" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">保存基础信息</button>
+                </div>
+                
+                <!-- 规则列表 -->
+                <div class="mb-6">
+                  <div class="flex justify-between items-center mb-4">
+                    <h4 class="text-lg font-bold text-slate-900">中奖规则 (${rules.length}条)</h4>
+                    <button onclick="showAddRuleModal(${schemeId})" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold">
+                      ➕ 添加规则
+                    </button>
+                  </div>
+                  
+                  <div class="space-y-3" id="rulesList">
+                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">暂无规则，点击"添加规则"开始配置</div>' : rules.map(rule => `
+                      <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-start">
+                          <div class="flex-1">
+                            <div class="flex items-center gap-2 mb-2">
+                              <span class="font-semibold text-slate-900">${rule.rule_name}</span>
+                              <span class="px-2 py-1 text-xs rounded ${rule.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">${rule.is_active ? '启用' : '禁用'}</span>
+                              <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">${rule.rule_type}</span>
+                              ${rule.rule_category ? `<span class="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700">${rule.rule_category}</span>` : ''}
+                            </div>
+                            <div class="text-sm text-slate-600 space-y-1">
+                              <div>模式：<span class="font-mono text-slate-900">${rule.match_pattern}</span></div>
+                              ${rule.match_count ? `<div>匹配数：${rule.match_count}</div>` : ''}
+                              ${rule.required_symbols ? `<div>必需符号：${rule.required_symbols}</div>` : ''}
+                              <div>倍率：<span class="font-bold text-green-600">${rule.win_multiplier}x</span></div>
+                              ${rule.grant_free_spin > 0 ? `<div>赠送免费转：<span class="font-bold text-amber-600">${rule.grant_free_spin}次</span></div>` : ''}
+                              ${rule.description ? `<div class="text-slate-500 italic mt-1">${rule.description}</div>` : ''}
+                            </div>
+                          </div>
+                          <div class="flex gap-2">
+                            <button onclick="editRule(${rule.id}, ${schemeId})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-semibold">编辑</button>
+                            <button onclick="deleteRule(${rule.id}, ${schemeId})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-semibold">删除</button>
+                          </div>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6 sticky bottom-0 bg-white pt-4 border-t border-slate-200">
+                  <button onclick="closeRewardSchemeEditModal()" class="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold">关闭</button>
+                  <button onclick="closeRewardSchemeEditModal(); viewRewardSchemeDetails(${schemeId})" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">查看完整详情</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载方案失败:', error);
+        showToast('加载方案失败', 'error');
+      }
+    }
+    
+    async function updateSchemeBasicInfo(schemeId) {
+      const name = document.getElementById('editSchemeName').value.trim();
+      if (!name) {
+        showToast('请输入方案名称', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scheme_name: name,
+            description: document.getElementById('editSchemeDesc').value.trim()
+          })
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          showToast('基础信息已更新', 'success');
+          loadRewardConfigs();
+        } else {
+          showToast(data.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新方案失败:', error);
+        showToast('更新失败', 'error');
+      }
+    }
+    
+    function closeRewardSchemeEditModal() {
+      const modal = document.getElementById('rewardSchemeEditModal');
+      if (modal) modal.remove();
+    }
+    
+    async function showAddRuleModal(schemeId) {
+      const modalHtml = `
+        <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
+          <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8">
+            <div class="p-6 border-b border-slate-200 bg-indigo-600">
+              <h3 class="text-xl font-bold text-white">➕ 添加中奖规则</h3>
+            </div>
+            <div class="p-6 space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">规则名称 *</label>
+                <input type="text" id="newRuleName" placeholder="例如：三连美" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">规则类型 *</label>
+                  <select id="newRuleType" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    <option value="match">匹配规则</option>
+                    <option value="scatter">分散规则</option>
+                    <option value="bonus">奖励规则</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">规则分类</label>
+                  <select id="newRuleCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    <option value="">无</option>
+                    <option value="normal">普通奖励</option>
+                    <option value="medium">中等奖励</option>
+                    <option value="high">高级奖励</option>
+                    <option value="jackpot">大奖</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">匹配模式 *</label>
+                <input type="text" id="newMatchPattern" placeholder="例如：3-consecutive" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <div class="text-xs text-slate-500 mt-1">常用：3-consecutive, 4-consecutive, 5-same, scatter-3+</div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">匹配数量</label>
+                  <input type="number" id="newMatchCount" placeholder="3" min="1" max="9" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
+                  <input type="number" id="newWinMultiplier" placeholder="5" min="0" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">必需符号（可选）</label>
+                <input type="text" id="newRequiredSymbols" placeholder="例如：m,t,n" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <div class="text-xs text-slate-500 mt-1">多个符号用逗号分隔，例如：m,t,n</div>
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转次数</label>
+                <input type="number" id="newGrantFreeSpin" placeholder="0" min="0" max="100" value="0" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">规则描述</label>
+                <textarea id="newRuleDescription" rows="2" placeholder="简要描述此规则..." class="w-full px-4 py-2 border border-slate-300 rounded-lg"></textarea>
+              </div>
+              
+              <div class="flex gap-3 mt-6">
+                <button onclick="closeAddRuleModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                <button onclick="saveNewRule(${schemeId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">保存规则</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    async function saveNewRule(schemeId) {
+      const ruleName = document.getElementById('newRuleName').value.trim();
+      const matchPattern = document.getElementById('newMatchPattern').value.trim();
+      const winMultiplier = parseFloat(document.getElementById('newWinMultiplier').value);
+      
+      if (!ruleName || !matchPattern || isNaN(winMultiplier)) {
+        showToast('请填写必填字段', 'error');
+        return;
+      }
+      
+      const data = {
+        scheme_id: schemeId,
+        rule_name: ruleName,
+        rule_type: document.getElementById('newRuleType').value,
+        rule_category: document.getElementById('newRuleCategory').value || null,
+        match_pattern: matchPattern,
+        match_count: parseInt(document.getElementById('newMatchCount').value) || null,
+        required_symbols: document.getElementById('newRequiredSymbols').value.trim() || null,
+        win_multiplier: winMultiplier,
+        grant_free_spin: parseInt(document.getElementById('newGrantFreeSpin').value) || 0,
+        description: document.getElementById('newRuleDescription').value.trim() || null
+      };
+      
+      try {
+        const res = await fetch('/api/admin/rewards/rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('规则已添加', 'success');
+          closeAddRuleModal();
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(result.message || '添加失败', 'error');
+        }
+      } catch (error) {
+        console.error('添加规则失败:', error);
+        showToast('添加失败', 'error');
+      }
+    }
+    
+    function closeAddRuleModal() {
+      const modal = document.getElementById('addRuleModal');
+      if (modal) modal.remove();
+    }
+    
+    async function editRule(ruleId, schemeId) {
+      // 获取规则详情并打开编辑对话框
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const data = await res.json();
+        if (!data.success) {
+          showToast('加载规则失败', 'error');
+          return;
+        }
+        
+        const rule = data.data.rules.find(r => r.id === ruleId);
+        if (!rule) {
+          showToast('规则不存在', 'error');
+          return;
+        }
+        
+        const modalHtml = `
+          <div id="editRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto my-8">
+              <div class="p-6 border-b border-slate-200 bg-blue-600">
+                <h3 class="text-xl font-bold text-white">✏️ 编辑规则</h3>
+              </div>
+              <div class="p-6 space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">规则名称 *</label>
+                  <input type="text" id="editRuleName" value="${rule.rule_name}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">规则类型 *</label>
+                    <select id="editRuleType" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                      <option value="match" ${rule.rule_type === 'match' ? 'selected' : ''}>匹配规则</option>
+                      <option value="scatter" ${rule.rule_type === 'scatter' ? 'selected' : ''}>分散规则</option>
+                      <option value="bonus" ${rule.rule_type === 'bonus' ? 'selected' : ''}>奖励规则</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">规则分类</label>
+                    <select id="editRuleCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                      <option value="">无</option>
+                      <option value="normal" ${rule.rule_category === 'normal' ? 'selected' : ''}>普通奖励</option>
+                      <option value="medium" ${rule.rule_category === 'medium' ? 'selected' : ''}>中等奖励</option>
+                      <option value="high" ${rule.rule_category === 'high' ? 'selected' : ''}>高级奖励</option>
+                      <option value="jackpot" ${rule.rule_category === 'jackpot' ? 'selected' : ''}>大奖</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">匹配模式 *</label>
+                  <input type="text" id="editMatchPattern" value="${rule.match_pattern}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">匹配数量</label>
+                    <input type="number" id="editMatchCount" value="${rule.match_count || ''}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
+                    <input type="number" id="editWinMultiplier" value="${rule.win_multiplier}" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">必需符号</label>
+                  <input type="text" id="editRequiredSymbols" value="${rule.required_symbols || ''}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转</label>
+                    <input type="number" id="editGrantFreeSpin" value="${rule.grant_free_spin}" min="0" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">启用状态</label>
+                    <select id="editRuleActive" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                      <option value="1" ${rule.is_active ? 'selected' : ''}>启用</option>
+                      <option value="0" ${!rule.is_active ? 'selected' : ''}>禁用</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">规则描述</label>
+                  <textarea id="editRuleDescription" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg">${rule.description || ''}</textarea>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                  <button onclick="closeEditRuleModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                  <button onclick="saveEditRule(${ruleId}, ${schemeId})" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">保存修改</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载规则失败:', error);
+        showToast('加载规则失败', 'error');
+      }
+    }
+    
+    async function saveEditRule(ruleId, schemeId) {
+      const ruleName = document.getElementById('editRuleName').value.trim();
+      const matchPattern = document.getElementById('editMatchPattern').value.trim();
+      const winMultiplier = parseFloat(document.getElementById('editWinMultiplier').value);
+      
+      if (!ruleName || !matchPattern || isNaN(winMultiplier)) {
+        showToast('请填写必填字段', 'error');
+        return;
+      }
+      
+      const data = {
+        rule_name: ruleName,
+        rule_type: document.getElementById('editRuleType').value,
+        rule_category: document.getElementById('editRuleCategory').value || null,
+        match_pattern: matchPattern,
+        match_count: parseInt(document.getElementById('editMatchCount').value) || null,
+        required_symbols: document.getElementById('editRequiredSymbols').value.trim() || null,
+        win_multiplier: winMultiplier,
+        grant_free_spin: parseInt(document.getElementById('editGrantFreeSpin').value) || 0,
+        is_active: parseInt(document.getElementById('editRuleActive').value),
+        description: document.getElementById('editRuleDescription').value.trim() || null
+      };
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/rules/${ruleId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          showToast('规则已更新', 'success');
+          closeEditRuleModal();
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(result.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新规则失败:', error);
+        showToast('更新失败', 'error');
+      }
+    }
+    
+    function closeEditRuleModal() {
+      const modal = document.getElementById('editRuleModal');
+      if (modal) modal.remove();
+    }
+    
+    async function deleteRule(ruleId, schemeId) {
+      if (!confirm('确定要删除此规则吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/rules/${ruleId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        if (data.success) {
+          showToast('规则已删除', 'success');
+          closeRewardSchemeEditModal();
+          editRewardScheme(schemeId);
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除规则失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+    
+    async function viewRewardSchemeDetails(schemeId) {
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载方案详情失败', 'error');
+          return;
+        }
+        
+        const { scheme, rules, punishments } = data.data;
+        
+        const modalHtml = `
+          <div id="rewardSchemeDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+              <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-pink-600 p-6 border-b border-slate-200 z-10">
+                <h3 class="text-xl font-bold text-white">📊 奖励方案详情</h3>
+              </div>
+              
+              <div class="p-6">
+                <!-- 基础信息 -->
+                <div class="bg-slate-50 rounded-lg p-4 mb-6">
+                  <h4 class="font-bold text-slate-900 mb-3">基础信息</h4>
+                  <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div><span class="text-slate-600">方案ID：</span><span class="font-mono font-semibold">#${scheme.id}</span></div>
+                    <div><span class="text-slate-600">方案名称：</span><span class="font-semibold">${scheme.scheme_name}</span></div>
+                    <div class="col-span-2"><span class="text-slate-600">描述：</span><span>${scheme.description || '无'}</span></div>
+                  </div>
+                </div>
+                
+                <!-- 规则统计 -->
+                <div class="bg-blue-50 rounded-lg p-4 mb-6">
+                  <h4 class="font-bold text-blue-900 mb-3">📋 规则统计</h4>
+                  <div class="grid grid-cols-3 gap-3 text-sm">
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-blue-600">${rules.length}</div>
+                      <div class="text-blue-700">总规则数</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-green-600">${rules.filter(r => r.is_active).length}</div>
+                      <div class="text-green-700">启用规则</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="text-2xl font-bold text-slate-400">${rules.filter(r => !r.is_active).length}</div>
+                      <div class="text-slate-600">禁用规则</div>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- 详细规则列表 -->
+                <div class="mb-6">
+                  <h4 class="font-bold text-slate-900 mb-3">🎯 详细规则列表</h4>
+                  <div class="space-y-2 max-h-96 overflow-y-auto">
+                    ${rules.length === 0 ? '<div class="text-center py-6 text-slate-500 bg-slate-50 rounded-lg">暂无规则</div>' : rules.map(rule => `
+                      <div class="bg-white border border-slate-200 rounded-lg p-3 text-sm">
+                        <div class="flex justify-between items-start mb-2">
+                          <span class="font-semibold text-slate-900">${rule.rule_name}</span>
+                          <div class="flex gap-1">
+                            <span class="px-2 py-0.5 text-xs rounded ${rule.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">${rule.is_active ? '启用' : '禁用'}</span>
+                            <span class="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700">${rule.rule_type}</span>
+                          </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-slate-600">
+                          <div>模式：<span class="font-mono">${rule.match_pattern}</span></div>
+                          <div>倍率：<span class="font-bold text-green-600">${rule.win_multiplier}x</span></div>
+                          ${rule.match_count ? `<div>数量：${rule.match_count}</div>` : ''}
+                          ${rule.grant_free_spin > 0 ? `<div>免费转：${rule.grant_free_spin}次</div>` : ''}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                
+                <!-- 律师函惩罚配置 -->
+                ${punishments && punishments.length > 0 ? `
+                <div class="mb-6">
+                  <h4 class="font-bold text-slate-900 mb-3">⚖️ 律师函惩罚配置</h4>
+                  <div class="space-y-2">
+                    ${punishments.map(p => `
+                      <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                        <div class="flex justify-between items-center">
+                          <div>
+                            <span class="font-semibold text-red-900">${p.lsh_count}次律师函</span>
+                            <span class="mx-2 text-slate-400">→</span>
+                            <span class="text-red-700">倍率×${p.deduct_multiplier}</span>
+                            ${p.ban_hours > 0 ? `<span class="ml-2 text-red-600">封禁${p.ban_hours}小时</span>` : ''}
+                          </div>
+                          <span class="px-2 py-0.5 text-xs rounded ${p.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">${p.is_active ? '启用' : '禁用'}</span>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+                ` : ''}
+                
+                <div class="flex gap-3 mt-6 sticky bottom-0 bg-white pt-4 border-t border-slate-200">
+                  <button onclick="closeRewardSchemeDetailModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">关闭</button>
+                  <button onclick="closeRewardSchemeDetailModal(); editRewardScheme(${schemeId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg font-semibold">编辑方案</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载方案详情失败:', error);
+        showToast('加载详情失败', 'error');
+      }
+    }
+    
+    function closeRewardSchemeDetailModal() {
+      const modal = document.getElementById('rewardSchemeDetailModal');
+      if (modal) modal.remove();
+    }
+    
+    async function deleteRewardScheme(schemeId) {
+      if (!confirm('确定要删除此奖励方案吗？')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`, {
+          method: 'DELETE'
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('方案已删除', 'success');
+          loadRewardConfigs();
+        } else {
+          showToast(data.message || '删除失败', 'error');
+        }
+      } catch (error) {
+        console.error('删除奖励方案失败:', error);
+        showToast('删除失败', 'error');
+      }
+    }
+
+    // ========== 至尊场配置管理 ==========
+    
+    async function loadSupremeConfig() {
+      try {
+        // 加载权重方案列表（用于下拉选择）
+        const weightRes = await fetch('/api/admin/weights');
+        const weightData = await weightRes.json();
+        
+        if (weightData.success) {
+          const select = document.getElementById('supremeWeightConfigId');
+          select.innerHTML = weightData.data.map(w => 
+            `<option value="${w.id}">${w.config_name}${w.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+        }
+        
+        // 加载奖励方案列表（用于下拉选择）
+        const rewardRes = await fetch('/api/admin/rewards/schemes');
+        const rewardData = await rewardRes.json();
+        
+        if (rewardData.success) {
+          const select = document.getElementById('supremeRewardSchemeId');
+          select.innerHTML = rewardData.data.map(s =>
+            `<option value="${s.id}">${s.scheme_name}${s.usage_count > 0 ? ' (使用中)' : ''}</option>`
+          ).join('');
+        }
+        
+        // 加载至尊场配置
+        const configRes = await fetch('/api/admin/supreme/config');
+        const configData = await configRes.json();
+        
+        if (configData.success && configData.data) {
+          const config = configData.data;
+          document.getElementById('supremeEnabled').value = config.enabled ? '1' : '0';
+          document.getElementById('supremeFragmentsToToken').value = config.fragments_to_token;
+          document.getElementById('supremeMaxTokens').value = config.max_tokens_hold;
+          // 坤币值转换回显示值（除以500000）
+          document.getElementById('supremeMinBet').value = config.min_bet_amount / 500000;
+          document.getElementById('supremeMaxBet').value = config.max_bet_amount / 500000;
+          document.getElementById('supremeDailyEntry').value = config.daily_entry_limit;
+          document.getElementById('supremeDailyBetLimit').value = config.daily_bet_limit / 500000;
+          // 设置选中的配置
+          if (config.weight_config_id) {
+            document.getElementById('supremeWeightConfigId').value = config.weight_config_id;
+          }
+          if (config.reward_scheme_id) {
+            document.getElementById('supremeRewardSchemeId').value = config.reward_scheme_id;
+          }
+        } else {
+          // 使用默认值
+          document.getElementById('supremeEnabled').value = '1';
+          document.getElementById('supremeFragmentsToToken').value = '10';
+          document.getElementById('supremeMaxTokens').value = '3';
+          document.getElementById('supremeMinBet').value = '1000';
+          document.getElementById('supremeMaxBet').value = '10000';
+          document.getElementById('supremeDailyEntry').value = '3';
+          document.getElementById('supremeDailyBetLimit').value = '100000';
+        }
+        
+      } catch (error) {
+        console.error('加载至尊场配置失败:', error);
+        showToast('加载配置失败，将使用默认值', 'warning');
+        // 发生错误时使用默认值
+        document.getElementById('supremeEnabled').value = '1';
+        document.getElementById('supremeFragmentsToToken').value = '10';
+        document.getElementById('supremeMaxTokens').value = '3';
+        document.getElementById('supremeMinBet').value = '1000';
+        document.getElementById('supremeMaxBet').value = '10000';
+        document.getElementById('supremeDailyEntry').value = '3';
+        document.getElementById('supremeDailyBetLimit').value = '100000';
+      }
+    }
+    
+    async function saveSupremeConfig() {
+      try {
+        const config = {
+          enabled: parseInt(document.getElementById('supremeEnabled').value),
+          fragments_to_token: parseInt(document.getElementById('supremeFragmentsToToken').value),
+          max_tokens_hold: parseInt(document.getElementById('supremeMaxTokens').value),
+          min_bet_amount: parseInt(document.getElementById('supremeMinBet').value) * 500000,
+          max_bet_amount: parseInt(document.getElementById('supremeMaxBet').value) * 500000,
+          daily_entry_limit: parseInt(document.getElementById('supremeDailyEntry').value),
+          daily_bet_limit: parseInt(document.getElementById('supremeDailyBetLimit').value) * 500000,
+          weight_config_id: parseInt(document.getElementById('supremeWeightConfigId').value),
+          reward_scheme_id: parseInt(document.getElementById('supremeRewardSchemeId').value)
+        };
+        
+        // 验证配置
+        if (config.min_bet_amount > config.max_bet_amount) {
+          showToast('最小下注不能大于最大下注', 'error');
+          return;
+        }
+        
+        if (config.fragments_to_token < 1 || config.max_tokens_hold < 1) {
+          showToast('碎片和令牌数量必须大于0', 'error');
+          return;
+        }
+        
+        const res = await fetch('/api/admin/supreme/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(config)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast('至尊场配置已保存', 'success');
+          loadSupremeConfig(); // 重新加载配置
+        } else {
+          showToast(data.message || '保存失败', 'error');
+        }
+      } catch (error) {
+        console.error('保存至尊场配置失败:', error);
+        showToast('保存失败: ' + error.message, 'error');
+      }
+    }
+    
+    // ========== 至尊场记录管理 ==========
+    
+    async function loadSupremeRecords() {
+      try {
+        const res = await fetch('/api/admin/supreme/drops');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载记录失败', 'error');
+          return;
+        }
+        
+        const tbody = document.getElementById('supremeRecordsTableBody');
+        const records = data.data || [];
+        
+        if (records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">暂无掉落记录</td></tr>';
+          return;
+        }
+        
+        tbody.innerHTML = records.map(record => {
+          const dropTime = new Date(record.drop_timestamp).toLocaleString('zh-CN');
+          const betAmount = (record.bet_amount / 500000).toLocaleString();
+          const winAmount = (record.win_amount / 500000).toLocaleString();
+          const itemTypeText = record.item_type === 'fragment' ? '碎片' : '令牌';
+          const itemColor = record.item_type === 'fragment' ? 'text-blue-600' : 'text-amber-600';
+          
+          return `
+            <tr class="border-b border-slate-100 hover:bg-slate-50">
+              <td class="px-4 py-3 font-mono text-sm text-slate-600">#${record.id}</td>
+              <td class="px-4 py-3 text-sm">
+                <div class="font-semibold text-slate-900">${record.username || '未知用户'}</div>
+                <div class="text-xs text-slate-500 font-mono">${record.user_id}</div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${itemColor} bg-${record.item_type === 'fragment' ? 'blue' : 'amber'}-100">
+                  ${itemTypeText} ×${record.item_count}
+                </span>
+              </td>
+              <td class="px-4 py-3 text-sm text-slate-600">
+                <div>下注：<span class="font-semibold">${betAmount}</span></div>
+                <div>中奖：<span class="font-semibold text-green-600">${winAmount}</span></div>
+              </td>
+              <td class="px-4 py-3 text-xs text-slate-500 font-mono">
+                <div>${dropTime}</div>
+              </td>
+              <td class="px-4 py-3 text-center">
+                <button onclick="viewSupremeDropDetail(${record.id})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-semibold">详情</button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+        
+      } catch (error) {
+        console.error('加载至尊场记录失败:', error);
+        const tbody = document.getElementById('supremeRecordsTableBody');
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-500">加载失败，请刷新重试</td></tr>';
+      }
+    }
+    
+    async function viewSupremeDropDetail(recordId) {
+      try {
+        const res = await fetch('/api/admin/supreme/drops');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('加载详情失败', 'error');
+          return;
+        }
+        
+        const record = data.data.find(r => r.id === recordId);
+        if (!record) {
+          showToast('记录不存在', 'error');
+          return;
+        }
+        
+        const modalHtml = `
+          <div id="supremeDropDetailModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div class="p-6 border-b border-slate-200 bg-gradient-to-r from-purple-600 to-pink-600">
+                <h3 class="text-xl font-bold text-white">💎 至尊场掉落详情</h3>
+              </div>
+              
+              <div class="p-6">
+                <div class="space-y-4">
+                  <div class="bg-slate-50 rounded-lg p-4">
+                    <h4 class="font-bold text-slate-900 mb-3">基础信息</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                      <div><span class="text-slate-600">记录ID：</span><span class="font-mono font-semibold">#${record.id}</span></div>
+                      <div><span class="text-slate-600">用户名：</span><span class="font-semibold">${record.username || '未知'}</span></div>
+                      <div class="col-span-2"><span class="text-slate-600">用户ID：</span><span class="font-mono text-xs">${record.user_id}</span></div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-amber-50 rounded-lg p-4">
+                    <h4 class="font-bold text-amber-900 mb-3">掉落信息</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                      <div><span class="text-amber-700">物品类型：</span><span class="font-semibold">${record.item_type === 'fragment' ? '至尊碎片' : '至尊令牌'}</span></div>
+                      <div><span class="text-amber-700">数量：</span><span class="font-bold text-amber-900">${record.item_count}</span></div>
+                      <div><span class="text-amber-700">掉落时间：</span><span class="font-mono text-xs">${new Date(record.drop_timestamp).toLocaleString('zh-CN')}</span></div>
+                    </div>
+                  </div>
+                  
+                  <div class="bg-green-50 rounded-lg p-4">
+                    <h4 class="font-bold text-green-900 mb-3">游戏信息</h4>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                      <div><span class="text-green-700">下注金额：</span><span class="font-bold text-green-900">${(record.bet_amount / 500000).toLocaleString()} 坤币</span></div>
+                      <div><span class="text-green-700">中奖金额：</span><span class="font-bold text-green-900">${(record.win_amount / 500000).toLocaleString()} 坤币</span></div>
+                      <div class="col-span-2"><span class="text-green-700">游戏场次：</span><span class="font-semibold">至尊场 (Supreme Slot)</span></div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                  <button onclick="closeSupremeDropDetailModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">关闭</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+      } catch (error) {
+        console.error('加载详情失败:', error);
+        showToast('加载详情失败', 'error');
+      }
+    }
+    
+    function closeSupremeDropDetailModal() {
+      const modal = document.getElementById('supremeDropDetailModal');
+      if (modal) modal.remove();
+    }
+
     // ========== 封禁记录管理功能 ==========
     
     // 加载封禁用户列表
@@ -6628,6 +8526,427 @@
     let advancedSlotFilters = {
       username: '',
       winType: 'all'
+    };
+
+    async function loadAdvancedSlotRecords(page = 1) {
+      try {
+        advancedSlotCurrentPage = page;
+        const res = await fetch(`/api/admin/slot/advanced/records?page=${page}&pageSize=${advancedSlotPageSize}`);
+        const data = await res.json();
+
+        if (data.success) {
+          let { records, total, stats } = data.data;
+          
+          // 🔥 存储所有记录
+          advancedSlotAllRecords = records;
+          
+          // 🔥 应用筛选
+          if (advancedSlotFilters.username) {
+            records = records.filter(r => 
+              (r.linux_do_username && r.linux_do_username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase())) ||
+              (r.username && r.username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase()))
+            );
+          }
+          
+          if (advancedSlotFilters.winType !== 'all') {
+            records = records.filter(r => r.win_type === advancedSlotFilters.winType);
+          }
+          
+          // 更新总数（筛选后）
+          total = records.length;
+          
+          // 更新统计信息
+          document.getElementById('advancedSlotTotal').textContent = stats.count;
+          document.getElementById('advancedSlotTotalBet').textContent = `$${(stats.total_bet / 500000).toFixed(2)}`;
+          document.getElementById('advancedSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
+          const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
+          document.getElementById('advancedSlotRTP').textContent = `${rtp}%`;
+          
+          
+          // 渲染表格
+          const tbody = document.getElementById('advancedSlotRecordsBody');
+          if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="px-4 py-8 text-center text-slate-400">暂无高级场游戏记录</td></tr>';
+          } else {
+            tbody.innerHTML = records.map(r => {
+              const symbols = JSON.parse(r.result_symbols);
+              const winTypeNames = {
+                'super_jackpot': '🏆 超级大奖',
+                'special_combo': '💎 特殊组合',
+                'quad': '🎰 四连',
+                'triple': '✨ 三连',
+                'double': '🎁 双连',
+                'punishment': '⚡ 律师函',
+                'none': '❌ 未中奖'
+              };
+              const winAmount = r.win_amount;
+              const amountClass = winAmount > 0 ? 'text-green-600 font-semibold' : (winAmount < 0 ? 'text-red-600 font-semibold' : 'text-slate-600');
+              
+              return `
+                <tr class="border-t border-slate-200 hover:bg-slate-50">
+                  <td class="px-4 py-3 text-sm text-slate-600">${r.id}</td>
+                  <td class="px-4 py-3 text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="font-medium text-slate-900">${r.linux_do_username || r.username}</div>
+                    <div class="text-xs text-slate-500">${r.username}</div>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-semibold text-blue-600">$${(r.bet_amount / 500000).toFixed(2)}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <div class="flex gap-1">
+                      ${symbols.map(s => {
+                        // 🔥 修复：lq, bj, bdk 使用 jpg，其他符号使用 png
+                        const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
+                        return `<img src="/slot-symbols/${s}.${ext}" class="w-8 h-8 object-contain" title="${s}">`;
+                      }).join('')}
+                    </div>
+                  </td>
+                  <td class="px-4 py-3 text-sm">${winTypeNames[r.win_type] || r.win_type}</td>
+                  <td class="px-4 py-3 text-sm font-semibold">${r.win_multiplier}x</td>
+                  <td class="px-4 py-3 text-sm ${amountClass}">${winAmount >= 0 ? '+' : ''}$${(winAmount / 500000).toFixed(2)}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+          
+          // 更新分页
+          document.getElementById('advancedSlotRecordsTotal').textContent = total;
+          document.getElementById('advancedSlotCurrentPage').textContent = page;
+          document.getElementById('advancedSlotPrevBtn').disabled = page <= 1;
+          document.getElementById('advancedSlotNextBtn').disabled = records.length < advancedSlotPageSize;
+          
+          if (total > 0) {
+            document.getElementById('advancedSlotRecordsPagination').classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.error('加载高级场记录失败', e);
+        showMessage('加载记录失败', 'error');
+      }
+    }
+
+    function refreshAdvancedSlotRecords() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage);
+    }
+
+    function advancedSlotPrevPage() {
+      if (advancedSlotCurrentPage > 1) {
+        loadAdvancedSlotRecords(advancedSlotCurrentPage - 1);
+      }
+    }
+
+    function advancedSlotNextPage() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage + 1);
+    }
+    
+    // 🔥 高级场记录筛选函数
+    function filterAdvancedSlotRecords() {
+      advancedSlotFilters.username = document.getElementById('advancedRecordSearchInput').value.trim();
+      advancedSlotFilters.winType = document.getElementById('advancedWinTypeFilter').value;
+      
+      advancedSlotCurrentPage = 1;
+      loadAdvancedSlotRecords(1);
+    }
+    
+    // 🔥 刷新并保留筛选条件
+    function refreshAdvancedSlotRecordsKeepFilter() {
+      loadAdvancedSlotRecords(advancedSlotCurrentPage);
+    }
+
+    // 入场券掉落记录
+    let ticketDropCurrentPage = 1;
+    let ticketDropPageSize = 50;
+
+    async function loadTicketDropRecords(page = 1) {
+      try {
+        ticketDropCurrentPage = page;
+        const res = await fetch(`/api/admin/slot/tickets/drop-records?page=${page}&pageSize=${ticketDropPageSize}`);
+        const data = await res.json();
+
+        if (data.success) {
+          const { records, total, stats } = data.data;
+          
+          // 更新统计信息
+          document.getElementById('ticketDropTotal').textContent = stats.total;
+          document.getElementById('ticketDropCount').textContent = stats.ticket_drops;
+          document.getElementById('fragmentDropCount').textContent = stats.fragment_drops;
+          document.getElementById('todayDropCount').textContent = stats.today_drops;
+          
+          // 渲染表格
+          const tbody = document.getElementById('ticketDropRecordsBody');
+          if (records.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="px-4 py-8 text-center text-slate-400">暂无掉落记录</td></tr>';
+          } else {
+            tbody.innerHTML = records.map(r => {
+              const dropIcon = r.drop_type === 'ticket' ? '🎟️' : '🧩';
+              const dropName = r.drop_type === 'ticket' ? '入场券' : '碎片';
+              const winTypeNames = {
+                'quad': '🎰 四连',
+                'triple': '✨ 三连',
+                'double': '🎁 双连'
+              };
+              
+              return `
+                <tr class="border-t border-slate-200 hover:bg-slate-50">
+                  <td class="px-4 py-3 text-sm text-slate-600">${r.id}</td>
+                  <td class="px-4 py-3 text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN')}</td>
+                  <td class="px-4 py-3 text-sm font-medium text-slate-900">${r.username}</td>
+                  <td class="px-4 py-3 text-sm">
+                    <span class="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-purple-100 text-purple-700">
+                      ${dropIcon} ${dropName}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 text-sm font-semibold text-indigo-600">${r.drop_count}</td>
+                  <td class="px-4 py-3 text-sm">${winTypeNames[r.trigger_win_type] || r.trigger_win_type}</td>
+                </tr>
+              `;
+            }).join('');
+          }
+          
+          // 更新分页
+          document.getElementById('ticketDropRecordsTotal').textContent = total;
+          document.getElementById('ticketDropCurrentPage').textContent = page;
+          document.getElementById('ticketDropPrevBtn').disabled = page <= 1;
+          document.getElementById('ticketDropNextBtn').disabled = records.length < ticketDropPageSize;
+          
+          if (total > 0) {
+            document.getElementById('ticketDropPagination').classList.remove('hidden');
+          }
+        }
+      } catch (e) {
+        console.error('加载掉落记录失败', e);
+        showMessage('加载记录失败', 'error');
+      }
+    }
+
+    function ticketDropPrevPage() {
+      if (ticketDropCurrentPage > 1) {
+        loadTicketDropRecords(ticketDropCurrentPage - 1);
+      }
+    }
+
+    function ticketDropNextPage() {
+      loadTicketDropRecords(ticketDropCurrentPage + 1);
+    }
+
+    // 高级场符号权重管理
+    async function loadAdvancedSymbolWeights() {
+      try {
+        const res = await fetch('/api/admin/slot/advanced/weights');
+        const data = await res.json();
+
+        if (data.success) {
+          const weights = data.data;
+          
+          // 填充表单
+          document.getElementById('advWeight_m').value = weights.weight_m;
+          document.getElementById('advWeight_t').value = weights.weight_t;
+          document.getElementById('advWeight_n').value = weights.weight_n;
+          document.getElementById('advWeight_j').value = weights.weight_j;
+          document.getElementById('advWeight_lq').value = weights.weight_lq;
+          document.getElementById('advWeight_bj').value = weights.weight_bj;
+          document.getElementById('advWeight_zft').value = weights.weight_zft;
+          document.getElementById('advWeight_bdk').value = weights.weight_bdk;
+          document.getElementById('advWeight_lsh').value = weights.weight_lsh;
+          
+          // 计算并显示概率
+          calculateAdvancedProbabilities();
+        }
+      } catch (error) {
+        console.error('加载高级场符号权重失败:', error);
+        showMessage('加载权重失败', 'error');
+      }
+    }
+
+    async function saveAdvancedSymbolWeights() {
+      try {
+        const weights = {
+          weight_m: parseInt(document.getElementById('advWeight_m').value),
+          weight_t: parseInt(document.getElementById('advWeight_t').value),
+          weight_n: parseInt(document.getElementById('advWeight_n').value),
+          weight_j: parseInt(document.getElementById('advWeight_j').value),
+          weight_lq: parseInt(document.getElementById('advWeight_lq').value),
+          weight_bj: parseInt(document.getElementById('advWeight_bj').value),
+          weight_zft: parseInt(document.getElementById('advWeight_zft').value),
+          weight_bdk: parseInt(document.getElementById('advWeight_bdk').value),
+          weight_lsh: parseInt(document.getElementById('advWeight_lsh').value)
+        };
+        
+        // 验证
+        for (const [key, value] of Object.entries(weights)) {
+          if (isNaN(value) || value < 1 || value > 1000) {
+            showMessage(`${key} 权重必须在1-1000之间`, 'error');
+            return;
+          }
+        }
+        
+        const res = await fetch('/api/admin/slot/advanced/weights', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(weights)
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('高级场权重配置已更新', 'success');
+          calculateAdvancedProbabilities();
+        } else {
+          showMessage(data.message, 'error');
+        }
+      } catch (error) {
+        console.error('保存高级场权重失败:', error);
+        showMessage('保存权重失败', 'error');
+      }
+    }
+
+    // 🔥 更新二连掉落率显示
+    function updateDropRateDoubleDisplay(value) {
+      const rate = parseFloat(value);
+      document.getElementById('advancedDropRateDouble').value = rate.toFixed(2);
+      document.getElementById('dropDoubleBar').style.width = (rate * 100) + '%';
+      
+      // 更新百分比显示
+      document.getElementById('dropDoublePercent').textContent = Math.round(rate * 100);
+      
+      // 计算期望值（假设二连出现率约20%，每10局中有2次二连）
+      const expected = Math.round(rate * 2 * 10) / 10; // 保留一位小数
+      document.getElementById('dropDoubleExpected').textContent = expected.toFixed(1);
+      
+      // 更新掉落强度
+      updateDropIntensity();
+    }
+    
+    // 🔥 更新三连掉落率显示
+    function updateDropRateTripleDisplay(value) {
+      const rate = parseFloat(value);
+      document.getElementById('advancedDropRateTriple').value = rate.toFixed(2);
+      document.getElementById('dropTripleBar').style.width = (rate * 100) + '%';
+      
+      // 更新百分比显示
+      document.getElementById('dropTriplePercent').textContent = Math.round(rate * 100);
+      
+      // 计算期望值（假设三连/四连出现率约10%，每10局中有1次）
+      const expected = Math.round(rate * 1 * 10) / 10; // 保留一位小数
+      document.getElementById('dropTripleExpected').textContent = expected.toFixed(1);
+      
+      // 更新掉落强度
+      updateDropIntensity();
+    }
+    
+    // 🔥 更新掉落强度评估
+    function updateDropIntensity() {
+      const doubleRate = parseFloat(document.getElementById('advancedDropRateDouble').value) || 0;
+      const tripleRate = parseFloat(document.getElementById('advancedDropRateTriple').value) || 0;
+      
+      // 综合评分 (0-1)
+      const intensityScore = (doubleRate * 0.3 + tripleRate * 0.7);
+      
+      let stars, label, color;
+      if (intensityScore >= 0.8) {
+        stars = '★★★★★';
+        label = '(极高)';
+        color = 'text-red-600';
+      } else if (intensityScore >= 0.6) {
+        stars = '★★★★☆';
+        label = '(高)';
+        color = 'text-orange-600';
+      } else if (intensityScore >= 0.4) {
+        stars = '★★★☆☆';
+        label = '(中等)';
+        color = 'text-yellow-600';
+      } else if (intensityScore >= 0.2) {
+        stars = '★★☆☆☆';
+        label = '(平衡)';
+        color = 'text-purple-600';
+      } else {
+        stars = '★☆☆☆☆';
+        label = '(低)';
+        color = 'text-blue-600';
+      }
+      
+      document.getElementById('dropIntensity').innerHTML = `
+        <span class="text-2xl">${stars}</span>
+        <span class="text-sm font-bold ${color} ml-2">${label}</span>
+      `;
+    }
+    
+    // 🔥 显示RTP帮助说明
+    function showRTPHelp() {
+      alert(`🧠 倍率与RTP说明
+
+RTP (Return to Player)：
+• 返还玩家率，表示玩家长期游戏能拿回的投注比例
+• 例如：RTP 0.88 = 88%，玩家长期平均能拿回88%的投注
+
+奖励倍数：
+• 高级场的奖励倍数放大系数
+• 例如：基础倍率8x，奖励倍数4.0，实际奖励 = 8 × 4 = 32x
+
+惩罚倍数：
+• 律师函的惩罚金额放大系数
+• 例如：1个律师函扣1倍投注，惩罚倍数2.0，实际扣除 = 1 × 2 = 2倍投注
+• 律师函出现概率由权重配置单独控制
+
+推荐配置：
+• 奖励倍数：4.0（中奖金额放大）
+• 惩罚倍数：2.0（律师函惩罚放大）`);
+    }
+    
+    function calculateAdvancedProbabilities() {
+      const weights = {
+        m: parseInt(document.getElementById('advWeight_m').value) || 100,
+        t: parseInt(document.getElementById('advWeight_t').value) || 100,
+        n: parseInt(document.getElementById('advWeight_n').value) || 100,
+        j: parseInt(document.getElementById('advWeight_j').value) || 100,
+        lq: parseInt(document.getElementById('advWeight_lq').value) || 100,
+        bj: parseInt(document.getElementById('advWeight_bj').value) || 100,
+        zft: parseInt(document.getElementById('advWeight_zft').value) || 100,
+        bdk: parseInt(document.getElementById('advWeight_bdk').value) || 100,
+        lsh: parseInt(document.getElementById('advWeight_lsh').value) || 50
+      };
+      
+      const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+      document.getElementById('advTotalWeight').textContent = totalWeight;
+      
+      // 计算每个符号的概率
+      for (const [symbol, weight] of Object.entries(weights)) {
+        const prob = ((weight / totalWeight) * 100).toFixed(2);
+        const probEl = document.getElementById(`advProb_${symbol}`);
+        
+        if (symbol === 'lsh') {
+          // 律师函特殊计算：至少出现1次的概率
+          const singleProb = weight / totalWeight;
+          const atLeastOne = (1 - Math.pow(1 - singleProb, 4)) * 100;
+          probEl.textContent = `概率: ${prob}% | 4个位置至少出现1次: ${atLeastOne.toFixed(2)}%`;
+        } else {
+          probEl.textContent = `概率: ${prob}%`;
+        }
+      }
+    }
+
+    function resetAdvancedWeightsToDefault() {
+      if (!confirm('确定要恢复高级场符号权重为默认值吗？\n默认：普通符号100，律师函50')) {
+        return;
+      }
+      
+      document.getElementById('advWeight_m').value = 100;
+      document.getElementById('advWeight_t').value = 100;
+      document.getElementById('advWeight_n').value = 100;
+      document.getElementById('advWeight_j').value = 100;
+      document.getElementById('advWeight_lq').value = 100;
+      document.getElementById('advWeight_bj').value = 100;
+      document.getElementById('advWeight_zft').value = 100;
+      document.getElementById('advWeight_bdk').value = 100;
+      document.getElementById('advWeight_lsh').value = 50;
+      
+      calculateAdvancedProbabilities();
+    }
+
+  </script>
+</body>
+</html>
+
+
     };
 
     async function loadAdvancedSlotRecords(page = 1) {

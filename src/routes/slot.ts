@@ -40,6 +40,10 @@ import {
     checkAdvancedModeExpiry,
     recordTicketDrop
 } from '../services/advanced-slot';
+import {
+    addSupremeFragment,
+    recordSupremeDrop
+} from '../services/supreme-slot';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 import { getAndUseBuff } from '../services/kunbei';
 
@@ -603,8 +607,7 @@ slot.post('/spin', requireAuth, async (c) => {
         let dropType: 'ticket' | 'fragment' | null = null;
         let dropCount = 0;
 
-        // 只在初级场掉落入场券/碎片（高级场不掉落）
-        // 🔧 使用已经声明的 inAdvancedMode 变量，不重复声明
+        // 初级场掉落入场券/碎片
         if (!inAdvancedMode) {
             const advancedConfig = getAdvancedSlotConfig();
 
@@ -648,6 +651,32 @@ slot.post('/spin', requireAuth, async (c) => {
                 dropType = 'fragment';
                 dropCount = 1;
                 console.log(`[掉落] 🧩 二连中奖！用户 ${user.username} 获得1个碎片`);
+            }
+        }
+        // 高级场中掉落至尊令牌/碎片
+        else if (inAdvancedMode) {
+            const advancedConfig = getAdvancedSlotConfig();
+            
+            // 极低概率直接掉落至尊令牌
+            if (advancedConfig.supreme_token_drop_rate && Math.random() < advancedConfig.supreme_token_drop_rate) {
+                // TODO: 需要实现 addSupremeToken 函数
+                // addSupremeToken(session.linux_do_id, 1);
+                recordSupremeDrop(session.linux_do_id, user.username, 'token', 1, 'advanced_slot', result.winType);
+                ticketDropped = true;
+                dropType = 'supreme_token' as any;
+                dropCount = 1;
+                console.log(`[至尊掉落] 💎 稀有掉落！用户 ${user.username} 获得1个至尊令牌`);
+            }
+            // 低概率掉落至尊碎片（四连/三连）
+            else if ((result.winType === WinType.QUAD || result.winType === WinType.TRIPLE) && 
+                     advancedConfig.supreme_fragment_drop_rate && 
+                     Math.random() < advancedConfig.supreme_fragment_drop_rate) {
+                addSupremeFragment(session.linux_do_id, 1);
+                recordSupremeDrop(session.linux_do_id, user.username, 'fragment', 1, 'advanced_slot', result.winType);
+                ticketDropped = true;
+                dropType = 'supreme_fragment' as any;
+                dropCount = 1;
+                console.log(`[至尊掉落] 🧩 用户 ${user.username} 获得1个至尊碎片`);
             }
         }
 
@@ -1342,6 +1371,35 @@ slot.get('/advanced/status', requireAuth, async (c) => {
 
         // 检查过期
         checkAdvancedModeExpiry(session.linux_do_id);
+
+        const tickets = getUserTickets(session.linux_do_id);
+        const config = getAdvancedSlotConfig();
+        const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
+
+        return c.json({
+            success: true,
+            data: {
+                in_advanced_mode: inAdvancedMode,
+                advanced_mode_until: tickets.advanced_mode_until,
+                config: {
+                    enabled: config.enabled === 1,
+                    bet_min: config.bet_min,
+                    bet_max: config.bet_max,
+                    reward_multiplier: config.reward_multiplier,
+                    penalty_weight_factor: config.penalty_weight_factor,
+                    session_valid_hours: config.session_valid_hours,
+                    daily_bet_limit: config.daily_bet_limit  // 🔥 添加每日投注限额
+                }
+            }
+        });
+    } catch (error) {
+        console.error('获取高级场状态失败:', error);
+        return c.json({ success: false, message: '服务器错误' }, 500);
+    }
+});
+
+export default slot;
+
 
         const tickets = getUserTickets(session.linux_do_id);
         const config = getAdvancedSlotConfig();

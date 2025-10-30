@@ -273,6 +273,20 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
+    
+    // 添加配置方案引用字段
+    try {
+        db.exec('ALTER TABLE slot_machine_config ADD COLUMN weight_config_id INTEGER DEFAULT 1');
+        console.log('✅ 已添加 weight_config_id 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_machine_config ADD COLUMN reward_scheme_id INTEGER DEFAULT 1');
+        console.log('✅ 已添加 reward_scheme_id 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 插入默认老虎机配置
     db.exec(`
@@ -477,6 +491,34 @@ export function initDatabase() {
       updated_at INTEGER NOT NULL
     )
   `);
+  
+    // 添加高级场配置方案引用字段
+    try {
+        db.exec('ALTER TABLE advanced_slot_config ADD COLUMN weight_config_id INTEGER DEFAULT 1');
+        console.log('✅ 已添加 advanced_slot_config.weight_config_id 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE advanced_slot_config ADD COLUMN reward_scheme_id INTEGER DEFAULT 1');
+        console.log('✅ 已添加 advanced_slot_config.reward_scheme_id 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    
+    // 添加至尊令牌掉落配置字段
+    try {
+        db.exec('ALTER TABLE advanced_slot_config ADD COLUMN supreme_token_drop_rate REAL DEFAULT 0.001');
+        console.log('✅ 已添加 supreme_token_drop_rate 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE advanced_slot_config ADD COLUMN supreme_fragment_drop_rate REAL DEFAULT 0.02');
+        console.log('✅ 已添加 supreme_fragment_drop_rate 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 高级场符号权重配置表（独立于初级场）
     db.exec(`
@@ -577,6 +619,85 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_ticket_grants_date ON user_daily_ticket_grants(grant_date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_ticket_grants_user ON user_daily_ticket_grants(linux_do_id)');
 
+    // ========== 权重配置方案表（通用）==========
+    
+    // 符号权重配置方案表（所有场次共享）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS symbol_weight_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            config_name TEXT NOT NULL UNIQUE,
+            weight_m INTEGER DEFAULT 100,
+            weight_t INTEGER DEFAULT 100,
+            weight_n INTEGER DEFAULT 100,
+            weight_j INTEGER DEFAULT 100,
+            weight_lq INTEGER DEFAULT 100,
+            weight_bj INTEGER DEFAULT 100,
+            weight_zft INTEGER DEFAULT 100,
+            weight_bdk INTEGER DEFAULT 100,
+            weight_lsh INTEGER DEFAULT 25,
+            description TEXT,
+            is_deleted INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_weight_configs_deleted ON symbol_weight_configs(is_deleted)');
+
+    // ========== 奖励配置方案表（通用）==========
+    
+    // 奖励配置方案表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS reward_config_schemes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scheme_name TEXT NOT NULL UNIQUE,
+            description TEXT,
+            is_deleted INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_reward_schemes_deleted ON reward_config_schemes(is_deleted)');
+    
+    // 奖励规则表（每个方案包含多条规则）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS reward_rules (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scheme_id INTEGER NOT NULL,
+            rule_name TEXT NOT NULL,
+            rule_type TEXT NOT NULL,
+            rule_category TEXT NOT NULL,
+            match_pattern TEXT NOT NULL,
+            match_count INTEGER,
+            required_symbols TEXT,
+            win_multiplier REAL NOT NULL,
+            grant_free_spin INTEGER DEFAULT 0,
+            priority INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            description TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (scheme_id) REFERENCES reward_config_schemes(id)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_reward_rules_scheme ON reward_rules(scheme_id, priority DESC)');
+    
+    // 律师函惩罚配置表（关联到奖励方案）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS punishment_lsh_configs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            scheme_id INTEGER NOT NULL,
+            lsh_count INTEGER NOT NULL,
+            deduct_multiplier REAL NOT NULL,
+            ban_hours INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (scheme_id) REFERENCES reward_config_schemes(id),
+            UNIQUE(scheme_id, lsh_count)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_punishment_lsh_scheme ON punishment_lsh_configs(scheme_id)');
+
     // ========== 坤呗借款系统表 ==========
 
     // 坤呗配置表
@@ -654,12 +775,129 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_kunbei_gradient_priority ON kunbei_gradient_configs(priority DESC)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_kunbei_gradient_active ON kunbei_gradient_configs(is_active)');
 
-    console.log('✅ 数据库表结构创建完成');
+    // ========== 至尊场系统表 ==========
+    
+    // 用户至尊令牌表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_user_tokens (
+            linux_do_id TEXT PRIMARY KEY,
+            tokens INTEGER DEFAULT 0,
+            fragments INTEGER DEFAULT 0,
+            tokens_expires_at INTEGER,
+            supreme_mode_until INTEGER,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_tokens_expires ON supreme_user_tokens(tokens_expires_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_mode_until ON supreme_user_tokens(supreme_mode_until)');
+    
+    // 至尊场配置表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_slot_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            enabled INTEGER DEFAULT 1,
+            
+            -- 令牌系统
+            fragments_to_token INTEGER DEFAULT 10,
+            max_tokens_hold INTEGER DEFAULT 3,
+            token_valid_hours REAL DEFAULT 168,
+            session_valid_hours REAL DEFAULT 2,
+            
+            -- 投注配置
+            min_bet_amount INTEGER DEFAULT 500000000,
+            max_bet_amount INTEGER DEFAULT 5000000000,
+            bet_step INTEGER DEFAULT 100000000,
+            
+            -- 每日限制
+            daily_entry_limit INTEGER DEFAULT 3,
+            daily_token_grant_limit INTEGER DEFAULT 1,
+            daily_bet_limit INTEGER DEFAULT 50000000000,
+            
+            -- 引用配置ID
+            weight_config_id INTEGER DEFAULT 1,
+            reward_scheme_id INTEGER DEFAULT 1,
+            
+            updated_at INTEGER NOT NULL,
+            FOREIGN KEY (weight_config_id) REFERENCES symbol_weight_configs(id),
+            FOREIGN KEY (reward_scheme_id) REFERENCES reward_config_schemes(id)
+        )
+    `);
+    
+    // 至尊场游戏记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_slot_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            linux_do_username TEXT,
+            bet_amount INTEGER NOT NULL,
+            result_symbols TEXT NOT NULL,
+            win_type TEXT NOT NULL,
+            win_multiplier REAL NOT NULL,
+            win_amount INTEGER NOT NULL,
+            timestamp INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_linux_do_id ON supreme_slot_records(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_timestamp ON supreme_slot_records(timestamp)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_date ON supreme_slot_records(date)');
+    
+    // 至尊令牌掉落记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_token_drop_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            drop_type TEXT NOT NULL,
+            drop_count INTEGER NOT NULL,
+            source TEXT NOT NULL,
+            trigger_win_type TEXT,
+            timestamp INTEGER NOT NULL,
+            date TEXT NOT NULL,
+            created_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_drop_linux_do_id ON supreme_token_drop_records(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_drop_date ON supreme_token_drop_records(date)');
+    
+    // 至尊场每日进入记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_daily_entries (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            entry_date TEXT NOT NULL,
+            entry_count INTEGER DEFAULT 0,
+            last_entry_time INTEGER,
+            UNIQUE(linux_do_id, entry_date)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_entries_date ON supreme_daily_entries(entry_date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_entries_user ON supreme_daily_entries(linux_do_id)');
+    
+    // 至尊场每日令牌获得记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS supreme_daily_token_grants (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            grant_date TEXT NOT NULL,
+            tokens_granted INTEGER DEFAULT 0,
+            fragments_granted INTEGER DEFAULT 0,
+            last_grant_time INTEGER,
+            UNIQUE(linux_do_id, grant_date)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_grants_date ON supreme_daily_token_grants(grant_date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_grants_user ON supreme_daily_token_grants(linux_do_id)');
+
+    console.log('✅ 数据库表结构创建完成（含权重/奖励方案和至尊场系统）');
 
     // 插入默认数据
     insertDefaultData();
 
-    console.log('✅ 数据库初始化完成（含高级场系统）');
+    console.log('✅ 数据库初始化完成（含高级场、至尊场和配置方案系统）');
 
     // 初始化预编译查询语句
     initQueries();
@@ -703,17 +941,78 @@ function insertDefaultData() {
         `);
 
         // 插入默认坤呗梯度配置（仅在表为空时）
-        const existingConfigs = db.query('SELECT COUNT(*) as count FROM kunbei_gradient_configs').get() as { count: number };
-        if (existingConfigs.count === 0) {
+        const existingKunbeiConfigs = db.query('SELECT COUNT(*) as count FROM kunbei_gradient_configs').get() as { count: number };
+        if (existingKunbeiConfigs.count === 0) {
             db.exec(`
                 INSERT INTO kunbei_gradient_configs (quota_threshold, max_loan_amount, priority)
                 VALUES 
-                    (10000, 10000, 1),    -- 余额小于10000时，可借10000
-                    (100000, 100000, 2)   -- 余额小于100000时，可借100000
+                    (2500000, 2500000, 0),     -- 余额$5时，可借$5
+                    (50000000, 50000000, 0)    -- 余额$100时，可借$100
             `);
         }
+        
+        // 插入默认权重配置方案（仅在表为空时）
+        const existingWeightConfigs = db.query('SELECT COUNT(*) as count FROM symbol_weight_configs').get() as { count: number };
+        if (existingWeightConfigs.count === 0) {
+            const now = Date.now();
+            db.exec(`
+                INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
+                VALUES 
+                    ('默认配置', 100, 100, 100, 100, 100, 100, 100, 100, 25, '平衡的符号分布，适合日常运营', 0, ${now}, ${now}),
+                    ('高风险模式', 50, 50, 50, 50, 80, 80, 100, 120, 150, '稀有符号出现概率提升，高风险高回报', 0, ${now}, ${now}),
+                    ('低风险模式', 150, 140, 130, 120, 30, 20, 10, 5, 2, '常见符号出现概率提升，降低游戏难度', 0, ${now}, ${now})
+            `);
+            console.log('✅ 已插入默认权重配置方案');
+        }
+        
+        // 插入默认奖励配置方案和规则（仅在表为空时）
+        const existingRewardSchemes = db.query('SELECT COUNT(*) as count FROM reward_config_schemes').get() as { count: number };
+        if (existingRewardSchemes.count === 0) {
+            const now = Date.now();
+            // 创建初级场标准方案
+            db.exec(`
+                INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
+                VALUES ('初级场标准', '包含所有基础规则，含双连和惩罚机制', 0, ${now}, ${now})
+            `);
+            const normalSchemeId = db.query('SELECT last_insert_rowid() as id').get() as { id: number };
+            
+            // 为初级场标准方案添加规则
+            db.exec(`
+                INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
+                VALUES
+                    (${normalSchemeId.id}, '按顺序jntm', 'super_jackpot', 'special', 'sequence', 4, '["j","n","t","m"]', 256, 0, 100, 1, '鸡你太美按顺序排列', ${now}, ${now}),
+                    (${normalSchemeId.id}, '乱序jntm', 'special_combo', 'special', 'combination', 4, '["j","n","t","m"]', 16, 0, 85, 1, '包含鸡你太美全部但不按顺序', ${now}, ${now}),
+                    (${normalSchemeId.id}, '四连', 'quad', 'combo', 'any', 4, NULL, 32, 1, 80, 1, '任意相同符号4个', ${now}, ${now}),
+                    (${normalSchemeId.id}, '严格3连', 'triple_strict', 'combo', 'consecutive', 3, NULL, 12, 1, 70, 1, '连续3个相同符号', ${now}, ${now}),
+                    (${normalSchemeId.id}, '普通3连', 'triple', 'combo', 'any', 3, NULL, 8, 0, 60, 1, '任意位置3个相同符号', ${now}, ${now}),
+                    (${normalSchemeId.id}, '两对2连', 'double_pair', 'combo', 'double_pair', 2, NULL, 5, 0, 50, 1, '两对连续的相同符号', ${now}, ${now}),
+                    (${normalSchemeId.id}, '严格2连', 'double_strict', 'combo', 'consecutive', 2, NULL, 3, 0, 40, 1, '连续2个相同符号', ${now}, ${now}),
+                    (${normalSchemeId.id}, '普通2连', 'double', 'combo', 'any', 2, NULL, 2, 0, 30, 1, '任意位置2个相同符号', ${now}, ${now})
+            `);
+            
+            // 为初级场标准方案添加律师函惩罚
+            db.exec(`
+                INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
+                VALUES
+                    (${normalSchemeId.id}, 1, 1, 0, 1, ${now}, ${now}),
+                    (${normalSchemeId.id}, 2, 2, 0, 1, ${now}, ${now}),
+                    (${normalSchemeId.id}, 3, 3, 60, 1, ${now}, ${now}),
+                    (${normalSchemeId.id}, 4, 4, 60, 1, ${now}, ${now})
+            `);
+            console.log('✅ 已插入默认奖励配置方案');
+        }
+        
+        // 插入默认至尊场配置
+        db.exec(`
+            INSERT OR IGNORE INTO supreme_slot_config (
+                id, enabled, fragments_to_token, max_tokens_hold, token_valid_hours, session_valid_hours,
+                min_bet_amount, max_bet_amount, bet_step, daily_entry_limit, daily_token_grant_limit, daily_bet_limit,
+                weight_config_id, reward_scheme_id, updated_at
+            )
+            VALUES (1, 1, 10, 3, 168, 2, 500000000, 5000000000, 100000000, 3, 1, 50000000000, 1, 1, ${Date.now()})
+        `);
 
-        console.log('✅ 默认数据插入完成');
+        console.log('✅ 默认数据插入完成（含配置方案和至尊场）');
     } catch (error) {
         console.error('❌ 插入默认数据失败:', error);
         throw error; // 重新抛出错误，让调用者处理
@@ -733,6 +1032,9 @@ export let slotQueries: any;
 export let pendingRewardQueries: any;
 export let advancedSlotQueries: any;  // 高级场查询
 export let kunbeiQueries: any;  // 坤呗借款查询
+export let weightConfigQueries: any;  // 权重配置查询
+export let rewardConfigQueries: any;  // 奖励配置查询
+export let supremeSlotQueries: any;  // 至尊场查询
 
 /**
  * 初始化预编译查询语句
@@ -1275,6 +1577,159 @@ function initQueries() {
         ),
     };
 
+    // ========== 权重配置方案查询 ==========
+    weightConfigQueries = {
+        getAll: db.query<any, never>(
+            'SELECT * FROM symbol_weight_configs WHERE is_deleted = 0 ORDER BY id ASC'
+        ),
+        getById: db.query<any, number>(
+            'SELECT * FROM symbol_weight_configs WHERE id = ?'
+        ),
+        getUsageInfo: db.query<any, number>(`
+            SELECT 
+                (SELECT COUNT(*) FROM slot_machine_config WHERE weight_config_id = ?) +
+                (SELECT COUNT(*) FROM advanced_slot_config WHERE weight_config_id = ?) +
+                (SELECT COUNT(*) FROM supreme_slot_config WHERE weight_config_id = ?) as usage_count
+        `),
+        insert: db.query(
+            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+        ),
+        update: db.query(
+            `UPDATE symbol_weight_configs SET 
+             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, description = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        softDelete: db.query(
+            'UPDATE symbol_weight_configs SET is_deleted = 1, updated_at = ? WHERE id = ?'
+        ),
+    };
+
+    // ========== 奖励配置方案查询 ==========
+    rewardConfigQueries = {
+        // 方案管理
+        getAllSchemes: db.query<any, never>(
+            'SELECT * FROM reward_config_schemes WHERE is_deleted = 0 ORDER BY id ASC'
+        ),
+        getSchemeById: db.query<any, number>(
+            'SELECT * FROM reward_config_schemes WHERE id = ?'
+        ),
+        getSchemeUsageInfo: db.query<any, number>(`
+            SELECT 
+                (SELECT COUNT(*) FROM slot_machine_config WHERE reward_scheme_id = ?) +
+                (SELECT COUNT(*) FROM advanced_slot_config WHERE reward_scheme_id = ?) +
+                (SELECT COUNT(*) FROM supreme_slot_config WHERE reward_scheme_id = ?) as usage_count
+        `),
+        insertScheme: db.query(
+            `INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, 0, ?, ?)`
+        ),
+        updateScheme: db.query(
+            `UPDATE reward_config_schemes SET scheme_name = ?, description = ?, updated_at = ? WHERE id = ?`
+        ),
+        softDeleteScheme: db.query(
+            'UPDATE reward_config_schemes SET is_deleted = 1, updated_at = ? WHERE id = ?'
+        ),
+        
+        // 规则管理
+        getRulesByScheme: db.query<any, number>(
+            'SELECT * FROM reward_rules WHERE scheme_id = ? ORDER BY priority DESC'
+        ),
+        getRuleById: db.query<any, number>(
+            'SELECT * FROM reward_rules WHERE id = ?'
+        ),
+        insertRule: db.query(
+            `INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ),
+        updateRule: db.query(
+            `UPDATE reward_rules SET 
+             rule_name = ?, rule_type = ?, rule_category = ?, match_pattern = ?, match_count = ?, required_symbols = ?, win_multiplier = ?, grant_free_spin = ?, priority = ?, is_active = ?, description = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        deleteRule: db.query(
+            'DELETE FROM reward_rules WHERE id = ?'
+        ),
+        
+        // 律师函惩罚配置
+        getPunishmentsByScheme: db.query<any, number>(
+            'SELECT * FROM punishment_lsh_configs WHERE scheme_id = ? ORDER BY lsh_count ASC'
+        ),
+        upsertPunishment: db.query(
+            `INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(scheme_id, lsh_count) DO UPDATE SET
+             deduct_multiplier = ?, ban_hours = ?, is_active = ?, updated_at = ?`
+        ),
+    };
+
+    // ========== 至尊场查询 ==========
+    supremeSlotQueries = {
+        // 令牌管理
+        getTokens: db.query<any, string>(
+            'SELECT * FROM supreme_user_tokens WHERE linux_do_id = ?'
+        ),
+        upsertTokens: db.query(
+            `INSERT INTO supreme_user_tokens (linux_do_id, tokens, fragments, tokens_expires_at, supreme_mode_until, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tokens = excluded.tokens, fragments = excluded.fragments, tokens_expires_at = excluded.tokens_expires_at, supreme_mode_until = excluded.supreme_mode_until, updated_at = excluded.updated_at`
+        ),
+        useToken: db.query(
+            `UPDATE supreme_user_tokens SET tokens = tokens - 1, supreme_mode_until = ?, updated_at = ? WHERE linux_do_id = ? AND tokens > 0`
+        ),
+        exitSupremeMode: db.query(
+            `UPDATE supreme_user_tokens SET supreme_mode_until = NULL, updated_at = ? WHERE linux_do_id = ?`
+        ),
+        
+        // 至尊场配置
+        getConfig: db.query<any, never>(
+            'SELECT * FROM supreme_slot_config WHERE id = 1'
+        ),
+        updateConfig: db.query(
+            `UPDATE supreme_slot_config SET enabled = ?, fragments_to_token = ?, max_tokens_hold = ?, token_valid_hours = ?, session_valid_hours = ?, min_bet_amount = ?, max_bet_amount = ?, bet_step = ?, daily_entry_limit = ?, daily_token_grant_limit = ?, daily_bet_limit = ?, weight_config_id = ?, reward_scheme_id = ?, updated_at = ? WHERE id = 1`
+        ),
+        
+        // 游戏记录
+        insertRecord: db.query(
+            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getRecordsByUser: db.query<any, string>(
+            'SELECT * FROM supreme_slot_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllRecords: db.query<any, never>(
+            'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+        
+        // 掉落记录
+        insertDropRecord: db.query(
+            'INSERT INTO supreme_token_drop_records (linux_do_id, username, drop_type, drop_count, source, trigger_win_type, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getAllDropRecords: db.query<any, never>(
+            'SELECT * FROM supreme_token_drop_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+        
+        // 每日进入记录
+        getTodayEntry: db.query<any, [string, string]>(
+            'SELECT * FROM supreme_daily_entries WHERE linux_do_id = ? AND entry_date = ?'
+        ),
+        updateTodayEntry: db.query(
+            `INSERT INTO supreme_daily_entries (linux_do_id, entry_date, entry_count, last_entry_time)
+             VALUES (?, ?, 1, ?)
+             ON CONFLICT(linux_do_id, entry_date) DO UPDATE SET entry_count = entry_count + 1, last_entry_time = ?`
+        ),
+        
+        // 每日令牌获得记录
+        getTodayGrant: db.query<any, [string, string]>(
+            'SELECT * FROM supreme_daily_token_grants WHERE linux_do_id = ? AND grant_date = ?'
+        ),
+        updateTodayGrant: db.query(
+            `INSERT INTO supreme_daily_token_grants (linux_do_id, grant_date, tokens_granted, fragments_granted, last_grant_time)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, grant_date) DO UPDATE SET tokens_granted = tokens_granted + ?, fragments_granted = fragments_granted + ?, last_grant_time = ?`
+        ),
+    };
+
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
         const now = Date.now();
@@ -1284,6 +1739,461 @@ function initQueries() {
         }
     }, 3600000);
 
-    console.log('✅ 数据库查询语句已预编译（含高级场系统）');
+    console.log('✅ 数据库查询语句已预编译（含高级场、至尊场和配置方案系统）');
+}
+
+
+            'SELECT COALESCE(SUM(spins_count), 0) as total FROM buy_spins_records WHERE linux_do_id = ? AND date = ?'
+        ),
+        getBuySpinsRecordsByUser: db.query<any, string>(
+            'SELECT * FROM buy_spins_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllBuySpinsRecords: db.query<any, never>(
+            'SELECT * FROM buy_spins_records ORDER BY timestamp DESC'
+        ),
+    };
+
+    // 待发放奖金相关
+    pendingRewardQueries = {
+        // 插入新的待发放奖金
+        insert: db.query(
+            'INSERT INTO pending_rewards (linux_do_id, kyx_user_id, username, reward_amount, reason, status, retry_count, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        // 获取待发放的奖金（status = pending 或 failed）
+        getPending: db.query<any, never>(
+            "SELECT * FROM pending_rewards WHERE status IN ('pending', 'failed') ORDER BY created_at ASC LIMIT 50"
+        ),
+        // 获取所有奖金记录（包括成功的，用于管理后台查看）
+        getAll: db.query<any, never>(
+            "SELECT * FROM pending_rewards ORDER BY created_at DESC LIMIT 200"
+        ),
+        // 获取用户的待发放奖金
+        getByUser: db.query<any, string>(
+            "SELECT * FROM pending_rewards WHERE linux_do_id = ? ORDER BY created_at DESC"
+        ),
+        // 获取用户的待发放奖金数量和总金额
+        getUserPendingSummary: db.query<{ count: number; total_amount: number }, string>(
+            "SELECT COUNT(*) as count, COALESCE(SUM(reward_amount), 0) as total_amount FROM pending_rewards WHERE linux_do_id = ? AND status IN ('pending', 'processing', 'failed')"
+        ),
+        // 更新奖金状态
+        updateStatus: db.query(
+            'UPDATE pending_rewards SET status = ?, updated_at = ?, error_message = ? WHERE id = ?'
+        ),
+        // 更新为成功
+        markSuccess: db.query(
+            'UPDATE pending_rewards SET status = ?, processed_at = ?, updated_at = ? WHERE id = ?'
+        ),
+        // 增加重试次数
+        incrementRetry: db.query(
+            'UPDATE pending_rewards SET retry_count = retry_count + 1, status = ?, error_message = ?, updated_at = ? WHERE id = ?'
+        ),
+        // 获取单条记录
+        getById: db.query<any, number>(
+            'SELECT * FROM pending_rewards WHERE id = ?'
+        ),
+    };
+
+    // ========== 高级场系统查询 ==========
+    advancedSlotQueries = {
+        // 入场券和碎片管理
+        getTickets: db.query<UserTickets, string>(
+            'SELECT * FROM user_tickets WHERE linux_do_id = ?'
+        ),
+        upsertTickets: db.query(
+            `INSERT INTO user_tickets (linux_do_id, tickets, fragments, tickets_expires_at, advanced_mode_until, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tickets = excluded.tickets,
+             fragments = excluded.fragments,
+             tickets_expires_at = excluded.tickets_expires_at,
+             advanced_mode_until = excluded.advanced_mode_until,
+             updated_at = excluded.updated_at`
+        ),
+        addTickets: db.query(
+            `INSERT INTO user_tickets (linux_do_id, tickets, tickets_expires_at, updated_at)
+             VALUES (?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tickets = MIN(tickets + ?, ?),
+             tickets_expires_at = ?,
+             updated_at = ?`
+        ),
+        addFragments: db.query(
+            `INSERT INTO user_tickets (linux_do_id, fragments, updated_at)
+             VALUES (?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             fragments = fragments + ?,
+             updated_at = ?`
+        ),
+        useTicket: db.query(
+            `UPDATE user_tickets SET 
+             tickets = tickets - 1,
+             advanced_mode_until = ?,
+             updated_at = ?
+             WHERE linux_do_id = ? AND tickets > 0`
+        ),
+        clearExpiredTickets: db.query(
+            `UPDATE user_tickets 
+             SET tickets = 0, tickets_expires_at = NULL, updated_at = ?
+             WHERE linux_do_id = ? AND tickets_expires_at < ?`
+        ),
+        exitAdvancedMode: db.query(
+            `UPDATE user_tickets
+             SET advanced_mode_until = NULL, updated_at = ?
+             WHERE linux_do_id = ?`
+        ),
+
+        // 高级场配置
+        getAdvancedConfig: db.query<AdvancedSlotConfig, never>(
+            'SELECT * FROM advanced_slot_config WHERE id = 1'
+        ),
+        updateAdvancedConfig: db.query(
+            `UPDATE advanced_slot_config SET
+             enabled = ?,
+             bet_min = ?,
+             bet_max = ?,
+             reward_multiplier = ?,
+             penalty_weight_factor = ?,
+             rtp_target = ?,
+             ticket_valid_hours = ?,
+             session_valid_hours = ?,
+             fragments_needed = ?,
+             drop_rate_triple = ?,
+             drop_rate_double = ?,
+             max_tickets_hold = ?,
+             daily_bet_limit = ?,
+             daily_entry_limit = ?,
+             daily_ticket_grant_limit = ?,
+             updated_at = ?
+             WHERE id = 1`
+        ),
+
+        // 入场券掉落记录
+        insertDropRecord: db.query(
+            'INSERT INTO ticket_drop_records (linux_do_id, username, drop_type, drop_count, trigger_win_type, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getDropRecordsByUser: db.query<TicketDropRecord, string>(
+            'SELECT * FROM ticket_drop_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllDropRecords: db.query<TicketDropRecord, never>(
+            'SELECT * FROM ticket_drop_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+
+        // RTP 统计
+        getRTPStats: db.query<AdvancedSlotRTPStats, string>(
+            'SELECT * FROM advanced_slot_rtp_stats WHERE linux_do_id = ?'
+        ),
+        updateRTPStats: db.query(
+            `INSERT INTO advanced_slot_rtp_stats (linux_do_id, total_bet, total_win, rtp, games_count, last_updated)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             total_bet = total_bet + ?,
+             total_win = total_win + ?,
+             rtp = CAST(total_win AS REAL) / CAST(total_bet AS REAL),
+             games_count = games_count + 1,
+             last_updated = ?`
+        ),
+        getAllRTPStats: db.query<AdvancedSlotRTPStats, never>(
+            'SELECT * FROM advanced_slot_rtp_stats ORDER BY games_count DESC LIMIT 100'
+        ),
+
+        // 高级场符号权重
+        getAdvancedWeights: db.query<any, never>(
+            'SELECT * FROM advanced_slot_symbol_weights WHERE id = 1'
+        ),
+        updateAdvancedWeights: db.query(
+            'UPDATE advanced_slot_symbol_weights SET weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, updated_at = ? WHERE id = 1'
+        ),
+
+        // 用户每日进入高级场记录
+        getTodayEntry: db.query<UserAdvancedEntry, [string, string]>(
+            'SELECT * FROM user_advanced_entries WHERE linux_do_id = ? AND entry_date = ?'
+        ),
+        updateTodayEntry: db.query(
+            `INSERT INTO user_advanced_entries (linux_do_id, entry_date, entry_count, last_entry_time)
+             VALUES (?, ?, 1, ?)
+             ON CONFLICT(linux_do_id, entry_date) DO UPDATE SET
+             entry_count = entry_count + 1,
+             last_entry_time = ?`
+        ),
+
+        // 用户每日入场券获得记录
+        getTodayGrant: db.query<UserDailyTicketGrant, [string, string]>(
+            'SELECT * FROM user_daily_ticket_grants WHERE linux_do_id = ? AND grant_date = ?'
+        ),
+        updateTodayTicketGrant: db.query(
+            `INSERT INTO user_daily_ticket_grants (linux_do_id, grant_date, ticket_granted, fragment_granted, last_grant_time)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, grant_date) DO UPDATE SET
+             ticket_granted = ticket_granted + ?,
+             fragment_granted = fragment_granted + ?,
+             last_grant_time = ?`
+        ),
+    };
+
+    // ========== 坤呗借款系统查询 ==========
+    kunbeiQueries = {
+        // 配置管理
+        getConfig: db.query<KunbeiConfig, never>(
+            'SELECT * FROM kunbei_config WHERE id = 1'
+        ),
+        updateConfig: db.query(
+            `UPDATE kunbei_config SET 
+             enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
+             repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
+             overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
+             deduct_all_quota_on_overdue = ?, updated_at = ? WHERE id = 1`
+        ),
+
+        // 借款记录管理
+        getActiveLoan: db.query<UserLoan, string>(
+            'SELECT * FROM user_loans WHERE linux_do_id = ? AND status = "active" LIMIT 1'
+        ),
+        getLoanById: db.query<UserLoan, number>(
+            'SELECT * FROM user_loans WHERE id = ?'
+        ),
+        getUserLoans: db.query<UserLoan, string>(
+            'SELECT * FROM user_loans WHERE linux_do_id = ? ORDER BY created_at DESC LIMIT 20'
+        ),
+        getAllLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans ORDER BY created_at DESC LIMIT 200'
+        ),
+        getActiveLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans WHERE status = "active"'
+        ),
+        getOverdueLoans: db.query<UserLoan, never>(
+            'SELECT * FROM user_loans WHERE status = "overdue"'
+        ),
+        insertLoan: db.query(
+            `INSERT INTO user_loans (linux_do_id, username, loan_amount, repay_amount, status, borrowed_at, due_at, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ),
+        updateLoanStatus: db.query(
+            `UPDATE user_loans SET status = ?, actual_repay_amount = ?, repaid_at = ?, overdue_penalty_until = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+
+        // 用户统计管理
+        getStats: db.query<UserKunbeiStats, string>(
+            'SELECT * FROM user_kunbei_stats WHERE linux_do_id = ?'
+        ),
+        upsertStats: db.query(
+            `INSERT INTO user_kunbei_stats (linux_do_id, total_borrowed, total_repaid, total_loans, repaid_loans, overdue_loans, credit_score, is_banned, last_borrow_date, has_daily_buff, buff_multiplier, buff_used, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             total_borrowed = total_borrowed + ?,
+             total_repaid = total_repaid + ?,
+             total_loans = total_loans + ?,
+             repaid_loans = repaid_loans + ?,
+             overdue_loans = overdue_loans + ?,
+             credit_score = ?,
+             last_borrow_date = ?,
+             has_daily_buff = ?,
+             buff_multiplier = ?,
+             buff_used = ?,
+             updated_at = ?`
+        ),
+        updateCreditScore: db.query(
+            `INSERT INTO user_kunbei_stats (linux_do_id, credit_score, updated_at)
+             VALUES (?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             credit_score = MAX(0, MIN(100, credit_score + ?)),
+             updated_at = ?`
+        ),
+
+        // Buff相关查询
+        checkBuff: db.query<UserKunbeiStats, string>(
+            'SELECT * FROM user_kunbei_stats WHERE linux_do_id = ? AND has_daily_buff = 1 AND buff_used = 0'
+        ),
+        useBuff: db.query(
+            'UPDATE user_kunbei_stats SET buff_used = 1, updated_at = ? WHERE linux_do_id = ?'
+        ),
+
+        // 梯度配置相关查询
+        getGradientConfigs: db.query<KunbeiGradientConfig, never>(
+            'SELECT * FROM kunbei_gradient_configs WHERE is_active = 1 ORDER BY quota_threshold ASC'
+        ),
+        getGradientConfigById: db.query<KunbeiGradientConfig, number>(
+            'SELECT * FROM kunbei_gradient_configs WHERE id = ?'
+        ),
+        getAllGradientConfigs: db.query<KunbeiGradientConfig, never>(
+            'SELECT * FROM kunbei_gradient_configs ORDER BY quota_threshold ASC'
+        ),
+        insertGradientConfig: db.query(
+            `INSERT INTO kunbei_gradient_configs (quota_threshold, max_loan_amount, priority, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)`
+        ),
+        updateGradientConfig: db.query(
+            `UPDATE kunbei_gradient_configs 
+             SET quota_threshold = ?, max_loan_amount = ?, priority = ?, is_active = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        deleteGradientConfig: db.query(
+            'DELETE FROM kunbei_gradient_configs WHERE id = ?'
+        ),
+    };
+
+    // ========== 权重配置方案查询 ==========
+    weightConfigQueries = {
+        getAll: db.query<any, never>(
+            'SELECT * FROM symbol_weight_configs WHERE is_deleted = 0 ORDER BY id ASC'
+        ),
+        getById: db.query<any, number>(
+            'SELECT * FROM symbol_weight_configs WHERE id = ?'
+        ),
+        getUsageInfo: db.query<any, number>(`
+            SELECT 
+                (SELECT COUNT(*) FROM slot_machine_config WHERE weight_config_id = ?) +
+                (SELECT COUNT(*) FROM advanced_slot_config WHERE weight_config_id = ?) +
+                (SELECT COUNT(*) FROM supreme_slot_config WHERE weight_config_id = ?) as usage_count
+        `),
+        insert: db.query(
+            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+        ),
+        update: db.query(
+            `UPDATE symbol_weight_configs SET 
+             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, description = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        softDelete: db.query(
+            'UPDATE symbol_weight_configs SET is_deleted = 1, updated_at = ? WHERE id = ?'
+        ),
+    };
+
+    // ========== 奖励配置方案查询 ==========
+    rewardConfigQueries = {
+        // 方案管理
+        getAllSchemes: db.query<any, never>(
+            'SELECT * FROM reward_config_schemes WHERE is_deleted = 0 ORDER BY id ASC'
+        ),
+        getSchemeById: db.query<any, number>(
+            'SELECT * FROM reward_config_schemes WHERE id = ?'
+        ),
+        getSchemeUsageInfo: db.query<any, number>(`
+            SELECT 
+                (SELECT COUNT(*) FROM slot_machine_config WHERE reward_scheme_id = ?) +
+                (SELECT COUNT(*) FROM advanced_slot_config WHERE reward_scheme_id = ?) +
+                (SELECT COUNT(*) FROM supreme_slot_config WHERE reward_scheme_id = ?) as usage_count
+        `),
+        insertScheme: db.query(
+            `INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, 0, ?, ?)`
+        ),
+        updateScheme: db.query(
+            `UPDATE reward_config_schemes SET scheme_name = ?, description = ?, updated_at = ? WHERE id = ?`
+        ),
+        softDeleteScheme: db.query(
+            'UPDATE reward_config_schemes SET is_deleted = 1, updated_at = ? WHERE id = ?'
+        ),
+        
+        // 规则管理
+        getRulesByScheme: db.query<any, number>(
+            'SELECT * FROM reward_rules WHERE scheme_id = ? ORDER BY priority DESC'
+        ),
+        getRuleById: db.query<any, number>(
+            'SELECT * FROM reward_rules WHERE id = ?'
+        ),
+        insertRule: db.query(
+            `INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        ),
+        updateRule: db.query(
+            `UPDATE reward_rules SET 
+             rule_name = ?, rule_type = ?, rule_category = ?, match_pattern = ?, match_count = ?, required_symbols = ?, win_multiplier = ?, grant_free_spin = ?, priority = ?, is_active = ?, description = ?, updated_at = ?
+             WHERE id = ?`
+        ),
+        deleteRule: db.query(
+            'DELETE FROM reward_rules WHERE id = ?'
+        ),
+        
+        // 律师函惩罚配置
+        getPunishmentsByScheme: db.query<any, number>(
+            'SELECT * FROM punishment_lsh_configs WHERE scheme_id = ? ORDER BY lsh_count ASC'
+        ),
+        upsertPunishment: db.query(
+            `INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(scheme_id, lsh_count) DO UPDATE SET
+             deduct_multiplier = ?, ban_hours = ?, is_active = ?, updated_at = ?`
+        ),
+    };
+
+    // ========== 至尊场查询 ==========
+    supremeSlotQueries = {
+        // 令牌管理
+        getTokens: db.query<any, string>(
+            'SELECT * FROM supreme_user_tokens WHERE linux_do_id = ?'
+        ),
+        upsertTokens: db.query(
+            `INSERT INTO supreme_user_tokens (linux_do_id, tokens, fragments, tokens_expires_at, supreme_mode_until, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id) DO UPDATE SET
+             tokens = excluded.tokens, fragments = excluded.fragments, tokens_expires_at = excluded.tokens_expires_at, supreme_mode_until = excluded.supreme_mode_until, updated_at = excluded.updated_at`
+        ),
+        useToken: db.query(
+            `UPDATE supreme_user_tokens SET tokens = tokens - 1, supreme_mode_until = ?, updated_at = ? WHERE linux_do_id = ? AND tokens > 0`
+        ),
+        exitSupremeMode: db.query(
+            `UPDATE supreme_user_tokens SET supreme_mode_until = NULL, updated_at = ? WHERE linux_do_id = ?`
+        ),
+        
+        // 至尊场配置
+        getConfig: db.query<any, never>(
+            'SELECT * FROM supreme_slot_config WHERE id = 1'
+        ),
+        updateConfig: db.query(
+            `UPDATE supreme_slot_config SET enabled = ?, fragments_to_token = ?, max_tokens_hold = ?, token_valid_hours = ?, session_valid_hours = ?, min_bet_amount = ?, max_bet_amount = ?, bet_step = ?, daily_entry_limit = ?, daily_token_grant_limit = ?, daily_bet_limit = ?, weight_config_id = ?, reward_scheme_id = ?, updated_at = ? WHERE id = 1`
+        ),
+        
+        // 游戏记录
+        insertRecord: db.query(
+            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getRecordsByUser: db.query<any, string>(
+            'SELECT * FROM supreme_slot_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
+        ),
+        getAllRecords: db.query<any, never>(
+            'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+        
+        // 掉落记录
+        insertDropRecord: db.query(
+            'INSERT INTO supreme_token_drop_records (linux_do_id, username, drop_type, drop_count, source, trigger_win_type, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        ),
+        getAllDropRecords: db.query<any, never>(
+            'SELECT * FROM supreme_token_drop_records ORDER BY timestamp DESC LIMIT 200'
+        ),
+        
+        // 每日进入记录
+        getTodayEntry: db.query<any, [string, string]>(
+            'SELECT * FROM supreme_daily_entries WHERE linux_do_id = ? AND entry_date = ?'
+        ),
+        updateTodayEntry: db.query(
+            `INSERT INTO supreme_daily_entries (linux_do_id, entry_date, entry_count, last_entry_time)
+             VALUES (?, ?, 1, ?)
+             ON CONFLICT(linux_do_id, entry_date) DO UPDATE SET entry_count = entry_count + 1, last_entry_time = ?`
+        ),
+        
+        // 每日令牌获得记录
+        getTodayGrant: db.query<any, [string, string]>(
+            'SELECT * FROM supreme_daily_token_grants WHERE linux_do_id = ? AND grant_date = ?'
+        ),
+        updateTodayGrant: db.query(
+            `INSERT INTO supreme_daily_token_grants (linux_do_id, grant_date, tokens_granted, fragments_granted, last_grant_time)
+             VALUES (?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, grant_date) DO UPDATE SET tokens_granted = tokens_granted + ?, fragments_granted = fragments_granted + ?, last_grant_time = ?`
+        ),
+    };
+
+    // 定期清理过期 Session（每小时执行一次）
+    setInterval(() => {
+        const now = Date.now();
+        const result = sessionQueries.cleanup.run(now);
+        if (result.changes > 0) {
+            console.log(`🧹 已清理 ${result.changes} 个过期 Session`);
+        }
+    }, 3600000);
+
+    console.log('✅ 数据库查询语句已预编译（含高级场、至尊场和配置方案系统）');
 }
 

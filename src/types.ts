@@ -254,3 +254,273 @@ export interface KunbeiGradientConfig {
     created_at?: number;
     updated_at?: number;
 }
+
+// ========== 权重配置方案系统类型 ==========
+
+// 符号权重配置方案
+export interface SymbolWeightConfig {
+    id?: number;
+    config_name: string;
+    weight_m: number;
+    weight_t: number;
+    weight_n: number;
+    weight_j: number;
+    weight_lq: number;
+    weight_bj: number;
+    weight_zft: number;
+    weight_bdk: number;
+    weight_lsh: number;
+    description?: string;
+    is_deleted: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// ========== 奖励配置方案系统类型 ==========
+
+// 奖励配置方案
+export interface RewardConfigScheme {
+    id?: number;
+    scheme_name: string;
+    description?: string;
+    is_deleted: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// 奖励规则
+export interface RewardRule {
+    id?: number;
+    scheme_id: number;
+    rule_name: string;
+    rule_type: string;
+    rule_category: string;                // normal/special/combo/punishment
+    match_pattern: string;                // consecutive/any/sequence/combination/double_pair
+    match_count?: number;
+    required_symbols?: string;            // JSON数组
+    win_multiplier: number;
+    grant_free_spin: number;
+    priority: number;
+    is_active: number;
+    description?: string;
+    created_at: number;
+    updated_at: number;
+}
+
+// 律师函惩罚配置
+export interface PunishmentLshConfig {
+    id?: number;
+    scheme_id: number;
+    lsh_count: number;                    // 律师函数量 1-4
+    deduct_multiplier: number;            // 扣除倍数
+    ban_hours: number;                    // 禁止抽奖时长
+    is_active: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// ========== 至尊场系统类型 ==========
+
+// 用户至尊令牌
+export interface SupremeUserTokens {
+    linux_do_id: string;
+    tokens: number;
+    fragments: number;
+    tokens_expires_at: number | null;
+    supreme_mode_until: number | null;
+    created_at: number;
+    updated_at: number;
+}
+
+// 至尊场配置
+export interface SupremeSlotConfig {
+    id: number;
+    enabled: number;
+    
+    // 令牌系统
+    fragments_to_token: number;
+    max_tokens_hold: number;
+    token_valid_hours: number;
+    session_valid_hours: number;
+    
+    // 投注配置
+    min_bet_amount: number;
+    max_bet_amount: number;
+    bet_step: number;
+    
+    // 每日限制
+    daily_entry_limit: number;
+    daily_token_grant_limit: number;
+    daily_bet_limit: number;
+    
+    // 引用配置ID
+    weight_config_id: number;
+    reward_scheme_id: number;
+    
+    updated_at: number;
+}
+
+// 至尊场游戏记录
+export interface SupremeSlotRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    linux_do_username?: string;
+    bet_amount: number;
+    result_symbols: string;               // JSON数组
+    win_type: string;
+    win_multiplier: number;
+    win_amount: number;
+    timestamp: number;
+    date: string;
+    created_at: number;
+}
+
+// 至尊令牌掉落记录
+export interface SupremeTokenDropRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    drop_type: string;                    // 'token' 或 'fragment'
+    drop_count: number;
+    source: string;                       // 'advanced_slot'
+    trigger_win_type?: string;
+    timestamp: number;
+    date: string;
+    created_at: number;
+}
+
+// ========== 权重配置方案系统类型 ==========
+
+// 符号权重配置方案
+export interface SymbolWeightConfig {
+    id?: number;
+    config_name: string;
+    weight_m: number;
+    weight_t: number;
+    weight_n: number;
+    weight_j: number;
+    weight_lq: number;
+    weight_bj: number;
+    weight_zft: number;
+    weight_bdk: number;
+    weight_lsh: number;
+    description?: string;
+    is_deleted: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// ========== 奖励配置方案系统类型 ==========
+
+// 奖励配置方案
+export interface RewardConfigScheme {
+    id?: number;
+    scheme_name: string;
+    description?: string;
+    is_deleted: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// 奖励规则
+export interface RewardRule {
+    id?: number;
+    scheme_id: number;
+    rule_name: string;
+    rule_type: string;
+    rule_category: string;                // normal/special/combo/punishment
+    match_pattern: string;                // consecutive/any/sequence/combination/double_pair
+    match_count?: number;
+    required_symbols?: string;            // JSON数组
+    win_multiplier: number;
+    grant_free_spin: number;
+    priority: number;
+    is_active: number;
+    description?: string;
+    created_at: number;
+    updated_at: number;
+}
+
+// 律师函惩罚配置
+export interface PunishmentLshConfig {
+    id?: number;
+    scheme_id: number;
+    lsh_count: number;                    // 律师函数量 1-4
+    deduct_multiplier: number;            // 扣除倍数
+    ban_hours: number;                    // 禁止抽奖时长
+    is_active: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// ========== 至尊场系统类型 ==========
+
+// 用户至尊令牌
+export interface SupremeUserTokens {
+    linux_do_id: string;
+    tokens: number;
+    fragments: number;
+    tokens_expires_at: number | null;
+    supreme_mode_until: number | null;
+    created_at: number;
+    updated_at: number;
+}
+
+// 至尊场配置
+export interface SupremeSlotConfig {
+    id: number;
+    enabled: number;
+    
+    // 令牌系统
+    fragments_to_token: number;
+    max_tokens_hold: number;
+    token_valid_hours: number;
+    session_valid_hours: number;
+    
+    // 投注配置
+    min_bet_amount: number;
+    max_bet_amount: number;
+    bet_step: number;
+    
+    // 每日限制
+    daily_entry_limit: number;
+    daily_token_grant_limit: number;
+    daily_bet_limit: number;
+    
+    // 引用配置ID
+    weight_config_id: number;
+    reward_scheme_id: number;
+    
+    updated_at: number;
+}
+
+// 至尊场游戏记录
+export interface SupremeSlotRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    linux_do_username?: string;
+    bet_amount: number;
+    result_symbols: string;               // JSON数组
+    win_type: string;
+    win_multiplier: number;
+    win_amount: number;
+    timestamp: number;
+    date: string;
+    created_at: number;
+}
+
+// 至尊令牌掉落记录
+export interface SupremeTokenDropRecord {
+    id?: number;
+    linux_do_id: string;
+    username: string;
+    drop_type: string;                    // 'token' 或 'fragment'
+    drop_count: number;
+    source: string;                       // 'advanced_slot'
+    trigger_win_type?: string;
+    timestamp: number;
+    date: string;
+    created_at: number;
+}

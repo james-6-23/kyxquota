@@ -2436,5 +2436,414 @@ app.delete('/kunbei/gradient-configs/:id', requireAdmin, async (c) => {
     }
 });
 
+// ========== 权重配置管理API ==========
+
+/**
+ * 获取所有权重配置
+ */
+app.get('/weights', requireAdmin, async (c) => {
+    try {
+        const { weightConfigQueries } = await import('../database');
+        const configs = weightConfigQueries.getAll.all();
+
+        // 获取每个配置的使用情况
+        const configsWithUsage = configs.map((config: any) => {
+            const usageInfo = weightConfigQueries.getUsageInfo.get(config.id, config.id, config.id);
+            const usageCount = usageInfo?.usage_count || 0;
+
+            // 查询具体使用场次
+            const { slotQueries, advancedSlotQueries, supremeSlotQueries } = weightConfigQueries;
+            // 简化：通过数据库查询获取使用场次
+
+            return {
+                ...config,
+                usage_count: usageCount
+            };
+        });
+
+        return c.json({
+            success: true,
+            data: configsWithUsage
+        });
+    } catch (error: any) {
+        console.error('[权重配置] 获取配置失败:', error);
+        return c.json({ success: false, message: '获取配置失败' }, 500);
+    }
+});
+
+/**
+ * 添加权重配置
+ */
+app.post('/weights', requireAdmin, async (c) => {
+    try {
+        const { weightConfigQueries } = await import('../database');
+        const body = await c.req.json();
+        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description } = body;
+
+        if (!config_name) {
+            return c.json({ success: false, message: '配置名称不能为空' }, 400);
+        }
+
+        const now = Date.now();
+        weightConfigQueries.insert.run(
+            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, now
+        );
+
+        return c.json({ success: true, message: '配置已添加' });
+    } catch (error: any) {
+        console.error('[权重配置] 添加配置失败:', error);
+        return c.json({ success: false, message: '添加配置失败: ' + error.message }, 500);
+    }
+});
+
+/**
+ * 更新权重配置
+ */
+app.put('/weights/:id', requireAdmin, async (c) => {
+    try {
+        const { weightConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description } = body;
+
+        const now = Date.now();
+        weightConfigQueries.update.run(
+            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, id
+        );
+
+        return c.json({ success: true, message: '配置已更新' });
+    } catch (error: any) {
+        console.error('[权重配置] 更新配置失败:', error);
+        return c.json({ success: false, message: '更新配置失败' }, 500);
+    }
+});
+
+/**
+ * 删除权重配置
+ */
+app.delete('/weights/:id', requireAdmin, async (c) => {
+    try {
+        const { weightConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+
+        // 检查是否被使用
+        const usageInfo = weightConfigQueries.getUsageInfo.get(id, id, id);
+        if (usageInfo && usageInfo.usage_count > 0) {
+            return c.json({
+                success: false,
+                message: '该配置正在被使用，无法删除。请先将相关场次切换到其他配置。'
+            }, 400);
+        }
+
+        const now = Date.now();
+        weightConfigQueries.softDelete.run(now, id);
+
+        return c.json({ success: true, message: '配置已删除' });
+    } catch (error: any) {
+        console.error('[权重配置] 删除配置失败:', error);
+        return c.json({ success: false, message: '删除配置失败' }, 500);
+    }
+});
+
+// ========== 奖励配置管理API ==========
+
+/**
+ * 获取所有奖励方案
+ */
+app.get('/rewards/schemes', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const schemes = rewardConfigQueries.getAllSchemes.all();
+
+        const schemesWithDetails = schemes.map((scheme: any) => {
+            const rules = rewardConfigQueries.getRulesByScheme.all(scheme.id);
+            const punishments = rewardConfigQueries.getPunishmentsByScheme.all(scheme.id);
+            const usageInfo = rewardConfigQueries.getSchemeUsageInfo.get(scheme.id, scheme.id, scheme.id);
+
+            return {
+                ...scheme,
+                rules_count: rules.length,
+                has_punishment: punishments.length > 0,
+                usage_count: usageInfo?.usage_count || 0
+            };
+        });
+
+        return c.json({
+            success: true,
+            data: schemesWithDetails
+        });
+    } catch (error: any) {
+        console.error('[奖励配置] 获取方案失败:', error);
+        return c.json({ success: false, message: '获取方案失败' }, 500);
+    }
+});
+
+/**
+ * 获取方案详情（含所有规则）
+ */
+app.get('/rewards/schemes/:id', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+
+        const scheme = rewardConfigQueries.getSchemeById.get(id);
+        if (!scheme) {
+            return c.json({ success: false, message: '方案不存在' }, 404);
+        }
+
+        const rules = rewardConfigQueries.getRulesByScheme.all(id);
+        const punishments = rewardConfigQueries.getPunishmentsByScheme.all(id);
+
+        return c.json({
+            success: true,
+            data: {
+                scheme,
+                rules,
+                punishments
+            }
+        });
+    } catch (error: any) {
+        console.error('[奖励配置] 获取方案详情失败:', error);
+        return c.json({ success: false, message: '获取方案详情失败' }, 500);
+    }
+});
+
+/**
+ * 添加奖励方案
+ */
+app.post('/rewards/schemes', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const { scheme_name, description } = await c.req.json();
+
+        if (!scheme_name) {
+            return c.json({ success: false, message: '方案名称不能为空' }, 400);
+        }
+
+        const now = Date.now();
+        rewardConfigQueries.insertScheme.run(scheme_name, description, now, now);
+
+        return c.json({ success: true, message: '方案已添加' });
+    } catch (error: any) {
+        console.error('[奖励配置] 添加方案失败:', error);
+        return c.json({ success: false, message: '添加方案失败: ' + error.message }, 500);
+    }
+});
+
+/**
+ * 更新奖励方案
+ */
+app.put('/rewards/schemes/:id', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+        const { scheme_name, description } = await c.req.json();
+
+        const now = Date.now();
+        rewardConfigQueries.updateScheme.run(scheme_name, description, now, id);
+
+        return c.json({ success: true, message: '方案已更新' });
+    } catch (error: any) {
+        console.error('[奖励配置] 更新方案失败:', error);
+        return c.json({ success: false, message: '更新方案失败' }, 500);
+    }
+});
+
+/**
+ * 删除奖励方案
+ */
+app.delete('/rewards/schemes/:id', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+
+        // 检查是否被使用
+        const usageInfo = rewardConfigQueries.getSchemeUsageInfo.get(id, id, id);
+        if (usageInfo && usageInfo.usage_count > 0) {
+            return c.json({
+                success: false,
+                message: '该方案正在被使用，无法删除。请先将相关场次切换到其他方案。'
+            }, 400);
+        }
+
+        const now = Date.now();
+        rewardConfigQueries.softDeleteScheme.run(now, id);
+
+        return c.json({ success: true, message: '方案已删除' });
+    } catch (error: any) {
+        console.error('[奖励配置] 删除方案失败:', error);
+        return c.json({ success: false, message: '删除方案失败' }, 500);
+    }
+});
+
+/**
+ * 添加规则到方案
+ */
+app.post('/rewards/rules', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const body = await c.req.json();
+        const { scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, description } = body;
+
+        const now = Date.now();
+        rewardConfigQueries.insertRule.run(
+            scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, 1, description || null, now, now
+        );
+
+        return c.json({ success: true, message: '规则已添加' });
+    } catch (error: any) {
+        console.error('[奖励配置] 添加规则失败:', error);
+        return c.json({ success: false, message: '添加规则失败' }, 500);
+    }
+});
+
+/**
+ * 更新规则
+ */
+app.put('/rewards/rules/:id', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+        const body = await c.req.json();
+        const { rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description } = body;
+
+        const now = Date.now();
+        rewardConfigQueries.updateRule.run(
+            rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, is_active !== undefined ? is_active : 1, description || null, now, id
+        );
+
+        return c.json({ success: true, message: '规则已更新' });
+    } catch (error: any) {
+        console.error('[奖励配置] 更新规则失败:', error);
+        return c.json({ success: false, message: '更新规则失败' }, 500);
+    }
+});
+
+/**
+ * 删除规则
+ */
+app.delete('/rewards/rules/:id', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const id = parseInt(c.req.param('id'));
+
+        rewardConfigQueries.deleteRule.run(id);
+
+        return c.json({ success: true, message: '规则已删除' });
+    } catch (error: any) {
+        console.error('[奖励配置] 删除规则失败:', error);
+        return c.json({ success: false, message: '删除规则失败' }, 500);
+    }
+});
+
+/**
+ * 更新律师函惩罚配置
+ */
+app.post('/rewards/punishments', requireAdmin, async (c) => {
+    try {
+        const { rewardConfigQueries } = await import('../database');
+        const { scheme_id, punishments } = await c.req.json();
+
+        if (!scheme_id || !Array.isArray(punishments)) {
+            return c.json({ success: false, message: '参数错误' }, 400);
+        }
+
+        const now = Date.now();
+
+        // 批量更新律师函惩罚配置
+        for (const p of punishments) {
+            rewardConfigQueries.upsertPunishment.run(
+                scheme_id, p.lsh_count, p.deduct_multiplier, p.ban_hours || 0, p.is_active !== undefined ? p.is_active : 1, now, now,
+                // ON CONFLICT部分
+                p.deduct_multiplier, p.ban_hours || 0, p.is_active !== undefined ? p.is_active : 1, now
+            );
+        }
+
+        return c.json({ success: true, message: '律师函惩罚配置已更新' });
+    } catch (error: any) {
+        console.error('[奖励配置] 更新律师函配置失败:', error);
+        return c.json({ success: false, message: '更新失败' }, 500);
+    }
+});
+
+// ========== 至尊场管理API ==========
+
+/**
+ * 获取至尊场配置
+ */
+app.get('/supreme/config', requireAdmin, async (c) => {
+    try {
+        const { supremeSlotQueries } = await import('../database');
+        const config = supremeSlotQueries.getConfig.get();
+
+        return c.json({
+            success: true,
+            data: config
+        });
+    } catch (error: any) {
+        console.error('[至尊场管理] 获取配置失败:', error);
+        return c.json({ success: false, message: '获取配置失败' }, 500);
+    }
+});
+
+/**
+ * 更新至尊场配置
+ */
+app.post('/supreme/config', requireAdmin, async (c) => {
+    try {
+        const { supremeSlotQueries } = await import('../database');
+        const body = await c.req.json();
+        const { enabled, fragments_to_token, max_tokens_hold, token_valid_hours, session_valid_hours, min_bet_amount, max_bet_amount, bet_step, daily_entry_limit, daily_token_grant_limit, daily_bet_limit, weight_config_id, reward_scheme_id } = body;
+
+        const now = Date.now();
+        supremeSlotQueries.updateConfig.run(
+            enabled, fragments_to_token, max_tokens_hold, token_valid_hours, session_valid_hours,
+            min_bet_amount, max_bet_amount, bet_step, daily_entry_limit, daily_token_grant_limit,
+            daily_bet_limit, weight_config_id, reward_scheme_id, now
+        );
+
+        return c.json({ success: true, message: '至尊场配置已更新' });
+    } catch (error: any) {
+        console.error('[至尊场管理] 更新配置失败:', error);
+        return c.json({ success: false, message: '更新配置失败' }, 500);
+    }
+});
+
+/**
+ * 获取至尊场游戏记录
+ */
+app.get('/supreme/records', requireAdmin, async (c) => {
+    try {
+        const { supremeSlotQueries } = await import('../database');
+        const records = supremeSlotQueries.getAllRecords.all();
+
+        return c.json({
+            success: true,
+            data: records
+        });
+    } catch (error: any) {
+        console.error('[至尊场管理] 获取记录失败:', error);
+        return c.json({ success: false, message: '获取记录失败' }, 500);
+    }
+});
+
+/**
+ * 获取至尊令牌掉落记录
+ */
+app.get('/supreme/drop-records', requireAdmin, async (c) => {
+    try {
+        const { supremeSlotQueries } = await import('../database');
+        const records = supremeSlotQueries.getAllDropRecords.all();
+
+        return c.json({
+            success: true,
+            data: records
+        });
+    } catch (error: any) {
+        console.error('[至尊场管理] 获取掉落记录失败:', error);
+        return c.json({ success: false, message: '获取掉落记录失败' }, 500);
+    }
+});
+
 export default app;
 

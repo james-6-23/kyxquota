@@ -711,6 +711,13 @@
             </span>
           </div>
           
+          <!-- 💎 至尊场标题（居中显示）-->
+          <div id="supremeModeTitle" class="hidden absolute left-1/2 transform -translate-x-1/2 flex items-center gap-2">
+            <span class="text-sm sm:text-lg md:text-xl lg:text-2xl font-bold bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 bg-clip-text text-transparent animate-pulse whitespace-nowrap">
+              <span class="hidden sm:inline">💎 </span>至尊场
+            </span>
+          </div>
+          
           <!-- 右侧：用户菜单和高级场信息 -->
           <div class="flex items-center gap-2 sm:gap-3 ml-auto">
             <!-- 音效控制按钮 -->
@@ -835,6 +842,59 @@
       </div>
     </div>
 
+    <!-- 💎 至尊场令牌信息栏（在导航栏下方）-->
+    <div id="supremeTokenBar" class="hidden bg-gradient-to-r from-purple-900/90 via-pink-900/90 to-amber-900/90 backdrop-blur-md border-b border-amber-400/30">
+      <div class="max-w-7xl mx-auto px-4">
+        <div class="flex items-center justify-center py-1.5">
+          <div class="flex items-center gap-2 sm:gap-3">
+            <!-- 至尊令牌 -->
+            <div class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-amber-400/50">
+              <span class="text-sm">💎</span>
+              <span class="text-amber-300 font-bold text-sm">
+                令牌: <span id="supremeTokenCount">0</span>/<span id="supremeTokenMax" class="text-amber-400/70">3</span>
+              </span>
+            </div>
+            
+            <!-- 至尊碎片 -->
+            <div class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded border border-blue-400/50">
+              <span class="text-sm">💠</span>
+              <span class="text-blue-300 font-bold text-sm">
+                碎片: <span id="supremeFragmentCount">0</span>/<span id="supremeFragmentsNeeded" class="text-blue-400/70">10</span>
+              </span>
+            </div>
+            
+            <!-- 今日进入次数 -->
+            <div class="flex items-center gap-1 bg-black/30 px-2 py-0.5 rounded">
+              <span class="text-sm">📅</span>
+              <span class="text-white font-medium text-sm">
+                今日: <span id="supremeTodayEntry">0</span>/<span id="supremeDailyLimit" class="text-white/70">3</span>
+              </span>
+            </div>
+            
+            <!-- 操作按钮 -->
+            <button id="synthesizeSupremeTokenButton" onclick="synthesizeSupremeToken()" 
+                    class="px-2 py-0.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-bold rounded 
+                           hover:scale-105 transition-transform duration-200 shadow-lg
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+              🔨 合成令牌
+            </button>
+            
+            <button id="enterSupremeButton" onclick="enterSupremeMode()" 
+                    class="px-2 py-0.5 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white text-xs font-bold rounded 
+                           hover:scale-105 transition-transform duration-200 shadow-xl animate-pulse
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:animate-none">
+              💎 进入至尊场
+            </button>
+            
+            <!-- 提示 -->
+            <div class="hidden sm:block text-amber-300/60 text-xs">
+              收集碎片→合成令牌→解锁至尊场
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 老虎机主体 -->
     <div class="relative flex flex-col" style="min-height: calc(100vh - 64px);">
       
@@ -929,6 +989,71 @@
                 <span id="advancedBetDisplay" class="text-yellow-300">$100</span>
               </span>
             </button>
+          </div>
+        </div>
+
+        <!-- 💎 至尊场投注选择器和按钮 -->
+        <div id="supremeBetSelector" class="hidden mb-6">
+          <div class="max-w-2xl mx-auto">
+            <!-- 至尊场特色边框 -->
+            <div class="bg-gradient-to-r from-purple-900/50 via-pink-900/50 to-amber-900/50 backdrop-blur-md rounded-xl border-2 border-amber-400/50 shadow-2xl p-4">
+              
+              <!-- 投注金额选择 -->
+              <div class="mb-4">
+                <h3 class="text-amber-300 text-center font-bold mb-3 text-lg">💎 选择投注金额 💎</h3>
+                
+                <!-- 快捷金额按钮 -->
+                <div id="supremeBetOptions" class="grid grid-cols-5 gap-2 mb-3">
+                  <!-- 按钮将通过 JavaScript 动态生成 -->
+                </div>
+                
+                <!-- 滑块 -->
+                <div class="px-2">
+                  <input type="range" id="supremeBetSlider" min="1000" max="10000" step="100" value="1000" 
+                         class="w-full h-2 bg-gradient-to-r from-purple-500 to-amber-500 rounded-lg appearance-none cursor-pointer"
+                         oninput="updateSupremeBetDisplay(this.value)">
+                  <div class="flex justify-between text-xs text-amber-200/60 mt-1 px-1">
+                    <span>1000坤币</span>
+                    <span id="supremeCurrentBet" class="text-amber-300 font-bold">1000坤币</span>
+                    <span>10000坤币</span>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- 至尊场封禁状态提示 -->
+              <div id="supremeBannedNotice" class="hidden mb-3 p-3 bg-red-500/90 rounded-lg border border-red-300 shadow-lg">
+                <p class="text-white text-sm text-center font-semibold">
+                  🚫 您已被禁止进入至尊场
+                  <br>
+                  <span id="supremeBannedUntilText" class="text-xs">解禁时间：--</span>
+                </p>
+              </div>
+              
+              <!-- 至尊场信息提示 -->
+              <div class="mb-3 p-3 bg-amber-500/20 rounded-lg border border-amber-400/30">
+                <div class="flex items-center justify-center gap-4 text-xs text-amber-200">
+                  <span>💎 高倍奖励</span>
+                  <span>💠 掉落碎片</span>
+                  <span>🎁 特殊奖励</span>
+                </div>
+              </div>
+              
+              <!-- 投注按钮 -->
+              <button id="supremeSpinButton" onclick="spinSupremeSlot()" 
+                      class="w-full px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 
+                             hover:from-purple-700 hover:via-pink-700 hover:to-amber-600
+                             text-white text-2xl font-bold rounded-xl shadow-2xl 
+                             transform hover:scale-105 transition-all duration-200
+                             disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100
+                             border-2 border-amber-400/50">
+                <span class="flex items-center justify-center gap-3">
+                  <span>💎</span>
+                  <span>至尊转动</span>
+                  <span id="supremeBetDisplay" class="text-yellow-200 font-mono">1000坤币</span>
+                  <span>💎</span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
 
