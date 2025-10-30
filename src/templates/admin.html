@@ -3355,6 +3355,50 @@
     </div>
   </div>
 
+  <!-- 💎 Grant Supreme Tokens Modal -->
+  <div id="grantSupremeTokensModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl shadow-2xl max-w-md w-full p-6 border-2 border-purple-300">
+      <h3 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 flex items-center gap-2">
+        <span>💎</span>
+        <span>发放至尊令牌</span>
+      </h3>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">用户</label>
+          <input type="text" id="supremeTokenModalUsername" readonly class="w-full px-4 py-2 bg-slate-100 border border-slate-300 rounded-lg text-slate-700">
+          <input type="hidden" id="supremeTokenModalLinuxDoId">
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">至尊令牌数量</label>
+          <input type="number" id="supremeTokenModalTokens" min="0" max="10" value="0" class="w-full px-4 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">最多10个，用户最多持有3个（超出部分不发放）</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">至尊碎片数量</label>
+          <input type="number" id="supremeTokenModalFragments" min="0" max="100" value="0" class="w-full px-4 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-transparent">
+          <p class="text-xs text-slate-500 mt-1">最多100个</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-slate-700 mb-2">发放原因</label>
+          <input type="text" id="supremeTokenModalReason" placeholder="例如: 活动奖励" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+        </div>
+        <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-3">
+          <p class="text-xs text-purple-800">
+            💡 <strong>提示：</strong>至尊令牌有效期168小时（7天），令牌和碎片可同时发放
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="confirmGrantSupremeTokens()" class="flex-1 px-6 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+          确认发放
+        </button>
+        <button onclick="closeGrantSupremeTokensModal()" class="px-6 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors">
+          取消
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script>
     function showToast(message, type = 'success') {
       const container = document.getElementById('toastContainer');
@@ -4229,6 +4273,7 @@
                 <div class="flex gap-1 justify-center flex-wrap">
                   <button onclick="showGrantFreeSpinsModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-xs font-semibold transition-colors" title="发放免费次数">🎁</button>
                   <button onclick="showGrantTicketsModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-semibold transition-colors" title="发放入场券">🎟️</button>
+                  <button onclick="showGrantSupremeTokensModal('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded text-xs font-semibold transition-colors" title="发放至尊令牌">💎</button>
                   <button onclick="banUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold transition-colors" title="封禁用户">🚫</button>
                   <button onclick="unbindUser('${user.linux_do_id}', '${user.username}')" class="px-2 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-xs font-semibold transition-colors" title="解绑用户">🔓</button>
                 </div>
@@ -5808,6 +5853,77 @@
         }
       } catch (error) {
         console.error('发放入场券失败:', error);
+        showToast('发放失败，请重试', 'error');
+      }
+    }
+    
+    // ========== 发放至尊令牌功能 ==========
+    
+    // 显示发放至尊令牌弹窗
+    function showGrantSupremeTokensModal(linuxDoId, username) {
+      document.getElementById('supremeTokenModalLinuxDoId').value = linuxDoId;
+      document.getElementById('supremeTokenModalUsername').value = username;
+      document.getElementById('supremeTokenModalTokens').value = 0;
+      document.getElementById('supremeTokenModalFragments').value = 0;
+      document.getElementById('supremeTokenModalReason').value = '';
+      document.getElementById('grantSupremeTokensModal').classList.remove('hidden');
+    }
+    
+    // 关闭弹窗
+    function closeGrantSupremeTokensModal() {
+      document.getElementById('grantSupremeTokensModal').classList.add('hidden');
+    }
+    
+    // 确认发放至尊令牌
+    async function confirmGrantSupremeTokens() {
+      const linuxDoId = document.getElementById('supremeTokenModalLinuxDoId').value;
+      const username = document.getElementById('supremeTokenModalUsername').value;
+      const tokens = parseInt(document.getElementById('supremeTokenModalTokens').value) || 0;
+      const fragments = parseInt(document.getElementById('supremeTokenModalFragments').value) || 0;
+      const reason = document.getElementById('supremeTokenModalReason').value || '管理员手动发放';
+      
+      if (tokens === 0 && fragments === 0) {
+        showToast('请至少输入令牌或碎片数量', 'error');
+        return;
+      }
+      
+      if (tokens > 10) {
+        showToast('令牌数量不能超过10', 'error');
+        return;
+      }
+      
+      if (fragments > 100) {
+        showToast('碎片数量不能超过100', 'error');
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/grant-supreme-tokens', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            linux_do_id: linuxDoId,
+            tokens: tokens,
+            fragments: fragments,
+            reason: reason
+          })
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ ${data.message}`, 'success');
+          closeGrantSupremeTokensModal();
+          
+          // 刷新用户列表
+          if (usersCurrentPage) {
+            loadUsersList(usersCurrentPage);
+          }
+        } else {
+          showToast(data.message || '发放失败', 'error');
+        }
+      } catch (error) {
+        console.error('发放至尊令牌失败:', error);
         showToast('发放失败，请重试', 'error');
       }
     }

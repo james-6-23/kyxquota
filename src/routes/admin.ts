@@ -1646,6 +1646,67 @@ app.post('/grant-tickets', requireAdmin, async (c) => {
 });
 
 /**
+ * 发放至尊令牌
+ */
+app.post('/grant-supreme-tokens', requireAdmin, async (c) => {
+    try {
+        const { linux_do_id, tokens, fragments, reason } = await c.req.json();
+
+        if (!linux_do_id) {
+            return c.json({ success: false, message: '参数错误：缺少用户ID' }, 400);
+        }
+
+        const user = userQueries.get.get(linux_do_id);
+        if (!user) {
+            return c.json({ success: false, message: '用户不存在' }, 404);
+        }
+
+        const { addSupremeToken, addSupremeFragment } = await import('../services/supreme-slot');
+        
+        let messages = [];
+        
+        // 发放至尊令牌
+        if (tokens && typeof tokens === 'number' && tokens > 0) {
+            if (tokens > 10) {
+                return c.json({ success: false, message: '令牌数量不能超过10' }, 400);
+            }
+            
+            const tokenResult = addSupremeToken(linux_do_id, tokens);
+            if (tokenResult.success) {
+                messages.push(`发放${tokenResult.granted || tokens}个至尊令牌`);
+                console.log(`[管理员] ✅ 发放至尊令牌 - 用户: ${user.username}, 数量: ${tokenResult.granted || tokens}, 原因: ${reason || '管理员发放'}`);
+            } else {
+                return c.json({ success: false, message: tokenResult.message || '发放令牌失败' }, 400);
+            }
+        }
+        
+        // 发放至尊碎片
+        if (fragments && typeof fragments === 'number' && fragments > 0) {
+            if (fragments > 100) {
+                return c.json({ success: false, message: '碎片数量不能超过100' }, 400);
+            }
+            
+            addSupremeFragment(linux_do_id, fragments);
+            messages.push(`发放${fragments}个至尊碎片`);
+            console.log(`[管理员] ✅ 发放至尊碎片 - 用户: ${user.username}, 数量: ${fragments}, 原因: ${reason || '管理员发放'}`);
+        }
+        
+        if (messages.length === 0) {
+            return c.json({ success: false, message: '请至少输入令牌或碎片数量' }, 400);
+        }
+        
+        return c.json({
+            success: true,
+            message: `成功为用户 ${user.username} ${messages.join('，')}`,
+            data: { tokens, fragments }
+        });
+    } catch (error: any) {
+        console.error('[管理员] 发放至尊令牌失败:', error);
+        return c.json({ success: false, message: '发放失败: ' + error.message }, 500);
+    }
+});
+
+/**
  * 给所有用户发放免费次数
  */
 app.post('/grant-free-spins-all', requireAdmin, async (c) => {

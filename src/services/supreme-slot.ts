@@ -113,6 +113,48 @@ export function isInSupremeMode(linuxDoId: string): boolean {
 }
 
 /**
+ * 添加至尊令牌（管理员功能）
+ */
+export function addSupremeToken(linuxDoId: string, count: number = 1): { success: boolean; message?: string; granted?: number } {
+    const tokens = getSupremeTokens(linuxDoId);
+    const config = getSupremeSlotConfig();
+    const now = Date.now();
+    
+    // 检查持有上限
+    const currentTokens = tokens?.tokens || 0;
+    const maxHold = config.max_tokens_hold || 3;
+    
+    if (currentTokens >= maxHold) {
+        return {
+            success: false,
+            message: `用户已达令牌持有上限（${maxHold}个）`
+        };
+    }
+    
+    // 计算实际可发放数量（不超过持有上限）
+    const actualGrant = Math.min(count, maxHold - currentTokens);
+    const expiresAt = now + (config.token_valid_hours * 3600000);
+    
+    supremeSlotQueries.upsertTokens.run(
+        linuxDoId,
+        currentTokens + actualGrant,
+        tokens?.fragments || 0,
+        expiresAt,
+        tokens?.supreme_mode_until || null,
+        tokens?.created_at || now,
+        now
+    );
+
+    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个`);
+    
+    return {
+        success: true,
+        granted: actualGrant,
+        message: actualGrant < count ? `已达上限，实际发放${actualGrant}个` : `成功发放${actualGrant}个令牌`
+    };
+}
+
+/**
  * 添加至尊碎片
  */
 export function addSupremeFragment(linuxDoId: string, count: number = 1): void {
