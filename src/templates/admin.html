@@ -7561,64 +7561,85 @@
           return;
         }
         
-        const { scheme, rules } = data.data;
+        const { scheme, rules, punishments } = data.data;
+        const safePunishments = punishments || [];
         
         const modalHtml = `
           <div id="rewardSchemeEditModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div class="bg-white rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto my-8">
               <div class="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 p-6 border-b border-slate-200 z-10">
-                <h3 class="text-xl font-bold text-white">✏️ 编辑奖励方案：${scheme.scheme_name}</h3>
+                <div class="flex justify-between items-center">
+                  <h3 class="text-xl font-bold text-white">✏️ 编辑奖励方案：${scheme.scheme_name}</h3>
+                  <button onclick="closeRewardSchemeEditModal()" class="text-white hover:text-slate-200 text-2xl font-bold">&times;</button>
+                </div>
               </div>
               
               <div class="p-6">
                 <!-- 基础信息 -->
-                <div class="mb-6">
-                  <h4 class="text-lg font-bold text-slate-900 mb-4">基础信息</h4>
-                  <div class="grid grid-cols-1 gap-4">
+                <div class="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-5">
+                  <h4 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                    <span class="text-2xl">📝</span>
+                    基础信息
+                  </h4>
+                  <div class="grid grid-cols-1 gap-4 bg-white p-4 rounded-lg border border-slate-200">
                     <div>
                       <label class="block text-sm font-medium text-slate-700 mb-2">方案名称 *</label>
-                      <input type="text" id="editSchemeName" value="${scheme.scheme_name}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                      <input type="text" id="editSchemeName" value="${scheme.scheme_name}" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">
                     </div>
                     <div>
                       <label class="block text-sm font-medium text-slate-700 mb-2">方案描述</label>
-                      <textarea id="editSchemeDesc" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg">${scheme.description || ''}</textarea>
+                      <textarea id="editSchemeDesc" rows="2" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all">${scheme.description || ''}</textarea>
                     </div>
                   </div>
-                  <button onclick="updateSchemeBasicInfo(${schemeId})" class="mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">保存基础信息</button>
+                  <button onclick="updateSchemeBasicInfo(${schemeId})" class="mt-3 px-6 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold transition-all">
+                    💾 保存基础信息
+                  </button>
                 </div>
                 
                 <!-- 规则列表 -->
                 <div class="mb-6">
-                  <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-lg font-bold text-slate-900">中奖规则 (${rules.length}条)</h4>
-                    <button onclick="showAddRuleModal(${schemeId})" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold">
+                  <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-indigo-50 to-purple-50 p-4 rounded-lg border-2 border-indigo-200">
+                    <h4 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <span class="text-2xl">🎯</span>
+                      中奖规则 
+                      <span class="px-3 py-1 bg-indigo-500 text-white rounded-full text-sm">${rules.length}条</span>
+                    </h4>
+                    <button onclick="showAddRuleModal(${schemeId})" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold transition-all hover:scale-105">
                       ➕ 添加规则
                     </button>
                   </div>
                   
                   <div class="space-y-3" id="rulesList">
-                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">暂无规则，点击"添加规则"开始配置</div>' : rules.map(rule => `
-                      <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无规则，点击"➕ 添加规则"从预设模板中选择</div>' : rules.map(rule => `
+                      <div class="bg-gradient-to-r from-slate-50 to-indigo-50 border-2 border-indigo-200 rounded-lg p-4 hover:shadow-lg transition-all hover:border-indigo-400">
                         <div class="flex justify-between items-start">
                           <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                              <span class="font-semibold text-slate-900">${rule.rule_name}</span>
-                              <span class="px-2 py-1 text-xs rounded ${rule.is_active ? 'bg-green-100 text-green-700' : 'bg-slate-200 text-slate-500'}">${rule.is_active ? '启用' : '禁用'}</span>
-                              <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">${rule.rule_type}</span>
-                              ${rule.rule_category ? `<span class="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700">${rule.rule_category}</span>` : ''}
+                            <div class="flex items-center gap-2 mb-3">
+                              <span class="text-lg font-bold text-slate-900">${rule.rule_name}</span>
+                              <span class="px-2 py-1 text-xs rounded font-semibold ${rule.is_active ? 'bg-green-500 text-white' : 'bg-slate-400 text-white'}">${rule.is_active ? '✓ 启用' : '✗ 禁用'}</span>
+                              ${rule.rule_category === 'jackpot' ? '<span class="px-2 py-1 text-xs rounded bg-yellow-500 text-white font-semibold">🏆 大奖</span>' : ''}
+                              ${rule.rule_category === 'high' ? '<span class="px-2 py-1 text-xs rounded bg-purple-500 text-white font-semibold">💎 高级</span>' : ''}
+                              ${rule.rule_category === 'medium' ? '<span class="px-2 py-1 text-xs rounded bg-blue-500 text-white font-semibold">🎯 中等</span>' : ''}
                             </div>
-                            <div class="text-sm text-slate-600 space-y-1">
-                              <div>模式：<span class="font-mono text-slate-900">${rule.match_pattern}</span></div>
-                              ${rule.match_count ? `<div>匹配数：${rule.match_count}</div>` : ''}
-                              ${rule.required_symbols ? `<div>必需符号：${rule.required_symbols}</div>` : ''}
-                              <div>倍率：<span class="font-bold text-green-600">${rule.win_multiplier}x</span></div>
-                              ${rule.grant_free_spin > 0 ? `<div>赠送免费转：<span class="font-bold text-amber-600">${rule.grant_free_spin}次</span></div>` : ''}
-                              ${rule.description ? `<div class="text-slate-500 italic mt-1">${rule.description}</div>` : ''}
+                            <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                              <div class="flex items-center gap-2">
+                                <span class="text-slate-500">模式：</span>
+                                <span class="font-mono text-slate-900 bg-white px-2 py-0.5 rounded border">${rule.match_pattern}</span>
+                              </div>
+                              ${rule.match_count ? `<div class="flex items-center gap-2"><span class="text-slate-500">匹配数：</span><span class="font-semibold text-slate-900">${rule.match_count}</span></div>` : ''}
+                              ${rule.required_symbols ? `<div class="flex items-center gap-2"><span class="text-slate-500">符号：</span><span class="font-mono text-indigo-700 bg-white px-2 py-0.5 rounded border">${rule.required_symbols}</span></div>` : ''}
+                              <div class="flex items-center gap-2">
+                                <span class="text-slate-500">倍率：</span>
+                                <span class="font-bold text-green-600 text-lg bg-green-50 px-2 py-0.5 rounded">${rule.win_multiplier}x</span>
+                              </div>
+                              ${rule.grant_free_spin > 0 ? `<div class="flex items-center gap-2"><span class="text-slate-500">免费转：</span><span class="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded">+${rule.grant_free_spin}次</span></div>` : ''}
+                              ${rule.priority ? `<div class="flex items-center gap-2"><span class="text-slate-500">优先级：</span><span class="font-semibold text-purple-700">${rule.priority}</span></div>` : ''}
                             </div>
+                            ${rule.description ? `<div class="text-xs text-slate-600 italic mt-2 bg-white px-3 py-1 rounded border border-slate-200">${rule.description}</div>` : ''}
                           </div>
-                          <div class="flex gap-2">
-                            <button onclick="editRule(${rule.id}, ${schemeId})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-semibold">编辑</button>
-                            <button onclick="deleteRule(${rule.id}, ${schemeId})" class="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded text-xs font-semibold">删除</button>
+                          <div class="flex flex-col gap-2 ml-4">
+                            <button onclick="editRule(${rule.id}, ${schemeId})" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap">✏️ 编辑</button>
+                            <button onclick="deleteRule(${rule.id}, ${schemeId})" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition-colors whitespace-nowrap">🗑️ 删除</button>
                           </div>
                         </div>
                       </div>
@@ -7628,25 +7649,33 @@
                 
                 <!-- 律师函惩罚配置 -->
                 <div class="mb-6">
-                  <div class="flex justify-between items-center mb-4">
-                    <h4 class="text-lg font-bold text-slate-900">⚖️ 律师函惩罚配置</h4>
-                    <button onclick="applyDefaultPunishment(${schemeId})" class="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold">
+                  <div class="flex justify-between items-center mb-4 bg-gradient-to-r from-red-50 to-orange-50 p-4 rounded-lg border-2 border-red-200">
+                    <h4 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <span class="text-2xl">⚖️</span>
+                      律师函惩罚配置
+                      <span class="px-3 py-1 bg-red-500 text-white rounded-full text-sm">${safePunishments.length}项</span>
+                    </h4>
+                    <button onclick="applyDefaultPunishment(${schemeId})" class="px-5 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold transition-all hover:scale-105">
                       ⚡ 应用默认惩罚
                     </button>
                   </div>
                   
                   <div id="punishmentConfigList" class="space-y-2">
-                    ${punishments.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg">暂无律师函惩罚配置，点击"应用默认惩罚"快速添加</div>' : punishments.map(p => `
-                      <div class="bg-red-50 border border-red-200 rounded-lg p-3">
+                    ${safePunishments.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无律师函惩罚配置，点击"⚡ 应用默认惩罚"快速添加</div>' : safePunishments.map(p => `
+                      <div class="bg-gradient-to-r from-red-50 to-orange-50 border-2 border-red-200 rounded-lg p-4 hover:shadow-md transition-all">
                         <div class="flex justify-between items-center">
-                          <div class="flex-1">
-                            <span class="font-semibold text-red-900">${p.lsh_count}个律师函</span>
-                            <span class="mx-2 text-slate-400">→</span>
-                            <span class="text-red-700">扣除 ${p.deduct_multiplier}倍</span>
-                            ${p.ban_hours > 0 ? `<span class="ml-2 text-orange-600">封禁${p.ban_hours}小时</span>` : ''}
+                          <div class="flex-1 flex items-center gap-3">
+                            <span class="text-2xl">⚖️</span>
+                            <div>
+                              <div class="font-bold text-red-900 text-lg">${p.lsh_count}个律师函</div>
+                              <div class="text-sm text-slate-600 mt-1">
+                                扣除 <span class="font-bold text-red-700">${p.deduct_multiplier}倍</span> 投注额
+                                ${p.ban_hours > 0 ? `<span class="ml-2 px-2 py-0.5 bg-orange-500 text-white rounded text-xs">🔒 封禁${p.ban_hours}小时</span>` : '<span class="ml-2 px-2 py-0.5 bg-green-500 text-white rounded text-xs">✓ 不封禁</span>'}
+                              </div>
+                            </div>
                           </div>
                           <div class="flex gap-2">
-                            <button onclick="editPunishment(${p.lsh_count}, ${p.deduct_multiplier}, ${p.ban_hours}, ${schemeId})" class="px-3 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded text-xs font-semibold">编辑</button>
+                            <button onclick="editPunishment(${p.lsh_count}, ${p.deduct_multiplier}, ${p.ban_hours}, ${schemeId})" class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-semibold transition-colors">✏️ 编辑</button>
                           </div>
                         </div>
                       </div>
@@ -7654,9 +7683,13 @@
                   </div>
                 </div>
                 
-                <div class="flex gap-3 mt-6 sticky bottom-0 bg-white pt-4 border-t border-slate-200">
-                  <button onclick="closeRewardSchemeEditModal()" class="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold">关闭</button>
-                  <button onclick="closeRewardSchemeEditModal(); viewRewardSchemeDetails(${schemeId})" class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">查看完整详情</button>
+                <div class="flex gap-3 mt-6 sticky bottom-0 bg-gradient-to-r from-slate-50 to-slate-100 pt-4 pb-2 border-t-2 border-slate-300 rounded-b-xl">
+                  <button onclick="closeRewardSchemeEditModal()" class="flex-1 px-6 py-3 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all hover:shadow-lg">
+                    ✕ 关闭
+                  </button>
+                  <button onclick="closeRewardSchemeEditModal(); viewRewardSchemeDetails(${schemeId})" class="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg font-semibold transition-all hover:shadow-lg">
+                    👁️ 查看完整详情
+                  </button>
                 </div>
               </div>
             </div>
@@ -7744,31 +7777,64 @@
     
     async function editPunishment(lshCount, deductMultiplier, banHours, schemeId) {
       const modalHtml = `
-        <div id="editPunishmentModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[70] p-4">
-          <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
-            <div class="p-6 border-b border-slate-200 bg-red-600">
-              <h3 class="text-xl font-bold text-white">⚖️ 编辑律师函惩罚</h3>
+        <div id="editPunishmentModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[70] p-4 backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full animate-fadeIn">
+            <div class="bg-gradient-to-r from-red-600 via-orange-600 to-red-600 p-6 border-b border-slate-200">
+              <div class="flex justify-between items-center">
+                <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                  ⚖️ 编辑律师函惩罚
+                </h3>
+                <button onclick="closeEditPunishmentModal()" class="text-white hover:text-slate-200 text-3xl font-bold transition-colors">&times;</button>
+              </div>
             </div>
-            <div class="p-6 space-y-4">
-              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
-                <p class="text-sm text-amber-800">配置 <strong>${lshCount}个律师函</strong> 的惩罚参数</p>
+            <div class="p-6 space-y-5">
+              <div class="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-4">
+                <div class="flex items-center gap-3">
+                  <span class="text-3xl">⚠️</span>
+                  <div>
+                    <p class="text-sm font-semibold text-amber-900">配置惩罚参数</p>
+                    <p class="text-xs text-amber-800 mt-1">当玩家抽到 <strong class="text-red-700">${lshCount}个律师函</strong> 时触发以下惩罚</p>
+                  </div>
+                </div>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">扣除倍率 *</label>
-                <input type="number" id="editPunishmentMultiplier" value="${deductMultiplier}" min="0" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">例如：1倍表示扣除1倍投注额</p>
+              <div class="bg-slate-50 p-4 rounded-xl border-2 border-slate-200">
+                <label class="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <span class="text-xl">💸</span>
+                  扣除倍率 *
+                </label>
+                <div class="flex items-center gap-3">
+                  <input type="number" id="editPunishmentMultiplier" value="${deductMultiplier}" min="0" step="0.1" class="flex-1 px-4 py-3 border-2 border-slate-300 rounded-lg text-lg font-bold focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all">
+                  <span class="text-lg font-semibold text-slate-600">倍</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                  <span>💡</span>
+                  例如：设置为 <strong>1</strong> 表示扣除 <strong>1倍</strong> 投注额
+                </p>
               </div>
               
-              <div>
-                <label class="block text-sm font-medium text-slate-700 mb-2">封禁时长（小时）</label>
-                <input type="number" id="editPunishmentBanHours" value="${banHours}" min="0" step="1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                <p class="text-xs text-slate-500 mt-1">0表示不封禁，建议3-4个律师函设置60小时</p>
+              <div class="bg-slate-50 p-4 rounded-xl border-2 border-slate-200">
+                <label class="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+                  <span class="text-xl">🔒</span>
+                  封禁时长（小时）
+                </label>
+                <div class="flex items-center gap-3">
+                  <input type="number" id="editPunishmentBanHours" value="${banHours}" min="0" step="1" class="flex-1 px-4 py-3 border-2 border-slate-300 rounded-lg text-lg font-bold focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all">
+                  <span class="text-lg font-semibold text-slate-600">小时</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-2 flex items-center gap-1">
+                  <span>💡</span>
+                  <strong>0</strong> 表示不封禁，建议 <strong>3-4个律师函</strong> 设置 <strong class="text-orange-600">60小时</strong>
+                </p>
               </div>
               
               <div class="flex gap-3 mt-6">
-                <button onclick="closeEditPunishmentModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
-                <button onclick="savePunishmentEdit(${lshCount}, ${schemeId})" class="flex-1 px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg font-semibold">保存</button>
+                <button onclick="closeEditPunishmentModal()" class="flex-1 px-6 py-3 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all hover:shadow-lg">
+                  ✕ 取消
+                </button>
+                <button onclick="savePunishmentEdit(${lshCount}, ${schemeId})" class="flex-1 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-700 hover:to-orange-700 text-white rounded-lg font-semibold transition-all hover:shadow-lg">
+                  💾 保存
+                </button>
               </div>
             </div>
           </div>
@@ -7962,38 +8028,65 @@
 
     async function showAddRuleModal(schemeId) {
       const modalHtml = `
-        <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] p-4 overflow-y-auto">
-          <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
-            <div class="p-6 border-b border-slate-200 bg-indigo-600">
-              <h3 class="text-xl font-bold text-white">➕ 选择预设规则模板</h3>
-              <p class="text-indigo-100 text-sm mt-1">从下方选择一个预设规则快速添加到方案中</p>
+        <div id="addRuleModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-[60] p-4 overflow-y-auto backdrop-blur-sm">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-y-auto my-8 animate-fadeIn">
+            <div class="sticky top-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 border-b border-slate-200 z-10">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h3 class="text-2xl font-bold text-white flex items-center gap-2">
+                    ✨ 选择预设规则模板
+                  </h3>
+                  <p class="text-indigo-100 text-sm mt-1">一键添加，无需手动配置复杂参数</p>
+                </div>
+                <button onclick="closeAddRuleModal()" class="text-white hover:text-slate-200 text-3xl font-bold transition-colors">&times;</button>
+              </div>
             </div>
             <div class="p-6">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 ${RULE_TEMPLATES.map(template => `
-                  <div class="border-2 border-slate-200 rounded-lg p-4 hover:border-indigo-500 hover:shadow-lg transition-all cursor-pointer group" onclick="selectRuleTemplate('${template.id}', ${schemeId})">
-                    <div class="flex items-start gap-3">
-                      <div class="text-3xl">${template.emoji}</div>
+                  <div class="relative bg-gradient-to-br from-white to-slate-50 border-2 border-slate-200 rounded-xl p-5 hover:border-indigo-500 hover:shadow-2xl transition-all cursor-pointer group transform hover:-translate-y-1" onclick="selectRuleTemplate('${template.id}', ${schemeId})">
+                    <div class="absolute top-3 right-3 text-4xl opacity-20 group-hover:opacity-40 transition-opacity">${template.emoji}</div>
+                    <div class="flex items-start gap-4">
+                      <div class="text-4xl group-hover:scale-110 transition-transform">${template.emoji}</div>
                       <div class="flex-1">
-                        <h4 class="font-bold text-slate-900 group-hover:text-indigo-600 mb-1">${template.name}</h4>
-                        <p class="text-sm text-slate-600 mb-2">${template.description}</p>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                          <span class="px-2 py-1 bg-purple-100 text-purple-700 rounded">优先级 ${template.priority}</span>
-                          <span class="px-2 py-1 bg-green-100 text-green-700 rounded font-bold">倍率 ${template.win_multiplier}x</span>
-                          ${template.grant_free_spin > 0 ? `<span class="px-2 py-1 bg-blue-100 text-blue-700 rounded">+${template.grant_free_spin}次免费</span>` : ''}
+                        <h4 class="font-bold text-lg text-slate-900 group-hover:text-indigo-600 mb-2 transition-colors">${template.name}</h4>
+                        <p class="text-sm text-slate-600 mb-3 leading-relaxed">${template.description}</p>
+                        <div class="flex flex-wrap gap-2">
+                          <span class="px-3 py-1 bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 rounded-full text-xs font-semibold shadow-sm">
+                            🎯 优先级 ${template.priority}
+                          </span>
+                          <span class="px-3 py-1 bg-gradient-to-r from-green-100 to-green-200 text-green-800 rounded-full text-xs font-bold shadow-sm">
+                            💰 倍率 ${template.win_multiplier}x
+                          </span>
+                          ${template.grant_free_spin > 0 ? `<span class="px-3 py-1 bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 rounded-full text-xs font-semibold shadow-sm">🎁 +${template.grant_free_spin}次免费</span>` : ''}
                         </div>
                       </div>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-slate-200 text-center">
+                      <span class="text-xs text-slate-500 group-hover:text-indigo-600 font-medium transition-colors">点击添加 →</span>
                     </div>
                   </div>
                 `).join('')}
               </div>
               
-              <div class="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                <p class="text-sm text-amber-800"><strong>💡 提示：</strong>点击任意模板即可快速添加到方案中。添加后可在规则列表中编辑或删除。</p>
+              <div class="mt-6 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl">
+                <div class="flex items-start gap-3">
+                  <span class="text-2xl">💡</span>
+                  <div>
+                    <p class="text-sm text-amber-900 font-semibold mb-1">使用提示</p>
+                    <ul class="text-sm text-amber-800 space-y-1">
+                      <li>• 点击任意模板卡片即可快速添加到方案中</li>
+                      <li>• 添加后可在规则列表中编辑倍率、优先级等参数</li>
+                      <li>• 同一模板可以添加多次并设置不同参数</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
               
               <div class="flex gap-3 mt-6">
-                <button onclick="closeAddRuleModal()" class="flex-1 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-semibold">取消</button>
+                <button onclick="closeAddRuleModal()" class="flex-1 px-6 py-3 bg-slate-500 hover:bg-slate-600 text-white rounded-lg font-semibold transition-all hover:shadow-lg">
+                  ✕ 取消
+                </button>
               </div>
             </div>
           </div>
