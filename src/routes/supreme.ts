@@ -252,7 +252,7 @@ supreme.post('/spin', requireAuth, async (c) => {
             newQuotaAfterBet,
             adminConfig.session,
             adminConfig.new_api_user,
-            session.username || user.username,
+            user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
             kyxUserResult.user.group || 'default'
         );
 
@@ -269,8 +269,8 @@ supreme.post('/spin', requireAuth, async (c) => {
         // 记录游戏
         recordSupremeGame(
             session.linux_do_id!,
-            session.username || user.username,
-            session.username || null,
+            user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式），与初级场/高级场保持一致
+            session.username || null,  // LinuxDo论坛用户名（用于显示）
             betAmount,
             symbols,
             winResult.winType,
@@ -297,7 +297,7 @@ supreme.post('/spin', requireAuth, async (c) => {
                     newQuotaAfterWin,
                     adminConfig.session,
                     adminConfig.new_api_user,
-                    session.username || user.username,
+                    user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
                     kyxUserResult.user.group || 'default'
                 );
 
@@ -387,14 +387,13 @@ supreme.get('/rules', requireAuth, async (c) => {
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
-        // 🔥 使用快速计算获取概率
-        const { calculateProbabilityFast } = await import('../services/probability-calculator');
-        let probabilityData;
-        try {
-            probabilityData = calculateProbabilityFast(weightConfigId, schemeId);
-        } catch (e) {
-            console.error('[至尊场规则概率] 计算失败:', e);
-            probabilityData = null;
+        // 🔥 用户查看时只读取缓存，不进行计算（节省资源）
+        const { getFromCache } = await import('../services/probability-calculator');
+        const probabilityData = getFromCache(weightConfigId, schemeId, 'fast');
+        
+        // 如果缓存不存在，返回null（管理员需要先在后台计算）
+        if (!probabilityData) {
+            console.log('[用户规则] 概率数据未缓存，需要管理员在后台先计算');
         }
 
         // 计算权重总和

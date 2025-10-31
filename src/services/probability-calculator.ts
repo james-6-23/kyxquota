@@ -61,7 +61,6 @@ function saveToCache(weightConfigId: number, rewardSchemeId: number, method: 'fa
         result,
         timestamp: Date.now()
     });
-    console.log(`[缓存] 已保存: ${key}, 当前缓存数: ${probabilityCache.size}`);
 }
 
 /**
@@ -212,15 +211,10 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
         }
     }
 
-    // 🔥 调试日志（仅在debug模式下）
+    // 🔥 简化的调试日志（仅在debug模式下）
     if (debug) {
-        console.log(`[规则匹配] 检查规则 "${rule_name}":`, {
-            symbols,
-            match_pattern,
-            match_count,
-            required_symbols: requiredArr,
-            rule
-        });
+        const reqSymbols = requiredArr.length > 0 ? requiredArr.join(',') : '任意';
+        console.log(`[规则匹配] "${rule_name}" [${symbols.join(',')}] - 模式:${match_pattern} 需要:${reqSymbols}`);
     }
 
     let matched = false;
@@ -232,9 +226,6 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
     if (match_pattern.includes('-')) {
         const parts = match_pattern.split('-');
         normalizedPattern = parts[1]; // 取 "any" 或 "consecutive"
-        if (debug) {
-            console.log(`  - 格式转换: "${match_pattern}" => "${normalizedPattern}"`);
-        }
     }
 
     switch (normalizedPattern) {
@@ -258,9 +249,6 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
                 }
             }
             matched = maxConsecutive >= (match_count || 2);
-            if (debug) {
-                console.log(`  - consecutive模式检查: 最大连续=${maxConsecutive}, 需要>=${match_count || 2}, 匹配=${matched}`);
-            }
             break;
 
         case 'any':  // 任意位置相同
@@ -268,9 +256,6 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             symbols.forEach(s => counts[s] = (counts[s] || 0) + 1);
             const maxCount = Math.max(...Object.values(counts));
             matched = maxCount >= (match_count || 2);
-            if (debug) {
-                console.log(`  - any模式检查: 符号计数=`, counts, `最大=${maxCount}, 需要>=${match_count || 2}, 匹配=${matched}`);
-            }
             break;
 
         case 'double_pair':  // 两对2连（MMNN格式，排除4连）
@@ -279,31 +264,23 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             // 必须恰好有2个不同符号，每个出现2次
             const pairs = Object.values(pairCounts).filter(count => count === 2);
             matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
-            if (debug) {
-                console.log(`  - double_pair模式检查: 符号计数=`, pairCounts, `2次对数=${pairs.length}, 匹配=${matched}`);
-            }
             break;
 
         case 'symmetric':  // 对称（前两个和后两个相同：AABB）
             if (symbols.length === 4) {
                 matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
-                if (debug) {
-                    console.log(`  - symmetric模式检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
-                }
             } else {
                 matched = false;
             }
             break;
 
         default:
-            if (debug) {
-                console.warn(`  - 未知的匹配模式: ${match_pattern} (规范化后: ${normalizedPattern})`);
-            }
             matched = false;
     }
 
-    if (debug && matched) {
-        console.log(`  ✅ 规则 "${rule_name}" 匹配成功！`);
+    // 简化的结果日志
+    if (debug) {
+        console.log(`  ${matched ? '✅' : '❌'} "${rule_name}" (${match_pattern}) → ${matched ? '匹配' : '不匹配'}`);
     }
 
     return matched;
@@ -337,10 +314,6 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
     // 2. 按优先级检查奖励规则
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
-
-    if (debug) {
-        console.log(`[匹配规则] 方案ID: ${schemeId}, 总规则: ${rules.length}, 激活规则: ${activeRules.length}`);
-    }
 
     for (const rule of activeRules) {
         if (checkRuleMatch(symbols, rule, debug)) {
@@ -504,7 +477,6 @@ export function calculateProbabilityFast(
     // 🔥 检查缓存
     const cached = getFromCache(weightConfigId, rewardSchemeId, 'fast');
     if (cached) {
-        console.log('[快速估算] 使用缓存结果');
         return cached;
     }
 
@@ -582,7 +554,7 @@ export function calculateProbabilityFast(
 
         if (enableDebug) {
             debugCount++;
-            console.log(`[快速估算 #${debugCount}] 符号:`, symbols, `=> 结果: ${result.ruleName} (${result.multiplier}x)`);
+            console.log(`[快速估算 #${debugCount}] [${symbols.join(',')}] => ${result.ruleName} (${result.multiplier}x)`);
         }
 
         // 排除律师函（已单独计算）
@@ -657,5 +629,57 @@ function binomialCoefficient(n: number, k: number): number {
         result /= (i + 1);
     }
     return result;
+}
+
+/**
+ * 🔥 为指定方案重新计算概率（管理员保存配置时调用）
+ * 遍历所有使用该方案的场次，预先计算并缓存概率
+ */
+export async function recalculateProbabilityForScheme(schemeId: number): Promise<void> {
+    console.log(`[概率预计算] 🔄 方案${schemeId} 开始计算...`);
+    
+    try {
+        const { weightConfigQueries, slotQueries, advancedSlotQueries, supremeSlotQueries } = await import('../database');
+        
+        // 获取三个场次的配置，看哪些使用了这个方案
+        const normalConfig = slotQueries.getConfig.get();
+        const advancedConfig = advancedSlotQueries.getAdvancedConfig.get();
+        const supremeConfig = supremeSlotQueries.getConfig.get();
+        
+        const weightConfigsToCalculate = new Set<number>();
+        
+        // 收集使用该方案的权重配置ID
+        if (normalConfig && normalConfig.reward_scheme_id === schemeId) {
+            weightConfigsToCalculate.add(normalConfig.weight_config_id || 1);
+        }
+        if (advancedConfig && advancedConfig.reward_scheme_id === schemeId) {
+            weightConfigsToCalculate.add(advancedConfig.weight_config_id || 1);
+        }
+        if (supremeConfig && supremeConfig.reward_scheme_id === schemeId) {
+            weightConfigsToCalculate.add(supremeConfig.weight_config_id || 1);
+        }
+        
+        // 如果没有场次使用该方案，计算默认权重
+        if (weightConfigsToCalculate.size === 0) {
+            weightConfigsToCalculate.add(1);
+        }
+        
+        // 计算每个权重配置的概率
+        let successCount = 0;
+        for (const weightConfigId of weightConfigsToCalculate) {
+            try {
+                const result = calculateProbabilityFast(weightConfigId, schemeId);
+                console.log(`[概率预计算] ✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}%`);
+                successCount++;
+            } catch (error: any) {
+                console.error(`[概率预计算] ❌ 权重${weightConfigId} 失败:`, error.message);
+            }
+        }
+        
+        console.log(`[概率预计算] 🎉 完成${successCount}/${weightConfigsToCalculate.size}`);
+    } catch (error: any) {
+        console.error(`[概率预计算] 失败:`, error);
+        throw error;
+    }
 }
 

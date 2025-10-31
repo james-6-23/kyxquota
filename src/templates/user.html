@@ -900,7 +900,7 @@
     <div class="relative flex flex-col" style="min-height: calc(100vh - 64px);">
       
       <!-- ========== 🎰 初级场容器 ========== -->
-      <div id="normalModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+      <div id="normalModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px] transition-opacity duration-300">
         
         <!-- 标题 - 响应式字体 -->
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
@@ -981,7 +981,7 @@
       <!-- ========== 🎰 初级场容器结束 ========== -->
 
       <!-- ========== 🔥 高级场容器 ========== -->
-      <div id="advancedModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+      <div id="advancedModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px] transition-opacity duration-300">
         
         <!-- 标题 -->
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
@@ -1062,7 +1062,7 @@
       <!-- ========== 🔥 高级场容器结束 ========== -->
 
       <!-- ========== 💎 至尊场容器 ========== -->
-      <div id="supremeModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+      <div id="supremeModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px] transition-opacity duration-300">
         
         <!-- 🔥 至尊场退出按钮（在主界面更明显的位置） -->
         <div class="flex justify-center mb-4">
@@ -3879,7 +3879,27 @@
           loadSupremeTokens(true)       // 💎 加载至尊令牌信息，跳过UI更新
         ]);
         
-        // 4. 初始化UI（此时已经知道是否在高级场/至尊场）
+        // 4. 💎 在数据加载完成后，立即设置正确的容器显示状态（在初始化前）
+        // 这样可以避免闪现其他场次的内容
+        const normalContainer = document.getElementById('normalModeContainer');
+        const advancedContainer = document.getElementById('advancedModeContainer');
+        const supremeContainer = document.getElementById('supremeModeContainer');
+        
+        // 先全部隐藏
+        if (normalContainer) normalContainer.classList.add('hidden');
+        if (advancedContainer) advancedContainer.classList.add('hidden');
+        if (supremeContainer) supremeContainer.classList.add('hidden');
+        
+        // 根据状态只显示对应容器
+        if (isInSupremeMode && supremeContainer) {
+          supremeContainer.classList.remove('hidden');
+        } else if (isInAdvancedMode && advancedContainer) {
+          advancedContainer.classList.remove('hidden');
+        } else if (normalContainer) {
+          normalContainer.classList.remove('hidden');
+        }
+        
+        // 5. 初始化UI（此时已经知道是否在高级场/至尊场，且容器已正确显示）
         initSlotReels();
         
         // 🔥 使用新的容器切换逻辑，确保刷新页面后UI正确
@@ -6983,7 +7003,7 @@
       }
     }
     
-    // 🔥 新版：简化的场次容器切换（方案C架构）
+    // 🔥 新版：简化的场次容器切换（方案C架构）+ 淡入淡出动画
     function switchToModeContainer(mode) {
       console.log('[switchToModeContainer] 切换到:', mode);
       
@@ -7000,40 +7020,62 @@
       const advancedTicketBar = document.getElementById('advancedTicketBar');
       const supremeTokenBar = document.getElementById('supremeTokenBar');
       
-      // 🔥 先隐藏所有容器和导航元素
-      if (normalContainer) normalContainer.classList.add('hidden');
-      if (advancedContainer) advancedContainer.classList.add('hidden');
-      if (supremeContainer) supremeContainer.classList.add('hidden');
-      if (normalModeTitle) normalModeTitle.classList.add('hidden');
-      if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-      if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
-      if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
-      if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
-      if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
+      // 🔥 先让当前显示的容器淡出
+      [normalContainer, advancedContainer, supremeContainer].forEach(container => {
+        if (container && !container.classList.contains('hidden')) {
+          container.style.opacity = '0';
+        }
+      });
       
-      // 🔥 根据模式显示对应的容器和导航元素
-      if (mode === 'normal') {
-        // 🎰 初级场
-        if (normalContainer) normalContainer.classList.remove('hidden');
-        if (normalModeTitle) normalModeTitle.classList.remove('hidden');
-        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
-      } else if (mode === 'advanced') {
-        // 🔥 高级场
-        if (advancedContainer) advancedContainer.classList.remove('hidden');
-        if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
-        if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
-      } else if (mode === 'supreme') {
-        // 💎 至尊场
-        if (supremeContainer) supremeContainer.classList.remove('hidden');
-        if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
-      }
-      
-      // 🔥 更新游戏规则按钮显示
-      updateGameRulesButton();
-      
-      console.log('[switchToModeContainer] 切换完成，当前显示:', mode);
+      // 短暂延迟后隐藏
+      setTimeout(() => {
+        // 隐藏所有容器和导航元素
+        if (normalContainer) normalContainer.classList.add('hidden');
+        if (advancedContainer) advancedContainer.classList.add('hidden');
+        if (supremeContainer) supremeContainer.classList.add('hidden');
+        if (normalModeTitle) normalModeTitle.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
+        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+        if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
+        
+        // 🔥 根据模式显示对应的容器和导航元素
+        let targetContainer;
+        if (mode === 'normal') {
+          // 🎰 初级场
+          if (normalContainer) normalContainer.classList.remove('hidden');
+          if (normalModeTitle) normalModeTitle.classList.remove('hidden');
+          if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
+          targetContainer = normalContainer;
+        } else if (mode === 'advanced') {
+          // 🔥 高级场
+          if (advancedContainer) advancedContainer.classList.remove('hidden');
+          if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
+          if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
+          if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
+          targetContainer = advancedContainer;
+        } else if (mode === 'supreme') {
+          // 💎 至尊场
+          if (supremeContainer) supremeContainer.classList.remove('hidden');
+          if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
+          if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
+          targetContainer = supremeContainer;
+        }
+        
+        // 💎 淡入新容器
+        if (targetContainer) {
+          targetContainer.style.opacity = '0';
+          requestAnimationFrame(() => {
+            targetContainer.style.opacity = '1';
+          });
+        }
+        
+        // 🔥 更新游戏规则按钮显示
+        updateGameRulesButton();
+        
+        console.log('[switchToModeContainer] 切换完成，当前显示:', mode);
+      }, 150);  // 淡出动画时间
     }
     
     // 🔥 旧版：保留用于兼容（将被逐步替换）

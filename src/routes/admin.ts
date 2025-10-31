@@ -3075,6 +3075,14 @@ app.post('/rewards/rules', requireAdmin, async (c) => {
         console.log('✅ 中奖规则已成功添加到方案！');
         console.log('='.repeat(80));
 
+        // 🔥 规则添加后，自动重新计算概率并缓存
+        try {
+            const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+            await recalculateProbabilityForScheme(scheme_id);
+        } catch (error: any) {
+            console.warn('[奖励配置] 概率重算失败（不影响保存）:', error.message);
+        }
+
         return c.json({ success: true, message: '规则已添加' });
     } catch (error: any) {
         console.error('❌ [奖励配置] 添加规则失败:', error);
@@ -3097,6 +3105,18 @@ app.put('/rewards/rules/:id', requireAdmin, async (c) => {
             rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, is_active !== undefined ? is_active : 1, description || null, now, id
         );
 
+        // 🔥 规则更新后，自动重新计算概率并缓存
+        try {
+            const rule = rewardConfigQueries.getRuleById.get(id);
+            if (rule) {
+                const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+                await recalculateProbabilityForScheme(rule.scheme_id);
+                console.log(`[奖励配置] ✅ 已自动重新计算方案 ${rule.scheme_id} 的概率`);
+            }
+        } catch (error: any) {
+            console.warn('[奖励配置] 概率重算失败（不影响保存）:', error.message);
+        }
+
         return c.json({ success: true, message: '规则已更新' });
     } catch (error: any) {
         console.error('[奖励配置] 更新规则失败:', error);
@@ -3112,7 +3132,21 @@ app.delete('/rewards/rules/:id', requireAdmin, async (c) => {
         const { rewardConfigQueries } = await import('../database');
         const id = parseInt(c.req.param('id'));
 
+        // 先获取规则信息（用于重算概率）
+        const rule = rewardConfigQueries.getRuleById.get(id);
+        const schemeId = rule?.scheme_id;
+
         rewardConfigQueries.deleteRule.run(id);
+
+        // 🔥 规则删除后，自动重新计算概率并缓存
+        if (schemeId) {
+            try {
+                const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+                await recalculateProbabilityForScheme(schemeId);
+            } catch (error: any) {
+                console.warn('[奖励配置] 概率重算失败（不影响删除）:', error.message);
+            }
+        }
 
         return c.json({ success: true, message: '规则已删除' });
     } catch (error: any) {
