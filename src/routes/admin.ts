@@ -2541,10 +2541,11 @@ app.post('/kunbei/config', requireAdmin, async (c) => {
             config.max_active_loans,
             config.deduct_all_quota_on_overdue || 0,
             config.overdue_deduct_multiplier || 2.5,
+            config.max_daily_borrows || 3,
             now
         );
 
-        console.log('[坤呗管理] 配置已更新，逾期扣款倍数:', config.overdue_deduct_multiplier || 2.5);
+        console.log('[坤呗管理] 配置已更新，逾期扣款倍数:', config.overdue_deduct_multiplier || 2.5, '每日借款次数:', config.max_daily_borrows || 3);
 
         return c.json({ success: true, message: '配置已保存' });
     } catch (error: any) {
@@ -2633,7 +2634,17 @@ app.get('/kunbei/all-loans', requireAdmin, async (c) => {
 app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {
     try {
         const loanId = parseInt(c.req.param('id'));
-        const { forgiveLoan } = await import('../services/kunbei');
+        const { forgiveLoan, getLoanDetails } = await import('../services/kunbei');
+        
+        // 🔥 检查是否是逾期记录，逾期记录不允许豁免
+        const loan = getLoanDetails(loanId);
+        if (!loan) {
+            return c.json({ success: false, message: '借款记录不存在' }, 404);
+        }
+        
+        if (loan.status === 'overdue') {
+            return c.json({ success: false, message: '逾期记录不允许豁免，请用户主动还款' }, 400);
+        }
 
         const result = forgiveLoan(loanId);
         return c.json(result);

@@ -57,7 +57,9 @@ kunbei.get('/config', requireAuth, async (c) => {
                 repay_multiplier: config.repay_multiplier,
                 loan_duration_hours: config.loan_duration_hours,
                 early_repay_discount: config.early_repay_discount,
-                overdue_penalty_hours: config.overdue_penalty_hours
+                overdue_penalty_hours: config.overdue_penalty_hours,
+                overdue_deduct_multiplier: config.overdue_deduct_multiplier || 2.5,
+                max_daily_borrows: config.max_daily_borrows || 3
             }
         });
     } catch (error: any) {

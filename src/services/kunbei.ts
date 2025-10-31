@@ -2,7 +2,7 @@
  * 坤呗借款系统服务层
  */
 
-import { kunbeiQueries, userQueries } from '../database';
+import { kunbeiQueries, userQueries, adminQueries } from '../database';
 import type { KunbeiConfig, UserLoan, UserKunbeiStats, KunbeiGradientConfig } from '../types';
 import { getUserQuota, deductQuota } from './kyx-api';
 
@@ -246,8 +246,36 @@ export function borrowLoan(
         return { success: false, message: status.ban_reason || '无法借款' };
     }
 
-    // 🔥 检查是否是今日首次借款
+    // 🔥 检查是否有活跃借款（必须先还款才能再借）
+    const activeLoan = kunbeiQueries.getActiveLoan.get(linuxDoId);
+    if (activeLoan) {
+        return { success: false, message: '您有未还清的借款，请先还款后再借' };
+    }
+
+    // 🔥 检查是否有逾期借款（如果有逾期，今天不能借）
     const today = new Date().toISOString().split('T')[0];
+    const overdueLoans = kunbeiQueries.getUserLoans.all(linuxDoId);
+    const hasOverdueToday = overdueLoans.some(loan => {
+        if (loan.status !== 'overdue') return false;
+        // 检查逾期发生日期（到期日）是否是今天
+        const dueDateStr = new Date(loan.due_at).toISOString().split('T')[0];
+        return dueDateStr === today;
+    });
+    
+    if (hasOverdueToday) {
+        return { success: false, message: '您今日有逾期记录，明天才能借款' };
+    }
+
+    // 🔥 检查今日借款次数
+    const todayBorrowCount = kunbeiQueries.getTodayBorrowCount.get(linuxDoId, today);
+    const borrowedToday = todayBorrowCount?.count || 0;
+    const maxDaily = config.max_daily_borrows || 3;
+    
+    if (borrowedToday >= maxDaily) {
+        return { success: false, message: `今日借款次数已达上限（${maxDaily}次）` };
+    }
+
+    // 🔥 检查是否是今日首次借款
     const stats = kunbeiQueries.getStats.get(linuxDoId);
     const isFirstToday = !stats || stats.last_borrow_date !== today;
 
@@ -423,32 +451,97 @@ export async function checkOverdueLoans(): Promise<number> {
             const deductMultiplier = config.overdue_deduct_multiplier || 2.5;
             const deductAmount = Math.floor(loan.repay_amount * deductMultiplier);
             
-            // 获取用户当前额度
-            const userQuota = getUserQuota(loan.linux_do_id);
+            // 🔥 获取用户信息和管理员配置
+            const user = userQueries.get.get(loan.linux_do_id);
+            if (!user) {
+                console.error(`[坤呗] 用户不存在: ${loan.linux_do_id}`);
+                continue;
+            }
+            
+            const adminConfig = adminQueries.get.get();
+            if (!adminConfig) {
+                console.error(`[坤呗] 管理员配置未找到`);
+                continue;
+            }
+            
+            // 🔥 获取用户当前额度（实时查询，与初级场/高级场/至尊场保持一致）
+            const { getKyxUserById } = await import('./kyx-api');
+            const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+            
+            let userQuota = 0;
+            if (kyxUserResult.success && kyxUserResult.user) {
+                userQuota = kyxUserResult.user.quota;
+            } else {
+                console.error(`[坤呗] 获取用户额度失败 - 用户: ${loan.username}, 错误: ${kyxUserResult.message || '未知错误'}`);
+            }
             
             // 实际扣款金额：不超过用户额度，不扣为负数
-            const actualDeductAmount = Math.min(deductAmount, Math.max(0, userQuota));
-            
+            let actualDeductAmount = Math.min(deductAmount, Math.max(0, userQuota));
             let autoDeductedAmount = 0;
             
             // 如果有额度可扣，执行扣款
             if (actualDeductAmount > 0) {
-                const deductResult = await deductQuota(loan.linux_do_id, actualDeductAmount);
-                if (deductResult.success) {
+                // 🔥 计算扣除后的新余额
+                const newQuotaAfterDeduct = userQuota - actualDeductAmount;
+                
+                // 🔥 确保余额不会为负数（双重保险）
+                if (newQuotaAfterDeduct < 0) {
+                    console.error(`[坤呗] 计算错误：扣款后余额为负 - 用户: ${loan.username}, 当前: ${userQuota}, 扣除: ${actualDeductAmount}`);
+                    actualDeductAmount = userQuota; // 只扣除可用余额
+                }
+                
+                // 🔥 使用统一的扣款方式（与老虎机保持一致）
+                const { updateKyxUserQuota } = await import('./kyx-api');
+                const deductResult = await updateKyxUserQuota(
+                    user.kyx_user_id,
+                    Math.max(0, newQuotaAfterDeduct),  // 🔥 确保不为负数
+                    adminConfig.session,
+                    adminConfig.new_api_user,
+                    loan.username,
+                    kyxUserResult.user.group || 'default'
+                );
+                
+                if (deductResult && deductResult.success) {
                     autoDeductedAmount = actualDeductAmount;
-                    console.log(`[坤呗] 逾期扣款 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}`);
+                    console.log(`[坤呗] 逾期扣款成功 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 当前额度: $${(userQuota / 500000).toFixed(2)}, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}, 剩余: $${(Math.max(0, newQuotaAfterDeduct) / 500000).toFixed(2)}`);
+                    
+                    // 🔥 将逾期扣款记录到老虎机亏损统计中（影响亏损榜排名）
+                    try {
+                        const { slotQueries } = await import('../database');
+                        const today = new Date().toISOString().split('T')[0];
+                        
+                        // 记录为今日亏损
+                        slotQueries.upsertTodayStats.run(
+                            loan.linux_do_id, 0, 0, -actualDeductAmount, 0, 0, today,
+                            0, 0, -actualDeductAmount, 0, 0, now
+                        );
+                        
+                        // 记录为总亏损
+                        slotQueries.upsertTotalStats.run(
+                            loan.linux_do_id, 0, 0, -actualDeductAmount, 0, 0,
+                            0, 0, -actualDeductAmount, 0, 0, now
+                        );
+                        
+                        console.log(`[坤呗] 已记录逾期扣款到亏损统计 - 用户: ${loan.username}, 金额: $${(actualDeductAmount / 500000).toFixed(2)}`);
+                    } catch (error) {
+                        console.error(`[坤呗] 记录亏损统计失败:`, error);
+                    }
                 } else {
-                    console.error(`[坤呗] 逾期扣除额度失败: ${deductResult.message}`);
+                    console.error(`[坤呗] 逾期扣除额度失败 - 用户: ${loan.username}, 错误: ${deductResult?.message || '未知错误'}`);
                 }
             } else {
                 console.log(`[坤呗] 逾期但用户额度不足 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}, 应扣: $${(deductAmount / 500000).toFixed(2)}`);
             }
 
+            // 🔥 计算扣款后余额（不为负数）
+            const balanceAfterDeduct = actualDeductAmount > 0 ? Math.max(0, userQuota - actualDeductAmount) : 0;
+            
             // 更新借款状态（使用新的查询）
             kunbeiQueries.updateLoanOverdue.run(
                 'overdue',
                 penaltyUntil,
                 autoDeductedAmount,
+                balanceAfterDeduct,  // 🔥 记录扣款后余额
                 now,
                 loan.id
             );

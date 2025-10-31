@@ -2751,6 +2751,13 @@
                 <input type="number" id="kunbeiOverdueDeductMultiplier" min="1" max="10" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
                 <p class="text-xs text-slate-500 mt-1">逾期时扣除欠款的倍数（如2.5倍）</p>
               </div>
+              
+              <!-- 每日借款次数限制 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日借款次数</label>
+                <input type="number" id="kunbeiMaxDailyBorrows" min="1" max="20" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                <p class="text-xs text-slate-500 mt-1">用户每天最多可借款次数（默认3次）</p>
+              </div>
             </div>
             
             <div class="flex justify-end mt-4">
@@ -7533,6 +7540,7 @@
           document.getElementById('kunbeiEarlyDiscount').value = config.early_repay_discount;
           document.getElementById('kunbeiOverduePenalty').value = config.overdue_penalty_hours;
           document.getElementById('kunbeiOverdueDeductMultiplier').value = config.overdue_deduct_multiplier || 2.5;
+          document.getElementById('kunbeiMaxDailyBorrows').value = config.max_daily_borrows || 3;
           
           // 逾期扣除配置已移除，使用倍数系统替代
         } else {
@@ -7574,6 +7582,7 @@
           early_repay_discount: parseFloat(document.getElementById('kunbeiEarlyDiscount').value),
           overdue_penalty_hours: parseInt(document.getElementById('kunbeiOverduePenalty').value),
           overdue_deduct_multiplier: parseFloat(document.getElementById('kunbeiOverdueDeductMultiplier').value) || 2.5,
+          max_daily_borrows: parseInt(document.getElementById('kunbeiMaxDailyBorrows').value) || 3,
           overdue_ban_advanced: 1,
           max_active_loans: 1,
           deduct_all_quota_on_overdue: 1  // 保留字段以兼容
@@ -7990,11 +7999,13 @@
           statusBadge = '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">✅ 已还款</span>';
         }
         
-        // 🔥 显示自动扣款金额
+        // 🔥 显示自动扣款金额和扣款后余额
         const autoDeductDisplay = record.auto_deducted_amount && record.auto_deducted_amount > 0
           ? `<div class="font-semibold text-orange-600">$${(record.auto_deducted_amount / 500000).toFixed(2)}</div>
-             <div class="text-xs text-orange-500">已自动扣除</div>`
-          : '<span class="text-slate-400 text-xs">-</span>';
+             <div class="text-xs text-orange-500">余额: $${((record.balance_after_deduct || 0) / 500000).toFixed(2)}</div>`
+          : (record.status === 'overdue' && record.auto_deducted_amount === 0
+              ? `<div class="text-xs text-slate-500">余额不足</div><div class="text-xs text-slate-400">未扣款</div>`
+              : '<span class="text-slate-400 text-xs">-</span>');
         
         const isChecked = selectedRecords.has(record.id);
         
@@ -8003,8 +8014,12 @@
         if (record.status === 'active' || record.status === 'overdue') {
           actionButtons = `
             <button onclick="viewLoanDetails(${record.id})" class="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium mb-1">详情</button>
-            <button onclick="forgiveSingleLoan(${record.id}, '${record.username}')" class="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium mb-1">免除</button>
           `;
+          
+          // 🔥 逾期记录不允许豁免
+          if (record.status !== 'overdue') {
+            actionButtons += `<button onclick="forgiveSingleLoan(${record.id}, '${record.username}')" class="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium mb-1">免除</button>`;
+          }
           
           // 🔥 只有当前有有效的逾期惩罚时才显示解封按钮
           if (hasOverduePenalty) {

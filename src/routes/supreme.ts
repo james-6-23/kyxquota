@@ -195,20 +195,26 @@ supreme.post('/spin', requireAuth, async (c) => {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
-        // 🔥 获取用户当前额度
+        // 🔥 获取管理员配置
         const adminConfig = adminQueries.get.get();
         if (!adminConfig) {
             return c.json({ success: false, message: '系统配置未找到' }, 500);
         }
 
-        const { getUserQuota } = await import('../services/kyx-api');
-        const userQuota = getUserQuota(user.kyx_user_id);
+        // 🔥 获取用户当前额度（实时查询，与初级场/高级场保持一致）
+        const { getKyxUserById } = await import('../services/kyx-api');
+        const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+        if (!kyxUserResult.success || !kyxUserResult.user) {
+            return c.json({ success: false, message: '获取额度失败' }, 500);
+        }
+
+        const currentQuota = kyxUserResult.user.quota;
 
         // 检查额度是否足够
-        if (userQuota < betAmount) {
+        if (currentQuota < betAmount) {
             return c.json({
                 success: false,
-                message: `额度不足，当前额度: $${(userQuota / 500000).toFixed(2)}，需要: $${(betAmount / 500000).toFixed(2)}`
+                message: `额度不足，当前额度: $${(currentQuota / 500000).toFixed(2)}，需要: $${(betAmount / 500000).toFixed(2)}`
             }, 400);
         }
 
@@ -228,22 +234,29 @@ supreme.post('/spin', requireAuth, async (c) => {
             winAmount = Math.floor(betAmount * winResult.multiplier);
         }
 
-        // 🔥 先扣除投注（投注必须成功才能记录游戏）
+        // 🔥 扣除投注额度（计算新额度 = 当前额度 - 投注金额，与初级场/高级场保持一致）
+        const newQuotaAfterBet = currentQuota - betAmount;
+
+        console.log(`[至尊场] 准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+
         const deductResult = await updateKyxUserQuota(
             user.kyx_user_id,
-            -betAmount,
+            newQuotaAfterBet,
             adminConfig.session,
             adminConfig.new_api_user,
             session.username || user.username,
-            'default'
+            kyxUserResult.user.group || 'default'
         );
 
-        if (!deductResult.success) {
+        if (!deductResult || !deductResult.success) {
+            console.error(`[至尊场] ❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
             return c.json({
                 success: false,
-                message: '扣除投注失败: ' + deductResult.message
+                message: `扣除投注失败: ${deductResult?.message || '未知错误'}，请稍后重试`
             }, 500);
         }
+
+        console.log(`[至尊场] ✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
 
         // 记录游戏
         recordSupremeGame(
@@ -257,21 +270,35 @@ supreme.post('/spin', requireAuth, async (c) => {
             winAmount
         );
 
-        let quotaAfter = deductResult.quota;
+        let quotaAfter = newQuotaAfterBet;
 
         // 如果中奖，增加额度
         if (winAmount > 0) {
-            const addResult = await updateKyxUserQuota(
-                user.kyx_user_id,
-                winAmount,
-                adminConfig.session,
-                adminConfig.new_api_user,
-                session.username || user.username,
-                'default'
-            );
+            // 🔥 获取当前最新额度
+            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+            if (!currentKyxUser.success || !currentKyxUser.user) {
+                console.error(`[至尊场] ❌ 中奖时获取用户信息失败 - 用户: ${user.username}`);
+            } else {
+                const currentQuotaForWin = currentKyxUser.user.quota;
+                const newQuotaAfterWin = currentQuotaForWin + winAmount;
 
-            if (addResult.success) {
-                quotaAfter = addResult.quota;
+                console.log(`[至尊场] 准备添加奖金 - 用户: ${user.username}, 当前: ${currentQuotaForWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
+
+                const addResult = await updateKyxUserQuota(
+                    user.kyx_user_id,
+                    newQuotaAfterWin,
+                    adminConfig.session,
+                    adminConfig.new_api_user,
+                    session.username || user.username,
+                    kyxUserResult.user.group || 'default'
+                );
+
+                if (!addResult || !addResult.success) {
+                    console.error(`[至尊场] ❌ 添加奖金失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${addResult?.message || '未知错误'}`);
+                } else {
+                    quotaAfter = newQuotaAfterWin;
+                    console.log(`[至尊场] ✅ 添加奖金成功 - 用户: ${user.username}, 新余额: ${quotaAfter}`);
+                }
             }
         }
 

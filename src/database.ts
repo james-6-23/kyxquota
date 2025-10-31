@@ -746,6 +746,14 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
+    
+    // 添加每日借款次数限制字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE kunbei_config ADD COLUMN max_daily_borrows INTEGER DEFAULT 3');
+        console.log('✅ 已添加 max_daily_borrows 字段（每日借款次数限制）');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 用户借款记录表
     db.exec(`
@@ -774,6 +782,14 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE user_loans ADD COLUMN auto_deducted_amount INTEGER DEFAULT 0');
         console.log('✅ 已添加 auto_deducted_amount 字段（逾期自动扣款记录）');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    
+    // 添加扣款后余额字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE user_loans ADD COLUMN balance_after_deduct INTEGER DEFAULT 0');
+        console.log('✅ 已添加 balance_after_deduct 字段（扣款后余额记录）');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -973,9 +989,9 @@ function insertDefaultData() {
                 id, enabled, max_loan_amount, min_loan_amount, repay_multiplier,
                 loan_duration_hours, early_repay_discount, overdue_penalty_hours,
                 overdue_ban_advanced, max_active_loans, deduct_all_quota_on_overdue,
-                overdue_deduct_multiplier, updated_at
+                overdue_deduct_multiplier, max_daily_borrows, updated_at
             )
-            VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, ${Date.now()})
+            VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, 3, ${Date.now()})
         `);
         
         // 🔥 确保坤呗配置字段完整（修复缺失字段）
@@ -983,6 +999,7 @@ function insertDefaultData() {
             UPDATE kunbei_config 
             SET 
                 overdue_deduct_multiplier = COALESCE(overdue_deduct_multiplier, 2.5),
+                max_daily_borrows = COALESCE(max_daily_borrows, 3),
                 updated_at = ${Date.now()}
             WHERE id = 1
         `);
@@ -1544,7 +1561,7 @@ function initQueries() {
              enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
              repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
              overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
-             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, updated_at = ? WHERE id = 1`
+             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, max_daily_borrows = ?, updated_at = ? WHERE id = 1`
         ),
 
         // 借款记录管理
@@ -1566,6 +1583,10 @@ function initQueries() {
         getOverdueLoans: db.query<UserLoan, never>(
             'SELECT * FROM user_loans WHERE status = "overdue"'
         ),
+        getTodayBorrowCount: db.query<{ count: number }, [string, string]>(
+            `SELECT COUNT(*) as count FROM user_loans 
+             WHERE linux_do_id = ? AND DATE(borrowed_at / 1000, 'unixepoch') = ?`
+        ),
         insertLoan: db.query(
             `INSERT INTO user_loans (linux_do_id, username, loan_amount, repay_amount, status, borrowed_at, due_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -1575,7 +1596,7 @@ function initQueries() {
              WHERE id = ?`
         ),
         updateLoanOverdue: db.query(
-            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, updated_at = ?
+            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, balance_after_deduct = ?, updated_at = ?
              WHERE id = ?`
         ),
         clearOverduePenalty: db.query(
@@ -1995,7 +2016,7 @@ function initQueries() {
              enabled = ?, max_loan_amount = ?, min_loan_amount = ?,
              repay_multiplier = ?, loan_duration_hours = ?, early_repay_discount = ?,
              overdue_penalty_hours = ?, overdue_ban_advanced = ?, max_active_loans = ?,
-             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, updated_at = ? WHERE id = 1`
+             deduct_all_quota_on_overdue = ?, overdue_deduct_multiplier = ?, max_daily_borrows = ?, updated_at = ? WHERE id = 1`
         ),
 
         // 借款记录管理
@@ -2017,6 +2038,10 @@ function initQueries() {
         getOverdueLoans: db.query<UserLoan, never>(
             'SELECT * FROM user_loans WHERE status = "overdue"'
         ),
+        getTodayBorrowCount: db.query<{ count: number }, [string, string]>(
+            `SELECT COUNT(*) as count FROM user_loans 
+             WHERE linux_do_id = ? AND DATE(borrowed_at / 1000, 'unixepoch') = ?`
+        ),
         insertLoan: db.query(
             `INSERT INTO user_loans (linux_do_id, username, loan_amount, repay_amount, status, borrowed_at, due_at, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
@@ -2026,7 +2051,7 @@ function initQueries() {
              WHERE id = ?`
         ),
         updateLoanOverdue: db.query(
-            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, updated_at = ?
+            `UPDATE user_loans SET status = ?, overdue_penalty_until = ?, auto_deducted_amount = ?, balance_after_deduct = ?, updated_at = ?
              WHERE id = ?`
         ),
         clearOverduePenalty: db.query(
