@@ -1064,6 +1064,18 @@
       <!-- ========== 💎 至尊场容器 ========== -->
       <div id="supremeModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
         
+        <!-- 🔥 至尊场退出按钮（在主界面更明显的位置） -->
+        <div class="flex justify-center mb-4">
+          <button onclick="exitSupremeMode()" 
+                  class="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg 
+                         hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-xl
+                         flex items-center gap-2 animate-pulse">
+            <span class="text-xl">🚪</span>
+            <span>退出至尊场</span>
+            <span class="text-sm opacity-70">（返回高级场）</span>
+          </button>
+        </div>
+        
         <!-- 标题 -->
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
           🎰 KYX-Slot-Machine
@@ -3969,12 +3981,16 @@
                 }
                 
                 // 🔥 强制更新按钮文本（在最后执行，确保不被覆盖）
-                setTimeout(() => {
+                setTimeout(async () => {
+                  // 先更新令牌UI（这会更新按钮状态）
+                  await loadSupremeTokens();
+                  
+                  // 然后再次确认按钮状态
                   const enterBtn = document.getElementById('enterSupremeButton');
                   if (enterBtn) {
                     console.log('[初始化] 按钮当前文本:', enterBtn.textContent);
-                    if (supremeTokensData.in_supreme_mode) {
-                      console.log('[初始化] 强制更新按钮文本为：退出至尊场');
+                    if (isInSupremeMode && supremeTokensData?.in_supreme_mode) {
+                      console.log('[初始化] 最终确认按钮文本为：退出至尊场');
                       enterBtn.textContent = '💎 退出至尊场';
                       enterBtn.onclick = exitSupremeMode;
                       enterBtn.disabled = false;
@@ -3983,7 +3999,7 @@
                   } else {
                     console.error('[初始化] 找不到 enterSupremeButton');
                   }
-                }, 200);
+                }, 300);
               }
             }, 100);
           }, 50);
@@ -6717,20 +6733,12 @@
           updateSlotUI();
           updateBetLimitProgressBar();
           
-          // 🔥 延迟更新按钮状态，确保在所有UI更新之后
+          // 🔥 立即调用更新UI（包括按钮文本）
+          await loadSupremeTokens();  // 这会调用updateSupremeTokensUI
+          
+          // 🔥 延迟确保快捷按钮生成
           setTimeout(() => {
-            const enterBtn = document.getElementById('enterSupremeButton');
-            if (enterBtn) {
-              console.log('[enterSupremeMode] 强制更新按钮文本为：退出至尊场');
-              enterBtn.textContent = '💎 退出至尊场';
-              enterBtn.onclick = exitSupremeMode;
-              enterBtn.disabled = false;
-              enterBtn.classList.remove('animate-pulse');
-            } else {
-              console.error('[enterSupremeMode] 找不到 enterSupremeButton 元素');
-            }
-            
-            // 🔥 再次检查快捷按钮是否生成
+            // 再次检查快捷按钮是否生成
             const container = document.getElementById('supremeBetOptions');
             if (container) {
               console.log('[enterSupremeMode] 快捷按钮容器子元素数量:', container.children.length);
@@ -6741,7 +6749,17 @@
                 }
               }
             }
-          }, 100);
+            
+            // 🔥 再次强制确保按钮状态正确（以防被其他函数覆盖）
+            const enterBtn = document.getElementById('enterSupremeButton');
+            if (enterBtn && isInSupremeMode) {
+              console.log('[enterSupremeMode] 最终确认按钮文本为：退出至尊场');
+              enterBtn.textContent = '💎 退出至尊场';
+              enterBtn.onclick = exitSupremeMode;
+              enterBtn.disabled = false;
+              enterBtn.classList.remove('animate-pulse');
+            }
+          }, 200);
         } else {
           showToast(data.message, 'error');
         }
