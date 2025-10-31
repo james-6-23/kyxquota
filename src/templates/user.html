@@ -6805,7 +6805,7 @@
         const data = await res.json();
         
         if (data.success) {
-          const { symbols, winType, multiplier, winAmount, quotaAfter } = data.data;
+          const { symbols, win_type: winType, multiplier, win_amount: winAmount, quota_after: quotaAfter } = data.data;
           
           // 🔥 播放转动动画（使用统一的动画函数）
           await playSpinAnimation(symbols);
@@ -6813,6 +6813,21 @@
           // 🔥 更新用户额度并同步到UI
           if (slotUserData) {
             slotUserData.quota = quotaAfter;
+            console.log('[至尊场] 已更新 slotUserData.quota:', quotaAfter);
+          } else {
+            console.warn('[至尊场] slotUserData 不存在，尝试初始化');
+            // 如果 slotUserData 不存在，创建一个基本对象
+            slotUserData = {
+              quota: quotaAfter,
+              remaining_spins: 0,
+              free_spins: 0,
+              today_count: 0,
+              today_bet: 0,
+              today_win: 0,
+              total_spins: 0,
+              total_bet: 0,
+              total_win: 0
+            };
           }
           
           // 🔥 更新老虎机界面余额显示
@@ -6830,13 +6845,13 @@
           // 显示中奖结果
           const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
           if (multiplier > 0) {
-            playSound('win');
+            soundManager.playWin(multiplier);
             showToast(`💎 恭喜中奖！${multiplier}x 赢得 $${winAmountUSD}`, 'success');
           } else if (multiplier < 0) {
-            playSound('lose');
+            soundManager.playPunishment();
             showToast(`⚖️ 律师函惩罚！扣除 $${winAmountUSD}`, 'error');
           } else {
-            playSound('lose');
+            soundManager.playLose();
             showToast('未中奖', 'error');
           }
           

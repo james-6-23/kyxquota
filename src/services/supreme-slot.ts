@@ -498,11 +498,16 @@ export function calculateSupremeWin(symbols: string[]): {
     const { rules } = getSupremeRewardRules();
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
 
+    console.log(`[至尊场] 符号结果: [${symbols.join(', ')}]`);
+    console.log(`[至尊场] 激活的规则数量: ${activeRules.length}`);
+
     // 按优先级检查规则
     for (const rule of activeRules) {
+        console.log(`[至尊场] 检查规则: ${rule.rule_name} (类型: ${rule.match_pattern}, 数量: ${rule.match_count})`);
         const matched = checkRuleMatch(symbols, rule);
 
         if (matched) {
+            console.log(`[至尊场] ✅ 匹配规则: ${rule.rule_name}, 倍率: ${rule.win_multiplier}x`);
             return {
                 winType: rule.rule_type,
                 multiplier: rule.win_multiplier,
@@ -512,6 +517,7 @@ export function calculateSupremeWin(symbols: string[]): {
         }
     }
 
+    console.log(`[至尊场] ❌ 未匹配任何规则`);
     return {
         winType: 'none',
         multiplier: 0,
@@ -553,12 +559,20 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
  * 检查是否有连续匹配
  */
 function hasConsecutiveMatch(symbols: string[], count: number): boolean {
+    console.log(`[至尊场] 检查连续匹配 - 符号: [${symbols.join(', ')}], 需要数量: ${count}`);
+    
     for (let i = 0; i <= symbols.length - count; i++) {
         const slice = symbols.slice(i, i + count);
-        if (slice.every(s => s === slice[0])) {
+        const isMatch = slice.every(s => s === slice[0]);
+        console.log(`[至尊场] 位置${i}: [${slice.join(', ')}] - ${isMatch ? '✅匹配' : '❌不匹配'}`);
+        
+        if (isMatch) {
+            console.log(`[至尊场] ✅ 找到${count}连: ${slice[0]}`);
             return true;
         }
     }
+    
+    console.log(`[至尊场] ❌ 未找到${count}连`);
     return false;
 }
 
