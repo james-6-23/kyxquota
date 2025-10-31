@@ -3839,14 +3839,39 @@
             // console.log('[初始化] 延迟更新进度条');
             updateBetLimitProgressBar();
             
-            // 🔥 最终检查：确保 free spin 按钮状态正确
-            const freeSpinButton = document.getElementById('freeSpinButton');
-            if (freeSpinButton) {
-              if (!slotUserData || slotUserData.free_spins <= 0 || isInAdvancedMode) {
-                freeSpinButton.classList.add('hidden');
-                freeSpinButton.disabled = true;
+            // 🔥 最终检查：再次调用 resetAllModeUI 确保UI完全正确
+            setTimeout(() => {
+              console.log('[初始化] 最终UI检查，当前状态:', {
+                isInSupremeMode,
+                isInAdvancedMode,
+                hasSupremeConfig: !!supremeTokensData?.config,
+                hasAdvancedConfig: !!advancedTicketsData?.config
+              });
+              
+              // 🔥 如果在至尊场，确保快捷按钮已生成
+              if (isInSupremeMode && supremeTokensData?.config) {
+                const container = document.getElementById('supremeBetOptions');
+                if (container && container.children.length === 0) {
+                  console.log('[初始化] 至尊场快捷按钮未生成，重新生成');
+                  const config = supremeTokensData.config;
+                  supremeBetMin = config.min_bet_amount / 500000;
+                  supremeBetMax = config.max_bet_amount / 500000;
+                  generateSupremeBetOptions(supremeBetMin, supremeBetMax);
+                }
+                
+                // 确保按钮状态正确
+                const enterBtn = document.getElementById('enterSupremeButton');
+                if (enterBtn) {
+                  enterBtn.textContent = '💎 退出至尊场';
+                  enterBtn.onclick = exitSupremeMode;
+                  enterBtn.disabled = false;
+                  enterBtn.classList.remove('animate-pulse');
+                }
               }
-            }
+              
+              // 🔥 最终确保UI不重合
+              updateModeTitles();
+            }, 100);
           }, 50);
         }, 100);
 
@@ -6363,12 +6388,21 @@
         if (freeSpinButton) freeSpinButton.classList.add('hidden');
         
         // 🔥 更新投注范围并生成选项
+        console.log('[updateSupremeTokensUI] 检查配置数据:', {
+          hasConfig: !!config,
+          min_bet_amount: config?.min_bet_amount,
+          max_bet_amount: config?.max_bet_amount
+        });
+        
         if (config && config.min_bet_amount && config.max_bet_amount) {
           supremeBetMin = config.min_bet_amount / 500000;
           supremeBetMax = config.max_bet_amount / 500000;
           
+          console.log('[updateSupremeTokensUI] 计算的投注范围:', { supremeBetMin, supremeBetMax });
+          
           // 🔥 检查计算后的值是否有效
           if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
+            console.log('[updateSupremeTokensUI] 调用 generateSupremeBetOptions');
             generateSupremeBetOptions(supremeBetMin, supremeBetMax);
             
             // 更新滑块范围
@@ -6403,9 +6437,9 @@
         updateBetLimitProgressBar();
       }
       
-      // 🎯 统一更新场式标题和UI元素（避免重叠）
-      updateModeTitles();
-      updateGameRulesButton();
+      // 🔥 不在这里调用 updateModeTitles()，因为已经通过 resetAllModeUI() 或 enterSupremeMode() 统一管理
+      // updateModeTitles();
+      // updateGameRulesButton();
     }
     
     // 💎 合成至尊令牌
@@ -6463,22 +6497,70 @@
           showToast('💎 ' + data.message, 'success');
           isInSupremeMode = true;
           
-          // 🔥 并行加载令牌和配置，并正确保存配置
-          const [_, configRes] = await Promise.all([
-            loadSupremeTokens(),
-            fetch('/api/slot/config').then(res => res.json())
-          ]);
-          
-          // 🔥 保存加载的配置数据
-          if (configRes && configRes.success) {
-            slotConfig = configRes.data.config;
-            slotUserData = configRes.data.user;
+          // 🔥 先加载令牌数据（不调用UI更新）
+          const res2 = await fetch('/api/supreme/tokens');
+          const tokenData = await res2.json();
+          if (tokenData.success) {
+            supremeTokensData = tokenData.data;
           }
           
-          // 🔥 先重置所有UI状态，然后更新
+          // 🔥 加载配置数据
+          const configRes = await fetch('/api/slot/config');
+          const configData = await configRes.json();
+          if (configData.success) {
+            slotConfig = configData.data.config;
+            slotUserData = configData.data.user;
+          }
+          
+          // 🔥 先重置所有UI状态
           resetAllModeUI();
-          updateSupremeTokensUI();
+          
+          // 🔥 强制更新至尊场投注选项（使用API返回的config）
+          console.log('[enterSupremeMode] 检查至尊场配置:', {
+            hasSupremeTokensData: !!supremeTokensData,
+            hasConfig: !!supremeTokensData?.config,
+            config: supremeTokensData?.config
+          });
+          
+          if (supremeTokensData && supremeTokensData.config) {
+            const config = supremeTokensData.config;
+            if (config.min_bet_amount && config.max_bet_amount) {
+              supremeBetMin = config.min_bet_amount / 500000;
+              supremeBetMax = config.max_bet_amount / 500000;
+              
+              console.log('[enterSupremeMode] 进入后生成投注选项，范围:', supremeBetMin, '~', supremeBetMax);
+              
+              if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
+                generateSupremeBetOptions(supremeBetMin, supremeBetMax);
+                
+                const slider = document.getElementById('supremeBetSlider');
+                if (slider) {
+                  slider.min = supremeBetMin;
+                  slider.max = supremeBetMax;
+                  slider.value = supremeBetMin;
+                  updateSupremeBetDisplay(supremeBetMin);
+                }
+              } else {
+                console.error('[enterSupremeMode] 投注范围无效');
+              }
+            } else {
+              console.error('[enterSupremeMode] config 缺少 min_bet_amount 或 max_bet_amount');
+            }
+          } else {
+            console.error('[enterSupremeMode] supremeTokensData 或 config 不存在');
+          }
+          
+          // 🔥 然后更新至尊场UI状态
           updateSlotUI();
+          
+          // 🔥 更新进入至尊场按钮状态
+          const enterBtn = document.getElementById('enterSupremeButton');
+          if (enterBtn) {
+            enterBtn.textContent = '💎 退出至尊场';
+            enterBtn.onclick = exitSupremeMode;
+            enterBtn.disabled = false;
+            enterBtn.classList.remove('animate-pulse');
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -6805,6 +6887,8 @@
       
       const uniqueOptions = [...new Set(options)].sort((a, b) => a - b);
       
+      console.log('[至尊场] 生成快捷按钮，选项:', uniqueOptions);
+      
       uniqueOptions.forEach(amount => {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -6813,6 +6897,8 @@
         btn.onclick = () => selectSupremeBet(amount);
         container.appendChild(btn);
       });
+      
+      console.log('[至尊场] 快捷按钮已生成，容器子元素数量:', container.children.length);
       
       // 更新滑块范围
       const slider = document.getElementById('supremeBetSlider');
