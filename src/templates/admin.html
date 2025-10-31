@@ -9251,11 +9251,13 @@
                       中奖规则 
                       <span class="px-3 py-1 bg-indigo-500 text-white rounded-full text-sm">${rules.length}条</span>
                     </h4>
-                    <div class="text-xs text-slate-500 italic">💡 规则已预配置，可编辑启用状态和倍率</div>
+                    <button onclick="showAddRuleModal(${schemeId})" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold transition-all hover:scale-105 flex items-center gap-2">
+                      <span class="text-lg">➕</span> 从模板添加
+                    </button>
                   </div>
                   
                   <div class="space-y-3" id="rulesList">
-                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无规则，请使用预定义模板创建方案</div>' : rules.map(rule => `
+                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无规则，点击上方"➕ 从模板添加"选择预设规则</div>' : rules.map(rule => `
                       <div class="bg-gradient-to-r from-slate-50 to-indigo-50 border-2 border-indigo-200 rounded-lg p-4 hover:shadow-lg transition-all hover:border-indigo-400">
                         <div class="flex justify-between items-start">
                           <div class="flex-1">
