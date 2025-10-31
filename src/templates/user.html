@@ -654,7 +654,6 @@
       </div>
     </div>
   </div>
-
   <!-- 老虎机全屏界面 -->
   <div id="slotMachineModal" class="hidden fixed inset-0 z-50 slot-machine-bg">
     
@@ -1141,7 +1140,6 @@
         </div>
       </div>
       <!-- ========== 💎 至尊场容器结束 ========== -->
-
       <!-- 左侧：亏损榜（悬浮显示）- 移动端隐藏 -->
       <div id="slotSidebarProfitBoard" class="absolute top-4 left-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-red-950/90 to-rose-950/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-500/30 overflow-hidden flex flex-col">
         <div class="p-4 bg-gradient-to-r from-red-600/30 to-rose-600/30 border-b border-red-500/30">
@@ -1286,7 +1284,6 @@
       </div>
     </div>
   </div>
-
   <!-- 🐔 坤呗借款模态框 -->
   <div id="kunbeiModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4">
     <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden">
@@ -1621,7 +1618,6 @@
       </div>
     </div>
   </div>
-
   <!-- 待发放奖金弹窗 -->
   <div id="pendingRewardsModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div class="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl flex flex-col">
@@ -1924,7 +1920,6 @@
       </div>
     </div>
   </div>
-
   <!-- 老虎机规则弹窗 -->
   <div id="slotRulesModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4">
     <div id="slotRulesModalContent" class="bg-gradient-to-br from-blue-900 to-cyan-900 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border-2 border-blue-400">
@@ -2021,7 +2016,6 @@
       </div>
     </div>
   </div>
-
   <script>
     // ========== 音效系统 ==========
     
@@ -2488,7 +2482,6 @@
         showMessage('绑定失败', 'error', 'bind');
       }
     }
-
     async function loadQuota() {
       try {
         const res = await fetch('/api/user/quota');
@@ -2984,7 +2977,6 @@
     let supremeBetAmount = 1000;     // 至尊场投注金额（坤币，默认1000）
     let supremeBetMin = 1000;        // 至尊场最小投注
     let supremeBetMax = 10000;       // 至尊场最大投注
-
     // 🔥 动态生成投注选项按钮
     function generateAdvancedBetOptions(minBet, maxBet) {
       const container = document.getElementById('advancedBetOptions');
@@ -3115,7 +3107,6 @@
       }
       // 初级场不显示进度条
     }
-    
     // 🔥 更新指定场次的进度条
     function updateProgressBarForMode(mode) {
       let progressText, progressBar, warningText, betLimit, todayBetAmount;
@@ -3278,23 +3269,6 @@
       // 更新进入高级场按钮状态
       const enterBtn = document.getElementById('enterAdvancedButton');
       enterBtn.disabled = tickets < 1;
-      
-      // 🔥 同步数据到导航栏卡片 - 已移除
-      // const ticketCountNav = document.getElementById('ticketCountNav');
-      // const fragmentCountNav = document.getElementById('fragmentCountNav');
-      // const synthesizeButtonNav = document.getElementById('synthesizeButtonNav');
-      // const enterAdvancedButtonNav = document.getElementById('enterAdvancedButtonNav');
-      // 
-      // if (ticketCountNav) ticketCountNav.textContent = tickets;
-      // if (fragmentCountNav) fragmentCountNav.textContent = fragments;
-      // 
-      // // 更新导航栏按钮状态
-      // if (synthesizeButtonNav) {
-      //   synthesizeButtonNav.disabled = !can_synthesize || tickets >= max_tickets_hold || todayGranted >= dailyLimit;
-      // }
-      // if (enterAdvancedButtonNav) {
-      //   enterAdvancedButtonNav.disabled = tickets < 1;
-      // }
       
       // 🎯 改进：显示/隐藏入场券栏和高级场指示器
       const ticketBar = document.getElementById('advancedTicketBar');
@@ -3483,7 +3457,6 @@
         btn.innerHTML = originalText;
       }
     }
-
     // 🔥 进入高级场
     async function enterAdvancedMode() {
       // console.log('[高级场] 尝试进入高级场...');
@@ -3744,7 +3717,6 @@
       
       console.log('[initReelsForMode] 滚轮初始化完成:', reelsContainerId);
     }
-
     // 创建符号元素
     function createSymbolElement(symbolName) {
       const div = document.createElement('div');
@@ -3863,7 +3835,6 @@
         await new Promise(resolve => setTimeout(resolve, 300));
         loadingOverlay.classList.add('hidden');
         loadingOverlay.style.animation = '';
-
         // 6. 异步加载排行榜和坤呗状态（不阻塞主界面）
         setTimeout(() => {
           loadSidebarLeaderboard();
@@ -4272,7 +4243,6 @@
       // 切换回加油站模式
       await switchToRefuel();
     }
-
     // 更新老虎机界面数据
     function updateSlotUI() {
       if (!slotUserData || !slotConfig) {
@@ -4820,7 +4790,6 @@
       // 等待所有滚轮动画完成
       await Promise.all(animationPromises);
     }
-
     // 单个滚轮动画（优化版）
     function animateReel(reel, finalSymbol, reelIndex, startTime) {
       return new Promise((resolve) => {
@@ -5157,7 +5126,6 @@
       
       container.innerHTML = html;
     }
-
     // 渲染老虎机记录
     function renderSlotRecords(records) {
       const container = document.getElementById('slotRecordsContent');
@@ -5421,7 +5389,6 @@
     function closeSlotRecords() {
       document.getElementById('slotRecordsModal').classList.add('hidden');
     }
-
     // 显示游戏规则
     async function showSlotRules() {
       // 🔥 加载当前场次的实际配置规则
@@ -5621,7 +5588,6 @@
               });
               rulesHTML += '</div></div>';
             }
-            
             // 符号权重
             if (weightConfig) {
               const weightBg = mode === 'advanced' ? 'bg-amber-900/30' : 'bg-blue-900/30';
@@ -5686,374 +5652,307 @@
             
             rulesContainer.innerHTML = rulesHTML;
           }
+        } catch (error) {
+          console.error('[游戏规则] 加载失败:', error);
         }
-      } catch (error) {
-        console.error('[游戏规则] 加载失败:', error);
+        
+        // 更新规则中的动态配置显示
+        if (slotConfig) {
+          const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
+          const minQuotaUSD = (slotConfig.min_quota_required / 500000).toFixed(2);
+          const maxSpins = slotConfig.max_daily_spins;
+          
+          // 更新基本规则
+          const basicRulesBetAmount = document.getElementById('basicRulesBetAmount');
+          if (basicRulesBetAmount) basicRulesBetAmount.textContent = `$${betAmountUSD}`;
+          
+          const basicRulesMaxSpins = document.getElementById('basicRulesMaxSpins');
+          if (basicRulesMaxSpins) basicRulesMaxSpins.textContent = `${maxSpins}次`;
+          
+          const basicRulesMinQuota = document.getElementById('basicRulesMinQuota');
+          if (basicRulesMinQuota) basicRulesMinQuota.textContent = `$${minQuotaUSD}`;
+          
+          // 更新投注金额说明
+          const rulesBetAmount = document.getElementById('rulesBetAmount');
+          if (rulesBetAmount) rulesBetAmount.textContent = `$${betAmountUSD}`;
+          
+          // 更新奖励倍率（从配置中获取）
+          if (slotConfig.multipliers) {
+            const multipliers = slotConfig.multipliers;
+            
+            // 更新超级大奖倍率
+            const rulesSuperJackpot = document.getElementById('rulesSuperJackpot');
+            if (rulesSuperJackpot) {
+              const totalAmount = (multipliers.super_jackpot * slotConfig.bet_amount / 500000).toFixed(2);
+              rulesSuperJackpot.textContent = `${multipliers.super_jackpot}x$${betAmountUSD} ≈ $${totalAmount}`;
+            }
+            
+            // 更新特殊组合倍率
+            const rulesSpecialCombo = document.getElementById('rulesSpecialCombo');
+            if (rulesSpecialCombo) {
+              const totalAmount = (multipliers.special_combo * slotConfig.bet_amount / 500000).toFixed(2);
+              rulesSpecialCombo.textContent = `${multipliers.special_combo}x$${betAmountUSD} ≈ $${totalAmount}`;
+            }
+            
+            // 更新四连倍率
+            const rulesQuad = document.getElementById('rulesQuad');
+            if (rulesQuad) {
+              const totalAmount = (multipliers.quad * slotConfig.bet_amount / 500000).toFixed(2);
+              rulesQuad.textContent = `${multipliers.quad}x$${betAmountUSD} ≈ $${totalAmount}`;
+            }
+            
+            // 更新三连倍率
+            const rulesTriple = document.getElementById('rulesTriple');
+            if (rulesTriple) {
+              const totalAmount = (multipliers.triple * slotConfig.bet_amount / 500000).toFixed(2);
+              rulesTriple.textContent = `${multipliers.triple}x$${betAmountUSD} ≈ $${totalAmount}`;
+            }
+            
+            // 更新双连倍率
+            const rulesDouble = document.getElementById('rulesDouble');
+            if (rulesDouble) {
+              const totalAmount = (multipliers.double * slotConfig.bet_amount / 500000).toFixed(2);
+              rulesDouble.textContent = `${multipliers.double}x$${betAmountUSD} ≈ $${totalAmount}`;
+            }
+          }
+        }
+        document.getElementById('slotRulesModal').classList.remove('hidden');
+      }
+
+      // 关闭游戏规则
+      function closeSlotRules() {
+        document.getElementById('slotRulesModal').classList.add('hidden');
       }
       
-      // 更新规则中的动态配置显示
-      if (slotConfig) {
-        const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-        const minQuotaUSD = (slotConfig.min_quota_required / 500000).toFixed(2);
-        const maxSpins = slotConfig.max_daily_spins;
-        
-        // 更新基本规则
-        const basicRulesBetAmount = document.getElementById('basicRulesBetAmount');
-        if (basicRulesBetAmount) basicRulesBetAmount.textContent = `$${betAmountUSD}`;
-        
-        const basicRulesMaxSpins = document.getElementById('basicRulesMaxSpins');
-        if (basicRulesMaxSpins) basicRulesMaxSpins.textContent = `${maxSpins}次`;
-        
-        const basicRulesMinQuota = document.getElementById('basicRulesMinQuota');
-        if (basicRulesMinQuota) basicRulesMinQuota.textContent = `$${minQuotaUSD}`;
-        
-        // 更新投注金额说明
-        const rulesBetAmount = document.getElementById('rulesBetAmount');
-        if (rulesBetAmount) rulesBetAmount.textContent = `$${betAmountUSD}`;
-        
-        // 更新奖励倍率（从配置中获取）
-        if (slotConfig.multipliers) {
-          const multipliers = slotConfig.multipliers;
+      // 💎 显示至尊场游戏规则
+      async function showSupremeRules() {
+        try {
+          const res = await fetch('/api/supreme/rules');
+          const data = await res.json();
           
-          // 更新超级大奖倍率
-          const rulesSuperJackpot = document.getElementById('rulesSuperJackpot');
-          if (rulesSuperJackpot) {
-            const totalAmount = (multipliers.super_jackpot * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesSuperJackpot.textContent = `${multipliers.super_jackpot}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新特殊组合倍率
-          const rulesSpecialCombo = document.getElementById('rulesSpecialCombo');
-          if (rulesSpecialCombo) {
-            const totalAmount = (multipliers.special_combo * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesSpecialCombo.textContent = `${multipliers.special_combo}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新四连倍率
-          const rulesQuad = document.getElementById('rulesQuad');
-          if (rulesQuad) {
-            const totalAmount = (multipliers.quad * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesQuad.textContent = `${multipliers.quad}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新三连倍率
-          const rulesTriple = document.getElementById('rulesTriple');
-          if (rulesTriple) {
-            const totalAmount = (multipliers.triple * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesTriple.textContent = `${multipliers.triple}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新双连倍率
-          const rulesDouble = document.getElementById('rulesDouble');
-          if (rulesDouble) {
-            const totalAmount = (multipliers.double * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesDouble.textContent = `${multipliers.double}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-        }
-      }
-      document.getElementById('slotRulesModal').classList.remove('hidden');
-    }
-
-    // 关闭游戏规则
-    function closeSlotRules() {
-      document.getElementById('slotRulesModal').classList.add('hidden');
-    }
-    
-    // 💎 显示至尊场游戏规则
-    async function showSupremeRules() {
-      try {
-        const res = await fetch('/api/supreme/rules');
-        const data = await res.json();
-        
-        if (data.success) {
-          const { mode, in_supreme_mode, rules, punishments, weightConfig, totalWeight, config } = data.data;
-          
-          const rulesContainer = document.getElementById('supremeRulesDisplay');
-          if (!rulesContainer) return;
-          
-          // 至尊场：红色主题
-          let html = `
-            <div class="bg-gradient-to-r from-red-500/20 to-rose-500/20 backdrop-blur-md rounded-xl p-5 border-2 border-red-400/50 mb-6">
-              <div class="flex items-center justify-center gap-3 mb-3">
-                <span class="text-3xl">💎</span>
-                <h3 class="text-2xl font-bold text-red-300">至尊场</h3>
-                <span class="text-3xl">💎</span>
-              </div>
-              <p class="text-center text-red-200 text-sm">超高倍率 · 顶级奖励 · 至尊体验</p>
-            </div>
+          if (data.success) {
+            const { mode, in_supreme_mode, rules, punishments, weightConfig, totalWeight, config } = data.data;
             
-            <div class="bg-red-900/50 rounded-xl p-4 mb-4 border border-red-500/30">
-              <h4 class="font-bold text-red-300 mb-3 text-lg">⚙️ 基础配置</h4>
-              <div class="grid grid-cols-2 gap-3 text-sm">
-                <div class="bg-black/30 p-3 rounded-lg">
-                  <p class="text-red-300">投注范围</p>
-                  <p class="text-white font-bold">$${config.min_bet} - $${config.max_bet}</p>
-                </div>
-                <div class="bg-black/30 p-3 rounded-lg">
-                  <p class="text-red-300">每日进入</p>
-                  <p class="text-white font-bold">${config.daily_entry_limit}次</p>
-                </div>
-                <div class="bg-black/30 p-3 rounded-lg col-span-2">
-                  <p class="text-red-300">会话时长</p>
-                  <p class="text-white font-bold">${config.session_valid_hours}小时</p>
-                </div>
-              </div>
-            </div>
-          `;
-          
-          // 显示中奖规则
-          if (rules.length > 0) {
-            html += '<div class="bg-green-900/30 rounded-xl p-4 mb-4 border border-green-500/30">';
-            html += '<h4 class="font-bold text-green-300 mb-3 text-lg">🎁 中奖规则</h4>';
-            html += '<div class="space-y-2">';
+            const rulesContainer = document.getElementById('supremeRulesDisplay');
+            if (!rulesContainer) return;
             
-            rules.forEach((rule, index) => {
-              html += `
-                <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/40 rounded-lg p-3">
-                  <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                      <span class="text-amber-300 font-bold">${index + 1}.</span>
-                      <span class="text-white font-bold">${rule.rule_name}</span>
-                    </div>
-                    <span class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</span>
+            // 至尊场：红色主题
+            let html = `
+              <div class="bg-gradient-to-r from-red-500/20 to-rose-500/20 backdrop-blur-md rounded-xl p-5 border-2 border-red-400/50 mb-6">
+                <div class="flex items-center justify-center gap-3 mb-3">
+                  <span class="text-3xl">💎</span>
+                  <h3 class="text-2xl font-bold text-red-300">至尊场</h3>
+                  <span class="text-3xl">💎</span>
+                </div>
+                <p class="text-center text-red-200 text-sm">超高倍率 · 顶级奖励 · 至尊体验</p>
+              </div>
+              
+              <div class="bg-red-900/50 rounded-xl p-4 mb-4 border border-red-500/30">
+                <h4 class="font-bold text-red-300 mb-3 text-lg">⚙️ 基础配置</h4>
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                  <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-red-300">投注范围</p>
+                    <p class="text-white font-bold">$${config.min_bet} - $${config.max_bet}</p>
                   </div>
-                  ${rule.description ? `<p class="text-sm text-green-200/70 mt-1 ml-6">${rule.description}</p>` : ''}
-                  ${rule.grant_free_spin > 0 ? `<p class="text-xs text-amber-300 mt-1 ml-6">🎁 赠送${rule.grant_free_spin}次免费</p>` : ''}
+                  <div class="bg-black/30 p-3 rounded-lg">
+                    <p class="text-red-300">每日进入</p>
+                    <p class="text-white font-bold">${config.daily_entry_limit}次</p>
+                  </div>
+                  <div class="bg-black/30 p-3 rounded-lg col-span-2">
+                    <p class="text-red-300">会话时长</p>
+                    <p class="text-white font-bold">${config.session_valid_hours}小时</p>
+                  </div>
                 </div>
-              `;
-            });
-            
-            html += '</div></div>';
-          } else {
-            html += `
-              <div class="bg-yellow-900/30 rounded-xl p-6 mb-4 border border-yellow-500/30 text-center">
-                <p class="text-yellow-300 font-bold">⚠️ 当前至尊场没有配置中奖规则</p>
-                <p class="text-yellow-200/70 text-sm mt-2">请联系管理员配置</p>
               </div>
             `;
-          }
-          
-          // 显示律师函惩罚
-          if (punishments.length > 0) {
-            html += '<div class="bg-red-900/30 rounded-xl p-4 mb-4 border border-red-500/30">';
-            html += '<h4 class="font-bold text-red-300 mb-3 text-lg">⚖️ 律师函惩罚</h4>';
-            html += '<div class="space-y-2">';
             
-            punishments.forEach(p => {
+            // 显示中奖规则
+            if (rules.length > 0) {
+              html += '<div class="bg-green-900/30 rounded-xl p-4 mb-4 border border-green-500/30">';
+              html += '<h4 class="font-bold text-green-300 mb-3 text-lg">🎁 中奖规则</h4>';
+              html += '<div class="space-y-2">';
+              
+              rules.forEach((rule, index) => {
+                html += `
+                  <div class="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-400/40 rounded-lg p-3">
+                    <div class="flex justify-between items-center">
+                      <div class="flex items-center gap-2">
+                        <span class="text-amber-300 font-bold">${index + 1}.</span>
+                        <span class="text-white font-bold">${rule.rule_name}</span>
+                      </div>
+                      <span class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</span>
+                    </div>
+                    ${rule.description ? `<p class="text-sm text-green-200/70 mt-1 ml-6">${rule.description}</p>` : ''}
+                    ${rule.grant_free_spin > 0 ? `<p class="text-xs text-amber-300 mt-1 ml-6">🎁 赠送${rule.grant_free_spin}次免费</p>` : ''}
+                  </div>
+                `;
+              });
+              
+              html += '</div></div>';
+            } else {
               html += `
-                <div class="bg-red-500/20 border border-red-400/40 rounded-lg p-3">
-                  <div class="flex justify-between items-center">
-                    <span class="text-red-200 font-semibold">${p.lsh_count}个律师函</span>
-                    <span class="text-red-300 font-bold">扣除${p.deduct_multiplier}倍</span>
-                  </div>
-                  <div class="text-xs text-red-200/70 mt-1">
-                    ${p.ban_hours > 0 ? `🔒 封禁${p.ban_hours}小时` : '不封禁'}
-                    <span class="mx-2">·</span>
-                    概率: ${p.probability}
-                  </div>
+                <div class="bg-yellow-900/30 rounded-xl p-6 mb-4 border border-yellow-500/30 text-center">
+                  <p class="text-yellow-300 font-bold">⚠️ 当前至尊场没有配置中奖规则</p>
+                  <p class="text-yellow-200/70 text-sm mt-2">请联系管理员配置</p>
                 </div>
               `;
-            });
+            }
             
-            html += '</div></div>';
-          }
-          
-          // 显示符号权重
-          if (weightConfig) {
-            html += '<div class="bg-red-900/30 rounded-xl p-4 border border-red-500/30">';
-            html += '<h4 class="font-bold text-red-300 mb-3 text-lg">⚖️ 符号权重配置</h4>';
-            html += '<div class="grid grid-cols-3 gap-2 text-xs">';
-            
-            const symbols = [
-              { key: 'm', name: '美', weight: weightConfig.weight_m },
-              { key: 't', name: '坤', weight: weightConfig.weight_t },
-              { key: 'n', name: '你', weight: weightConfig.weight_n },
-              { key: 'j', name: '太', weight: weightConfig.weight_j },
-              { key: 'lq', name: '鲤鱼', weight: weightConfig.weight_lq },
-              { key: 'bj', name: '背景', weight: weightConfig.weight_bj },
-              { key: 'zft', name: '真粉头', weight: weightConfig.weight_zft },
-              { key: 'bdk', name: '不打工', weight: weightConfig.weight_bdk },
-              { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh }
-            ];
-            
-            symbols.forEach(s => {
-              const prob = ((s.weight / totalWeight) * 100).toFixed(2);
-              const isLsh = s.key === 'lsh';
-              html += `
-                <div class="${isLsh ? 'bg-rose-500/20 border-rose-400/50' : 'bg-red-500/20 border-red-400/50'} border rounded-lg p-2">
-                  <div class="${isLsh ? 'text-rose-300' : 'text-red-200'} font-medium">${s.name}</div>
-                  <div class="text-white font-bold">${s.weight}</div>
-                  <div class="${isLsh ? 'text-rose-200/70' : 'text-red-200/70'}">${prob}%</div>
-                </div>
-              `;
-            });
-            
-            html += '</div>';
-            html += `<p class="text-xs text-red-200/70 mt-3 text-center">总权重: ${totalWeight}</p>`;
-            html += '</div>';
-          }
-          
-          // 提示信息
-          html += `
-            <div class="bg-red-500/20 border-2 border-red-400/50 rounded-xl p-4">
-              <p class="font-bold text-red-300 mb-2">💡 温馨提示</p>
-              <ul class="text-sm text-red-200 space-y-1">
-                <li>• 至尊场需要消耗至尊令牌进入</li>
-                <li>• 每次会话时长有限，请合理安排</li>
-                <li>• 投注金额可自定义选择</li>
-                <li>• 理性游戏，适度娱乐！</li>
-              </ul>
-            </div>
-          `;
-          
-          rulesContainer.innerHTML = html;
-        }
-      } catch (error) {
-        console.error('[至尊场规则] 加载失败:', error);
-        showToast('加载规则失败', 'error');
-      }
-      
-      document.getElementById('supremeRulesModal').classList.remove('hidden');
-    }
-    
-    // 💎 关闭至尊场规则
-    function closeSupremeRules() {
-      document.getElementById('supremeRulesModal').classList.add('hidden');
-    }
-    
-    // 显示排行榜
-    async function showLeaderboard() {
-      try {
-        const res = await fetch('/api/slot/leaderboard?limit=100');
-        const data = await res.json();
-
-        if (!data.success) {
-          showToast(data.message, 'error');
-          return;
-        }
-
-        const { leaderboard, lossLeaderboard, userStats, userRank, userLossRank } = data.data;
-
-        // 更新用户统计
-        document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
-        document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
-        document.getElementById('myTotalBet').textContent = `$${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
-        
-        // 计算并显示用户盈亏
-        const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const myProfitText = `${myProfit >= 0 ? '+' : ''}$${(myProfit / 500000).toFixed(2)}`;
-        const myProfitElement = document.getElementById('myTotalProfit');
-        myProfitElement.textContent = myProfitText;
-        myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
-        
-        document.getElementById('myBiggestWin').textContent = `$${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
-        
-        const winTypeLabels = {
-          'super_jackpot': '(🏆 超级大奖)',
-          'special_combo': '(💎 特殊组合)',
-          'quad': '(🎰 四连)',
-          'triple': '(✨ 三连)',
-          'double': '(🎁 双连)',
-          'punishment': '(⚡ 惩罚)',
-          'none': ''
-        };
-        document.getElementById('myBiggestWinType').textContent = winTypeLabels[userStats.biggest_win_type] || '';
-
-        // 渲染盈利排行榜
-        const container = document.getElementById('leaderboardContent');
-        
-        if (leaderboard.length === 0) {
-          container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无排行数据</p>';
-        } else {
-          container.innerHTML = `
-            <div class="mb-4">
-              <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
-                <span>🏆</span>
-                <span>盈利排行榜 TOP 20</span>
-                <span class="text-sm font-normal text-slate-500">（赚最多）</span>
-              </h3>
-              <div class="space-y-3">
-                ${leaderboard.map((user, index) => {
-                const rank = index + 1;
-                let rankBadge = '';
-                let bgClass = 'bg-white hover:bg-slate-50';
-                
-                if (rank === 1) {
-                  rankBadge = '<span class="text-4xl">🥇</span>';
-                  bgClass = 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400';
-                } else if (rank === 2) {
-                  rankBadge = '<span class="text-4xl">🥈</span>';
-                  bgClass = 'bg-gradient-to-r from-gray-50 to-slate-100 border-2 border-gray-400';
-                } else if (rank === 3) {
-                  rankBadge = '<span class="text-4xl">🥉</span>';
-                  bgClass = 'bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-400';
-                } else {
-                  rankBadge = `<span class="text-2xl font-bold text-slate-600">#${rank}</span>`;
-                }
-
-                const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
-                
-                // 计算盈亏
-                const profit = (user.total_win || 0) - (user.total_bet || 0);
-                const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
-                const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
-
-                return `
-                  <div class="p-4 rounded-lg border border-slate-200 ${bgClass} transition-all">
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center gap-4">
-                        <div class="w-16 text-center">${rankBadge}</div>
-                        <div>
-                          <p class="font-bold text-lg text-slate-900">${user.username || user.linux_do_id}</p>
-                          <p class="text-sm text-slate-600">游玩 ${user.total_spins} 次</p>
-                        </div>
-                      </div>
-                      <div class="text-right">
-                        <p class="text-xs text-slate-500">总盈亏</p>
-                        <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                        <p class="text-xs text-slate-500 mt-1">最大奖金: $${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
-                      </div>
+            // 显示律师函惩罚
+            if (punishments.length > 0) {
+              html += '<div class="bg-red-900/30 rounded-xl p-4 mb-4 border border-red-500/30">';
+              html += '<h4 class="font-bold text-red-300 mb-3 text-lg">⚖️ 律师函惩罚</h4>';
+              html += '<div class="space-y-2">';
+              
+              punishments.forEach(p => {
+                html += `
+                  <div class="bg-red-500/20 border border-red-400/40 rounded-lg p-3">
+                    <div class="flex justify-between items-center">
+                      <span class="text-red-200 font-semibold">${p.lsh_count}个律师函</span>
+                      <span class="text-red-300 font-bold">扣除${p.deduct_multiplier}倍</span>
+                    </div>
+                    <div class="text-xs text-red-200/70 mt-1">
+                      ${p.ban_hours > 0 ? `🔒 封禁${p.ban_hours}小时` : '不封禁'}
+                      <span class="mx-2">·</span>
+                      概率: ${p.probability}
                     </div>
                   </div>
                 `;
-              }).join('')}
+              });
+              
+              html += '</div></div>';
+            }
+            
+            // 显示符号权重
+            if (weightConfig) {
+              html += '<div class="bg-red-900/30 rounded-xl p-4 border border-red-500/30">';
+              html += '<h4 class="font-bold text-red-300 mb-3 text-lg">⚖️ 符号权重配置</h4>';
+              html += '<div class="grid grid-cols-3 gap-2 text-xs">';
+              
+              const symbols = [
+                { key: 'm', name: '美', weight: weightConfig.weight_m },
+                { key: 't', name: '坤', weight: weightConfig.weight_t },
+                { key: 'n', name: '你', weight: weightConfig.weight_n },
+                { key: 'j', name: '太', weight: weightConfig.weight_j },
+                { key: 'lq', name: '鲤鱼', weight: weightConfig.weight_lq },
+                { key: 'bj', name: '背景', weight: weightConfig.weight_bj },
+                { key: 'zft', name: '真粉头', weight: weightConfig.weight_zft },
+                { key: 'bdk', name: '不打工', weight: weightConfig.weight_bdk },
+                { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh }
+              ];
+              
+              symbols.forEach(s => {
+                const prob = ((s.weight / totalWeight) * 100).toFixed(2);
+                const isLsh = s.key === 'lsh';
+                html += `
+                  <div class="${isLsh ? 'bg-rose-500/20 border-rose-400/50' : 'bg-red-500/20 border-red-400/50'} border rounded-lg p-2">
+                    <div class="${isLsh ? 'text-rose-300' : 'text-red-200'} font-medium">${s.name}</div>
+                    <div class="text-white font-bold">${s.weight}</div>
+                    <div class="${isLsh ? 'text-rose-200/70' : 'text-red-200/70'}">${prob}%</div>
+                  </div>
+                `;
+              });
+              
+              html += '</div>';
+              html += `<p class="text-xs text-red-200/70 mt-3 text-center">总权重: ${totalWeight}</p>`;
+              html += '</div>';
+            }
+            
+            // 提示信息
+            html += `
+              <div class="bg-red-500/20 border-2 border-red-400/50 rounded-xl p-4">
+                <p class="font-bold text-red-300 mb-2">💡 温馨提示</p>
+                <ul class="text-sm text-red-200 space-y-1">
+                  <li>• 至尊场需要消耗至尊令牌进入</li>
+                  <li>• 每次会话时长有限，请合理安排</li>
+                  <li>• 投注金额可自定义选择</li>
+                  <li>• 理性游戏，适度娱乐！</li>
+                </ul>
               </div>
-            </div>
-          `;
+            `;
+            
+            rulesContainer.innerHTML = html;
+          }
+        } catch (error) {
+          console.error('[至尊场规则] 加载失败:', error);
+          showToast('加载规则失败', 'error');
         }
         
-        // 渲染亏损排行榜
-        const lossContainer = document.getElementById('lossLeaderboardContent');
-        
-        if (!lossLeaderboard || lossLeaderboard.length === 0) {
-          lossContainer.innerHTML = '';
-        } else {
-          lossContainer.innerHTML = `
-            <div class="mt-8 pt-6 border-t-2 border-red-200">
-              <h3 class="text-xl font-bold text-red-700 mb-4 flex items-center gap-2">
-                <span>📉</span>
-                <span>亏损排行榜 TOP 20</span>
-                <span class="text-sm font-normal text-slate-500">（亏最多）</span>
-              </h3>
-              <div class="space-y-3">
-                ${lossLeaderboard.length === 0 ? 
-                  '<p class="text-center text-green-600 py-8 font-semibold">🎉 暂无亏损用户，所有玩家都在盈利！</p>' :
-                  lossLeaderboard.slice(0, 20).map((user, index) => {
+        document.getElementById('supremeRulesModal').classList.remove('hidden');
+      }
+      
+      // 💎 关闭至尊场规则
+      function closeSupremeRules() {
+        document.getElementById('supremeRulesModal').classList.add('hidden');
+      }
+      // 显示排行榜
+      async function showLeaderboard() {
+        try {
+          const res = await fetch('/api/slot/leaderboard?limit=100');
+          const data = await res.json();
+
+          if (!data.success) {
+            showToast(data.message, 'error');
+            return;
+          }
+
+          const { leaderboard, lossLeaderboard, userStats, userRank, userLossRank } = data.data;
+
+          // 更新用户统计
+          document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
+          document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
+          document.getElementById('myTotalBet').textContent = `$${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
+          
+          // 计算并显示用户盈亏
+          const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
+          const myProfitText = `${myProfit >= 0 ? '+' : ''}$${(myProfit / 500000).toFixed(2)}`;
+          const myProfitElement = document.getElementById('myTotalProfit');
+          myProfitElement.textContent = myProfitText;
+          myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
+          
+          document.getElementById('myBiggestWin').textContent = `$${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
+          
+          const winTypeLabels = {
+            'super_jackpot': '(🏆 超级大奖)',
+            'special_combo': '(💎 特殊组合)',
+            'quad': '(🎰 四连)',
+            'triple': '(✨ 三连)',
+            'double': '(🎁 双连)',
+            'punishment': '(⚡ 惩罚)',
+            'none': ''
+          };
+          document.getElementById('myBiggestWinType').textContent = winTypeLabels[userStats.biggest_win_type] || '';
+
+          // 渲染盈利排行榜
+          const container = document.getElementById('leaderboardContent');
+          
+          if (leaderboard.length === 0) {
+            container.innerHTML = '<p class="text-center text-slate-500 py-8">暂无排行数据</p>';
+          } else {
+            container.innerHTML = `
+              <div class="mb-4">
+                <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
+                  <span>🏆</span>
+                  <span>盈利排行榜 TOP 20</span>
+                  <span class="text-sm font-normal text-slate-500">（赚最多）</span>
+                </h3>
+                <div class="space-y-3">
+                  ${leaderboard.map((user, index) => {
                   const rank = index + 1;
                   let rankBadge = '';
-                  let bgClass = 'bg-red-50 hover:bg-red-100 border-red-200';
+                  let bgClass = 'bg-white hover:bg-slate-50';
                   
                   if (rank === 1) {
-                    rankBadge = '<span class="text-4xl">😱</span>';
-                    bgClass = 'bg-gradient-to-r from-red-100 to-rose-100 border-2 border-red-500';
+                    rankBadge = '<span class="text-4xl">🥇</span>';
+                    bgClass = 'bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400';
                   } else if (rank === 2) {
-                    rankBadge = '<span class="text-4xl">😭</span>';
-                    bgClass = 'bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400';
+                    rankBadge = '<span class="text-4xl">🥈</span>';
+                    bgClass = 'bg-gradient-to-r from-gray-50 to-slate-100 border-2 border-gray-400';
                   } else if (rank === 3) {
-                    rankBadge = '<span class="text-4xl">😢</span>';
-                    bgClass = 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-red-300';
+                    rankBadge = '<span class="text-4xl">🥉</span>';
+                    bgClass = 'bg-gradient-to-r from-orange-50 to-amber-50 border-2 border-orange-400';
                   } else {
-                    rankBadge = `<span class="text-2xl font-bold text-red-600">#${rank}</span>`;
+                    rankBadge = `<span class="text-2xl font-bold text-slate-600">#${rank}</span>`;
                   }
 
                   const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
@@ -6061,10 +5960,10 @@
                   // 计算盈亏
                   const profit = (user.total_win || 0) - (user.total_bet || 0);
                   const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
-                  const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
+                  const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
 
                   return `
-                    <div class="p-4 rounded-lg border ${bgClass} transition-all">
+                    <div class="p-4 rounded-lg border border-slate-200 ${bgClass} transition-all">
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-4">
                           <div class="w-16 text-center">${rankBadge}</div>
@@ -6076,45 +5975,109 @@
                         <div class="text-right">
                           <p class="text-xs text-slate-500">总盈亏</p>
                           <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                          <p class="text-xs text-slate-500 mt-1">投注: $${(user.total_bet / 500000).toFixed(2)}</p>
+                          <p class="text-xs text-slate-500 mt-1">最大奖金: $${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
                         </div>
                       </div>
                     </div>
                   `;
                 }).join('')}
+                </div>
               </div>
-            </div>
-          `;
-        }
-        if (lossLeaderboard.length === 0) {
-          lossContainer.innerHTML = `
-            <div class="mt-8 pt-6 border-t-2 border-green-200">
-              <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
-                <span>🎉</span>
-                <span>太棒了！所有玩家都在盈利</span>
-              </h3>
-              <p class="text-center text-slate-500 py-8 bg-green-50 rounded-lg border border-green-200">
-                暂时没有亏损的用户<br>
-                <span class="text-sm">大家都玩得很好！</span>
-              </p>
-            </div>
-          `;
-        }
+            `;
+          }
+          
+          // 渲染亏损排行榜
+          const lossContainer = document.getElementById('lossLeaderboardContent');
+          
+          if (!lossLeaderboard || lossLeaderboard.length === 0) {
+            lossContainer.innerHTML = '';
+          } else {
+            lossContainer.innerHTML = `
+              <div class="mt-8 pt-6 border-t-2 border-red-200">
+                <h3 class="text-xl font-bold text-red-700 mb-4 flex items-center gap-2">
+                  <span>📉</span>
+                  <span>亏损排行榜 TOP 20</span>
+                  <span class="text-sm font-normal text-slate-500">（亏最多）</span>
+                </h3>
+                <div class="space-y-3">
+                  ${lossLeaderboard.length === 0 ? 
+                    '<p class="text-center text-green-600 py-8 font-semibold">🎉 暂无亏损用户，所有玩家都在盈利！</p>' :
+                    lossLeaderboard.slice(0, 20).map((user, index) => {
+                    const rank = index + 1;
+                    let rankBadge = '';
+                    let bgClass = 'bg-red-50 hover:bg-red-100 border-red-200';
+                    
+                    if (rank === 1) {
+                      rankBadge = '<span class="text-4xl">😱</span>';
+                      bgClass = 'bg-gradient-to-r from-red-100 to-rose-100 border-2 border-red-500';
+                    } else if (rank === 2) {
+                      rankBadge = '<span class="text-4xl">😭</span>';
+                      bgClass = 'bg-gradient-to-r from-red-50 to-rose-50 border-2 border-red-400';
+                    } else if (rank === 3) {
+                      rankBadge = '<span class="text-4xl">😢</span>';
+                      bgClass = 'bg-gradient-to-r from-orange-50 to-red-50 border-2 border-red-300';
+                    } else {
+                      rankBadge = `<span class="text-2xl font-bold text-red-600">#${rank}</span>`;
+                    }
 
-        document.getElementById('leaderboardModal').classList.remove('hidden');
-        // 默认显示盈利榜
-        switchLeaderboardTab('profit');
-      } catch (error) {
-        console.error('获取排行榜失败:', error);
-        showToast('获取排行榜失败', 'error');
+                    const winTypeLabel = winTypeLabels[user.biggest_win_type] || '';
+                    
+                    // 计算盈亏
+                    const profit = (user.total_win || 0) - (user.total_bet || 0);
+                    const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+                    const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
+
+                    return `
+                      <div class="p-4 rounded-lg border ${bgClass} transition-all">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center gap-4">
+                            <div class="w-16 text-center">${rankBadge}</div>
+                            <div>
+                              <p class="font-bold text-lg text-slate-900">${user.username || user.linux_do_id}</p>
+                              <p class="text-sm text-slate-600">游玩 ${user.total_spins} 次</p>
+                            </div>
+                          </div>
+                          <div class="text-right">
+                            <p class="text-xs text-slate-500">总盈亏</p>
+                            <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
+                            <p class="text-xs text-slate-500 mt-1">投注: $${(user.total_bet / 500000).toFixed(2)}</p>
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }
+          if (lossLeaderboard.length === 0) {
+            lossContainer.innerHTML = `
+              <div class="mt-8 pt-6 border-t-2 border-green-200">
+                <h3 class="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
+                  <span>🎉</span>
+                  <span>太棒了！所有玩家都在盈利</span>
+                </h3>
+                <p class="text-center text-slate-500 py-8 bg-green-50 rounded-lg border border-green-200">
+                  暂时没有亏损的用户<br>
+                  <span class="text-sm">大家都玩得很好！</span>
+                </p>
+              </div>
+            `;
+          }
+
+          document.getElementById('leaderboardModal').classList.remove('hidden');
+          // 默认显示盈利榜
+          switchLeaderboardTab('profit');
+        } catch (error) {
+          console.error('获取排行榜失败:', error);
+          showToast('获取排行榜失败', 'error');
+        }
       }
-    }
 
-    // 关闭排行榜
-    function closeLeaderboard() {
-      document.getElementById('leaderboardModal').classList.add('hidden');
-    }
-
+      // 关闭排行榜
+      function closeLeaderboard() {
+        document.getElementById('leaderboardModal').classList.add('hidden');
+      }
     // 切换排行榜标签页
     function switchLeaderboardTab(tab) {
       const profitTab = document.getElementById('profitTabBtn');
@@ -6381,7 +6344,9 @@
         
         if (data.success) {
           supremeTokensData = data.data;
-          console.log('[loadSupremeTokens] 令牌数据加载成功，skipUIUpdate:', skipUIUpdate);
+          // 同步至尊场状态，避免刷新后状态丢失
+          isInSupremeMode = !!supremeTokensData?.in_supreme_mode;
+          console.log('[loadSupremeTokens] 令牌数据加载成功，skipUIUpdate:', skipUIUpdate, 'isInSupremeMode:', isInSupremeMode);
           
           // 🔥 可选：跳过UI更新（避免覆盖手动设置的状态）
           if (!skipUIUpdate) {
@@ -6397,7 +6362,6 @@
         return null;
       }
     }
-    
     // 💎 更新至尊令牌UI
     function updateSupremeTokensUI() {
       if (!supremeTokensData) return;
@@ -6431,32 +6395,6 @@
       if (fragmentsNeeded) fragmentsNeeded.textContent = fragments_needed || 10;
       if (todayEntry) todayEntry.textContent = today_entry_count || 0;
       if (dailyLimit) dailyLimit.textContent = config?.daily_entry_limit || 3;
-      
-      // 🔥 同步数据到导航栏卡片 - 已移除
-      // const supremeTokenCountNav = document.getElementById('supremeTokenCountNav');
-      // const supremeFragmentCountNav = document.getElementById('supremeFragmentCountNav');
-      // const synthesizeSupremeButtonNav = document.getElementById('synthesizeSupremeButtonNav');
-      // const enterSupremeButtonNav = document.getElementById('enterSupremeButtonNav');
-      // 
-      // if (supremeTokenCountNav) supremeTokenCountNav.textContent = tokens || 0;
-      // if (supremeFragmentCountNav) supremeFragmentCountNav.textContent = fragments || 0;
-      // 
-      // // 更新导航栏按钮状态
-      // if (synthesizeSupremeButtonNav) {
-      //   synthesizeSupremeButtonNav.disabled = !can_synthesize || tokens >= max_tokens_hold || todayGranted >= grantLimit;
-      // }
-      // if (enterSupremeButtonNav) {
-      //   if (in_supreme_mode) {
-      //     enterSupremeButtonNav.textContent = '🚪';
-      //     enterSupremeButtonNav.title = '退出至尊场';
-      //     enterSupremeButtonNav.onclick = exitSupremeMode;
-      //   } else {
-      //     enterSupremeButtonNav.textContent = '💎';
-      //     enterSupremeButtonNav.title = '进入至尊场';
-      //     enterSupremeButtonNav.onclick = enterSupremeMode;
-      //     enterSupremeButtonNav.disabled = tokens < 1 || (today_entry_count >= config?.daily_entry_limit);
-      //   }
-      // }
       
       // 🔥 显示/隐藏令牌栏
       // 在高级场模式下始终显示（让用户看到至尊场入口）
@@ -6635,7 +6573,6 @@
         btn.innerHTML = originalText;
       }
     }
-    
     // 💎 进入至尊场
     async function enterSupremeMode() {
       if (!supremeTokensData || supremeTokensData.tokens < 1) {
@@ -6946,6 +6883,8 @@
       }
       
       console.log('[switchToModeContainer] 切换完成，当前显示:', mode);
+      // 🔥 同步更新规则按钮显示状态
+      updateGameRulesButton();
     }
     
     // 🔥 旧版：保留用于兼容（将被逐步替换）
@@ -7007,7 +6946,6 @@
         supremeModeTimer = null;
       }
     }
-    
     // 💎 生成至尊场投注选项按钮（紧凑版，类似高级场）
     function generateSupremeBetOptions(minBet, maxBet) {
       console.log('[generateSupremeBetOptions] 开始生成，参数:', { minBet, maxBet });
@@ -7098,7 +7036,6 @@
       }
       selectSupremeBet(supremeBetAmount);  // 🔥 统一调用
     }
-
     // ========== 结束：老虎机相关功能 ==========
 
     window.onload = async () => {
@@ -7157,443 +7094,6 @@
         document.getElementById('loginSection').classList.remove('hidden');
       }
     };
-    
-    // ========== 坤呗借款系统 ==========
-    
-    let kunbeiData = null;
-    let kunbeiCurrentAmount = 25000000;  // 默认$50
-    let kunbeiConfig = null;
-    let kunbeiConfirmResolver = null;  // 用于处理确认对话框的Promise
-    let kunbeiUpdateTimer = null;      // 坤呗信息更新定时器
-    
-    // 自定义确认对话框
-    function kunbeiConfirm(title, content) {
-      return new Promise((resolve) => {
-        kunbeiConfirmResolver = resolve;
-        document.getElementById('kunbeiConfirmTitle').textContent = title;
-        
-        // 处理内容 - 支持HTML
-        if (typeof content === 'object') {
-          // 如果是对象，构建HTML内容
-          const contentHtml = Object.entries(content).map(([key, value]) => {
-            return `<div class="flex justify-between items-center py-1">
-              <span class="text-slate-600">${key}:</span>
-              <span class="font-semibold ${value.class || ''}">${value.text || value}</span>
-            </div>`;
-          }).join('');
-          document.getElementById('kunbeiConfirmContent').innerHTML = contentHtml;
-        } else {
-          document.getElementById('kunbeiConfirmContent').innerHTML = content;
-        }
-        
-        document.getElementById('kunbeiConfirmDialog').classList.remove('hidden');
-      });
-    }
-    
-    // 确认对话框回调
-    function kunbeiConfirmResolve(result) {
-      document.getElementById('kunbeiConfirmDialog').classList.add('hidden');
-      if (kunbeiConfirmResolver) {
-        kunbeiConfirmResolver(result);
-        kunbeiConfirmResolver = null;
-      }
-    }
-    
-    // 加载坤呗状态（用于更新悬浮按钮）
-    async function loadKunbeiStatus() {
-      try {
-        const [configRes, statusRes] = await Promise.all([
-          fetch('/api/kunbei/config'),
-          fetch('/api/kunbei/status')
-        ]);
-        
-        const configData = await configRes.json();
-        const statusData = await statusRes.json();
-        
-        if (configData.success && statusData.success) {
-          kunbeiConfig = configData.data;
-          kunbeiData = statusData.data;
-          
-          // 更新悬浮按钮的title
-          const kunbeiFloatingButton = document.getElementById('kunbeiFloatingButton');
-          if (kunbeiFloatingButton) {
-            if (kunbeiData.has_active_loan) {
-              kunbeiFloatingButton.title = "点击还款";
-            } else {
-              kunbeiFloatingButton.title = "急用钱？坤呗懂你。";
-            }
-          }
-        }
-      } catch (error) {
-        console.error('加载坤呗状态失败:', error);
-      }
-    }
-    
-    // 打开坤呗模态框
-    async function openKunbeiModal() {
-      try {
-        // 加载配置和状态
-        const [configRes, statusRes] = await Promise.all([
-          fetch('/api/kunbei/config'),
-          fetch('/api/kunbei/status')
-        ]);
-        
-        const configData = await configRes.json();
-        const statusData = await statusRes.json();
-        
-        if (!configData.success || !statusData.success) {
-          showToast('加载坤呗信息失败', 'error');
-          return;
-        }
-        
-        kunbeiConfig = configData.data;
-        kunbeiData = statusData.data;
-        
-        // 检查是否启用
-        if (!kunbeiConfig.enabled) {
-          showToast('坤呗功能已关闭', 'error');
-          return;
-        }
-        
-        // 更新UI
-        updateKunbeiUI();
-        
-        // 显示模态框
-        document.getElementById('kunbeiModal').classList.remove('hidden');
-        
-        // 默认显示借款面板
-        switchKunbeiTab('borrow');
-        
-        // 启动定时更新（每秒更新一次，以实时显示剩余时间）
-        if (kunbeiUpdateTimer) {
-          clearInterval(kunbeiUpdateTimer);
-        }
-        kunbeiUpdateTimer = setInterval(async () => {
-          // 更新还款面板的时间显示
-          if (kunbeiData && kunbeiData.has_active_loan) {
-            updateRepayPanel();
-          }
-          
-          // 每30秒重新加载一次数据，以获取最新状态
-          if (Date.now() % 30000 < 1000) {
-            try {
-              const statusRes = await fetch('/api/kunbei/status');
-              const statusData = await statusRes.json();
-              if (statusData.success) {
-                kunbeiData = statusData.data;
-                updateKunbeiUI();
-              }
-            } catch (error) {
-              console.error('更新坤呗状态失败:', error);
-            }
-          }
-        }, 1000);
-      } catch (error) {
-        console.error('打开坤呗失败:', error);
-        showToast('加载失败，请重试', 'error');
-      }
-    }
-    
-    // 关闭模态框
-    function closeKunbeiModal() {
-      document.getElementById('kunbeiModal').classList.add('hidden');
-      
-      // 清除定时器
-      if (kunbeiUpdateTimer) {
-        clearInterval(kunbeiUpdateTimer);
-        kunbeiUpdateTimer = null;
-      }
-    }
-    
-    // 切换Tab
-    function switchKunbeiTab(tab) {
-      const tabs = { borrow: 'Borrow', repay: 'Repay', records: 'Records' };
-      const tabNames = { borrow: '借款', repay: '还款', records: '记录' };
-      
-      Object.keys(tabs).forEach(t => {
-        const tabBtn = document.getElementById(`kunbeiTab${tabs[t]}`);
-        const panel = document.getElementById(`kunbei${tabs[t]}Panel`);
-        
-        if (t === tab) {
-          tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-orange-500 text-orange-600';
-          tabBtn.innerHTML = `▣ ${tabNames[t]}`;  // 选中时使用实心方框
-          panel.classList.remove('hidden');
-        } else {
-          tabBtn.className = 'flex-1 pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400';
-          tabBtn.innerHTML = `▢ ${tabNames[t]}`;  // 未选中时使用空心方框
-          panel.classList.add('hidden');
-        }
-      });
-      
-      if (tab === 'repay') updateRepayPanel();
-      else if (tab === 'records') loadKunbeiRecords();
-    }
-    
-    // 更新UI
-    function updateKunbeiUI() {
-      if (!kunbeiData || !kunbeiConfig) return;
-      
-      const maxLoanUsd = kunbeiData.max_loan_amount ? kunbeiData.max_loan_amount / 500000 : kunbeiConfig.max_loan_amount / 500000;
-      const activeLoanUsd = kunbeiData.active_loan ? kunbeiData.active_loan.loan_amount / 500000 : 0;
-      const availableUsd = maxLoanUsd - activeLoanUsd;
-      const usagePercent = maxLoanUsd > 0 ? (activeLoanUsd / maxLoanUsd * 100).toFixed(0) : 0;
-      
-      document.getElementById('kunbeiAvailable').textContent = `$${availableUsd.toFixed(0)}`;
-      document.getElementById('kunbeiUsed').textContent = `$${activeLoanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiCredit').textContent = `$${maxLoanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiUsageBar').style.width = `${usagePercent}%`;
-      document.getElementById('kunbeiUsagePercent').textContent = `${usagePercent}%`;
-      document.getElementById('kunbeiCreditScore').textContent = kunbeiData.stats?.credit_score || 100;
-      
-      const borrowBtn = document.getElementById('kunbeiConfirmBorrowBtn');
-      if (borrowBtn) {
-        borrowBtn.disabled = !kunbeiData.can_borrow;
-        borrowBtn.title = kunbeiData.can_borrow ? '点击借款' : (kunbeiData.ban_reason || '无法借款');
-      }
-      
-      const slider = document.getElementById('kunbeiAmountSlider');
-      if (slider && kunbeiConfig) {
-        slider.min = kunbeiConfig.min_loan_amount / 500000;
-        slider.max = maxLoanUsd;
-      }
-      
-      updateKunbeiPreview();
-      
-      // 更新悬浮按钮的title
-      const kunbeiFloatingButton = document.getElementById('kunbeiFloatingButton');
-      if (kunbeiFloatingButton) {
-        if (kunbeiData.has_active_loan) {
-          kunbeiFloatingButton.title = "点击还款";
-        } else {
-          kunbeiFloatingButton.title = "急用钱？坤呗懂你。";
-        }
-      }
-    }
-    
-    // 设置借款金额
-    function setKunbeiAmount(amount) {
-      if (!kunbeiConfig) return;
-      if (amount === 'max') {
-        kunbeiCurrentAmount = kunbeiData.max_loan_amount || kunbeiConfig.max_loan_amount;
-      } else {
-        kunbeiCurrentAmount = amount;
-      }
-      document.getElementById('kunbeiAmountSlider').value = kunbeiCurrentAmount / 500000;
-      updateKunbeiPreview();
-    }
-    
-    // 调整金额
-    function adjustKunbeiAmount(delta) {
-      if (!kunbeiConfig) return;
-      const deltaInSats = delta * 1000;
-      const maxLoan = kunbeiData.max_loan_amount || kunbeiConfig.max_loan_amount;
-      kunbeiCurrentAmount = Math.max(
-        kunbeiConfig.min_loan_amount,
-        Math.min(maxLoan, kunbeiCurrentAmount + deltaInSats)
-      );
-      document.getElementById('kunbeiAmountSlider').value = kunbeiCurrentAmount / 500000;
-      updateKunbeiPreview();
-    }
-    
-    // 更新滑块
-    function updateKunbeiSlider(value) {
-      kunbeiCurrentAmount = parseInt(value) * 500000;
-      updateKunbeiPreview();
-    }
-    
-    // 更新预览
-    function updateKunbeiPreview() {
-      if (!kunbeiConfig) return;
-      
-      const loanUsd = kunbeiCurrentAmount / 500000;
-      const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
-      const cashbackUsd = repayUsd * kunbeiConfig.early_repay_discount;
-      
-      document.getElementById('kunbeiSliderValue').textContent = `$${loanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiPreviewRepay').textContent = `$${repayUsd.toFixed(2)}`;
-      document.getElementById('kunbeiPreviewCashback').textContent = `$${cashbackUsd.toFixed(2)}`;
-      
-      const dueDate = new Date(Date.now() + kunbeiConfig.loan_duration_hours * 3600000);
-      document.getElementById('kunbeiPreviewDue').textContent = 
-        dueDate.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-    }
-    
-    // 确认借款
-    async function confirmKunbeiBorrow() {
-      if (!kunbeiData.can_borrow) {
-        showToast(kunbeiData.ban_reason || '无法借款', 'error');
-        return;
-      }
-      
-      const loanUsd = kunbeiCurrentAmount / 500000;
-      const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
-      
-      const confirmed = await kunbeiConfirm('确认借款', {
-        '借款金额': { text: `$${loanUsd.toFixed(2)}`, class: 'text-green-600' },
-        '需还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-red-600' },
-        '借款期限': { text: `${kunbeiConfig.loan_duration_hours}小时` },
-        '提前还款优惠': { text: `${(kunbeiConfig.early_repay_discount * 100).toFixed(0)}%`, class: 'text-blue-600' }
-      });
-      
-      if (!confirmed) {
-        return;
-      }
-      
-      try {
-        const res = await fetch('/api/kunbei/borrow', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: kunbeiCurrentAmount })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          showToast(data.message, 'success');
-          
-          // 🔥 如果是首次借款，额外提示buff
-          if (data.is_first_today) {
-            setTimeout(() => {
-              showToast('下次抽奖倍率 ×2.5 🎰', 'success');
-            }, 1500);
-          }
-          
-          closeKunbeiModal();
-          loadQuota();
-          
-          // 🔥 更新老虎机页面的额度显示
-          if (currentMode === 'entertain' && slotUserData) {
-            // 增加额度
-            slotUserData.quota = (slotUserData.quota || 0) + kunbeiCurrentAmount;
-            // 立即更新UI显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
-            const slotQuotaEl = document.getElementById('slotQuota');
-            const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
-            if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
-            if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
-          }
-        } else {
-          showToast(data.message, 'error');
-        }
-      } catch (error) {
-        console.error('借款失败:', error);
-        showToast('借款失败，请重试', 'error');
-      }
-    }
-    
-    // 更新还款面板
-    function updateRepayPanel() {
-      if (!kunbeiData) return;
-      
-      if (kunbeiData.has_active_loan && kunbeiData.active_loan) {
-        const loan = kunbeiData.active_loan;
-        const now = Date.now();
-        const remaining = loan.due_at - now;
-        
-        document.getElementById('kunbeiHasLoan').classList.remove('hidden');
-        document.getElementById('kunbeiNoLoan').classList.add('hidden');
-        
-        document.getElementById('activeLoanAmount').textContent = `$${(loan.loan_amount / 500000).toFixed(2)}`;
-        document.getElementById('activeRepayAmount').textContent = `$${(loan.repay_amount / 500000).toFixed(2)}`;
-        
-        // 处理逾期时间显示
-        if (remaining < 0) {
-          // 已逾期，显示逾期时间
-          const overdueTime = Math.abs(remaining);
-          const hours = Math.floor(overdueTime / 3600000);
-          const minutes = Math.floor((overdueTime % 3600000) / 60000);
-          const seconds = Math.floor((overdueTime % 60000) / 1000);
-          document.getElementById('activeRemaining').textContent = 
-            `已逾期 ${hours}小时${minutes}分${seconds}秒`;
-          document.getElementById('activeRemaining').classList.add('text-red-600', 'font-bold');
-        } else {
-          // 未逾期，正常显示剩余时间
-          const hours = Math.floor(remaining / 3600000);
-          const minutes = Math.floor((remaining % 3600000) / 60000);
-          const seconds = Math.floor((remaining % 60000) / 1000);
-          document.getElementById('activeRemaining').textContent = 
-            `${hours}小时${minutes}分${seconds}秒`;
-          document.getElementById('activeRemaining').classList.remove('text-red-600', 'font-bold');
-        }
-        
-        if (now < loan.due_at) {
-          const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
-          const earlyAmount = loan.repay_amount - cashback;
-          document.getElementById('kunbeiEarlyRepayInfo').classList.remove('hidden');
-          document.getElementById('activeEarlyRepay').textContent = `$${(earlyAmount / 500000).toFixed(2)}`;
-        } else {
-          document.getElementById('kunbeiEarlyRepayInfo').classList.add('hidden');
-        }
-      } else {
-        document.getElementById('kunbeiHasLoan').classList.add('hidden');
-        document.getElementById('kunbeiNoLoan').classList.remove('hidden');
-      }
-    }
-    
-    // 确认还款
-    async function confirmKunbeiRepay() {
-      if (!kunbeiData.active_loan) {
-        showToast('没有需要还款的借款', 'error');
-        return;
-      }
-      
-      const loan = kunbeiData.active_loan;
-      const loanUsd = loan.loan_amount / 500000;
-      const repayUsd = loan.repay_amount / 500000;
-      const now = Date.now();
-      const isEarly = now < loan.due_at;
-      
-      let confirmContent = {
-        '借款金额': { text: `$${loanUsd.toFixed(2)}` },
-        '应还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
-      };
-      
-      if (isEarly) {
-        const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
-        const actualRepay = (loan.repay_amount - cashback) / 500000;
-        confirmContent['提前还款'] = { text: `$${actualRepay.toFixed(2)}`, class: 'text-green-600' };
-        confirmContent['返现金额'] = { text: `$${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
-      }
-      
-      const confirmed = await kunbeiConfirm('确认还款', confirmContent);
-      
-      if (!confirmed) {
-        return;
-      }
-      
-      try {
-        const res = await fetch(`/api/kunbei/repay/${loan.id}`, {
-          method: 'POST'
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          showToast(data.message, 'success');
-          closeKunbeiModal();
-          loadQuota();
-          
-          // 🔥 更新老虎机页面的额度显示
-          if (currentMode === 'entertain' && slotUserData && data.data) {
-            // 扣除实际还款金额
-            const actualRepayAmount = data.data.actual_amount || loan.repay_amount;
-            slotUserData.quota = Math.max(0, (slotUserData.quota || 0) - actualRepayAmount);
-            // 立即更新UI显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
-            const slotQuotaEl = document.getElementById('slotQuota');
-            const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
-            if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
-            if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
-          }
-        } else {
-          showToast(data.message, 'error');
-        }
-      } catch (error) {
-        console.error('还款失败:', error);
-        showToast('还款失败，请重试', 'error');
-      }
-    }
-    
     // 加载借款记录
     async function loadKunbeiRecords() {
       try {
@@ -7607,7 +7107,6 @@
         console.error('加载借款记录失败:', error);
       }
     }
-    
     // 渲染借款记录
     function renderKunbeiRecords(loans) {
       const container = document.getElementById('kunbeiRecordsList');
