@@ -1820,7 +1820,7 @@ function initQueries() {
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
         try {
-            const now = Date.now();
+        const now = Date.now();
             sessionQueries.cleanup.run(now);
             // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
             console.log(`🧹 已执行过期 Session 清理`);
@@ -2309,7 +2309,7 @@ function initQueries() {
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
         try {
-            const now = Date.now();
+        const now = Date.now();
             sessionQueries.cleanup.run(now);
             // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
             console.log(`🧹 已执行过期 Session 清理`);

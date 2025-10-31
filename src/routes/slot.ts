@@ -24,6 +24,7 @@ import {
     isUserBanned,
     banUserFromSlot,
     getRewardMultipliers,
+    getTodayDate,
     WIN_TYPE_NAMES,
     WinType
 } from '../services/slot';
