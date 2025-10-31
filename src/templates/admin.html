@@ -1625,7 +1625,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
-              <select id="normalSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalRewardScheme(); calculateNormalProbability()">
+              <select id="normalSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500" onchange="previewNormalRewardScheme()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
@@ -1656,14 +1656,19 @@
             
             <!-- 计算方式选择 -->
             <div class="mb-4">
-              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-slate-700">计算方式:</label>
+                <button onclick="calculateNormalProbability()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-sm">
+                  🎲 开始计算
+                </button>
+              </div>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="normalCalcMethod" value="fast" checked onchange="calculateNormalProbability()">
+                  <input type="radio" name="normalCalcMethod" value="fast" checked>
                   <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="normalCalcMethod" value="monte-carlo" onchange="calculateNormalProbability()">
+                  <input type="radio" name="normalCalcMethod" value="monte-carlo">
                   <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
                 </label>
               </div>
@@ -10276,11 +10281,12 @@
       if (!schemeId) return;
       
       try {
-        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}/rules`);
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}`);
         const data = await res.json();
         
         if (data.success) {
-          const { rules, punishments } = data.data;
+          const rules = data.data.rules || [];
+          const punishments = data.data.punishments || [];
           const previewList = document.getElementById('supremeRewardPreviewList');
           
           let html = '';
