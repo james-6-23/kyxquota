@@ -172,7 +172,7 @@ function generateSymbols(weightConfig: WeightConfig): string[] {
 function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): boolean {
     const { match_pattern, match_count, required_symbols, rule_name } = rule;
 
-    // 🔥 安全解析 required_symbols
+    // 🔥 安全解析 required_symbols - 支持多种格式
     let requiredArr: string[] = [];
     if (required_symbols) {
         try {
@@ -180,12 +180,35 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             if (Array.isArray(required_symbols)) {
                 requiredArr = required_symbols;
             } else if (typeof required_symbols === 'string') {
-                // 如果是字符串，尝试解析
-                requiredArr = JSON.parse(required_symbols);
+                const trimmed = required_symbols.trim();
+
+                // 尝试JSON解析（支持 ["a","b","c"] 格式）
+                if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+                    requiredArr = JSON.parse(trimmed);
+                }
+                // 逗号分隔字符串（支持 "a,b,c" 格式）
+                else if (trimmed.includes(',')) {
+                    requiredArr = trimmed.split(',').map(s => s.trim()).filter(s => s);
+                }
+                // 单个符号
+                else if (trimmed) {
+                    requiredArr = [trimmed];
+                }
             }
         } catch (e) {
-            console.error(`[规则匹配] "${rule_name}" JSON解析失败:`, required_symbols, e);
-            return false;
+            console.error(`[规则匹配] "${rule_name}" 解析 required_symbols 失败:`, required_symbols, e);
+            // 降级处理：尝试当作逗号分隔字符串
+            if (typeof required_symbols === 'string') {
+                const fallback = required_symbols.split(',').map(s => s.trim()).filter(s => s);
+                if (fallback.length > 0) {
+                    console.log(`[规则匹配] "${rule_name}" 使用降级解析:`, fallback);
+                    requiredArr = fallback;
+                } else {
+                    return false;
+                }
+            } else {
+                return false;
+            }
         }
     }
 

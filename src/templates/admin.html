@@ -9251,13 +9251,11 @@
                       中奖规则 
                       <span class="px-3 py-1 bg-indigo-500 text-white rounded-full text-sm">${rules.length}条</span>
                     </h4>
-                    <button onclick="showAddRuleModal(${schemeId})" class="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg text-sm font-semibold transition-all hover:scale-105">
-                      ➕ 添加规则
-                    </button>
+                    <div class="text-xs text-slate-500 italic">💡 规则已预配置，可编辑启用状态和倍率</div>
                   </div>
                   
                   <div class="space-y-3" id="rulesList">
-                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无规则，点击"➕ 添加规则"从预设模板中选择</div>' : rules.map(rule => `
+                    ${rules.length === 0 ? '<div class="text-center py-8 text-slate-500 bg-slate-50 rounded-lg border-2 border-dashed border-slate-300">暂无规则，请使用预定义模板创建方案</div>' : rules.map(rule => `
                       <div class="bg-gradient-to-r from-slate-50 to-indigo-50 border-2 border-indigo-200 rounded-lg p-4 hover:shadow-lg transition-all hover:border-indigo-400">
                         <div class="flex justify-between items-start">
                           <div class="flex-1">
@@ -9538,7 +9536,7 @@
         category: 'jackpot',
         rule_type: 'match',
         match_pattern: 'sequence',
-        required_symbols: 'j,n,t,m',
+        required_symbols: '["j","n","t","m"]',
         match_count: 4,
         win_multiplier: 256,
         grant_free_spin: 0,
@@ -9552,7 +9550,7 @@
         category: 'jackpot',
         rule_type: 'match',
         match_pattern: 'combination',
-        required_symbols: 'j,n,t,m',
+        required_symbols: '["j","n","t","m"]',
         match_count: 4,
         win_multiplier: 16,
         grant_free_spin: 0,
@@ -9566,7 +9564,7 @@
         category: 'jackpot',
         rule_type: 'match',
         match_pattern: 'sequence',
-        required_symbols: 'bj,zft,bdk,lq',
+        required_symbols: '["bj","zft","bdk","lq"]',
         match_count: 4,
         win_multiplier: 256,
         grant_free_spin: 0,
@@ -9580,7 +9578,7 @@
         category: 'jackpot',
         rule_type: 'match',
         match_pattern: 'combination',
-        required_symbols: 'bj,zft,bdk,lq',
+        required_symbols: '["bj","zft","bdk","lq"]',
         match_count: 4,
         win_multiplier: 16,
         grant_free_spin: 0,
@@ -9795,6 +9793,16 @@
         return;
       }
       
+      // 🔥 处理 required_symbols：统一转换为 JSON 数组格式
+      let requiredSymbols = document.getElementById('newRequiredSymbols').value.trim() || null;
+      if (requiredSymbols) {
+        // 如果是逗号分隔的字符串，转换为 JSON 数组
+        if (!requiredSymbols.startsWith('[')) {
+          const symbolsArray = requiredSymbols.split(',').map(s => s.trim()).filter(s => s);
+          requiredSymbols = JSON.stringify(symbolsArray);
+        }
+      }
+      
       const data = {
         scheme_id: schemeId,
         rule_name: ruleName,
@@ -9802,7 +9810,7 @@
         rule_category: document.getElementById('newRuleCategory').value || null,
         match_pattern: matchPattern,
         match_count: parseInt(document.getElementById('newMatchCount').value) || null,
-        required_symbols: document.getElementById('newRequiredSymbols').value.trim() || null,
+        required_symbols: requiredSymbols,
         win_multiplier: winMultiplier,
         grant_free_spin: parseInt(document.getElementById('newGrantFreeSpin').value) || 0,
         description: document.getElementById('newRuleDescription').value.trim() || null
@@ -9857,71 +9865,81 @@
               <div class="p-6 border-b border-slate-200 bg-blue-600">
                 <h3 class="text-xl font-bold text-white">✏️ 编辑规则</h3>
               </div>
-              <div class="p-6 space-y-4">
+              <div class="p-6 space-y-5">
+                <!-- 提示信息 -->
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r">
+                  <p class="text-sm text-blue-800">
+                    <span class="font-semibold">💡 提示：</span> 只能修改基本参数，规则核心配置已锁定
+                  </p>
+                </div>
+                
+                <!-- 隐藏字段，保存时需要 -->
+                <input type="hidden" id="editRuleType" value="${rule.rule_type}">
+                <input type="hidden" id="editRuleCategory" value="${rule.rule_category}">
+                <input type="hidden" id="editMatchPattern" value="${rule.match_pattern}">
+                <input type="hidden" id="editMatchCount" value="${rule.match_count || ''}">
+                <input type="hidden" id="editRequiredSymbols" value="${rule.required_symbols || ''}">
+                
+                <!-- 规则名称 -->
                 <div>
                   <label class="block text-sm font-medium text-slate-700 mb-2">规则名称 *</label>
-                  <input type="text" id="editRuleName" value="${rule.rule_name}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                  <input type="text" id="editRuleName" value="${rule.rule_name}" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                 </div>
                 
+                <!-- 中奖倍率和免费转 -->
                 <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">规则类型 *</label>
-                    <select id="editRuleType" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                      <option value="match" ${rule.rule_type === 'match' ? 'selected' : ''}>匹配规则</option>
-                      <option value="scatter" ${rule.rule_type === 'scatter' ? 'selected' : ''}>分散规则</option>
-                      <option value="bonus" ${rule.rule_type === 'bonus' ? 'selected' : ''}>奖励规则</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">规则分类</label>
-                    <select id="editRuleCategory" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                      <option value="">无</option>
-                      <option value="normal" ${rule.rule_category === 'normal' ? 'selected' : ''}>普通奖励</option>
-                      <option value="medium" ${rule.rule_category === 'medium' ? 'selected' : ''}>中等奖励</option>
-                      <option value="high" ${rule.rule_category === 'high' ? 'selected' : ''}>高级奖励</option>
-                      <option value="jackpot" ${rule.rule_category === 'jackpot' ? 'selected' : ''}>大奖</option>
-                    </select>
-                  </div>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">匹配模式 *</label>
-                  <input type="text" id="editMatchPattern" value="${rule.match_pattern}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">匹配数量</label>
-                    <input type="number" id="editMatchCount" value="${rule.match_count || ''}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                  </div>
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
-                    <input type="number" id="editWinMultiplier" value="${rule.win_multiplier}" step="0.1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+                    <input type="number" id="editWinMultiplier" value="${rule.win_multiplier}" step="0.1" min="0" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                   </div>
-                </div>
-                
-                <div>
-                  <label class="block text-sm font-medium text-slate-700 mb-2">必需符号</label>
-                  <input type="text" id="editRequiredSymbols" value="${rule.required_symbols || ''}" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                </div>
-                
-                <div class="grid grid-cols-2 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转</label>
-                    <input type="number" id="editGrantFreeSpin" value="${rule.grant_free_spin}" min="0" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-slate-700 mb-2">启用状态</label>
-                    <select id="editRuleActive" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
-                      <option value="1" ${rule.is_active ? 'selected' : ''}>启用</option>
-                      <option value="0" ${!rule.is_active ? 'selected' : ''}>禁用</option>
-                    </select>
+                    <input type="number" id="editGrantFreeSpin" value="${rule.grant_free_spin}" min="0" max="10" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                   </div>
                 </div>
                 
+                <!-- 启用状态 -->
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 mb-2">启用状态</label>
+                  <select id="editRuleActive" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <option value="1" ${rule.is_active ? 'selected' : ''}>✅ 启用</option>
+                    <option value="0" ${!rule.is_active ? 'selected' : ''}>❌ 禁用</option>
+                  </select>
+                </div>
+                
+                <!-- 规则描述 -->
                 <div>
                   <label class="block text-sm font-medium text-slate-700 mb-2">规则描述</label>
-                  <textarea id="editRuleDescription" rows="2" class="w-full px-4 py-2 border border-slate-300 rounded-lg">${rule.description || ''}</textarea>
+                  <textarea id="editRuleDescription" rows="3" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="可选：添加规则说明...">${rule.description || ''}</textarea>
+                </div>
+                
+                <!-- 只读信息展示 -->
+                <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-2">
+                  <h5 class="text-sm font-semibold text-slate-700 mb-2">🔒 规则核心配置（只读）</h5>
+                  <div class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="bg-white p-2 rounded border border-slate-200">
+                      <span class="text-slate-500">规则类型：</span>
+                      <span class="font-semibold text-slate-700">${rule.rule_type}</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-slate-200">
+                      <span class="text-slate-500">规则分类：</span>
+                      <span class="font-semibold text-slate-700">${rule.rule_category || '无'}</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-slate-200">
+                      <span class="text-slate-500">匹配模式：</span>
+                      <span class="font-semibold text-slate-700">${rule.match_pattern}</span>
+                    </div>
+                    <div class="bg-white p-2 rounded border border-slate-200">
+                      <span class="text-slate-500">匹配数量：</span>
+                      <span class="font-semibold text-slate-700">${rule.match_count || '不限'}</span>
+                    </div>
+                    ${rule.required_symbols ? `
+                    <div class="bg-white p-2 rounded border border-slate-200 col-span-2">
+                      <span class="text-slate-500">必需符号：</span>
+                      <span class="font-semibold text-indigo-700">${rule.required_symbols}</span>
+                    </div>
+                    ` : ''}
+                  </div>
                 </div>
                 
                 <div class="flex gap-3 mt-6">
@@ -9941,21 +9959,27 @@
     
     async function saveEditRule(ruleId, schemeId) {
       const ruleName = document.getElementById('editRuleName').value.trim();
-      const matchPattern = document.getElementById('editMatchPattern').value.trim();
       const winMultiplier = parseFloat(document.getElementById('editWinMultiplier').value);
       
-      if (!ruleName || !matchPattern || isNaN(winMultiplier)) {
+      if (!ruleName || isNaN(winMultiplier)) {
         showToast('请填写必填字段', 'error');
         return;
       }
       
+      // 🔒 从隐藏字段读取核心配置（保持不变）
+      const ruleType = document.getElementById('editRuleType').value;
+      const ruleCategory = document.getElementById('editRuleCategory').value || null;
+      const matchPattern = document.getElementById('editMatchPattern').value;
+      const matchCount = document.getElementById('editMatchCount').value;
+      const requiredSymbols = document.getElementById('editRequiredSymbols').value || null;
+      
       const data = {
         rule_name: ruleName,
-        rule_type: document.getElementById('editRuleType').value,
-        rule_category: document.getElementById('editRuleCategory').value || null,
+        rule_type: ruleType,
+        rule_category: ruleCategory,
         match_pattern: matchPattern,
-        match_count: parseInt(document.getElementById('editMatchCount').value) || null,
-        required_symbols: document.getElementById('editRequiredSymbols').value.trim() || null,
+        match_count: matchCount ? parseInt(matchCount) : null,
+        required_symbols: requiredSymbols,
         win_multiplier: winMultiplier,
         grant_free_spin: parseInt(document.getElementById('editGrantFreeSpin').value) || 0,
         is_active: parseInt(document.getElementById('editRuleActive').value),
