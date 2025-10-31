@@ -3482,10 +3482,9 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 统一更新UI确保所有状态正确
+          // 🔥 先重置所有UI状态，然后更新
+          resetAllModeUI();
           updateSlotUI();
-          updateModeTitles();
-          updateGameRulesButton();
           
           // 🔥 强制更新高级场UI（确保显示正确）
           if (advancedTicketsData) {
@@ -3536,10 +3535,9 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 更新UI确保显示正确的投注金额
+          // 🔥 先重置所有UI状态，然后更新
+          resetAllModeUI();
           updateSlotUI();
-          updateModeTitles();
-          updateGameRulesButton();
           
           // 🔥 强制更新UI（确保退出高级场后UI正确）
           if (advancedTicketsData) {
@@ -3582,9 +3580,11 @@
             if (configData && configData.success) {
               slotConfig = configData.data.config;
               slotUserData = configData.data.user;
-              updateSlotUI(); // 🔥 更新UI，确保显示正确的投注金额
-              updateModeTitles();
             }
+            
+            // 🔥 重置UI后更新
+            resetAllModeUI();
+            updateSlotUI();
             
             // 🔥 强制更新UI（确保退出高级场后UI正确）
             if (advancedTicketsData) {
@@ -3786,12 +3786,11 @@
         
         // 4. 初始化UI（此时已经知道是否在高级场/至尊场）
         initSlotReels();
+        
+        // 🔥 先重置所有UI状态，确保刷新页面后UI正确
+        resetAllModeUI();
         updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode/isInSupremeMode 显示正确的UI
         syncUserInfoToSlot();
-        
-        // 🔥 统一初始化场次UI显示（避免重叠）
-        updateModeTitles();
-        updateGameRulesButton();
         
         // 🎵 预初始化音效系统（首次播放时自动初始化）
         soundManager.init();
@@ -6348,13 +6347,20 @@
         isInSupremeMode = true;
         if (betSelector) betSelector.classList.remove('hidden');
         
-        // 🔥 至尊场时，完全隐藏高级场UI元素
+        // 🔥 至尊场时，完全隐藏高级场和初级场UI元素
         const advancedModeIndicator = document.getElementById('advancedModeIndicator');
         const advancedBetSelector = document.getElementById('advancedBetSelector');
         const advancedTicketBar = document.getElementById('advancedTicketBar');
+        const normalModeSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
+        const spinButton = document.getElementById('spinButton');
+        const freeSpinButton = document.getElementById('freeSpinButton');
+        
         if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
         if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
+        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
+        if (spinButton) spinButton.classList.add('hidden');
+        if (freeSpinButton) freeSpinButton.classList.add('hidden');
         
         // 🔥 更新投注范围并生成选项
         if (config && config.min_bet_amount && config.max_bet_amount) {
@@ -6469,11 +6475,10 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 统一更新UI显示
+          // 🔥 先重置所有UI状态，然后更新
+          resetAllModeUI();
           updateSupremeTokensUI();
           updateSlotUI();
-          updateModeTitles();
-          updateGameRulesButton();
         } else {
           showToast(data.message, 'error');
         }
@@ -6580,10 +6585,9 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 统一更新UI，确保显示正确
+          // 🔥 先重置所有UI状态，然后更新
+          resetAllModeUI();
           updateSlotUI();
-          updateModeTitles();
-          updateGameRulesButton();
         } else {
           showToast(data.message, 'error');
         }
@@ -6601,6 +6605,9 @@
       const advancedModeIndicator = document.getElementById('advancedModeIndicator');
       const advancedBetSelector = document.getElementById('advancedBetSelector');
       const supremeBetSelector = document.getElementById('supremeBetSelector');
+      const normalModeSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
+      const spinButton = document.getElementById('spinButton');
+      const freeSpinButton = document.getElementById('freeSpinButton');
       // 已移除的元素
       // const advancedTicketCard = document.getElementById('advancedTicketCard');
       // const supremeTokenCard = document.getElementById('supremeTokenCard');
@@ -6614,6 +6621,9 @@
       if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
       if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
       if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
+      if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
+      if (spinButton) spinButton.classList.add('hidden');
+      if (freeSpinButton) freeSpinButton.classList.add('hidden');
       // 已移除的元素
       // if (advancedTicketCard) advancedTicketCard.classList.add('hidden');
       // if (supremeTokenCard) supremeTokenCard.classList.add('hidden');
@@ -6626,31 +6636,52 @@
         console.log('[updateModeTitles] 设置至尊场UI');
         if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
         if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
         // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 显示至尊场导航卡片 - 已移除
-        // 🔥 至尊场时不显示高级场任何元素，确保再次隐藏
+        // 🔥 至尊场时不显示高级场和初级场任何元素，确保再次隐藏
         if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
         if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
         if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
+        if (spinButton) spinButton.classList.add('hidden');
+        if (freeSpinButton) freeSpinButton.classList.add('hidden');
       } else if (isInAdvancedMode) {
         // 🔥 高级场其次
         console.log('[updateModeTitles] 设置高级场UI');
         if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
         if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 高级场也显示至尊场令牌栏
         // if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');  // 🔥 显示入场券导航卡片 - 已移除
         // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌卡片 - 已移除
-        // 🔥 确保至尊场UI元素被隐藏
+        // 🔥 确保至尊场和初级场UI元素被隐藏
         if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
         if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
+        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
+        if (spinButton) spinButton.classList.add('hidden');
+        if (freeSpinButton) freeSpinButton.classList.add('hidden');
       } else {
         // 🎰 初级场默认
         console.log('[updateModeTitles] 设置初级场UI');
         if (normalModeTitle) normalModeTitle.classList.remove('hidden');
+        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.remove('hidden');
+        if (spinButton) spinButton.classList.remove('hidden');
+        // 🔥 免费按钮只在有免费次数时显示
+        if (freeSpinButton && slotUserData && slotUserData.free_spins > 0 && !slotUserData.is_banned) {
+          freeSpinButton.classList.remove('hidden');
+        }
+        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
         // 🔥 初级场：如果有入场券或碎片，显示入场券卡片 - 已移除
         // if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
         //   if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');
         // }
+        // 🔥 确保高级场和至尊场UI元素被隐藏
+        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+        if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
+        if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
       }
     }
     
@@ -6673,6 +6704,40 @@
       }
     }
     
+    // 🔥 强制重置所有场次UI状态（用于修复UI重合问题）
+    function resetAllModeUI() {
+      console.log('[resetAllModeUI] 重置所有场次UI状态');
+      
+      // 获取所有UI元素
+      const normalModeTitle = document.getElementById('normalModeTitle');
+      const advancedModeTitle = document.getElementById('advancedModeTitle');
+      const supremeModeTitle = document.getElementById('supremeModeTitle');
+      const advancedModeIndicator = document.getElementById('advancedModeIndicator');
+      const advancedBetSelector = document.getElementById('advancedBetSelector');
+      const supremeBetSelector = document.getElementById('supremeBetSelector');
+      const normalModeSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
+      const spinButton = document.getElementById('spinButton');
+      const freeSpinButton = document.getElementById('freeSpinButton');
+      const advancedTicketBar = document.getElementById('advancedTicketBar');
+      const supremeTokenBar = document.getElementById('supremeTokenBar');
+      
+      // 🔥 强制隐藏所有元素
+      [normalModeTitle, advancedModeTitle, supremeModeTitle, advancedModeIndicator, 
+       advancedBetSelector, supremeBetSelector, normalModeSpinsDisplay, spinButton, 
+       freeSpinButton, advancedTicketBar, supremeTokenBar].forEach(el => {
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('smooth-show');
+        }
+      });
+      
+      // 等待一帧后再调用 updateModeTitles，确保隐藏生效
+      requestAnimationFrame(() => {
+        updateModeTitles();
+        updateGameRulesButton();
+      });
+    }
+    
     // 💎 启动至尊场倒计时
     function startSupremeModeTimer() {
       stopSupremeModeTimer();
@@ -6690,8 +6755,16 @@
           
           Promise.all([
             loadSupremeTokens(),
-            fetch('/api/slot/config').then(res => res.json())
-          ]).then(() => {
+            fetch('/api/slot/config').then(res => res.json()),
+            loadAdvancedTickets()  // 检查是否还在高级场
+          ]).then(([_, configRes, __]) => {
+            // 保存配置数据
+            if (configRes && configRes.success) {
+              slotConfig = configRes.data.config;
+              slotUserData = configRes.data.user;
+            }
+            // 🔥 重置UI后更新
+            resetAllModeUI();
             updateSlotUI();
           });
         }
