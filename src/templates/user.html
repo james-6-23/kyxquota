@@ -6969,6 +6969,9 @@
         if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
       }
       
+      // 🔥 更新游戏规则按钮显示
+      updateGameRulesButton();
+      
       console.log('[switchToModeContainer] 切换完成，当前显示:', mode);
     }
     
@@ -7057,11 +7060,15 @@
       const range = maxBet - minBet;
       const options = [];
       
-      if (range <= 2000) {
-        options.push(minBet, Math.floor((minBet + maxBet) / 2), maxBet);
+      // 🔥 像高级场一样，始终生成4个选项
+      if (range <= 100) {
+        options.push(minBet, maxBet);
       } else {
-        const step = Math.floor(range / 4);
-        options.push(minBet, minBet + step, minBet + step * 2, minBet + step * 3, maxBet);
+        const step = Math.floor(range / 3);
+        options.push(minBet);
+        options.push(minBet + step);
+        options.push(minBet + step * 2);
+        options.push(maxBet);
       }
       
       const uniqueOptions = [...new Set(options)].sort((a, b) => a - b);

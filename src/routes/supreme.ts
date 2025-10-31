@@ -84,7 +84,10 @@ supreme.get('/tokens', requireAuth, async (c) => {
                 config: {
                     daily_entry_limit: config.daily_entry_limit,
                     daily_token_grant_limit: config.daily_token_grant_limit,
-                    session_valid_hours: config.session_valid_hours
+                    session_valid_hours: config.session_valid_hours,
+                    min_bet_amount: config.min_bet_amount,
+                    max_bet_amount: config.max_bet_amount,
+                    bet_step: config.bet_step
                 }
             }
         });
