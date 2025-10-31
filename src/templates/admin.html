@@ -1194,7 +1194,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择权重配置方案 *</label>
-              <select id="advancedSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedWeightConfig(); calculateAdvancedProbability()">
+              <select id="advancedSlotWeightConfigId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedWeightConfig()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可与初级场使用相同或不同的权重方案</p>
@@ -1262,7 +1262,7 @@
             
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励配置方案 *</label>
-              <select id="advancedSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedRewardScheme(); calculateAdvancedProbability()">
+              <select id="advancedSlotRewardSchemeId" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500" onchange="previewAdvancedRewardScheme()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 在"奖励配置管理"中可以创建新方案或编辑规则</p>
@@ -1293,14 +1293,19 @@
             
             <!-- 计算方式选择 -->
             <div class="mb-4">
-              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-slate-700">计算方式:</label>
+                <button onclick="calculateAdvancedProbability()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-sm">
+                  🎲 开始计算
+                </button>
+              </div>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="advancedCalcMethod" value="fast" checked onchange="calculateAdvancedProbability()">
+                  <input type="radio" name="advancedCalcMethod" value="fast" checked>
                   <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="advancedCalcMethod" value="monte-carlo" onchange="calculateAdvancedProbability()">
+                  <input type="radio" name="advancedCalcMethod" value="monte-carlo">
                   <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
                 </label>
               </div>
@@ -3424,10 +3429,53 @@
             <h3 class="text-lg font-bold text-slate-900 mb-4">⚖️ 符号权重方案</h3>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择权重方案</label>
-              <select id="supremeWeightConfigId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="calculateSupremeProbability()">
+              <select id="supremeWeightConfigId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="previewSupremeWeightConfig()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可在"权重配置管理"中创建和编辑方案</p>
+            </div>
+            
+            <!-- 预览权重 -->
+            <div id="supremeWeightPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">📊 当前配置预览</h4>
+              <div class="grid grid-cols-3 md:grid-cols-5 gap-2 text-xs">
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">美(m)</div>
+                  <div id="sup_preview_weight_m" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">太(t)</div>
+                  <div id="sup_preview_weight_t" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">你(n)</div>
+                  <div id="sup_preview_weight_n" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">鸡(j)</div>
+                  <div id="sup_preview_weight_j" class="font-bold text-blue-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">篮球(lq)</div>
+                  <div id="sup_preview_weight_lq" class="font-bold text-orange-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">冰激凌(bj)</div>
+                  <div id="sup_preview_weight_bj" class="font-bold text-orange-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">纸飞机(zft)</div>
+                  <div id="sup_preview_weight_zft" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-white rounded border">
+                  <div class="text-slate-600">不打工(bdk)</div>
+                  <div id="sup_preview_weight_bdk" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-red-100 rounded border border-red-300">
+                  <div class="text-red-700">律师函(lsh)</div>
+                  <div id="sup_preview_weight_lsh" class="font-bold text-red-700">--</div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -3435,10 +3483,18 @@
             <h3 class="text-lg font-bold text-slate-900 mb-4">🎁 奖励规则方案</h3>
             <div>
               <label class="block text-sm font-medium text-slate-700 mb-2">选择奖励方案</label>
-              <select id="supremeRewardSchemeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="calculateSupremeProbability()">
+              <select id="supremeRewardSchemeId" class="w-full px-4 py-2 border border-slate-300 rounded-lg" onchange="previewSupremeRewardScheme()">
                 <option value="">加载中...</option>
               </select>
               <p class="text-xs text-slate-500 mt-2">💡 可在"奖励配置管理"中创建和编辑方案</p>
+            </div>
+            
+            <!-- 预览规则 -->
+            <div id="supremeRewardPreview" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+              <h4 class="text-sm font-bold text-slate-900 mb-3">🎯 包含规则</h4>
+              <div id="supremeRewardPreviewList" class="space-y-2 text-xs">
+                <!-- 动态填充 -->
+              </div>
             </div>
           </div>
           
@@ -3458,14 +3514,19 @@
             
             <!-- 计算方式选择 -->
             <div class="mb-4">
-              <label class="text-sm font-medium text-slate-700 mb-2 block">计算方式:</label>
+              <div class="flex items-center justify-between mb-3">
+                <label class="text-sm font-medium text-slate-700">计算方式:</label>
+                <button onclick="calculateSupremeProbability()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold text-sm">
+                  🎲 开始计算
+                </button>
+              </div>
               <div class="flex gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="supremeCalcMethod" value="fast" checked onchange="calculateSupremeProbability()">
+                  <input type="radio" name="supremeCalcMethod" value="fast" checked>
                   <span class="text-sm">⚡ 快速估算 (毫秒级)</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <input type="radio" name="supremeCalcMethod" value="monte-carlo" onchange="calculateSupremeProbability()">
+                  <input type="radio" name="supremeCalcMethod" value="monte-carlo">
                   <span class="text-sm">🎲 精确模拟 (蒙特卡洛 100万次, 2-3秒)</span>
                 </label>
               </div>
@@ -10136,10 +10197,17 @@
           // 设置选中的配置
           if (config.weight_config_id) {
             document.getElementById('supremeWeightConfigId').value = config.weight_config_id;
+            // 🔥 立即预览权重配置
+            await previewSupremeWeightConfig();
           }
           if (config.reward_scheme_id) {
             document.getElementById('supremeRewardSchemeId').value = config.reward_scheme_id;
+            // 🔥 立即预览奖励方案
+            await previewSupremeRewardScheme();
           }
+          
+          // 🔥 移除自动计算，由用户手动点击计算按钮
+          // await calculateSupremeProbability();
         } else {
           // 使用默认值
           document.getElementById('supremeEnabled').value = '1';
@@ -10170,6 +10238,98 @@
         document.getElementById('supremeDailyEntry').value = '3';
         document.getElementById('supremeDailyTokenGrant').value = '1';
         document.getElementById('supremeDailyBetLimit').value = '100000';
+      }
+    }
+    
+    // 预览至尊场权重配置
+    async function previewSupremeWeightConfig() {
+      const configId = document.getElementById('supremeWeightConfigId').value;
+      if (!configId) return;
+      
+      try {
+        const res = await fetch('/api/admin/weights');
+        const data = await res.json();
+        
+        if (data.success) {
+          const config = data.data.find(c => c.id == configId);
+          if (config) {
+            document.getElementById('sup_preview_weight_m').textContent = config.weight_m;
+            document.getElementById('sup_preview_weight_t').textContent = config.weight_t;
+            document.getElementById('sup_preview_weight_n').textContent = config.weight_n;
+            document.getElementById('sup_preview_weight_j').textContent = config.weight_j;
+            document.getElementById('sup_preview_weight_lq').textContent = config.weight_lq;
+            document.getElementById('sup_preview_weight_bj').textContent = config.weight_bj;
+            document.getElementById('sup_preview_weight_zft').textContent = config.weight_zft;
+            document.getElementById('sup_preview_weight_bdk').textContent = config.weight_bdk;
+            document.getElementById('sup_preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('supremeWeightPreview').classList.remove('hidden');
+          }
+        }
+      } catch (error) {
+        console.error('预览至尊场权重配置失败:', error);
+      }
+    }
+    
+    // 预览至尊场奖励方案
+    async function previewSupremeRewardScheme() {
+      const schemeId = document.getElementById('supremeRewardSchemeId').value;
+      if (!schemeId) return;
+      
+      try {
+        const res = await fetch(`/api/admin/rewards/schemes/${schemeId}/rules`);
+        const data = await res.json();
+        
+        if (data.success) {
+          const { rules, punishments } = data.data;
+          const previewList = document.getElementById('supremeRewardPreviewList');
+          
+          let html = '';
+          
+          // 🎁 中奖规则（4列网格）
+          if (rules.length > 0) {
+            html += `
+              <div>
+                <h5 class="text-xs font-bold text-green-700 mb-2">🎁 中奖规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${rules.map(rule => `
+                    <div class="bg-gradient-to-br from-green-50 to-emerald-50 p-3 rounded-lg border border-green-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1">${rule.rule_name}</div>
+                      <div class="text-lg font-bold text-green-600">${rule.win_multiplier}x</div>
+                      ${rule.grant_free_spin ? '<div class="text-xs text-purple-600 mt-1">🎁 送免费次数</div>' : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+          
+          // ⚠️ 惩罚规则（4列网格）
+          if (punishments.length > 0) {
+            html += `
+              <div>
+                <h5 class="text-xs font-bold text-red-700 mb-2">⚠️ 惩罚规则</h5>
+                <div class="grid grid-cols-4 gap-2">
+                  ${punishments.map(p => `
+                    <div class="bg-gradient-to-br from-red-50 to-rose-50 p-3 rounded-lg border border-red-200 hover:shadow-md transition-shadow">
+                      <div class="text-xs font-semibold text-slate-900 mb-1">律师函×${p.lsh_count}</div>
+                      <div class="text-lg font-bold text-red-600">-${p.deduct_multiplier}x</div>
+                      ${p.ban_hours > 0 ? `<div class="text-xs text-red-600 mt-1">🚫 禁${p.ban_hours}小时</div>` : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+          
+          if (rules.length === 0 && punishments.length === 0) {
+            html = '<div class="text-slate-500 text-center py-4">暂无规则</div>';
+          }
+          
+          previewList.innerHTML = html;
+          document.getElementById('supremeRewardPreview').classList.remove('hidden');
+        }
+      } catch (error) {
+        console.error('预览至尊场奖励方案失败:', error);
       }
     }
     
