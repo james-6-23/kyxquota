@@ -8,6 +8,81 @@ import { rewardConfigQueries, weightConfigQueries } from '../database';
 // 符号列表
 const SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
 
+// 🔥 概率计算结果缓存（内存缓存）
+interface CacheKey {
+    weightConfigId: number;
+    rewardSchemeId: number;
+    method: 'fast' | 'monte-carlo';
+}
+
+interface CacheEntry {
+    result: ProbabilityResult;
+    timestamp: number;
+}
+
+const probabilityCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存有效期
+
+/**
+ * 生成缓存键
+ */
+function getCacheKey(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo'): string {
+    return `${weightConfigId}-${rewardSchemeId}-${method}`;
+}
+
+/**
+ * 从缓存获取结果
+ */
+function getFromCache(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo'): ProbabilityResult | null {
+    const key = getCacheKey(weightConfigId, rewardSchemeId, method);
+    const entry = probabilityCache.get(key);
+    
+    if (!entry) {
+        return null;
+    }
+    
+    // 检查是否过期
+    if (Date.now() - entry.timestamp > CACHE_TTL) {
+        probabilityCache.delete(key);
+        console.log(`[缓存] 过期并删除: ${key}`);
+        return null;
+    }
+    
+    console.log(`[缓存] 命中: ${key}`);
+    return entry.result;
+}
+
+/**
+ * 保存结果到缓存
+ */
+function saveToCache(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo', result: ProbabilityResult): void {
+    const key = getCacheKey(weightConfigId, rewardSchemeId, method);
+    probabilityCache.set(key, {
+        result,
+        timestamp: Date.now()
+    });
+    console.log(`[缓存] 已保存: ${key}, 当前缓存数: ${probabilityCache.size}`);
+}
+
+/**
+ * 清理过期缓存（定期调用）
+ */
+export function cleanExpiredCache(): void {
+    const now = Date.now();
+    let cleaned = 0;
+    
+    for (const [key, entry] of probabilityCache.entries()) {
+        if (now - entry.timestamp > CACHE_TTL) {
+            probabilityCache.delete(key);
+            cleaned++;
+        }
+    }
+    
+    if (cleaned > 0) {
+        console.log(`[缓存清理] 删除 ${cleaned} 个过期项，剩余 ${probabilityCache.size} 个`);
+    }
+}
+
 /**
  * 权重配置接口
  */
@@ -94,8 +169,8 @@ function generateSymbols(weightConfig: WeightConfig): string[] {
 /**
  * 检查规则是否匹配
  */
-function checkRuleMatch(symbols: string[], rule: any): boolean {
-    const { match_pattern, match_count, required_symbols } = rule;
+function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): boolean {
+    const { match_pattern, match_count, required_symbols, rule_name } = rule;
     
     // 🔥 安全解析 required_symbols
     let requiredArr: string[] = [];
@@ -109,17 +184,32 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
                 requiredArr = JSON.parse(required_symbols);
             }
         } catch (e) {
-            console.error('[概率计算] JSON解析失败:', required_symbols, e);
+            console.error(`[规则匹配] "${rule_name}" JSON解析失败:`, required_symbols, e);
             return false;
         }
     }
     
+    // 🔥 调试日志（仅在debug模式下）
+    if (debug) {
+        console.log(`[规则匹配] 检查规则 "${rule_name}":`, {
+            symbols,
+            match_pattern,
+            match_count,
+            required_symbols: requiredArr,
+            rule
+        });
+    }
+    
+    let matched = false;
+    
     switch (match_pattern) {
         case 'sequence':  // 按顺序
-            return JSON.stringify(symbols) === JSON.stringify(requiredArr);
+            matched = JSON.stringify(symbols) === JSON.stringify(requiredArr);
+            break;
             
         case 'combination':  // 任意顺序包含
-            return requiredArr.every(sym => symbols.includes(sym));
+            matched = requiredArr.every(sym => symbols.includes(sym));
+            break;
             
         case 'consecutive':  // 相邻连续
             let maxConsecutive = 1;
@@ -132,28 +222,44 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
                     currentConsecutive = 1;
                 }
             }
-            return maxConsecutive >= (match_count || 2);
+            matched = maxConsecutive >= (match_count || 2);
+            break;
             
         case 'any':  // 任意位置相同
             const counts: Record<string, number> = {};
             symbols.forEach(s => counts[s] = (counts[s] || 0) + 1);
-            return Math.max(...Object.values(counts)) >= (match_count || 2);
+            const maxCount = Math.max(...Object.values(counts));
+            matched = maxCount >= (match_count || 2);
+            if (debug) {
+                console.log(`  - any模式检查: 符号计数=`, counts, `最大=${maxCount}, 需要>=${match_count || 2}, 匹配=${matched}`);
+            }
+            break;
             
         case 'double_pair':  // 两对2连
             const pairCounts: Record<string, number> = {};
             symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
             const pairs = Object.values(pairCounts).filter(count => count >= 2);
-            return pairs.length >= 2;
+            matched = pairs.length >= 2;
+            break;
             
         default:
-            return false;
+            if (debug) {
+                console.warn(`  - 未知的匹配模式: ${match_pattern}`);
+            }
+            matched = false;
     }
+    
+    if (debug && matched) {
+        console.log(`  ✅ 规则 "${rule_name}" 匹配成功！`);
+    }
+    
+    return matched;
 }
 
 /**
  * 匹配规则（按优先级）
  */
-function matchRuleByPriority(symbols: string[], schemeId: number): {
+function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean = false): {
     ruleName: string;
     multiplier: number;
     punishmentCount?: number;
@@ -164,6 +270,9 @@ function matchRuleByPriority(symbols: string[], schemeId: number): {
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
         if (punishment) {
+            if (debug) {
+                console.log(`  💥 律师函惩罚: ${lshCount}个 => -${punishment.deduct_multiplier}x`);
+            }
             return {
                 ruleName: `律师函×${lshCount}`,
                 multiplier: -punishment.deduct_multiplier,
@@ -176,14 +285,12 @@ function matchRuleByPriority(symbols: string[], schemeId: number): {
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
     
-    // 🔥 调试日志：仅在第一次调用时输出（避免刷屏）
-    if (Math.random() < 0.00001) {  // 0.001% 的概率输出
-        console.log(`[概率计算] 方案ID: ${schemeId}, 总规则: ${rules.length}, 激活规则: ${activeRules.length}`);
-        console.log(`[概率计算] 规则详情:`, rules.map(r => `${r.rule_name}(激活:${r.is_active})`).join(', '));
+    if (debug) {
+        console.log(`[匹配规则] 方案ID: ${schemeId}, 总规则: ${rules.length}, 激活规则: ${activeRules.length}`);
     }
     
     for (const rule of activeRules) {
-        if (checkRuleMatch(symbols, rule)) {
+        if (checkRuleMatch(symbols, rule, debug)) {
             return {
                 ruleName: rule.rule_name,
                 multiplier: rule.win_multiplier
@@ -192,6 +299,9 @@ function matchRuleByPriority(symbols: string[], schemeId: number): {
     }
     
     // 3. 未中奖
+    if (debug) {
+        console.log(`  ❌ 未中奖`);
+    }
     return {
         ruleName: '未中奖',
         multiplier: 0
@@ -208,6 +318,13 @@ export function calculateProbabilityMonteCarlo(
     simulationCount: number = 1000000,
     onProgress?: (current: number, total: number, percentage: number) => void
 ): ProbabilityResult {
+    // 🔥 检查缓存
+    const cached = getFromCache(weightConfigId, rewardSchemeId, 'monte-carlo');
+    if (cached) {
+        console.log('[蒙特卡洛] 使用缓存结果');
+        return cached;
+    }
+    
     const startTime = Date.now();
     
     // 获取配置
@@ -306,7 +423,7 @@ export function calculateProbabilityMonteCarlo(
     
     const calculationTime = Date.now() - startTime;
     
-    return {
+    const result: ProbabilityResult = {
         rules,
         punishments,
         noWin,
@@ -317,6 +434,11 @@ export function calculateProbabilityMonteCarlo(
         simulationCount,
         calculationTime
     };
+    
+    // 🔥 保存到缓存
+    saveToCache(weightConfigId, rewardSchemeId, 'monte-carlo', result);
+    
+    return result;
 }
 
 /**
@@ -326,6 +448,13 @@ export function calculateProbabilityFast(
     weightConfigId: number,
     rewardSchemeId: number
 ): ProbabilityResult {
+    // 🔥 检查缓存
+    const cached = getFromCache(weightConfigId, rewardSchemeId, 'fast');
+    if (cached) {
+        console.log('[快速估算] 使用缓存结果');
+        return cached;
+    }
+    
     const startTime = Date.now();
     
     // 获取配置
@@ -389,9 +518,19 @@ export function calculateProbabilityFast(
     });
     quickStats['未中奖'] = 0;
     
+    // 🔥 前10次模拟输出调试日志（帮助诊断规则匹配问题）
+    let debugCount = 0;
+    const maxDebug = 10;
+    
     for (let i = 0; i < quickSimCount; i++) {
         const symbols = generateSymbols(weightConfig);
-        const result = matchRuleByPriority(symbols, rewardSchemeId);
+        const enableDebug = debugCount < maxDebug;
+        const result = matchRuleByPriority(symbols, rewardSchemeId, enableDebug);
+        
+        if (enableDebug) {
+            debugCount++;
+            console.log(`[快速估算 #${debugCount}] 符号:`, symbols, `=> 结果: ${result.ruleName} (${result.multiplier}x)`);
+        }
         
         // 排除律师函（已单独计算）
         if (!result.ruleName.includes('律师函')) {
@@ -430,7 +569,7 @@ export function calculateProbabilityFast(
     
     const calculationTime = Date.now() - startTime;
     
-    return {
+    const result: ProbabilityResult = {
         rules,
         punishments,
         noWin: {
@@ -445,6 +584,11 @@ export function calculateProbabilityFast(
         method: 'fast',
         calculationTime
     };
+    
+    // 🔥 保存到缓存
+    saveToCache(weightConfigId, rewardSchemeId, 'fast', result);
+    
+    return result;
 }
 
 /**
