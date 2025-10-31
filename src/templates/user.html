@@ -1953,81 +1953,9 @@
       </div>
       <div id="slotRulesModalBody" class="p-6 overflow-y-auto max-h-[calc(90vh-100px)] bg-gradient-to-b from-blue-900/50 to-black/50">
         <div class="space-y-4 text-white">
-          <!-- 🔥 当前场次规则（动态加载）-->
+          <!-- 🔥 当前场次规则（动态加载）- 统一显示所有场次的规则 -->
           <div id="currentRulesDisplay" class="mb-6">
             <div class="text-center text-slate-400 py-4">加载中...</div>
-          </div>
-          
-          <div class="border-t-2 border-slate-200 my-6"></div>
-          
-          <div>
-            <h3 class="text-xl font-bold text-slate-900 mb-3">🎯 基本规则</h3>
-            <ul class="list-disc list-inside space-y-2 text-slate-700" id="basicRules">
-              <li>假如每次旋转投注 <strong id="basicRulesBetAmount">$20</strong></li>
-              <li>每天有 <strong id="basicRulesMaxSpins">5次</strong> 游玩机会</li>
-              <li>最低额度要求：<strong id="basicRulesMinQuota">$20</strong></li>
-              <li>1行4列布局，共9种符号</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 class="text-xl font-bold text-slate-900 mb-3">💰 中奖规则</h3>
-            <div class="space-y-3" id="slotRulesContent">
-              <div class="p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300">
-                <p class="font-bold text-lg text-orange-700">🏆 超级大奖（<span id="rulesSuperJackpot">256x$20</span>）</p>
-                <p class="text-sm text-slate-600 mt-1">鸡→你→太→美 按顺序排列 或 偶像练习生背景→中分头→背带裤→篮球 按顺序排列</p>
-              </div>
-              
-              <div class="p-3 bg-purple-50 rounded-lg border border-purple-300">
-                <p class="font-bold text-purple-700">💎 特殊组合（<span id="rulesSpecialCombo">16x$20</span>）</p>
-                <p class="text-sm text-slate-600 mt-1">包含 鸡你太美 全部（不按顺序）或 偶像练习生背景、中分头、背带裤、篮球 全部（不按顺序）</p>
-              </div>
-              
-              <div class="p-3 bg-blue-50 rounded-lg border border-blue-300">
-                <p class="font-bold text-blue-700">🎰 四连🐔（<span id="rulesQuad">32x$20</span>）+ 🎁 免费1次</p>
-                <p class="text-sm text-slate-600 mt-1">4个相同符号</p>
-              </div>
-              
-              <div class="p-3 bg-green-50 rounded-lg border border-green-300">
-                <p class="font-bold text-green-700">✨ 三连🐔（<span id="rulesTriple">8x$20</span>）+ 🎁 免费1次</p>
-                <p class="text-sm text-slate-600 mt-1">3个相同符号</p>
-              </div>
-              
-              <div class="p-3 bg-teal-50 rounded-lg border border-teal-300">
-                <p class="font-bold text-teal-700">🎁 双🐔（<span id="rulesDouble">4x$20</span>）</p>
-                <p class="text-sm text-slate-600 mt-1">2个相同符号</p>
-              </div>
-              
-                <div class="p-4 bg-red-50 rounded-lg border-2 border-red-400">
-                  <p class="font-bold text-lg text-red-700">⚡ 律师函警告（梯度惩罚）</p>
-                  <div class="text-sm text-slate-600 mt-2 space-y-1">
-                    <p>• 出现 <strong>1个</strong> 律师函：扣除 <strong class="text-red-600">1倍</strong> 投注（如$20）</p>
-                    <p>• 出现 <strong>2个</strong> 律师函：扣除 <strong class="text-red-600">2倍</strong> 投注（如$40）</p>
-                    <p>• 出现 <strong>3个</strong> 律师函：扣除 <strong class="text-red-600">3倍</strong> 投注（如$60）+ <strong class="text-orange-600">禁止抽奖1坤天60小时</strong></p>
-                    <p>• 出现 <strong>4个</strong> 律师函：扣除 <strong class="text-red-600">4倍</strong> 投注（如$80）+ <strong class="text-orange-600">禁止抽奖1坤天60小时</strong></p>
-                    <p class="text-xs text-red-500 mt-2">⚠️ 额度不会扣为负数（最多扣到$0）</p>
-                  </div>
-                </div>
-              
-              <div class="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-300">
-                <p class="text-sm text-slate-700">💰 投注金额：<span id="rulesBetAmount" class="font-bold text-blue-700">$20</span></p>
-                <p class="text-xs text-slate-500 mt-1">以上金额基于当前投注金额计算</p>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <h3 class="text-xl font-bold text-slate-900 mb-3">🎁 免费次数</h3>
-            <ul class="list-disc list-inside space-y-2 text-slate-700">
-              <li>抽中3个或4个相同符号，奖励1次免费机会</li>
-              <li>免费次数可累积，没有上限</li>
-              <li>使用免费次数不消耗额度，但仍可获得奖励</li>
-            </ul>
-          </div>
-
-          <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4">
-            <p class="font-bold text-yellow-800">⚠️ 温馨提示</p>
-            <p class="text-sm text-yellow-700 mt-1">娱乐功能，请理性游玩，适度娱乐！</p>
           </div>
         </div>
       </div>
@@ -5769,66 +5697,7 @@
         console.error('[游戏规则] 加载失败:', error);
       }
       
-      // 更新规则中的动态配置显示
-      if (slotConfig) {
-        const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-        const minQuotaUSD = (slotConfig.min_quota_required / 500000).toFixed(2);
-        const maxSpins = slotConfig.max_daily_spins;
-        
-        // 更新基本规则
-        const basicRulesBetAmount = document.getElementById('basicRulesBetAmount');
-        if (basicRulesBetAmount) basicRulesBetAmount.textContent = `$${betAmountUSD}`;
-        
-        const basicRulesMaxSpins = document.getElementById('basicRulesMaxSpins');
-        if (basicRulesMaxSpins) basicRulesMaxSpins.textContent = `${maxSpins}次`;
-        
-        const basicRulesMinQuota = document.getElementById('basicRulesMinQuota');
-        if (basicRulesMinQuota) basicRulesMinQuota.textContent = `$${minQuotaUSD}`;
-        
-        // 更新投注金额说明
-        const rulesBetAmount = document.getElementById('rulesBetAmount');
-        if (rulesBetAmount) rulesBetAmount.textContent = `$${betAmountUSD}`;
-        
-        // 更新奖励倍率（从配置中获取）
-        if (slotConfig.multipliers) {
-          const multipliers = slotConfig.multipliers;
-          
-          // 更新超级大奖倍率
-          const rulesSuperJackpot = document.getElementById('rulesSuperJackpot');
-          if (rulesSuperJackpot) {
-            const totalAmount = (multipliers.super_jackpot * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesSuperJackpot.textContent = `${multipliers.super_jackpot}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新特殊组合倍率
-          const rulesSpecialCombo = document.getElementById('rulesSpecialCombo');
-          if (rulesSpecialCombo) {
-            const totalAmount = (multipliers.special_combo * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesSpecialCombo.textContent = `${multipliers.special_combo}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新四连倍率
-          const rulesQuad = document.getElementById('rulesQuad');
-          if (rulesQuad) {
-            const totalAmount = (multipliers.quad * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesQuad.textContent = `${multipliers.quad}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新三连倍率
-          const rulesTriple = document.getElementById('rulesTriple');
-          if (rulesTriple) {
-            const totalAmount = (multipliers.triple * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesTriple.textContent = `${multipliers.triple}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-          
-          // 更新双连倍率
-          const rulesDouble = document.getElementById('rulesDouble');
-          if (rulesDouble) {
-            const totalAmount = (multipliers.double * slotConfig.bet_amount / 500000).toFixed(2);
-            rulesDouble.textContent = `${multipliers.double}x$${betAmountUSD} ≈ $${totalAmount}`;
-          }
-        }
-      }
+      // 🔥 静态规则元素已删除，只显示动态加载的规则
       document.getElementById('slotRulesModal').classList.remove('hidden');
     }
 
