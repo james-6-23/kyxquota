@@ -6351,23 +6351,33 @@
         // 🔥 至尊场时，完全隐藏高级场UI元素
         const advancedModeIndicator = document.getElementById('advancedModeIndicator');
         const advancedBetSelector = document.getElementById('advancedBetSelector');
+        const advancedTicketBar = document.getElementById('advancedTicketBar');
         if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
+        if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
         
         // 🔥 更新投注范围并生成选项
-        if (config) {
+        if (config && config.min_bet_amount && config.max_bet_amount) {
           supremeBetMin = config.min_bet_amount / 500000;
           supremeBetMax = config.max_bet_amount / 500000;
-          generateSupremeBetOptions(supremeBetMin, supremeBetMax);
           
-          // 更新滑块范围
-          const slider = document.getElementById('supremeBetSlider');
-          if (slider) {
-            slider.min = supremeBetMin;
-            slider.max = supremeBetMax;
-            slider.value = supremeBetMin;
-            updateSupremeBetDisplay(supremeBetMin);
+          // 🔥 检查计算后的值是否有效
+          if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
+            generateSupremeBetOptions(supremeBetMin, supremeBetMax);
+            
+            // 更新滑块范围
+            const slider = document.getElementById('supremeBetSlider');
+            if (slider) {
+              slider.min = supremeBetMin;
+              slider.max = supremeBetMax;
+              slider.value = supremeBetMin;
+              updateSupremeBetDisplay(supremeBetMin);
+            }
+          } else {
+            console.error('[至尊场] 计算的投注范围无效:', { supremeBetMin, supremeBetMax });
           }
+        } else {
+          console.warn('[至尊场] 缺少配置数据:', config);
         }
         
         // 启动倒计时
@@ -6613,19 +6623,29 @@
       // 根据当前状态显示相应标题和UI
       if (isInSupremeMode) {
         // 💎 至尊场优先级最高
+        console.log('[updateModeTitles] 设置至尊场UI');
         if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
         if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
         // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 显示至尊场导航卡片 - 已移除
-        // 🔥 至尊场时不显示高级场任何元素
+        // 🔥 至尊场时不显示高级场任何元素，确保再次隐藏
+        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+        if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
+        if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
       } else if (isInAdvancedMode) {
         // 🔥 高级场其次
+        console.log('[updateModeTitles] 设置高级场UI');
         if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
         if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
         if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
         // if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');  // 🔥 显示入场券导航卡片 - 已移除
         // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌卡片 - 已移除
+        // 🔥 确保至尊场UI元素被隐藏
+        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
+        if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
       } else {
         // 🎰 初级场默认
+        console.log('[updateModeTitles] 设置初级场UI');
         if (normalModeTitle) normalModeTitle.classList.remove('hidden');
         // 🔥 初级场：如果有入场券或碎片，显示入场券卡片 - 已移除
         // if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
@@ -6691,6 +6711,13 @@
       const container = document.getElementById('supremeBetOptions');
       if (!container) return;
       
+      // 🔥 检查参数是否有效
+      if (isNaN(minBet) || isNaN(maxBet) || minBet <= 0 || maxBet <= 0 || minBet > maxBet) {
+        console.error('[至尊场] 无效的投注范围:', { minBet, maxBet });
+        container.innerHTML = '<p class="text-white/70 text-sm text-center">配置加载中...</p>';
+        return;
+      }
+      
       container.innerHTML = '';
       
       const range = maxBet - minBet;
@@ -6726,6 +6753,12 @@
     
     // 💎 选择至尊场投注金额
     function selectSupremeBet(amount) {
+      // 🔥 检查金额是否有效
+      if (isNaN(amount) || amount <= 0) {
+        console.warn('[至尊场] 无效的投注金额:', amount);
+        return;
+      }
+      
       supremeBetAmount = amount;
       const slider = document.getElementById('supremeBetSlider');
       const betDisplay = document.getElementById('supremeBetDisplay');
@@ -6736,7 +6769,14 @@
     
     // 💎 更新至尊场投注显示
     function updateSupremeBetDisplay(value) {
-      supremeBetAmount = parseInt(value);
+      const parsedValue = parseInt(value);
+      // 🔥 检查值是否有效
+      if (isNaN(parsedValue) || parsedValue < supremeBetMin || parsedValue > supremeBetMax) {
+        console.warn('[至尊场] 无效的投注金额:', value);
+        supremeBetAmount = supremeBetMin || 1000;  // 使用最小值或默认值
+      } else {
+        supremeBetAmount = parsedValue;
+      }
       selectSupremeBet(supremeBetAmount);  // 🔥 统一调用
     }
 
