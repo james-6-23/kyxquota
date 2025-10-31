@@ -223,8 +223,22 @@ export function calculateProbabilityMonteCarlo(
     console.log(`[蒙特卡洛] 总规则: ${allRules.length}, 激活规则: ${activeRules.length}`);
     console.log(`[蒙特卡洛] 规则详情:`, allRules.map(r => `${r.rule_name}(active:${r.is_active})`));
     
-    // 初始化统计
+    // 🔥 初始化统计（确保所有激活规则都会出现在结果中）
     const stats: Record<string, { count: number; multiplier: number }> = {};
+    
+    // 🔥 预先初始化所有激活规则
+    activeRules.forEach(rule => {
+        stats[rule.rule_name] = { count: 0, multiplier: rule.win_multiplier };
+    });
+    
+    // 🔥 初始化所有可能的律师函惩罚
+    const allPunishments = rewardConfigQueries.getPunishmentsByScheme.all(rewardSchemeId);
+    allPunishments.filter(p => p.is_active).forEach(p => {
+        stats[`律师函×${p.lsh_count}`] = { count: 0, multiplier: -p.deduct_multiplier };
+    });
+    
+    // 🔥 初始化未中奖
+    stats['未中奖'] = { count: 0, multiplier: 0 };
     
     // 进度报告间隔（每10000次报告一次）
     const reportInterval = 10000;
@@ -234,6 +248,7 @@ export function calculateProbabilityMonteCarlo(
         const symbols = generateSymbols(weightConfig);
         const result = matchRuleByPriority(symbols, rewardSchemeId);
         
+        // 🔥 如果规则不存在（理论上不应该发生），仍然记录它
         if (!stats[result.ruleName]) {
             stats[result.ruleName] = { count: 0, multiplier: result.multiplier };
         }
@@ -360,9 +375,19 @@ export function calculateProbabilityFast(
     }
     
     // 2. 估算其他规则（简化计算）
-    // 对于复杂规则，使用快速模拟（10000次）
-    const quickSimCount = 10000;
+    // 🔥 使用更多次模拟以提高准确性（从10000提升到100000）
+    const quickSimCount = 100000;
     const quickStats: Record<string, number> = {};
+    
+    // 🔥 获取所有激活的规则，确保它们都会出现在结果中
+    const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
+    const activeRules = allRules.filter(r => r.is_active);
+    
+    // 🔥 初始化所有激活规则的统计为0
+    activeRules.forEach(rule => {
+        quickStats[rule.rule_name] = 0;
+    });
+    quickStats['未中奖'] = 0;
     
     for (let i = 0; i < quickSimCount; i++) {
         const symbols = generateSymbols(weightConfig);
@@ -376,28 +401,21 @@ export function calculateProbabilityFast(
     
     let totalExpectedValue = 0;
     
-    // 计算奖励规则概率
-    for (const [ruleName, count] of Object.entries(quickStats)) {
+    // 🔥 计算奖励规则概率（遍历所有激活规则）
+    for (const rule of activeRules) {
+        const count = quickStats[rule.rule_name] || 0;
         const probability = (count / quickSimCount) * 100;
-        
-        // 获取倍率
-        const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
-        const rule = allRules.find(r => r.rule_name === ruleName);
-        const multiplier = rule ? rule.win_multiplier : 0;
-        
+        const multiplier = rule.win_multiplier;
         const expectedValue = (probability / 100) * multiplier;
+        
         totalExpectedValue += expectedValue;
         
-        if (ruleName === '未中奖') {
-            // 未中奖单独处理
-        } else {
-            rules.push({
-                ruleName,
-                multiplier,
-                probability,
-                expectedValue
-            });
-        }
+        rules.push({
+            ruleName: rule.rule_name,
+            multiplier,
+            probability,
+            expectedValue
+        });
     }
     
     // 添加律师函期望值
