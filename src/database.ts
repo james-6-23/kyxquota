@@ -1819,10 +1819,13 @@ function initQueries() {
 
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
-        const now = Date.now();
-        const result = sessionQueries.cleanup.run(now);
-        if (result.changes > 0) {
-            console.log(`🧹 已清理 ${result.changes} 个过期 Session`);
+        try {
+            const now = Date.now();
+            sessionQueries.cleanup.run(now);
+            // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
+            console.log(`🧹 已执行过期 Session 清理`);
+        } catch (error: any) {
+            console.error(`❌ Session 清理失败:`, error.message);
         }
     }, 3600000);
 
@@ -2305,10 +2308,13 @@ function initQueries() {
 
     // 定期清理过期 Session（每小时执行一次）
     setInterval(() => {
-        const now = Date.now();
-        const result = sessionQueries.cleanup.run(now);
-        if (result.changes > 0) {
-            console.log(`🧹 已清理 ${result.changes} 个过期 Session`);
+        try {
+            const now = Date.now();
+            sessionQueries.cleanup.run(now);
+            // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
+            console.log(`🧹 已执行过期 Session 清理`);
+        } catch (error: any) {
+            console.error(`❌ Session 清理失败:`, error.message);
         }
     }, 3600000);
 
