@@ -3368,6 +3368,16 @@
               </div>
               
               <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">令牌有效期（小时）</label>
+                <input type="number" id="supremeTokenValidHours" min="1" max="720" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">会话有效期（小时）</label>
+                <input type="number" id="supremeSessionValidHours" min="1" max="24" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">投注范围（美元）</label>
                 <div class="flex gap-2">
                   <input type="number" id="supremeMinBet" placeholder="最小" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
@@ -3376,8 +3386,18 @@
               </div>
               
               <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">投注步长（美元）</label>
+                <input type="number" id="supremeBetStep" min="1" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">每日进入限制</label>
                 <input type="number" id="supremeDailyEntry" min="1" max="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
+              </div>
+              
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">每日获得令牌限制</label>
+                <input type="number" id="supremeDailyTokenGrant" min="1" max="10" class="w-full px-4 py-2 border border-slate-300 rounded-lg">
               </div>
               
               <div>
@@ -10089,10 +10109,14 @@
           document.getElementById('supremeEnabled').value = config.enabled ? '1' : '0';
           document.getElementById('supremeFragmentsToToken').value = config.fragments_to_token;
           document.getElementById('supremeMaxTokens').value = config.max_tokens_hold;
+          document.getElementById('supremeTokenValidHours').value = config.token_valid_hours || 168;
+          document.getElementById('supremeSessionValidHours').value = config.session_valid_hours || 2;
           // 坤币值转换回显示值（除以500000）
           document.getElementById('supremeMinBet').value = config.min_bet_amount / 500000;
           document.getElementById('supremeMaxBet').value = config.max_bet_amount / 500000;
+          document.getElementById('supremeBetStep').value = config.bet_step / 500000 || 100;
           document.getElementById('supremeDailyEntry').value = config.daily_entry_limit;
+          document.getElementById('supremeDailyTokenGrant').value = config.daily_token_grant_limit || 1;
           document.getElementById('supremeDailyBetLimit').value = config.daily_bet_limit / 500000;
           // 设置选中的配置
           if (config.weight_config_id) {
@@ -10106,9 +10130,13 @@
           document.getElementById('supremeEnabled').value = '1';
           document.getElementById('supremeFragmentsToToken').value = '10';
           document.getElementById('supremeMaxTokens').value = '3';
+          document.getElementById('supremeTokenValidHours').value = '168';
+          document.getElementById('supremeSessionValidHours').value = '2';
           document.getElementById('supremeMinBet').value = '1000';
           document.getElementById('supremeMaxBet').value = '10000';
+          document.getElementById('supremeBetStep').value = '100';
           document.getElementById('supremeDailyEntry').value = '3';
+          document.getElementById('supremeDailyTokenGrant').value = '1';
           document.getElementById('supremeDailyBetLimit').value = '100000';
         }
         
@@ -10119,9 +10147,13 @@
         document.getElementById('supremeEnabled').value = '1';
         document.getElementById('supremeFragmentsToToken').value = '10';
         document.getElementById('supremeMaxTokens').value = '3';
+        document.getElementById('supremeTokenValidHours').value = '168';
+        document.getElementById('supremeSessionValidHours').value = '2';
         document.getElementById('supremeMinBet').value = '1000';
         document.getElementById('supremeMaxBet').value = '10000';
+        document.getElementById('supremeBetStep').value = '100';
         document.getElementById('supremeDailyEntry').value = '3';
+        document.getElementById('supremeDailyTokenGrant').value = '1';
         document.getElementById('supremeDailyBetLimit').value = '100000';
       }
     }
@@ -10407,9 +10439,13 @@
           enabled: parseInt(document.getElementById('supremeEnabled').value),
           fragments_to_token: parseInt(document.getElementById('supremeFragmentsToToken').value),
           max_tokens_hold: parseInt(document.getElementById('supremeMaxTokens').value),
+          token_valid_hours: parseInt(document.getElementById('supremeTokenValidHours').value),
+          session_valid_hours: parseInt(document.getElementById('supremeSessionValidHours').value),
           min_bet_amount: parseInt(document.getElementById('supremeMinBet').value) * 500000,
           max_bet_amount: parseInt(document.getElementById('supremeMaxBet').value) * 500000,
+          bet_step: parseInt(document.getElementById('supremeBetStep').value) * 500000,
           daily_entry_limit: parseInt(document.getElementById('supremeDailyEntry').value),
+          daily_token_grant_limit: parseInt(document.getElementById('supremeDailyTokenGrant').value),
           daily_bet_limit: parseInt(document.getElementById('supremeDailyBetLimit').value) * 500000,
           weight_config_id: parseInt(document.getElementById('supremeWeightConfigId').value),
           reward_scheme_id: parseInt(document.getElementById('supremeRewardSchemeId').value)

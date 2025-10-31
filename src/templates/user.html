@@ -3903,6 +3903,12 @@
             updateAdvancedTicketsUI();  // 确保高级场UI显示正确
           }
           
+          // 💎 如果已加载至尊令牌数据，更新至尊场UI
+          if (supremeTokensData) {
+            // console.log('[初始化] 更新至尊场UI');
+            updateSupremeTokensUI();  // 确保至尊场UI显示正确
+          }
+          
           // 🔥 加载完入场券后再次更新UI，确保进度条正确显示
           updateSlotUI();
           
