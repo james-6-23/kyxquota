@@ -156,7 +156,7 @@ kunbei.post('/borrow', requireAuth, async (c) => {
         }
 
         // 调用借款服务
-        const result = borrowLoan(session.linux_do_id!, session.username!, amount);
+        const result = await borrowLoan(session.linux_do_id!, session.username!, amount);
 
         if (!result.success) {
             return c.json(result, 400);

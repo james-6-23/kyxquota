@@ -104,7 +104,7 @@ supreme.get('/tokens', requireAuth, async (c) => {
 supreme.post('/tokens/synthesize', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
-        const result = synthesizeSupremeToken(session.linux_do_id!);
+        const result = await synthesizeSupremeToken(session.linux_do_id!);
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
@@ -122,7 +122,7 @@ supreme.post('/enter', requireAuth, async (c) => {
 
         // 检查用户是否在高级场中（前置条件）
         // 这个检查应该在前端和后端都做
-        const result = enterSupremeMode(session.linux_do_id!);
+        const result = await enterSupremeMode(session.linux_do_id!);
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {

@@ -218,11 +218,11 @@ export function deleteGradientConfig(id: number): { success: boolean; message: s
 /**
  * 申请借款
  */
-export function borrowLoan(
+export async function borrowLoan(
     linuxDoId: string,
     username: string,
     amount: number
-): { success: boolean; message: string; data?: any; is_first_today?: boolean } {
+): Promise<{ success: boolean; message: string; data?: any; is_first_today?: boolean }> {
     const config = getKunbeiConfig();
     const now = Date.now();
 

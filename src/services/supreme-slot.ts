@@ -204,7 +204,7 @@ export function addSupremeFragment(linuxDoId: string, count: number = 1): void {
 /**
  * 合成至尊令牌
  */
-export function synthesizeSupremeToken(linuxDoId: string): { success: boolean; message: string; data?: any } {
+export async function synthesizeSupremeToken(linuxDoId: string): Promise<{ success: boolean; message: string; data?: any }> {
     checkTokenExpiry(linuxDoId);
 
     const tokens = getSupremeTokens(linuxDoId);
@@ -285,7 +285,7 @@ export function synthesizeSupremeToken(linuxDoId: string): { success: boolean; m
 /**
  * 进入至尊场（消耗1个至尊令牌）
  */
-export function enterSupremeMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
+export async function enterSupremeMode(linuxDoId: string): Promise<{ success: boolean; message: string; validUntil?: number }> {
     // 检查令牌是否过期
     checkTokenExpiry(linuxDoId);
 
