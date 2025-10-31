@@ -227,6 +227,14 @@ slot.post('/spin', requireAuth, async (c) => {
             return c.json({ success: false, message: '用户不存在' }, 404);
         }
 
+        // 🔥 检查坤呗逾期状态（确保用户玩游戏时及时扣款）
+        try {
+            const { checkOverdueLoans } = await import('../services/kunbei');
+            await checkOverdueLoans();
+        } catch (err: any) {
+            console.warn('[Spin] 坤呗逾期检查失败:', err.message);
+        }
+
         // 检查是否被封禁
         if (user.is_banned) {
             return c.json({

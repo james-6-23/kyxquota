@@ -157,6 +157,14 @@ supreme.post('/spin', requireAuth, async (c) => {
         const session = c.get('session') as SessionData;
         const { betAmount } = await c.req.json();
 
+        // 🔥 检查坤呗逾期状态（确保用户玩游戏时及时扣款）
+        try {
+            const { checkOverdueLoans } = await import('../services/kunbei');
+            await checkOverdueLoans();
+        } catch (err: any) {
+            console.warn('[至尊场] 坤呗逾期检查失败:', err.message);
+        }
+
         // 验证参数
         if (!betAmount || typeof betAmount !== 'number') {
             return c.json({ success: false, message: '参数错误' }, 400);

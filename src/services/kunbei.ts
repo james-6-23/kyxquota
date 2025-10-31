@@ -279,9 +279,11 @@ export function borrowLoan(
     const stats = kunbeiQueries.getStats.get(linuxDoId);
     const isFirstToday = !stats || stats.last_borrow_date !== today;
 
-    // 4. 计算还款金额和到期时间
+    // 4. 计算还款金额、逾期扣除倍数和到期时间
     const repayAmount = Math.floor(amount * config.repay_multiplier);
     const dueAt = now + (config.loan_duration_hours * 3600000);
+    const deductMultiplier = config.overdue_deduct_multiplier || 2.5;
+    const deductAmount = Math.floor(repayAmount * deductMultiplier);
 
     // 5. 创建借款记录
     kunbeiQueries.insertLoan.run(
@@ -315,7 +317,14 @@ export function borrowLoan(
         now
     );
 
-    console.log(`[坤呗] 用户 ${username} 借款 $${(amount / 500000).toFixed(2)}${isFirstToday ? '（今日首借，已获得抽奖buff×2.5）' : ''}`);
+    console.log(`[坤呗] 用户 ${username} 借款记录已创建 - 金额: $${(amount / 500000).toFixed(2)}${isFirstToday ? '（今日首借，已获得抽奖buff×2.5）' : ''}`);
+    
+    // 7. 💰 增加用户额度（借款到账）
+    // 注意：这里不能使用 async/await，因为函数签名是同步的
+    // 额度增加在前端调用API成功后由前端代码处理（updateSlotUI）
+    // 这里只记录借款关系，实际额度增加由调用方负责
+    console.log(`[坤呗] 💡 提示：借款金额需要由调用方增加到用户额度`);
+    console.log(`[坤呗] 📊 逾期警告：到期时将从用户额度中扣除 $${(deductAmount / 500000).toFixed(2)}（应还 $${(repayAmount / 500000).toFixed(2)} × ${deductMultiplier}倍）`);
 
     return {
         success: true,
@@ -465,19 +474,29 @@ export async function checkOverdueLoans(): Promise<number> {
             }
             
             // 🔥 获取用户当前额度（实时查询，与初级场/高级场/至尊场保持一致）
+            console.log(`[坤呗逾期] 开始获取用户额度 - 用户: ${loan.username} (ID: ${user.kyx_user_id})`);
             const { getKyxUserById } = await import('./kyx-api');
             const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
             
             let userQuota = 0;
             if (kyxUserResult.success && kyxUserResult.user) {
                 userQuota = kyxUserResult.user.quota;
+                console.log(`[坤呗逾期] ✅ 获取用户额度成功 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}`);
             } else {
-                console.error(`[坤呗] 获取用户额度失败 - 用户: ${loan.username}, 错误: ${kyxUserResult.message || '未知错误'}`);
+                console.error(`[坤呗逾期] ❌ 获取用户额度失败 - 用户: ${loan.username}, kyx_user_id: ${user.kyx_user_id}`);
+                console.error(`[坤呗逾期] 错误详情:`, kyxUserResult);
             }
             
             // 实际扣款金额：不超过用户额度，不扣为负数
             let actualDeductAmount = Math.min(deductAmount, Math.max(0, userQuota));
             let autoDeductedAmount = 0;
+            
+            console.log(`[坤呗逾期] 📊 扣款计算 - 用户: ${loan.username}`);
+            console.log(`[坤呗逾期]   - 应还金额: $${(loan.repay_amount / 500000).toFixed(2)}`);
+            console.log(`[坤呗逾期]   - 扣除倍数: ${deductMultiplier}x`);
+            console.log(`[坤呗逾期]   - 应扣金额: $${(deductAmount / 500000).toFixed(2)}`);
+            console.log(`[坤呗逾期]   - 用户额度: $${(userQuota / 500000).toFixed(2)}`);
+            console.log(`[坤呗逾期]   - 实际扣款: $${(actualDeductAmount / 500000).toFixed(2)}`);
             
             // 如果有额度可扣，执行扣款
             if (actualDeductAmount > 0) {
