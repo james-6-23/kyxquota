@@ -899,8 +899,8 @@
     <!-- 老虎机主体 -->
     <div class="relative flex flex-col" style="min-height: calc(100vh - 64px);">
       
-      <!-- 主游戏区 -->
-      <div class="flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+      <!-- ========== 🎰 初级场容器 ========== -->
+      <div id="normalModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
         
         <!-- 标题 - 响应式字体 -->
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
@@ -940,22 +940,69 @@
             </p>
           </div>
         </div>
-
-        <!-- 老虎机滚轮容器 (1行4列) - 响应式 -->
+        
+        <!-- 🎰 初级场专属：老虎机滚轮 -->
         <div id="slotReelsContainer" class="bg-black/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl mb-4 sm:mb-6 md:mb-8">
           <div id="slotReels" class="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
             <!-- 滚轮将通过 JavaScript 动态生成 -->
           </div>
         </div>
 
-        <!-- 结果显示 - 响应式 -->
+        <!-- 🎰 初级场专属：结果显示 -->
         <div id="slotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
                                          rounded-lg sm:rounded-xl px-4 sm:px-6 md:px-10 py-3 sm:py-4 md:py-5 mb-4 sm:mb-6 shadow-xl">
           <p id="slotResultText" class="text-white text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-center drop-shadow-lg"></p>
         </div>
 
-        <!-- 🔥 高级场投注选择器和按钮（紧凑版，在滚轮下方）-->
-        <div id="advancedBetSelector" class="hidden mb-6">
+        <!-- 🎰 初级场专属：控制按钮 -->
+        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto px-4 sm:px-0">
+          <button id="spinButton" onclick="spinSlot(false)" 
+                  class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600 
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
+                         hover:scale-105 transform transition-all duration-200
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
+          </button>
+          
+          <button id="freeSpinButton" onclick="spinSlot(true)" 
+                  class="hidden px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-purple-500 to-pink-600 
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
+                         hover:scale-105 transform transition-all duration-200
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+            ✨ free spin
+          </button>
+        </div>
+
+        <!-- 🎰 初级场专属：规则说明按钮 -->
+        <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
+          📖 查看游戏规则
+        </button>
+      </div>
+      <!-- ========== 🎰 初级场容器结束 ========== -->
+
+      <!-- ========== 🔥 高级场容器 ========== -->
+      <div id="advancedModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+        
+        <!-- 标题 -->
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
+          🎰 KYX-Slot-Machine
+        </h1>
+        
+        <!-- 🔥 高级场专属：老虎机滚轮 -->
+        <div id="advancedSlotReelsContainer" class="bg-black/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl mb-4 sm:mb-6 md:mb-8">
+          <div id="advancedSlotReels" class="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+            <!-- 滚轮将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+
+        <!-- 🔥 高级场专属：结果显示 -->
+        <div id="advancedSlotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
+                                         rounded-lg sm:rounded-xl px-4 sm:px-6 md:px-10 py-3 sm:py-4 md:py-5 mb-4 sm:mb-6 shadow-xl">
+          <p id="advancedSlotResultText" class="text-white text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-center drop-shadow-lg"></p>
+        </div>
+
+        <!-- 🔥 高级场专属：投注选择器和按钮 -->
+        <div id="advancedBetSelector" class="mb-6">
           <div class="max-w-xl mx-auto">
             <!-- 快捷金额按钮（动态生成）-->
             <div id="advancedBetOptions" class="flex items-center justify-center gap-2 mb-3">
@@ -993,8 +1040,50 @@
           </div>
         </div>
 
-        <!-- 💎 至尊场投注按钮和状态（紧凑版，与高级场类似）-->
-        <div id="supremeBetSelector" class="hidden mb-6">
+        <!-- 🔥 高级场专属：规则说明按钮 -->
+        <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
+          📖 查看游戏规则
+        </button>
+        
+        <!-- 🔥 高级场专属：投注限额进度条 -->
+        <div id="advancedDailyBetLimitBar" class="mt-6 max-w-xl mx-auto">
+          <div class="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3">
+            <div class="flex items-center justify-between mb-2 text-xs sm:text-sm">
+              <span class="text-white/80 font-medium">🔥 高级场今日投注限额</span>
+              <span id="advancedDailyBetProgress" class="text-white font-bold">$0 / $5,000</span>
+            </div>
+            <div class="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+              <div id="advancedDailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="advancedDailyBetWarning" class="hidden text-xs sm:text-sm text-orange-400 mt-2 text-center font-medium">⚠️ 接近投注限额</p>
+          </div>
+        </div>
+      </div>
+      <!-- ========== 🔥 高级场容器结束 ========== -->
+
+      <!-- ========== 💎 至尊场容器 ========== -->
+      <div id="supremeModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px]">
+        
+        <!-- 标题 -->
+        <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
+          🎰 KYX-Slot-Machine
+        </h1>
+        
+        <!-- 💎 至尊场专属：老虎机滚轮 -->
+        <div id="supremeSlotReelsContainer" class="bg-black/50 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 shadow-2xl mb-4 sm:mb-6 md:mb-8">
+          <div id="supremeSlotReels" class="flex gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+            <!-- 滚轮将通过 JavaScript 动态生成 -->
+          </div>
+        </div>
+
+        <!-- 💎 至尊场专属：结果显示 -->
+        <div id="supremeSlotResult" class="hidden bg-gradient-to-r from-yellow-400 to-orange-500 
+                                         rounded-lg sm:rounded-xl px-4 sm:px-6 md:px-10 py-3 sm:py-4 md:py-5 mb-4 sm:mb-6 shadow-xl">
+          <p id="supremeSlotResultText" class="text-white text-base sm:text-xl md:text-2xl lg:text-3xl font-bold text-center drop-shadow-lg"></p>
+        </div>
+
+        <!-- 💎 至尊场专属：投注按钮和状态 -->
+        <div id="supremeBetSelector" class="mb-6">
           <div class="max-w-xl mx-auto">
             <!-- 快捷金额按钮（动态生成）-->
             <div id="supremeBetOptions" class="flex items-center justify-center gap-2 mb-3">
@@ -1032,49 +1121,26 @@
           </div>
         </div>
 
-        <!-- 初级场控制按钮 - 响应式 -->
-        <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto px-4 sm:px-0">
-          <button id="spinButton" onclick="spinSlot(false)" 
-                  class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600 
-                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
-                         hover:scale-105 transform transition-all duration-200
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-            <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
-          </button>
-          
-          <button id="freeSpinButton" onclick="spinSlot(true)" 
-                  class="hidden px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-purple-500 to-pink-600 
-                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
-                         hover:scale-105 transform transition-all duration-200
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
-            ✨ free spin
-          </button>
-        </div>
-
-        <!-- 规则说明按钮 - 响应式 -->
-        <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
-          📖 查看游戏规则
-        </button>
-        
-        <!-- 💎 至尊场规则按钮（在至尊场模式下显示）-->
-        <button id="supremeRulesButton" onclick="showSupremeRules()" class="hidden mt-4 sm:mt-6 text-amber-300/90 hover:text-amber-200 text-sm sm:text-base transition-colors font-bold">
+        <!-- 💎 至尊场专属：规则说明按钮 -->
+        <button id="supremeRulesButton" onclick="showSupremeRules()" class="mt-4 sm:mt-6 text-amber-300/90 hover:text-amber-200 text-sm sm:text-base transition-colors font-bold">
           💎 至尊场规则
         </button>
         
-        <!-- 🔥 投注限额进度条（仅高级场显示，在规则按钮下方）-->
-        <div id="dailyBetLimitBar" class="hidden mt-6 max-w-xl mx-auto">
+        <!-- 💎 至尊场专属：投注限额进度条 -->
+        <div id="supremeDailyBetLimitBar" class="mt-6 max-w-xl mx-auto">
           <div class="bg-white/10 backdrop-blur-md rounded-lg px-6 py-3">
             <div class="flex items-center justify-between mb-2 text-xs sm:text-sm">
-              <span id="dailyBetLimitTitle" class="text-white/80 font-medium">今日投注额度限额</span>
-              <span id="dailyBetProgress" class="text-white font-bold">$0 / $5,000</span>
+              <span class="text-white/80 font-medium">💎 至尊场今日投注限额</span>
+              <span id="supremeDailyBetProgress" class="text-white font-bold">$0 / $50,000</span>
             </div>
             <div class="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
-              <div id="dailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
+              <div id="supremeDailyBetProgressBar" class="h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300" style="width: 0%"></div>
             </div>
-            <p id="dailyBetWarning" class="hidden text-xs sm:text-sm text-orange-400 mt-2 text-center font-medium">⚠️ 接近投注限额</p>
+            <p id="supremeDailyBetWarning" class="hidden text-xs sm:text-sm text-orange-400 mt-2 text-center font-medium">⚠️ 接近投注限额</p>
           </div>
         </div>
       </div>
+      <!-- ========== 💎 至尊场容器结束 ========== -->
 
       <!-- 左侧：亏损榜（悬浮显示）- 移动端隐藏 -->
       <div id="slotSidebarProfitBoard" class="absolute top-4 left-4 w-[360px] max-h-[calc(100vh-200px)] bg-gradient-to-b from-red-950/90 to-rose-950/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-500/30 overflow-hidden flex flex-col">
@@ -3033,104 +3099,78 @@
       }
     }
 
-    // 🔥 更新投注限额进度条（独立函数）
+    // 🔥 新版：更新投注限额进度条（支持三个独立的进度条）
     function updateBetLimitProgressBar() {
-      // console.log('[进度条] ========== updateBetLimitProgressBar 被调用 ==========');
-      // console.log('[进度条] isInAdvancedMode:', isInAdvancedMode);
-      // console.log('[进度条] isInSupremeMode:', isInSupremeMode);
-      // console.log('[进度条] slotUserData:', slotUserData);
-      // console.log('[进度条] advancedTicketsData:', advancedTicketsData);
-      // console.log('[进度条] supremeTokensData:', supremeTokensData);
-      
       if (!slotUserData) {
-        // console.warn('[进度条] slotUserData 不存在，跳过更新');
+        console.warn('[进度条] slotUserData 不存在，跳过更新');
         return;
       }
       
-      const dailyBetLimitBar = document.getElementById('dailyBetLimitBar');
-      // console.log('[进度条] 找到元素 dailyBetLimitBar:', dailyBetLimitBar);
-      // console.log('[进度条] 元素当前 classList:', dailyBetLimitBar?.classList);
+      if (isInSupremeMode) {
+        // 💎 至尊场：更新至尊场进度条
+        updateProgressBarForMode('supreme');
+      } else if (isInAdvancedMode) {
+        // 🔥 高级场：更新高级场进度条
+        updateProgressBarForMode('advanced');
+      }
+      // 初级场不显示进度条
+    }
+    
+    // 🔥 更新指定场次的进度条
+    function updateProgressBarForMode(mode) {
+      let progressText, progressBar, warningText, betLimit, todayBetAmount;
       
-      if (!dailyBetLimitBar) {
-        // console.error('[进度条] ❌ 找不到 dailyBetLimitBar 元素！');
-        return;
+      if (mode === 'supreme') {
+        progressText = document.getElementById('supremeDailyBetProgress');
+        progressBar = document.getElementById('supremeDailyBetProgressBar');
+        warningText = document.getElementById('supremeDailyBetWarning');
+        betLimit = supremeTokensData?.config?.daily_bet_limit 
+          ? supremeTokensData.config.daily_bet_limit / 500000 
+          : 50000;
+        todayBetAmount = (slotUserData.today_supreme_bet || 0) / 500000;
+      } else if (mode === 'advanced') {
+        progressText = document.getElementById('advancedDailyBetProgress');
+        progressBar = document.getElementById('advancedDailyBetProgressBar');
+        warningText = document.getElementById('advancedDailyBetWarning');
+        betLimit = advancedTicketsData?.config?.daily_bet_limit 
+          ? advancedTicketsData.config.daily_bet_limit / 500000 
+          : 5000;
+        todayBetAmount = (slotUserData.today_bet || 0) / 500000;
       }
       
-      if (isInAdvancedMode || isInSupremeMode) {
-        // 🔥 高级场或至尊场：显示投注额度限额进度条
-        // console.log('[进度条] ✅ 高级场或至尊场模式 - 准备显示进度条');
-        dailyBetLimitBar.classList.remove('hidden');
-        // console.log('[进度条] ✅ 已移除 hidden 类，当前 class:', dailyBetLimitBar.className);
-        // console.log('[进度条] ✅ computed style display:', window.getComputedStyle(dailyBetLimitBar).display);
-        
-        const titleEl = document.getElementById('dailyBetLimitTitle');
-        const progressText = document.getElementById('dailyBetProgress');
-        const progressBar = document.getElementById('dailyBetProgressBar');
-        const warningText = document.getElementById('dailyBetWarning');
-        
-        let betLimit;
-        let todayBetAmount;
-        
-        if (isInSupremeMode) {
-          // 💎 至尊场：使用至尊场配置的每日投注限额
-          betLimit = supremeTokensData?.config?.daily_bet_limit 
-            ? supremeTokensData.config.daily_bet_limit / 500000 
-            : 50000; // 至尊场默认$50000
-          todayBetAmount = (slotUserData.today_supreme_bet || 0) / 500000;
-          
-          if (titleEl) titleEl.textContent = '💎 至尊场今日投注限额';
-          // console.log('[进度条] 至尊场限额:', betLimit, '已投注:', todayBetAmount);
-        } else {
-          // 🔥 高级场：使用高级场配置的每日投注限额
-          betLimit = advancedTicketsData?.config?.daily_bet_limit 
-            ? advancedTicketsData.config.daily_bet_limit / 500000 
-            : 5000; // 高级场默认$5000
-          todayBetAmount = (slotUserData.today_bet || 0) / 500000;
-          
-          if (titleEl) titleEl.textContent = '🔥 高级场今日投注限额';
-          // console.log('[进度条] 高级场限额:', betLimit, '已投注:', todayBetAmount);
-        }
-        
-        const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
-        
-        if (progressText) {
-          progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
-        }
-        
-        if (progressBar) {
-          progressBar.style.width = `${betPercentage}%`;
-          // 根据进度改变颜色
-          if (betPercentage >= 100) {
-            progressBar.className = 'h-full bg-gradient-to-r from-red-600 to-red-800 transition-all duration-300';
-          } else if (betPercentage >= 80) {
-            progressBar.className = 'h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300';
-          } else if (betPercentage >= 60) {
-            progressBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300';
-          } else {
-            progressBar.className = 'h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300';
-          }
-        }
-        
-        // 显示警告
-        if (warningText) {
-          if (betPercentage >= 80) {
-            warningText.classList.remove('hidden');
-            if (betPercentage >= 100) {
-              warningText.textContent = '⛔ 已达到投注限额';
-              warningText.className = 'text-xs text-red-400 mt-1';
-            } else {
-              warningText.textContent = '⚠️ 接近投注限额';
-              warningText.className = 'text-xs text-orange-400 mt-1';
-            }
-          } else {
-            warningText.classList.add('hidden');
-          }
-        }
+      if (!progressText || !progressBar) return;
+      
+      const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
+      
+      progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
+      progressBar.style.width = `${betPercentage}%`;
+      
+      // 根据进度改变颜色
+      if (betPercentage >= 100) {
+        progressBar.className = 'h-full bg-gradient-to-r from-red-600 to-red-800 transition-all duration-300';
+      } else if (betPercentage >= 80) {
+        progressBar.className = 'h-full bg-gradient-to-r from-orange-500 to-red-500 transition-all duration-300';
+      } else if (betPercentage >= 60) {
+        progressBar.className = 'h-full bg-gradient-to-r from-yellow-500 to-orange-500 transition-all duration-300';
       } else {
-        // 🔥 初级场：隐藏投注限额进度条（初级场使用次数限制）
-        // console.log('[进度条] 初级场模式 - 隐藏进度条');
-        dailyBetLimitBar.classList.add('hidden');
+        progressBar.className = 'h-full bg-gradient-to-r from-green-500 to-yellow-500 transition-all duration-300';
       }
+      
+      // 显示警告
+      if (warningText) {
+        if (betPercentage >= 80) {
+          warningText.classList.remove('hidden');
+          if (betPercentage >= 100) {
+            warningText.textContent = '⛔ 已达到投注限额';
+          } else {
+            warningText.textContent = '⚠️ 接近投注限额';
+          }
+        } else {
+          warningText.classList.add('hidden');
+        }
+      }
+      
+      console.log(`[进度条] ${mode}场进度更新:`, `${betPercentage.toFixed(1)}%`);
     }
     
     // 🔥 加载入场券信息
@@ -3482,9 +3522,10 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 先重置所有UI状态，然后更新
-          resetAllModeUI();
+          // 🔥 使用新的容器切换逻辑
+          switchToModeContainer('advanced');
           updateSlotUI();
+          updateBetLimitProgressBar();
           
           // 🔥 强制更新高级场UI（确保显示正确）
           if (advancedTicketsData) {
@@ -3535,8 +3576,8 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 先重置所有UI状态，然后更新
-          resetAllModeUI();
+          // 🔥 使用新的容器切换逻辑
+          switchToModeContainer('normal');
           updateSlotUI();
           
           // 🔥 强制更新UI（确保退出高级场后UI正确）
@@ -3582,8 +3623,8 @@
               slotUserData = configData.data.user;
             }
             
-            // 🔥 重置UI后更新
-            resetAllModeUI();
+            // 🔥 使用新的容器切换逻辑
+            switchToModeContainer('normal');
             updateSlotUI();
             
             // 🔥 强制更新UI（确保退出高级场后UI正确）
@@ -3660,16 +3701,29 @@
       // console.log('[动画] 播放掉落动画:', dropType, dropCount);
     }
 
-    // 初始化老虎机滚轮
+    // 🔥 新版：初始化所有场次的老虎机滚轮
     function initSlotReels() {
-      const reelsContainer = document.getElementById('slotReels');
+      // 初始化三个场次的滚轮容器
+      initReelsForMode('slotReels');           // 初级场
+      initReelsForMode('advancedSlotReels');   // 高级场
+      initReelsForMode('supremeSlotReels');    // 至尊场
+    }
+    
+    // 🔥 为指定场次初始化滚轮
+    function initReelsForMode(reelsContainerId) {
+      const reelsContainer = document.getElementById(reelsContainerId);
+      if (!reelsContainer) {
+        console.warn('[initReelsForMode] 容器不存在:', reelsContainerId);
+        return;
+      }
+      
       reelsContainer.innerHTML = '';
 
       for (let i = 0; i < 4; i++) {
         const reelContainer = document.createElement('div');
         reelContainer.className = 'slot-reel-container';
         reelContainer.innerHTML = `
-          <div class="slot-reel" data-reel="${i}">
+          <div class="slot-reel" data-reel="${i}" data-mode="${reelsContainerId}">
             <div class="slot-symbols"></div>
           </div>
         `;
@@ -3677,7 +3731,7 @@
       }
 
       // 为每个滚轮填充初始符号（显示一个随机符号）
-      document.querySelectorAll('.slot-reel').forEach((reel, idx) => {
+      reelsContainer.querySelectorAll('.slot-reel').forEach((reel, idx) => {
         const symbolsContainer = reel.querySelector('.slot-symbols');
         // 初始显示一个随机符号
         const initialSymbol = SLOT_SYMBOLS[Math.floor(Math.random() * SLOT_SYMBOLS.length)];
@@ -3687,6 +3741,8 @@
         symbolsContainer.style.transform = 'translateY(0)';
         symbolsContainer.style.filter = 'none';
       });
+      
+      console.log('[initReelsForMode] 滚轮初始化完成:', reelsContainerId);
     }
 
     // 创建符号元素
@@ -3787,8 +3843,15 @@
         // 4. 初始化UI（此时已经知道是否在高级场/至尊场）
         initSlotReels();
         
-        // 🔥 先重置所有UI状态，确保刷新页面后UI正确
-        resetAllModeUI();
+        // 🔥 使用新的容器切换逻辑，确保刷新页面后UI正确
+        if (isInSupremeMode) {
+          switchToModeContainer('supreme');
+        } else if (isInAdvancedMode) {
+          switchToModeContainer('advanced');
+        } else {
+          switchToModeContainer('normal');
+        }
+        
         updateSlotUI();  // 🔥 现在会根据 isInAdvancedMode/isInSupremeMode 显示正确的UI
         syncUserInfoToSlot();
         
@@ -3869,8 +3932,14 @@
                 }
               }
               
-              // 🔥 最终确保UI不重合
-              updateModeTitles();
+              // 🔥 最终确保容器显示正确
+              if (isInSupremeMode) {
+                switchToModeContainer('supreme');
+              } else if (isInAdvancedMode) {
+                switchToModeContainer('advanced');
+              } else {
+                switchToModeContainer('normal');
+              }
             }, 100);
           }, 50);
         }, 100);
@@ -4460,9 +4529,30 @@
     async function spinSlot(useFreeSpinn = false) {
       if (isSpinning) return;
 
-      const spinButton = document.getElementById('spinButton');
-      const freeSpinButton = document.getElementById('freeSpinButton');
-      const resultDiv = document.getElementById('slotResult');
+      // 🔥 根据当前场次获取对应的UI元素
+      let resultDiv, resultText, spinButton, freeSpinButton;
+      
+      if (isInSupremeMode) {
+        resultDiv = document.getElementById('supremeSlotResult');
+        resultText = document.getElementById('supremeSlotResultText');
+        spinButton = document.getElementById('supremeSpinButton');
+        freeSpinButton = null; // 至尊场没有免费按钮
+      } else if (isInAdvancedMode) {
+        resultDiv = document.getElementById('advancedSlotResult');
+        resultText = document.getElementById('advancedSlotResultText');
+        spinButton = document.getElementById('advancedSpinButton');
+        freeSpinButton = null; // 高级场没有免费按钮
+      } else {
+        resultDiv = document.getElementById('slotResult');
+        resultText = document.getElementById('slotResultText');
+        spinButton = document.getElementById('spinButton');
+        freeSpinButton = document.getElementById('freeSpinButton');
+      }
+      
+      if (!resultDiv || !resultText) {
+        console.error('[spinSlot] 找不到结果显示元素');
+        return;
+      }
 
       // ✅ 新增：使用免费次数时先检查
       if (useFreeSpinn) {
@@ -4485,13 +4575,11 @@
       }
 
       // 隐藏上次结果
-      resultDiv.classList.add('hidden');
+      if (resultDiv) resultDiv.classList.add('hidden');
 
       // 禁用所有按钮
-      spinButton.disabled = true;
-      freeSpinButton.disabled = true;
-      const advSpinBtn = document.getElementById('advancedSpinButton');
-      if (advSpinBtn) advSpinBtn.disabled = true;  // 🔥 同时禁用高级场按钮
+      if (spinButton) spinButton.disabled = true;
+      if (freeSpinButton) freeSpinButton.disabled = true;
       isSpinning = true;
 
       try {
@@ -4595,9 +4683,9 @@
           soundManager.playLose();
         }
         
-        // 显示结果
-        document.getElementById('slotResultText').textContent = data.message;
-        resultDiv.classList.remove('hidden');
+        // 🔥 显示结果（使用对应场次的结果容器）
+        if (resultText) resultText.textContent = data.message;
+        if (resultDiv) resultDiv.classList.remove('hidden');
 
         // 🔥 根据中奖类型动态设置提示停留时间
         let displayDuration = 3000; // 默认3秒
@@ -4655,9 +4743,26 @@
       }
     }
 
-    // 播放旋转动画（优化版：同时开始，依次停止）
+    // 🔥 新版：播放旋转动画（支持三个场次的独立滚轮）
     async function playSpinAnimation(finalSymbols) {
-      const reels = document.querySelectorAll('.slot-reel');
+      // 🔥 根据当前场次选择对应的滚轮容器
+      let reelsContainerId;
+      if (isInSupremeMode) {
+        reelsContainerId = 'supremeSlotReels';
+      } else if (isInAdvancedMode) {
+        reelsContainerId = 'advancedSlotReels';
+      } else {
+        reelsContainerId = 'slotReels';
+      }
+      
+      const reelsContainer = document.getElementById(reelsContainerId);
+      if (!reelsContainer) {
+        console.error('[playSpinAnimation] 找不到滚轮容器:', reelsContainerId);
+        return;
+      }
+      
+      const reels = reelsContainer.querySelectorAll('.slot-reel');
+      console.log('[playSpinAnimation] 使用滚轮容器:', reelsContainerId, '滚轮数量:', reels.length);
       
       // 🎯 优化：所有滚轮同时启动，制造同步感
       const startTime = Date.now();
@@ -6512,8 +6617,8 @@
             slotUserData = configData.data.user;
           }
           
-          // 🔥 先重置所有UI状态
-          resetAllModeUI();
+          // 🔥 使用新的容器切换逻辑
+          switchToModeContainer('supreme');
           
           // 🔥 强制更新至尊场投注选项（使用API返回的config）
           console.log('[enterSupremeMode] 检查至尊场配置:', {
@@ -6550,8 +6655,9 @@
             console.error('[enterSupremeMode] supremeTokensData 或 config 不存在');
           }
           
-          // 🔥 然后更新至尊场UI状态
+          // 🔥 更新至尊场UI状态
           updateSlotUI();
+          updateBetLimitProgressBar();
           
           // 🔥 更新进入至尊场按钮状态
           const enterBtn = document.getElementById('enterSupremeButton');
@@ -6667,9 +6773,14 @@
             slotUserData = configRes.data.user;
           }
           
-          // 🔥 先重置所有UI状态，然后更新
-          resetAllModeUI();
+          // 🔥 使用新的容器切换逻辑（退出至尊场回到高级场或初级场）
+          if (isInAdvancedMode) {
+            switchToModeContainer('advanced');
+          } else {
+            switchToModeContainer('normal');
+          }
           updateSlotUI();
+          updateBetLimitProgressBar();
         } else {
           showToast(data.message, 'error');
         }
@@ -6679,91 +6790,17 @@
       }
     }
     
-    // 🎯 统一更新场式标题（避免重叠）
+    // 🔥 新版：简化的更新场式标题函数（使用容器架构）
     function updateModeTitles() {
-      const normalModeTitle = document.getElementById('normalModeTitle');
-      const advancedModeTitle = document.getElementById('advancedModeTitle');
-      const supremeModeTitle = document.getElementById('supremeModeTitle');
-      const advancedModeIndicator = document.getElementById('advancedModeIndicator');
-      const advancedBetSelector = document.getElementById('advancedBetSelector');
-      const supremeBetSelector = document.getElementById('supremeBetSelector');
-      const normalModeSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
-      const spinButton = document.getElementById('spinButton');
-      const freeSpinButton = document.getElementById('freeSpinButton');
-      // 已移除的元素
-      // const advancedTicketCard = document.getElementById('advancedTicketCard');
-      // const supremeTokenCard = document.getElementById('supremeTokenCard');
-      const advancedTicketBar = document.getElementById('advancedTicketBar');
-      const supremeTokenBar = document.getElementById('supremeTokenBar');
+      console.log('[updateModeTitles] 调用新版容器切换逻辑');
       
-      // 🔥 先隐藏所有标题和UI元素
-      if (normalModeTitle) normalModeTitle.classList.add('hidden');
-      if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-      if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
-      if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
-      if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
-      if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
-      if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
-      if (spinButton) spinButton.classList.add('hidden');
-      if (freeSpinButton) freeSpinButton.classList.add('hidden');
-      // 已移除的元素
-      // if (advancedTicketCard) advancedTicketCard.classList.add('hidden');
-      // if (supremeTokenCard) supremeTokenCard.classList.add('hidden');
-      if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
-      if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
-      
-      // 根据当前状态显示相应标题和UI
+      // 直接调用容器切换函数
       if (isInSupremeMode) {
-        // 💎 至尊场优先级最高
-        console.log('[updateModeTitles] 设置至尊场UI');
-        if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
-        if (supremeBetSelector) supremeBetSelector.classList.remove('hidden');
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
-        // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 显示至尊场导航卡片 - 已移除
-        // 🔥 至尊场时不显示高级场和初级场任何元素，确保再次隐藏
-        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
-        if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
-        if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
-        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
-        if (spinButton) spinButton.classList.add('hidden');
-        if (freeSpinButton) freeSpinButton.classList.add('hidden');
+        switchToModeContainer('supreme');
       } else if (isInAdvancedMode) {
-        // 🔥 高级场其次
-        console.log('[updateModeTitles] 设置高级场UI');
-        if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
-        if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
-        if (advancedBetSelector) advancedBetSelector.classList.remove('hidden');
-        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');  // 🔥 高级场也显示至尊场令牌栏
-        // if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');  // 🔥 显示入场券导航卡片 - 已移除
-        // if (supremeTokenCard) supremeTokenCard.classList.remove('hidden');  // 🔥 高级场也显示至尊令牌卡片 - 已移除
-        // 🔥 确保至尊场和初级场UI元素被隐藏
-        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
-        if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
-        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
-        if (spinButton) spinButton.classList.add('hidden');
-        if (freeSpinButton) freeSpinButton.classList.add('hidden');
+        switchToModeContainer('advanced');
       } else {
-        // 🎰 初级场默认
-        console.log('[updateModeTitles] 设置初级场UI');
-        if (normalModeTitle) normalModeTitle.classList.remove('hidden');
-        if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.remove('hidden');
-        if (spinButton) spinButton.classList.remove('hidden');
-        // 🔥 免费按钮只在有免费次数时显示
-        if (freeSpinButton && slotUserData && slotUserData.free_spins > 0 && !slotUserData.is_banned) {
-          freeSpinButton.classList.remove('hidden');
-        }
-        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
-        // 🔥 初级场：如果有入场券或碎片，显示入场券卡片 - 已移除
-        // if (advancedTicketsData && (advancedTicketsData.tickets > 0 || advancedTicketsData.fragments > 0)) {
-        //   if (advancedTicketCard) advancedTicketCard.classList.remove('hidden');
-        // }
-        // 🔥 确保高级场和至尊场UI元素被隐藏
-        if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
-        if (advancedBetSelector) advancedBetSelector.classList.add('hidden');
-        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
-        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
-        if (supremeBetSelector) supremeBetSelector.classList.add('hidden');
+        switchToModeContainer('normal');
       }
     }
     
@@ -6786,38 +6823,68 @@
       }
     }
     
-    // 🔥 强制重置所有场次UI状态（用于修复UI重合问题）
-    function resetAllModeUI() {
-      console.log('[resetAllModeUI] 重置所有场次UI状态');
+    // 🔥 新版：简化的场次容器切换（方案C架构）
+    function switchToModeContainer(mode) {
+      console.log('[switchToModeContainer] 切换到:', mode);
       
-      // 获取所有UI元素
+      // 获取三个场次容器
+      const normalContainer = document.getElementById('normalModeContainer');
+      const advancedContainer = document.getElementById('advancedModeContainer');
+      const supremeContainer = document.getElementById('supremeModeContainer');
+      
+      // 获取导航栏元素
       const normalModeTitle = document.getElementById('normalModeTitle');
       const advancedModeTitle = document.getElementById('advancedModeTitle');
       const supremeModeTitle = document.getElementById('supremeModeTitle');
       const advancedModeIndicator = document.getElementById('advancedModeIndicator');
-      const advancedBetSelector = document.getElementById('advancedBetSelector');
-      const supremeBetSelector = document.getElementById('supremeBetSelector');
-      const normalModeSpinsDisplay = document.getElementById('normalModeSpinsDisplay');
-      const spinButton = document.getElementById('spinButton');
-      const freeSpinButton = document.getElementById('freeSpinButton');
       const advancedTicketBar = document.getElementById('advancedTicketBar');
       const supremeTokenBar = document.getElementById('supremeTokenBar');
       
-      // 🔥 强制隐藏所有元素
-      [normalModeTitle, advancedModeTitle, supremeModeTitle, advancedModeIndicator, 
-       advancedBetSelector, supremeBetSelector, normalModeSpinsDisplay, spinButton, 
-       freeSpinButton, advancedTicketBar, supremeTokenBar].forEach(el => {
-        if (el) {
-          el.classList.add('hidden');
-          el.classList.remove('smooth-show');
-        }
-      });
+      // 🔥 先隐藏所有容器和导航元素
+      if (normalContainer) normalContainer.classList.add('hidden');
+      if (advancedContainer) advancedContainer.classList.add('hidden');
+      if (supremeContainer) supremeContainer.classList.add('hidden');
+      if (normalModeTitle) normalModeTitle.classList.add('hidden');
+      if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+      if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
+      if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+      if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
+      if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
       
-      // 等待一帧后再调用 updateModeTitles，确保隐藏生效
-      requestAnimationFrame(() => {
-        updateModeTitles();
-        updateGameRulesButton();
-      });
+      // 🔥 根据模式显示对应的容器和导航元素
+      if (mode === 'normal') {
+        // 🎰 初级场
+        if (normalContainer) normalContainer.classList.remove('hidden');
+        if (normalModeTitle) normalModeTitle.classList.remove('hidden');
+        if (advancedTicketBar) advancedTicketBar.classList.remove('hidden');
+      } else if (mode === 'advanced') {
+        // 🔥 高级场
+        if (advancedContainer) advancedContainer.classList.remove('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.remove('hidden');
+        if (advancedModeIndicator) advancedModeIndicator.classList.remove('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
+      } else if (mode === 'supreme') {
+        // 💎 至尊场
+        if (supremeContainer) supremeContainer.classList.remove('hidden');
+        if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
+        if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
+      }
+      
+      console.log('[switchToModeContainer] 切换完成，当前显示:', mode);
+    }
+    
+    // 🔥 旧版：保留用于兼容（将被逐步替换）
+    function resetAllModeUI() {
+      console.log('[resetAllModeUI] 调用新版 switchToModeContainer');
+      
+      // 根据当前状态调用新的切换函数
+      if (isInSupremeMode) {
+        switchToModeContainer('supreme');
+      } else if (isInAdvancedMode) {
+        switchToModeContainer('advanced');
+      } else {
+        switchToModeContainer('normal');
+      }
     }
     
     // 💎 启动至尊场倒计时
@@ -6845,9 +6912,14 @@
               slotConfig = configRes.data.config;
               slotUserData = configRes.data.user;
             }
-            // 🔥 重置UI后更新
-            resetAllModeUI();
+            // 🔥 使用新的容器切换逻辑（根据是否在高级场返回对应场次）
+            if (isInAdvancedMode) {
+              switchToModeContainer('advanced');
+            } else {
+              switchToModeContainer('normal');
+            }
             updateSlotUI();
+            updateBetLimitProgressBar();
           });
         }
       }, 1000);
