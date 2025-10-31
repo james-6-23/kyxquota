@@ -202,7 +202,19 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
     
     let matched = false;
     
-    switch (match_pattern) {
+    // 🔥 处理匹配模式：兼容 "any" 和 "2-any" 两种格式
+    let normalizedPattern = match_pattern;
+    
+    // 如果是 "2-any", "3-consecutive" 等格式，提取出基础模式
+    if (match_pattern.includes('-')) {
+        const parts = match_pattern.split('-');
+        normalizedPattern = parts[1]; // 取 "any" 或 "consecutive"
+        if (debug) {
+            console.log(`  - 格式转换: "${match_pattern}" => "${normalizedPattern}"`);
+        }
+    }
+    
+    switch (normalizedPattern) {
         case 'sequence':  // 按顺序
             matched = JSON.stringify(symbols) === JSON.stringify(requiredArr);
             break;
@@ -223,6 +235,9 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
                 }
             }
             matched = maxConsecutive >= (match_count || 2);
+            if (debug) {
+                console.log(`  - consecutive模式检查: 最大连续=${maxConsecutive}, 需要>=${match_count || 2}, 匹配=${matched}`);
+            }
             break;
             
         case 'any':  // 任意位置相同
@@ -240,11 +255,14 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
             const pairs = Object.values(pairCounts).filter(count => count >= 2);
             matched = pairs.length >= 2;
+            if (debug) {
+                console.log(`  - double_pair模式检查: 对数=${pairs.length}, 匹配=${matched}`);
+            }
             break;
             
         default:
             if (debug) {
-                console.warn(`  - 未知的匹配模式: ${match_pattern}`);
+                console.warn(`  - 未知的匹配模式: ${match_pattern} (规范化后: ${normalizedPattern})`);
             }
             matched = false;
     }
