@@ -273,13 +273,25 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             }
             break;
 
-        case 'double_pair':  // 两对2连
+        case 'double_pair':  // 两对2连（MMNN格式，排除4连）
             const pairCounts: Record<string, number> = {};
             symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
-            const pairs = Object.values(pairCounts).filter(count => count >= 2);
-            matched = pairs.length >= 2;
+            // 必须恰好有2个不同符号，每个出现2次
+            const pairs = Object.values(pairCounts).filter(count => count === 2);
+            matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
             if (debug) {
-                console.log(`  - double_pair模式检查: 对数=${pairs.length}, 匹配=${matched}`);
+                console.log(`  - double_pair模式检查: 符号计数=`, pairCounts, `2次对数=${pairs.length}, 匹配=${matched}`);
+            }
+            break;
+
+        case 'symmetric':  // 对称（前两个和后两个相同：AABB）
+            if (symbols.length === 4) {
+                matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
+                if (debug) {
+                    console.log(`  - symmetric模式检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
+                }
+            } else {
+                matched = false;
             }
             break;
 

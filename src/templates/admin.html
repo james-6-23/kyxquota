@@ -9642,9 +9642,23 @@
         emoji: '🎲'
       },
       {
+        id: 'symmetric',
+        name: '🔄 对称奖励',
+        description: '前两个和后两个相同（AABB格式）',
+        category: 'normal',
+        rule_type: 'match',
+        match_pattern: 'symmetric',
+        required_symbols: null,
+        match_count: 4,
+        win_multiplier: 6,
+        grant_free_spin: 0,
+        priority: 55,
+        emoji: '🔄'
+      },
+      {
         id: 'double_pair',
         name: '🎰 两对2连',
-        description: '两对不同的相同符号',
+        description: '两对不同的相同符号（MMNN格式，排除4连）',
         category: 'normal',
         rule_type: 'match',
         match_pattern: 'double_pair',
@@ -9926,8 +9940,8 @@
                   <input type="text" id="editRuleName" value="${rule.rule_name}" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                 </div>
                 
-                <!-- 中奖倍率和免费转 -->
-                <div class="grid grid-cols-2 gap-4">
+                <!-- 中奖倍率、免费转和优先级 -->
+                <div class="grid grid-cols-3 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
                     <input type="number" id="editWinMultiplier" value="${rule.win_multiplier}" step="0.1" min="0" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
@@ -9935,6 +9949,10 @@
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转</label>
                     <input type="number" id="editGrantFreeSpin" value="${rule.grant_free_spin}" min="0" max="10" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-2">优先级</label>
+                    <input type="number" id="editRulePriority" value="${rule.priority || 0}" min="0" max="100" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" title="数字越大优先级越高">
                   </div>
                 </div>
                 
@@ -10022,6 +10040,7 @@
         required_symbols: requiredSymbols,
         win_multiplier: winMultiplier,
         grant_free_spin: parseInt(document.getElementById('editGrantFreeSpin').value) || 0,
+        priority: parseInt(document.getElementById('editRulePriority').value) || 0,
         is_active: parseInt(document.getElementById('editRuleActive').value),
         description: document.getElementById('editRuleDescription').value.trim() || null
       };

@@ -130,8 +130,12 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
             }
 
         case 'double_pair':
-            // 两对（如 [m,m,n,n]）
+            // 两对2连（MMNN格式，排除4连）
             return hasTwoPairs(symbols);
+        
+        case 'symmetric':
+            // 对称（前两个和后两个相同：AABB）
+            return hasSymmetric(symbols);
 
         default:
             console.warn(`[规则匹配] 未知匹配模式: ${pattern}`);
@@ -172,7 +176,7 @@ function hasNOfAKind(symbols: string[], n: number): boolean {
 }
 
 /**
- * 检查是否有两对
+ * 检查是否有两对2连（MMNN格式，排除4连）
  */
 function hasTwoPairs(symbols: string[]): boolean {
     const counts: { [key: string]: number } = {};
@@ -181,8 +185,19 @@ function hasTwoPairs(symbols: string[]): boolean {
         counts[symbol] = (counts[symbol] || 0) + 1;
     }
 
-    const pairs = Object.values(counts).filter(count => count >= 2);
-    return pairs.length >= 2;
+    // 必须恰好有2个不同符号，每个出现2次
+    const pairs = Object.values(counts).filter(count => count === 2);
+    return pairs.length === 2 && Object.keys(counts).length === 2;
+}
+
+/**
+ * 检查是否对称（前两个和后两个相同：AABB）
+ */
+function hasSymmetric(symbols: string[]): boolean {
+    if (symbols.length === 4) {
+        return symbols[0] === symbols[1] && symbols[2] === symbols[3];
+    }
+    return false;
 }
 
 /**

@@ -533,10 +533,17 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
     const pattern = rule.match_pattern;
     const count = rule.match_count;
 
-    if (pattern === 'consecutive') {
+    // 🔥 处理带数字前缀的模式（如 4-consecutive, 3-any）
+    let normalizedPattern = pattern;
+    if (pattern.includes('-')) {
+        const parts = pattern.split('-');
+        normalizedPattern = parts[1]; // 取 "consecutive" 或 "any"
+    }
+
+    if (normalizedPattern === 'consecutive') {
         // 严格连续匹配
         return hasConsecutiveMatch(symbols, count);
-    } else if (pattern === 'any') {
+    } else if (normalizedPattern === 'any') {
         // 任意位置匹配
         return hasAnyMatch(symbols, count);
     } else if (pattern === 'sequence') {
@@ -548,8 +555,11 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
         const requiredSymbols = JSON.parse(rule.required_symbols || '[]');
         return containsAll(symbols, requiredSymbols);
     } else if (pattern === 'double_pair') {
-        // 两对连续的相同符号
+        // 两对2连（MMNN格式，排除4连）
         return hasDoublePair(symbols);
+    } else if (pattern === 'symmetric') {
+        // 对称（前两个和后两个相同：AABB）
+        return hasSymmetric(symbols);
     }
 
     return false;
@@ -605,24 +615,30 @@ function containsAll(arr: string[], target: string[]): boolean {
 }
 
 /**
- * 检查是否有两对连续的符号
+ * 检查是否有两对2连（MMNN格式，排除4连）
  */
 function hasDoublePair(symbols: string[]): boolean {
-    // 检查是否有两对连续的相同符号
-    // 例如：[A,A,B,B] 或 [A,A,A,B] 等
-    let pairs = 0;
-    let i = 0;
+    const pairCounts: Record<string, number> = {};
+    symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
+    
+    // 必须恰好有2个不同符号，每个出现2次
+    const pairs = Object.values(pairCounts).filter(count => count === 2);
+    const matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
+    
+    console.log(`[至尊场] 两对2连检查: 符号计数=`, pairCounts, `2次对数=${pairs.length}, 匹配=${matched}`);
+    return matched;
+}
 
-    while (i < symbols.length - 1) {
-        if (symbols[i] === symbols[i + 1]) {
-            pairs++;
-            i += 2;  // 跳过这一对
-        } else {
-            i++;
-        }
+/**
+ * 检查是否对称（前两个和后两个相同：AABB）
+ */
+function hasSymmetric(symbols: string[]): boolean {
+    if (symbols.length === 4) {
+        const matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
+        console.log(`[至尊场] 对称检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
+        return matched;
     }
-
-    return pairs >= 2;
+    return false;
 }
 
 /**
