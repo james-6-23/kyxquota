@@ -531,29 +531,6 @@ export async function checkOverdueLoans(): Promise<number> {
                 if (deductResult && deductResult.success) {
                     autoDeductedAmount = actualDeductAmount;
                     console.log(`[坤呗] 逾期扣款成功 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 当前额度: $${(userQuota / 500000).toFixed(2)}, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}, 剩余: $${(Math.max(0, newQuotaAfterDeduct) / 500000).toFixed(2)}`);
-                    
-                    // 🔥 将逾期扣款记录到老虎机亏损统计中（影响亏损榜排名）
-                    try {
-                        const { slotQueries } = await import('../database');
-                        const { getTodayDate } = await import('./slot');
-                        const today = getTodayDate();
-                        
-                        // 记录为今日亏损
-                        slotQueries.upsertTodayStats.run(
-                            loan.linux_do_id, 0, 0, -actualDeductAmount, 0, 0, today,
-                            0, 0, -actualDeductAmount, 0, 0, now
-                        );
-                        
-                        // 记录为总亏损
-                        slotQueries.upsertTotalStats.run(
-                            loan.linux_do_id, 0, 0, -actualDeductAmount, 0, 0,
-                            0, 0, -actualDeductAmount, 0, 0, now
-                        );
-                        
-                        console.log(`[坤呗] 已记录逾期扣款到亏损统计 - 用户: ${loan.username}, 金额: $${(actualDeductAmount / 500000).toFixed(2)}`);
-                    } catch (error) {
-                        console.error(`[坤呗] 记录亏损统计失败:`, error);
-                    }
                 } else {
                     console.error(`[坤呗] 逾期扣除额度失败 - 用户: ${loan.username}, 错误: ${deductResult?.message || '未知错误'}`);
                 }
