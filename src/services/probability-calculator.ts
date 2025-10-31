@@ -176,6 +176,12 @@ function matchRuleByPriority(symbols: string[], schemeId: number): {
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
     
+    // 🔥 调试日志：仅在第一次调用时输出（避免刷屏）
+    if (Math.random() < 0.00001) {  // 0.001% 的概率输出
+        console.log(`[概率计算] 方案ID: ${schemeId}, 总规则: ${rules.length}, 激活规则: ${activeRules.length}`);
+        console.log(`[概率计算] 规则详情:`, rules.map(r => `${r.rule_name}(激活:${r.is_active})`).join(', '));
+    }
+    
     for (const rule of activeRules) {
         if (checkRuleMatch(symbols, rule)) {
             return {
@@ -209,6 +215,13 @@ export function calculateProbabilityMonteCarlo(
     if (!weightConfig) {
         throw new Error('权重配置不存在');
     }
+    
+    // 🔥 调试：检查规则数量
+    const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
+    const activeRules = allRules.filter(r => r.is_active);
+    console.log(`[蒙特卡洛] 开始计算 - 权重ID: ${weightConfigId}, 奖励ID: ${rewardSchemeId}`);
+    console.log(`[蒙特卡洛] 总规则: ${allRules.length}, 激活规则: ${activeRules.length}`);
+    console.log(`[蒙特卡洛] 规则详情:`, allRules.map(r => `${r.rule_name}(active:${r.is_active})`));
     
     // 初始化统计
     const stats: Record<string, { count: number; multiplier: number }> = {};
