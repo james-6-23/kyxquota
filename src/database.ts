@@ -746,7 +746,7 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
-    
+
     // 添加每日借款次数限制字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE kunbei_config ADD COLUMN max_daily_borrows INTEGER DEFAULT 3');

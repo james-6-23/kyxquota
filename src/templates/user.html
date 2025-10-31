@@ -6807,14 +6807,25 @@
         if (data.success) {
           const { symbols, winType, multiplier, winAmount, quotaAfter } = data.data;
           
-          // 播放转动动画
-          await animateSlotReels(symbols);
+          // 🔥 播放转动动画（使用统一的动画函数）
+          await playSpinAnimation(symbols);
           
-          // 更新用户额度
+          // 🔥 更新用户额度并同步到UI
           if (slotUserData) {
             slotUserData.quota = quotaAfter;
-            updateSlotUI();
           }
+          
+          // 🔥 更新老虎机界面余额显示
+          updateSlotUI();
+          
+          // 🔥 同步余额到主界面右上角（加油站页面的余额显示）
+          const quotaValueEl = document.getElementById('quotaValue');
+          if (quotaValueEl) {
+            quotaValueEl.textContent = `$${(quotaAfter / 500000).toFixed(2)}`;
+          }
+          
+          // 🔥 更新待发放统计和余额显示
+          setTimeout(() => loadPendingRewardsSummary(), 500);
           
           // 显示中奖结果
           const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
@@ -6829,8 +6840,13 @@
             showToast('未中奖', 'error');
           }
           
-          // 重新加载至尊令牌信息
+          // 🔥 重新加载至尊令牌信息
           await loadSupremeTokens();
+          
+          // 🔥 刷新排行榜（如果有变化）
+          if (winAmount !== 0) {
+            setTimeout(() => loadSidebarLeaderboard(), 1000);
+          }
         } else {
           showToast(data.message, 'error');
         }
@@ -6838,8 +6854,11 @@
         console.error('[至尊场] 旋转失败:', error);
         showToast('旋转失败，请重试', 'error');
       } finally {
-        button.disabled = false;
-        button.innerHTML = originalText;
+        // 🔥 恢复按钮状态
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalText;
+        }
       }
     }
     
