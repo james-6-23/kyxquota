@@ -336,11 +336,21 @@ export function calculateWin(symbols: string[], rewardMultiplier: number = 1.0, 
 }
 
 /**
- * 获取今日日期字符串
+ * 获取今日日期字符串（北京时间）
+ * 重置时间：北京时间每天00:00:00
  */
 export function getTodayDate(): string {
-    const now = new Date();
-    return now.toISOString().split('T')[0]!;
+    // 🔥 使用北京时区（Asia/Shanghai, UTC+8）
+    const beijingDateStr = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    
+    // 转换格式：'2025/10/31' → '2025-10-31'
+    const [year, month, day] = beijingDateStr.split('/');
+    return `${year}-${month}-${day}`;
 }
 
 /**

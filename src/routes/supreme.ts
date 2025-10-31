@@ -63,8 +63,9 @@ supreme.get('/tokens', requireAuth, async (c) => {
         const canSynthesize = tokens && tokens.fragments >= config.fragments_to_token && tokens.tokens < config.max_tokens_hold;
         const inSupremeMode = isInSupremeMode(session.linux_do_id!);
 
-        // 获取今日进入记录
-        const today = new Date().toISOString().split('T')[0];
+        // 获取今日进入记录（使用北京时间）
+        const { getTodayDate } = await import('../services/slot');
+        const today = getTodayDate();
         const todayEntry = supremeSlotQueries.getTodayEntry.get(session.linux_do_id!, today);
         const todayGrant = supremeSlotQueries.getTodayGrant.get(session.linux_do_id!, today);
 

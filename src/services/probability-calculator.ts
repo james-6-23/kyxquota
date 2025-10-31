@@ -33,7 +33,7 @@ function getCacheKey(weightConfigId: number, rewardSchemeId: number, method: 'fa
 /**
  * 从缓存获取结果
  */
-function getFromCache(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo'): ProbabilityResult | null {
+export function getFromCache(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo'): ProbabilityResult | null {
     const key = getCacheKey(weightConfigId, rewardSchemeId, method);
     const entry = probabilityCache.get(key);
 

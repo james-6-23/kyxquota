@@ -89,7 +89,7 @@ export function checkTokenExpiry(linuxDoId: string): void {
     if (tokens.tokens > 0 && tokens.tokens_expires_at) {
         const isExpired = tokens.tokens_expires_at < now;
         
-        console.log(`[至尊场] 检查令牌过期 - 用户: ${linuxDoId}, 令牌数: ${tokens.tokens}, 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString()}, 当前时间: ${new Date(now).toLocaleString()}, 是否过期: ${isExpired}`);
+        console.log(`[至尊场] 检查令牌过期 - 用户: ${linuxDoId}, 令牌数: ${tokens.tokens}, 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 当前时间: ${new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 是否过期: ${isExpired}`);
         
         if (isExpired) {
             // 令牌已过期，清零
@@ -102,7 +102,7 @@ export function checkTokenExpiry(linuxDoId: string): void {
                 tokens.created_at || now,
                 now
             );
-            console.log(`[至尊场] 用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString()}`);
+            console.log(`[至尊场] 用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
         }
     }
 }
@@ -160,7 +160,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     const validHours = config.token_valid_hours || 168;  // 默认7天
     const expiresAt = now + (validHours * 3600000);
     
-    console.log(`[至尊场] 发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString()}`);
+    console.log(`[至尊场] 发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
     
     supremeSlotQueries.upsertTokens.run(
         linuxDoId,
@@ -172,7 +172,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
         now
     );
 
-    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString()}`);
+    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
     
     return {
         success: true,
@@ -230,8 +230,9 @@ export function synthesizeSupremeToken(linuxDoId: string): { success: boolean; m
         };
     }
 
-    // 检查今日获得限制
-    const today = new Date().toISOString().split('T')[0];
+    // 检查今日获得限制（使用北京时间）
+    const { getTodayDate } = await import('./slot');
+    const today = getTodayDate();
     const todayGrant = supremeSlotQueries.getTodayGrant.get(linuxDoId, today);
     const tokensGrantedToday = todayGrant?.tokens_granted || 0;
 
@@ -307,8 +308,9 @@ export function enterSupremeMode(linuxDoId: string): { success: boolean; message
         };
     }
 
-    // 检查每日进入次数限制
-    const today = new Date().toISOString().split('T')[0];
+    // 检查每日进入次数限制（使用北京时间）
+    const { getTodayDate } = await import('./slot');
+    const today = getTodayDate();
     const todayEntry = supremeSlotQueries.getTodayEntry.get(linuxDoId, today);
     const entryCount = todayEntry?.entry_count || 0;
 
@@ -382,7 +384,8 @@ export function recordSupremeDrop(
     triggerWinType?: string
 ): void {
     const now = Date.now();
-    const today = new Date().toISOString().split('T')[0];
+    const { getTodayDate } = require('./slot');
+    const today = getTodayDate();
 
     supremeSlotQueries.insertDropRecord.run(
         linuxDoId,
@@ -655,7 +658,8 @@ export function recordSupremeGame(
     winAmount: number
 ): void {
     const now = Date.now();
-    const today = new Date().toISOString().split('T')[0];
+    const { getTodayDate } = require('./slot');
+    const today = getTodayDate();
 
     supremeSlotQueries.insertRecord.run(
         linuxDoId,

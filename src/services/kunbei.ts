@@ -253,12 +253,20 @@ export function borrowLoan(
     }
 
     // 🔥 检查是否有逾期借款（如果有逾期，今天不能借）
-    const today = new Date().toISOString().split('T')[0];
+    const { getTodayDate } = await import('./slot');
+    const today = getTodayDate();
     const overdueLoans = kunbeiQueries.getUserLoans.all(linuxDoId);
     const hasOverdueToday = overdueLoans.some(loan => {
         if (loan.status !== 'overdue') return false;
-        // 检查逾期发生日期（到期日）是否是今天
-        const dueDateStr = new Date(loan.due_at).toISOString().split('T')[0];
+        // 检查逾期发生日期（到期日）是否是今天（使用北京时间）
+        const dueDate = new Date(loan.due_at).toLocaleString('zh-CN', {
+            timeZone: 'Asia/Shanghai',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        const [year, month, day] = dueDate.split('/');
+        const dueDateStr = `${year}-${month}-${day}`;
         return dueDateStr === today;
     });
     
@@ -516,7 +524,7 @@ export async function checkOverdueLoans(): Promise<number> {
                     Math.max(0, newQuotaAfterDeduct),  // 🔥 确保不为负数
                     adminConfig.session,
                     adminConfig.new_api_user,
-                    loan.username,
+                    user.username,  // 🔥 使用最新的公益站用户名（与初级场/至尊场保持一致）
                     kyxUserResult.user.group || 'default'
                 );
                 
@@ -527,7 +535,8 @@ export async function checkOverdueLoans(): Promise<number> {
                     // 🔥 将逾期扣款记录到老虎机亏损统计中（影响亏损榜排名）
                     try {
                         const { slotQueries } = await import('../database');
-                        const today = new Date().toISOString().split('T')[0];
+                        const { getTodayDate } = await import('./slot');
+                        const today = getTodayDate();
                         
                         // 记录为今日亏损
                         slotQueries.upsertTodayStats.run(
@@ -688,7 +697,8 @@ export function forgiveLoan(loanId: number): { success: boolean; message: string
 
     // 更新统计（不计入还款金额，但计入还款次数）
     const stats = kunbeiQueries.getStats.get(loan.linux_do_id);
-    const today = new Date().toISOString().split('T')[0];
+    const { getTodayDate } = require('./slot');
+    const today = getTodayDate();
 
     kunbeiQueries.upsertStats.run(
         loan.linux_do_id, 0, 0, 0, 1, 0,

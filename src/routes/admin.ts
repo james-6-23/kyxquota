@@ -882,14 +882,18 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
         const userStats = slotQueries.getLeaderboard.all(100);
         const lossStats = slotQueries.getLossLeaderboard.all(100);
 
-        // 每日统计（最近7天）
+        // 每日统计（最近7天，使用北京时间）
         const dailyStats: Record<string, { count: number; bet: number; win: number; profit: number }> = {};
-        const today = new Date();
+        const { getTodayDate } = await import('../services/slot');
 
         for (let i = 0; i < 7; i++) {
-            const date = new Date(today);
-            date.setDate(date.getDate() - i);
-            const dateStr = date.toISOString().split('T')[0];
+            // 使用北京时间计算日期
+            const beijingNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' }));
+            beijingNow.setDate(beijingNow.getDate() - i);
+            const year = beijingNow.getFullYear();
+            const month = String(beijingNow.getMonth() + 1).padStart(2, '0');
+            const day = String(beijingNow.getDate()).padStart(2, '0');
+            const dateStr = `${year}-${month}-${day}`;
             dailyStats[dateStr] = { count: 0, bet: 0, win: 0, profit: 0 };
         }
 
@@ -2341,10 +2345,11 @@ app.get('/slot/tickets/drop-records', requireAdmin, async (c) => {
         const end = start + pageSize;
         const paginatedRecords = records.slice(start, end);
 
-        // 统计信息
+        // 统计信息（使用北京时间）
         const ticketDrops = records.filter(r => r.drop_type === 'ticket').length;
         const fragmentDrops = records.filter(r => r.drop_type === 'fragment').length;
-        const today = new Date().toISOString().split('T')[0];
+        const { getTodayDate } = await import('../services/slot');
+        const today = getTodayDate();
         const todayDrops = records.filter(r => r.date === today).length;
 
         return c.json({

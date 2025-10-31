@@ -161,8 +161,8 @@ slot.get('/config', requireAuth, async (c) => {
         // 获取奖励倍数配置
         const multipliers = getRewardMultipliers();
 
-        // 获取今日已购买次数
-        const today = new Date().toISOString().split('T')[0];
+        // 获取今日已购买次数（使用北京时间）
+        const today = getTodayDate();
         const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
         const boughtToday = todayBought?.total || 0;
 
@@ -338,8 +338,8 @@ slot.post('/spin', requireAuth, async (c) => {
                     }, 400);
                 }
             } else {
-                // 🎯 初级场：检查今日次数（包含购买的次数）
-                const today = new Date().toISOString().split('T')[0];
+                // 🎯 初级场：检查今日次数（包含购买的次数，使用北京时间）
+                const today = getTodayDate();
                 const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
                 const boughtToday = todayBought?.total || 0;
 
@@ -424,14 +424,14 @@ slot.post('/spin', requireAuth, async (c) => {
 
         // 🔥 使用配置方案进行中奖判定
         const { calculateWinByScheme } = await import('../services/reward-calculator');
-        const slotConfig = inAdvancedMode 
+        const slotConfig = inAdvancedMode
             ? advancedSlotQueries.getAdvancedConfig.get()
             : slotQueries.getConfig.get();
         const schemeId = slotConfig?.reward_scheme_id || 1;
-        
+
         // 计算中奖结果（使用配置方案，高级场使用严格连续判定）
         const result = calculateWinByScheme(symbols, schemeId, inAdvancedMode);
-        
+
         // ❌ 已移除场次倍率应用
         // 现在每个场次使用独立的奖励配置方案，不再基于初级场翻倍
         // if (inAdvancedMode) {
@@ -448,7 +448,7 @@ slot.post('/spin', requireAuth, async (c) => {
             console.log(`[坤呗Buff] 应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
             result.multiplier = result.multiplier * kunbeiBuff;
         }
-        
+
         // 🔥 检查是否需要封禁（3个及以上律师函）
         const shouldBan = result.punishmentCount && result.punishmentCount >= 3;
         if (shouldBan && result.banHours) {
@@ -608,9 +608,9 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🔥 保存游戏记录（记录 winType，兼容配置方案）
         // 优先使用session中的LinuxDo用户名（最新），其次使用数据库中的
         const linuxDoUsername = session.username || user.linux_do_username || null;
-        
+
         console.log(`[中奖判定] 符号: ${symbols.join(',')}, 规则: ${result.ruleName || result.winType}, 倍率: ${result.multiplier}`);
-        
+
         saveGameRecord(
             session.linux_do_id,
             user.username,
@@ -646,7 +646,7 @@ slot.post('/spin', requireAuth, async (c) => {
         const { handleDrops } = await import('../services/drop-config');
         const slotMode = inAdvancedMode ? 'advanced' : 'normal';
         const dropResult = await handleDrops(session.linux_do_id, user.username, slotMode, result.ruleName);
-        
+
         if (dropResult.dropped) {
             ticketDropped = true;
             // 记录第一个成功掉落的物品（用于提示）
@@ -656,7 +656,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 dropCount = firstDrop.count;
             }
         }
-        
+
         // ❌ 旧的硬编码掉落逻辑已被上面的新系统替代
         // 保留注释以供参考
         // if (!inAdvancedMode) {
@@ -664,11 +664,11 @@ slot.post('/spin', requireAuth, async (c) => {
         //         addTicket(session.linux_do_id, 1);
         //     }
         // }
-        
+
         // 高级场中掉落至尊令牌/碎片（现在也由新系统处理）
         else if (inAdvancedMode) {
             const advancedConfig = getAdvancedSlotConfig();
-            
+
             // 极低概率直接掉落至尊令牌
             if (advancedConfig.supreme_token_drop_rate && Math.random() < advancedConfig.supreme_token_drop_rate) {
                 // TODO: 需要实现 addSupremeToken 函数
@@ -680,9 +680,9 @@ slot.post('/spin', requireAuth, async (c) => {
                 console.log(`[至尊掉落] 💎 稀有掉落！用户 ${user.username} 获得1个至尊令牌`);
             }
             // 低概率掉落至尊碎片（四连/三连）
-            else if ((result.winType === WinType.QUAD || result.winType === WinType.TRIPLE) && 
-                     advancedConfig.supreme_fragment_drop_rate && 
-                     Math.random() < advancedConfig.supreme_fragment_drop_rate) {
+            else if ((result.winType === WinType.QUAD || result.winType === WinType.TRIPLE) &&
+                advancedConfig.supreme_fragment_drop_rate &&
+                Math.random() < advancedConfig.supreme_fragment_drop_rate) {
                 addSupremeFragment(session.linux_do_id, 1);
                 recordSupremeDrop(session.linux_do_id, user.username, 'fragment', 1, 'advanced_slot', result.winType);
                 ticketDropped = true;
@@ -696,8 +696,8 @@ slot.post('/spin', requireAuth, async (c) => {
         const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
         const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
 
-        // 🎯 关键修复：获取今日已购买次数
-        const todayForSpinResult = new Date().toISOString().split('T')[0];
+        // 🎯 关键修复：获取今日已购买次数（使用北京时间）
+        const todayForSpinResult = getTodayDate();
         const todayBoughtAfter = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, todayForSpinResult);
         const boughtTodayAfter = todayBoughtAfter?.total || 0;
 
@@ -1186,8 +1186,8 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             }, 400);
         }
 
-        // 检查今日已购买次数
-        const today = new Date().toISOString().split('T')[0];
+        // 检查今日已购买次数（使用北京时间）
+        const today = getTodayDate();
         const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
         const totalBoughtToday = todayBought?.total || 0;
 
@@ -1279,8 +1279,8 @@ slot.get('/tickets', requireAuth, async (c) => {
         const tickets = getUserTickets(session.linux_do_id);
         const config = getAdvancedSlotConfig();
 
-        // 获取今日进入次数
-        const today = new Date().toISOString().split('T')[0];
+        // 获取今日进入次数（使用北京时间）
+        const today = getTodayDate();
         const todayEntry = advancedSlotQueries.getTodayEntry.get(session.linux_do_id, today);
         const todayEntryCount = todayEntry?.entry_count || 0;
 
@@ -1416,44 +1416,44 @@ slot.get('/advanced/status', requireAuth, async (c) => {
 slot.get('/rules', requireAuth, async (c) => {
     try {
         const session = c.get('session') as SessionData;
-        
+
         // 检查是否在高级场
         const inAdvancedMode = isInAdvancedMode(session.linux_do_id!);
-        
+
         // 获取配置
-        const slotConfig = inAdvancedMode 
+        const slotConfig = inAdvancedMode
             ? advancedSlotQueries.getAdvancedConfig.get()
             : slotQueries.getConfig.get();
-        
+
         const schemeId = slotConfig?.reward_scheme_id || 1;
         const weightConfigId = slotConfig?.weight_config_id || 1;
-        
+
         // 获取规则和惩罚
         const { rewardConfigQueries, weightConfigQueries } = await import('../database');
         const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const weightConfig = weightConfigQueries.getById.get(weightConfigId);
-        
+
         // 🔥 用户查看时只读取缓存，不进行计算（节省资源）
         const { getFromCache } = await import('../services/probability-calculator');
         const probabilityData = getFromCache(weightConfigId, schemeId, 'fast');
-        
+
         // 如果缓存不存在，返回null（管理员需要先在后台计算）
         if (!probabilityData) {
             console.log('[用户规则] 概率数据未缓存，需要管理员在后台先计算');
         }
-        
+
         // 计算权重总和
-        const totalWeight = weightConfig 
-            ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j + 
-               weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + weightConfig.weight_lsh)
+        const totalWeight = weightConfig
+            ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
+                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + weightConfig.weight_lsh)
             : 825;
-        
+
         // 计算律师函概率
         const lshWeight = weightConfig?.weight_lsh || 25;
         const lshSingleProb = lshWeight / totalWeight;
         const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
-        
+
         // 🔥 将概率数据附加到规则上
         const rulesWithProb = rules.filter(r => r.is_active).map(r => {
             const probData = probabilityData?.rules.find(p => p.ruleName === r.rule_name);
@@ -1462,7 +1462,7 @@ slot.get('/rules', requireAuth, async (c) => {
                 probability: probData ? probData.probability.toFixed(2) + '%' : '计算中'
             };
         });
-        
+
         const punishmentsWithProb = punishments.filter(p => p.is_active).map(p => {
             const probData = probabilityData?.punishments.find(pr => pr.ruleName === `律师函×${p.lsh_count}`);
             return {
@@ -1470,7 +1470,7 @@ slot.get('/rules', requireAuth, async (c) => {
                 probability: probData ? probData.probability.toFixed(2) + '%' : lshAtLeastOneProb.toFixed(2) + '%'
             };
         });
-        
+
         return c.json({
             success: true,
             data: {
