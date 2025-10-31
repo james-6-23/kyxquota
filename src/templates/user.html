@@ -3879,24 +3879,33 @@
           loadSupremeTokens(true)       // 💎 加载至尊令牌信息，跳过UI更新
         ]);
         
-        // 4. 💎 在数据加载完成后，立即设置正确的容器显示状态（在初始化前）
+        // 4. 💎 在数据加载完成后，立即设置正确的容器和标题显示状态（在初始化前）
         // 这样可以避免闪现其他场次的内容
         const normalContainer = document.getElementById('normalModeContainer');
         const advancedContainer = document.getElementById('advancedModeContainer');
         const supremeContainer = document.getElementById('supremeModeContainer');
+        const normalModeTitle = document.getElementById('normalModeTitle');
+        const advancedModeTitle = document.getElementById('advancedModeTitle');
+        const supremeModeTitle = document.getElementById('supremeModeTitle');
         
-        // 先全部隐藏
+        // 先全部隐藏容器和标题
         if (normalContainer) normalContainer.classList.add('hidden');
         if (advancedContainer) advancedContainer.classList.add('hidden');
         if (supremeContainer) supremeContainer.classList.add('hidden');
+        if (normalModeTitle) normalModeTitle.classList.add('hidden');
+        if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
+        if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
         
-        // 根据状态只显示对应容器
-        if (isInSupremeMode && supremeContainer) {
+        // 根据状态只显示对应容器和标题
+        if (isInSupremeMode && supremeContainer && supremeModeTitle) {
           supremeContainer.classList.remove('hidden');
-        } else if (isInAdvancedMode && advancedContainer) {
+          supremeModeTitle.classList.remove('hidden');
+        } else if (isInAdvancedMode && advancedContainer && advancedModeTitle) {
           advancedContainer.classList.remove('hidden');
-        } else if (normalContainer) {
+          advancedModeTitle.classList.remove('hidden');
+        } else if (normalContainer && normalModeTitle) {
           normalContainer.classList.remove('hidden');
+          normalModeTitle.classList.remove('hidden');
         }
         
         // 5. 初始化UI（此时已经知道是否在高级场/至尊场，且容器已正确显示）
