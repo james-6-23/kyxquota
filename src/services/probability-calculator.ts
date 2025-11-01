@@ -4,6 +4,7 @@
  */
 
 import { rewardConfigQueries, weightConfigQueries } from '../database';
+import logger from '../utils/logger';
 
 // 符号列表
 const SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
@@ -43,7 +44,7 @@ export function getFromCache(weightConfigId: number, rewardSchemeId: number, met
     }
 
     // 🔥 永久缓存：不再检查过期时间
-    console.log(`[缓存] 命中: ${key}`);
+    logger.info('缓存', `命中: ${key}`);
     return entry.result;
 }
 
@@ -67,7 +68,7 @@ export function cleanExpiredCache(): void {
     // 缓存会在配置变更时主动更新，无需定期清理
     const cacheSize = probabilityCache.size;
     const memoryUsage = (JSON.stringify([...probabilityCache.entries()]).length / 1024 / 1024).toFixed(2);
-    console.log(`[缓存状态] 当前缓存 ${cacheSize} 个方案，内存占用约 ${memoryUsage}MB`);
+    logger.info('缓存状态', `当前缓存 ${cacheSize} 个方案，内存占用约 ${memoryUsage}MB`);
 }
 
 /**
@@ -545,7 +546,7 @@ export function calculateProbabilityFast(
 
     // 🔥 一次性输出所有示例（压缩到1行）
     if (debugResults.length > 0) {
-        console.log(`[快速估算示例] ${debugResults.join(' | ')}`);
+        logger.info('快速估算示例', debugResults.join(' | '));
     }
 
     let totalExpectedValue = 0;
@@ -621,7 +622,7 @@ function binomialCoefficient(n: number, k: number): number {
  * 遍历所有使用该方案的场次，预先计算并缓存概率
  */
 export async function recalculateProbabilityForScheme(schemeId: number): Promise<void> {
-    console.log(`[概率预计算] 🔄 方案${schemeId} 开始计算...`);
+    logger.info('概率预计算', `🔄 方案${schemeId} 开始计算...`);
 
     try {
         const { weightConfigQueries, slotQueries, advancedSlotQueries, supremeSlotQueries } = await import('../database');
@@ -654,16 +655,16 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
         for (const weightConfigId of weightConfigsToCalculate) {
             try {
                 const result = calculateProbabilityFast(weightConfigId, schemeId);
-                console.log(`[概率预计算] ✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}%`);
+                logger.info('概率预计算', `✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}%`);
                 successCount++;
             } catch (error: any) {
-                console.error(`[概率预计算] ❌ 权重${weightConfigId} 失败:`, error.message);
+                logger.error('概率预计算', `❌ 权重${weightConfigId} 失败: ${error.message}`);
             }
         }
 
-        console.log(`[概率预计算] 🎉 完成${successCount}/${weightConfigsToCalculate.size}`);
+        logger.info('概率预计算', `🎉 完成${successCount}/${weightConfigsToCalculate.size}`);
     } catch (error: any) {
-        console.error(`[概率预计算] 失败:`, error);
+        logger.error('概率预计算', `失败: ${error.message}`);
         throw error;
     }
 }

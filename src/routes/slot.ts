@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { userQueries, slotQueries, adminQueries, pendingRewardQueries, advancedSlotQueries } from '../database';
 import type { SessionData } from '../types';
 import { getCookie, getSession } from '../utils';
+import logger from '../utils/logger';
 import {
     getSlotConfig,
     getUserTodaySpins,
@@ -1441,7 +1442,7 @@ slot.get('/rules', requireAuth, async (c) => {
 
         // 如果缓存不存在，返回null（管理员需要先在后台计算）
         if (!probabilityData) {
-            console.log(`[用户规则] 概率数据未缓存 (权重配置ID:${weightConfigId}, 奖励方案ID:${schemeId})，需要管理员在后台保存配置方案以自动计算并缓存（缓存为永久有效）`);
+            logger.warn('用户规则', `概率数据未缓存 (权重配置ID:${weightConfigId}, 奖励方案ID:${schemeId})，需要管理员在后台保存配置方案以自动计算并缓存（缓存为永久有效）`);
         }
 
         // 计算权重总和

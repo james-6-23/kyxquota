@@ -18,6 +18,7 @@ import { searchAndFindExactUser, pushKeysToGroup } from '../services/kyx-api';
 import { validateModelScopeKey } from '../services/keys';
 import { manualProcessRewards } from '../services/reward-processor';
 import { checkOverdueLoans } from '../services/kunbei';
+import logger from '../utils/logger';
 import type { DonateRecord } from '../types';
 
 const app = new Hono();
@@ -535,9 +536,9 @@ app.post('/slot/config/schemes', requireAdmin, async (c) => {
         try {
             const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
             await recalculateProbabilityForScheme(reward_scheme_id);
-            console.log(`[初级场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+            logger.info('初级场', `✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
         } catch (error: any) {
-            console.warn('[初级场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+            logger.warn('初级场', `⚠️ 概率重算失败（不影响保存）: ${error.message}`);
         }
 
         return c.json({
@@ -742,10 +743,10 @@ app.post('/slot/weights', requireAdmin, async (c) => {
             if (config && config.reward_scheme_id) {
                 const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
                 await recalculateProbabilityForScheme(config.reward_scheme_id);
-                console.log(`[权重配置] ✅ 已自动重新计算方案 ${config.reward_scheme_id} 的概率并缓存`);
+                logger.info('权重配置', `✅ 已自动重新计算方案 ${config.reward_scheme_id} 的概率并缓存`);
             }
         } catch (error: any) {
-            console.warn('[权重配置] ⚠️ 概率重算失败（不影响保存）:', error.message);
+            logger.warn('权重配置', `⚠️ 概率重算失败（不影响保存）: ${error.message}`);
         }
 
         return c.json({
@@ -2141,9 +2142,9 @@ app.post('/slot/advanced/config/schemes', requireAdmin, async (c) => {
         try {
             const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
             await recalculateProbabilityForScheme(reward_scheme_id);
-            console.log(`[高级场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+            logger.info('高级场', `✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
         } catch (error: any) {
-            console.warn('[高级场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+            logger.warn('高级场', `⚠️ 概率重算失败（不影响保存）: ${error.message}`);
         }
 
         return c.json({
@@ -3115,7 +3116,7 @@ app.post('/rewards/rules', requireAdmin, async (c) => {
             const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
             await recalculateProbabilityForScheme(scheme_id);
         } catch (error: any) {
-            console.warn('[奖励配置] 概率重算失败（不影响保存）:', error.message);
+            logger.warn('奖励配置', `概率重算失败（不影响保存）: ${error.message}`);
         }
 
         return c.json({ success: true, message: '规则已添加' });
@@ -3146,10 +3147,10 @@ app.put('/rewards/rules/:id', requireAdmin, async (c) => {
             if (rule) {
                 const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
                 await recalculateProbabilityForScheme(rule.scheme_id);
-                console.log(`[奖励配置] ✅ 已自动重新计算方案 ${rule.scheme_id} 的概率`);
+                logger.info('奖励配置', `✅ 已自动重新计算方案 ${rule.scheme_id} 的概率`);
             }
         } catch (error: any) {
-            console.warn('[奖励配置] 概率重算失败（不影响保存）:', error.message);
+            logger.warn('奖励配置', `概率重算失败（不影响保存）: ${error.message}`);
         }
 
         return c.json({ success: true, message: '规则已更新' });
@@ -3296,9 +3297,9 @@ app.post('/supreme/config', requireAdmin, async (c) => {
             try {
                 const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
                 await recalculateProbabilityForScheme(reward_scheme_id);
-                console.log(`[至尊场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+                logger.info('至尊场', `✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
             } catch (error: any) {
-                console.warn('[至尊场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+                logger.warn('至尊场', `⚠️ 概率重算失败（不影响保存）: ${error.message}`);
             }
         }
 
