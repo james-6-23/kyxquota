@@ -1,4 +1,6 @@
-import { slotQueries, advancedSlotQueries } from '../database';
+import { slotQueries } from '../database';
+import logger from '../utils/logger';
+import { getNormalSlotWeights, getAdvancedSlotWeights } from './scheme-loader';
 
 // 符号定义
 const SYMBOLS = {
@@ -25,7 +27,6 @@ const DEFAULT_SYMBOL_WEIGHTS: Record<string, number> = {
 export function getSymbolWeights(isAdvancedMode: boolean = false): Record<string, number> {
     try {
         // 🔥 优先使用配置方案，兼容旧逻辑
-        const { getNormalSlotWeights, getAdvancedSlotWeights } = require('./scheme-loader');
         const weights = isAdvancedMode ? getAdvancedSlotWeights() : getNormalSlotWeights();
 
         if (weights) {
@@ -347,7 +348,7 @@ export function getTodayDate(): string {
         month: '2-digit',
         day: '2-digit'
     });
-    
+
     // 转换格式：'2025/10/31' → '2025-10-31'
     const [year, month, day] = beijingDateStr.split('/');
     return `${year}-${month}-${day}`;
@@ -540,7 +541,7 @@ export function saveGameRecord(
         today
     );
 
-    console.log(`[记录保存] 模式: ${slotMode}, 用户: ${username}, 倍率: ${multiplier}`);
+    logger.info('记录保存', `模式: ${slotMode}, 用户: ${username}, 倍率: ${multiplier}`);
 }
 
 /**
@@ -583,7 +584,7 @@ export function updateUserTotalStats(
 ) {
     const now = Date.now();
 
-    console.log('[更新统计] 用户:', username, 'Avatar URL:', avatarUrl);
+    logger.info('更新统计', `用户: ${username}, Avatar URL: ${avatarUrl}`);
 
     // 获取现有统计
     const currentStats = slotQueries.getUserStats.get(linuxDoId);

@@ -44,7 +44,7 @@ export function getFromCache(weightConfigId: number, rewardSchemeId: number, met
     }
 
     // 🔥 永久缓存：不再检查过期时间
-    logger.info('缓存', `命中: ${key}`);
+    logger.debug('缓存', `命中: ${key}`);
     return entry.result;
 }
 

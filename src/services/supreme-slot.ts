@@ -4,6 +4,7 @@
 
 import { supremeSlotQueries, weightConfigQueries, rewardConfigQueries } from '../database';
 import type { SupremeSlotConfig } from '../types';
+import logger from '../utils/logger';
 
 /**
  * 获取用户至尊令牌信息
@@ -58,7 +59,7 @@ export function getSupremeSlotConfig(): any {
             updated_at: Date.now()
         };
     }
-    
+
     // 🔥 确保关键字段有默认值
     const safeConfig = {
         ...config,
@@ -69,8 +70,8 @@ export function getSupremeSlotConfig(): any {
         daily_entry_limit: config.daily_entry_limit || 3,
         daily_token_grant_limit: config.daily_token_grant_limit || 1
     };
-    
-    console.log(`[至尊场] 配置加载成功 - token_valid_hours: ${safeConfig.token_valid_hours}, max_tokens_hold: ${safeConfig.max_tokens_hold}`);
+
+    logger.debug('至尊场', `配置加载成功 - token_valid_hours: ${safeConfig.token_valid_hours}, max_tokens_hold: ${safeConfig.max_tokens_hold}`);
 
     return safeConfig;
 }
@@ -88,9 +89,9 @@ export function checkTokenExpiry(linuxDoId: string): void {
     // 如果没有设置过期时间(tokens_expires_at为null)，则认为永不过期
     if (tokens.tokens > 0 && tokens.tokens_expires_at) {
         const isExpired = tokens.tokens_expires_at < now;
-        
-        console.log(`[至尊场] 检查令牌过期 - 用户: ${linuxDoId}, 令牌数: ${tokens.tokens}, 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 当前时间: ${new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 是否过期: ${isExpired}`);
-        
+
+        logger.debug('至尊场', `检查令牌过期 - 用户: ${linuxDoId}, 令牌数: ${tokens.tokens}, 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 当前时间: ${new Date(now).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}, 是否过期: ${isExpired}`);
+
         if (isExpired) {
             // 令牌已过期，清零
             supremeSlotQueries.upsertTokens.run(
@@ -141,27 +142,27 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     const tokens = getSupremeTokens(linuxDoId);
     const config = getSupremeSlotConfig();
     const now = Date.now();
-    
+
     // 检查持有上限
     const currentTokens = tokens?.tokens || 0;
     const maxHold = config.max_tokens_hold || 3;
-    
+
     if (currentTokens >= maxHold) {
         return {
             success: false,
             message: `用户已达令牌持有上限（${maxHold}个）`
         };
     }
-    
+
     // 计算实际可发放数量（不超过持有上限）
     const actualGrant = Math.min(count, maxHold - currentTokens);
-    
+
     // 🔥 计算过期时间（确保有足够长的有效期）
     const validHours = config.token_valid_hours || 168;  // 默认7天
     const expiresAt = now + (validHours * 3600000);
-    
+
     console.log(`[至尊场] 发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
-    
+
     supremeSlotQueries.upsertTokens.run(
         linuxDoId,
         currentTokens + actualGrant,
@@ -173,7 +174,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     );
 
     console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
-    
+
     return {
         success: true,
         granted: actualGrant,
@@ -573,18 +574,18 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
  */
 function hasConsecutiveMatch(symbols: string[], count: number): boolean {
     console.log(`[至尊场] 检查连续匹配 - 符号: [${symbols.join(', ')}], 需要数量: ${count}`);
-    
+
     for (let i = 0; i <= symbols.length - count; i++) {
         const slice = symbols.slice(i, i + count);
         const isMatch = slice.every(s => s === slice[0]);
         console.log(`[至尊场] 位置${i}: [${slice.join(', ')}] - ${isMatch ? '✅匹配' : '❌不匹配'}`);
-        
+
         if (isMatch) {
             console.log(`[至尊场] ✅ 找到${count}连: ${slice[0]}`);
             return true;
         }
     }
-    
+
     console.log(`[至尊场] ❌ 未找到${count}连`);
     return false;
 }
@@ -623,11 +624,11 @@ function containsAll(arr: string[], target: string[]): boolean {
 function hasDoublePair(symbols: string[]): boolean {
     const pairCounts: Record<string, number> = {};
     symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
-    
+
     // 必须恰好有2个不同符号，每个出现2次
     const pairs = Object.values(pairCounts).filter(count => count === 2);
     const matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
-    
+
     console.log(`[至尊场] 两对2连检查: 符号计数=`, pairCounts, `2次对数=${pairs.length}, 匹配=${matched}`);
     return matched;
 }

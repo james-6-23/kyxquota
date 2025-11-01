@@ -3,6 +3,7 @@ import { kyxApiLimiter } from './rate-limiter';
 import { userCache } from './user-cache';
 import { searchCache } from './search-cache';
 import { userQueries } from '../database';
+import logger from '../utils/logger';
 
 export interface KyxUser {
     id: number;
@@ -243,7 +244,7 @@ export async function getKyxUserById(
     if (!skipCache) {
         const cachedUser = userCache.get(userId);
         if (cachedUser) {
-            console.log(`${context} - ✨ 命中缓存`);
+            logger.debug('查询用户', `用户ID: ${userId} - ✨ 命中缓存`);
             return { success: true, user: cachedUser };
         }
     }
@@ -251,8 +252,11 @@ export async function getKyxUserById(
     return await kyxApiLimiter.execute(async () => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                if (attempt > 1) {
-                    console.log(`${context} - 第${attempt}次尝试`);
+                // 第1次尝试是正常情况，改为DEBUG；第2+次说明有重试，保留INFO
+                if (attempt === 1) {
+                    logger.debug('查询用户', `用户ID: ${userId} - 第1次尝试`);
+                } else {
+                    logger.info('查询用户', `用户ID: ${userId} - 第${attempt}次尝试（重试中）`);
                 }
 
                 const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/${userId}`, {
@@ -267,7 +271,7 @@ export async function getKyxUserById(
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
                     const waitTime = Math.min(1000 * attempt, 3000); // 1s, 2s, 3s（快速重试）
-                    console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
+                    logger.warn('查询用户', `用户ID: ${userId} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -283,7 +287,7 @@ export async function getKyxUserById(
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`${context} - HTTP错误: ${response.status}, 响应: ${errorText}`);
+                    logger.error('查询用户', `用户ID: ${userId} - HTTP错误: ${response.status}, 响应: ${errorText}`);
 
                     if (attempt < maxRetries) {
                         const backoffTime = 1000 * Math.pow(2, attempt - 1);
@@ -310,14 +314,14 @@ export async function getKyxUserById(
 
                 // 成功后存入缓存
                 userCache.set(userId, result.data);
-                console.log(`${context} - ✅ 查询成功并缓存`);
+                logger.info('查询用户', `用户ID: ${userId} - ✅ 查询成功并缓存`);
 
                 return { success: true, user: result.data };
             } catch (error: any) {
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
                 const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
 
-                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+                logger.error('查询用户', `用户ID: ${userId} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
 
                 if (attempt === maxRetries) {
                     return {
@@ -354,7 +358,12 @@ export async function updateKyxUserQuota(
     return await kyxApiLimiter.execute(async () => {
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
-                console.log(`${context} - 第${attempt}次尝试`);
+                // 第1次尝试是正常情况，改为DEBUG；第2+次说明有重试，保留INFO
+                if (attempt === 1) {
+                    logger.debug('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - 第1次尝试`);
+                } else {
+                    logger.info('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - 第${attempt}次尝试（重试中）`);
+                }
 
                 const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/`, {
                     method: 'PUT',
@@ -374,13 +383,13 @@ export async function updateKyxUserQuota(
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`${context} - HTTP错误: ${response.status} ${response.statusText}, 响应: ${errorText}`);
+                    logger.error('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - HTTP错误: ${response.status} ${response.statusText}, 响应: ${errorText}`);
 
                     // 特殊处理 429 错误
                     if (response.status === 429) {
                         kyxApiLimiter.recordRateLimit();
                         const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（快速重试）
-                        console.warn(`${context} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
+                        logger.warn('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
 
                         if (attempt < maxRetries) {
                             await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -409,10 +418,15 @@ export async function updateKyxUserQuota(
                 if (result.success) {
                     // 更新成功后，同步更新缓存
                     userCache.updateQuota(userId, newQuota);
-                    console.log(`${context} - ✅ 成功更新额度并同步缓存`);
+                    // 第1次尝试成功是正常情况，改为DEBUG；重试后成功保留INFO
+                    if (attempt === 1) {
+                        logger.debug('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - ✅ 成功更新额度并同步缓存`);
+                    } else {
+                        logger.info('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - ✅ 第${attempt}次重试成功，已更新额度并同步缓存`);
+                    }
                     return result;
                 } else {
-                    console.error(`${context} - 返回success=false: ${result.message || '无错误信息'}`);
+                    logger.error('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - 返回success=false: ${result.message || '无错误信息'}`);
 
                     if (attempt === maxRetries) {
                         return result;
@@ -426,7 +440,7 @@ export async function updateKyxUserQuota(
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
                 const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
 
-                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+                logger.error('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
 
                 if (attempt === maxRetries) {
                     return {

@@ -289,7 +289,7 @@ slot.post('/spin', requireAuth, async (c) => {
 
             betAmount = advancedBetAmount;
             calculationBetAmount = advancedBetAmount;
-            console.log(`[高级场] 使用自定义投注金额: $${(advancedBetAmount / 500000).toFixed(2)}`);
+            logger.info('高级场', `使用自定义投注金额: $${(advancedBetAmount / 500000).toFixed(2)}`);
         }
 
         if (useFreeSpinn) {
@@ -330,7 +330,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const newTodayBet = todayBetTotal + betAmount;
                 const newTodayBetAmount = newTodayBet / 500000;
 
-                console.log(`[高级场检查] 用户: ${user.username}, 今日已投注: $${todayBetAmount.toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${newTodayBetAmount.toFixed(2)}, 限额: $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}`);
+                logger.info('高级场检查', `用户: ${user.username}, 今日已投注: $${todayBetAmount.toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${newTodayBetAmount.toFixed(2)}, 限额: $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}`);
 
                 if (newTodayBet > advancedConfig.daily_bet_limit) {
                     const remaining = (advancedConfig.daily_bet_limit - todayBetTotal) / 500000;
@@ -389,7 +389,7 @@ slot.post('/spin', requireAuth, async (c) => {
             // 扣除投注额度（计算新额度 = 当前额度 - 投注金额）
             const newQuotaAfterBet = currentQuota - betAmount;
 
-            console.log(`[老虎机] 准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+            logger.info('老虎机', `准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
 
             const deductResult = await updateKyxUserQuota(
                 user.kyx_user_id,
@@ -401,14 +401,14 @@ slot.post('/spin', requireAuth, async (c) => {
             );
 
             if (!deductResult || !deductResult.success) {
-                console.error(`[老虎机] ❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+                logger.error('老虎机', `❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
                 return c.json({
                     success: false,
                     message: `扣除投注额度失败: ${deductResult?.message || '未知错误'}，请稍后重试`
                 }, 500);
             }
 
-            console.log(`[老虎机] ✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
+            logger.info('老虎机', `✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
         }
 
         // 🔥 获取高级场配置（用于倍率）
@@ -473,12 +473,12 @@ slot.post('/spin', requireAuth, async (c) => {
             // 正常中奖 - 使用 calculationBetAmount 计算奖金
             winAmount = Math.floor(calculationBetAmount * result.multiplier);
 
-            console.log(`[老虎机] 💰 中奖 - 用户: ${user.username}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
+            logger.info('老虎机', `💰 中奖 - 用户: ${user.username}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
 
             // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
             if (!currentKyxUser.success || !currentKyxUser.user) {
-                console.error(`[老虎机] ❌ 中奖后获取用户信息失败 - 用户: ${user.username}`);
+                logger.error('老虎机', `❌ 中奖后获取用户信息失败 - 用户: ${user.username}`);
                 quotaUpdateFailed = true;
                 quotaUpdateError = '获取用户信息失败，请联系管理员补发奖金';
             } else {
@@ -611,7 +611,7 @@ slot.post('/spin', requireAuth, async (c) => {
         // 优先使用session中的LinuxDo用户名（最新），其次使用数据库中的
         const linuxDoUsername = session.username || user.linux_do_username || null;
 
-        console.log(`[中奖判定] 符号: ${symbols.join(',')}, 规则: ${result.ruleName || result.winType}, 倍率: ${result.multiplier}`);
+        logger.info('中奖判定', `符号: ${symbols.join(',')}, 规则: ${result.ruleName || result.winType}, 倍率: ${result.multiplier}`);
 
         saveGameRecord(
             session.linux_do_id,
@@ -709,11 +709,7 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🎯 关键修复：计算剩余次数时必须包含购买次数！
         const remainingSpinsAfter = Math.max(0, config.max_daily_spins + boughtTodayAfter - todaySpinsAfter);
 
-        console.log(`[Spin结果] 📊 剩余次数计算 - 用户: ${user.username}`);
-        console.log(`[Spin结果]    基础次数: ${config.max_daily_spins}`);
-        console.log(`[Spin结果]    购买次数: ${boughtTodayAfter}`);
-        console.log(`[Spin结果]    已玩次数: ${todaySpinsAfter}`);
-        console.log(`[Spin结果]    计算公式: ${config.max_daily_spins} + ${boughtTodayAfter} - ${todaySpinsAfter} = ${remainingSpinsAfter}`);
+        logger.debug('Spin结果', `📊 剩余次数计算 - 用户: ${user.username}, 基础: ${config.max_daily_spins}, 购买: ${boughtTodayAfter}, 已玩: ${todaySpinsAfter}, 剩余: ${remainingSpinsAfter}`);
 
         // 构造响应消息
         let message = '';
@@ -861,15 +857,15 @@ slot.get('/leaderboard', requireAuth, async (c) => {
         const leaderboard = getLeaderboard(20); // 盈利榜也取20名（侧边栏）
         const lossLeaderboard = getLossLeaderboard(20); // 亏损榜取20名
 
-        // 调试：检查排行榜数据
-        console.log('[盈利榜] 前3名数据:', leaderboard.slice(0, 3).map(u => ({
+        // 调试：检查排行榜数据（DEBUG级别，默认不显示）
+        logger.debug('盈利榜', `前3名数据: ${JSON.stringify(leaderboard.slice(0, 3).map(u => ({
             username: u.username,
             profit: (u.total_win - u.total_bet) / 500000
-        })));
-        console.log('[亏损榜] 前3名数据:', lossLeaderboard.slice(0, 3).map(u => ({
+        })))}`);
+        logger.debug('亏损榜', `前3名数据: ${JSON.stringify(lossLeaderboard.slice(0, 3).map(u => ({
             username: u.username,
             profit: (u.total_win - u.total_bet) / 500000
-        })));
+        })))}`);
 
         // 获取用户自己的排名和统计
         const userStats = getUserTotalStats(session.linux_do_id);
