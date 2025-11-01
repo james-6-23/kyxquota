@@ -21,7 +21,8 @@ interface CacheEntry {
 }
 
 const probabilityCache = new Map<string, CacheEntry>();
-const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存有效期
+// 🔥 改为永久缓存：不再设置过期时间，只在配置变更时主动更新
+// const CACHE_TTL = 30 * 60 * 1000; // 已废弃，改为永久缓存
 
 /**
  * 生成缓存键
@@ -31,7 +32,7 @@ function getCacheKey(weightConfigId: number, rewardSchemeId: number, method: 'fa
 }
 
 /**
- * 从缓存获取结果
+ * 从缓存获取结果（永久缓存，不检查过期时间）
  */
 export function getFromCache(weightConfigId: number, rewardSchemeId: number, method: 'fast' | 'monte-carlo'): ProbabilityResult | null {
     const key = getCacheKey(weightConfigId, rewardSchemeId, method);
@@ -41,13 +42,7 @@ export function getFromCache(weightConfigId: number, rewardSchemeId: number, met
         return null;
     }
 
-    // 检查是否过期
-    if (Date.now() - entry.timestamp > CACHE_TTL) {
-        probabilityCache.delete(key);
-        console.log(`[缓存] 过期并删除: ${key}`);
-        return null;
-    }
-
+    // 🔥 永久缓存：不再检查过期时间
     console.log(`[缓存] 命中: ${key}`);
     return entry.result;
 }
@@ -64,22 +59,15 @@ function saveToCache(weightConfigId: number, rewardSchemeId: number, method: 'fa
 }
 
 /**
- * 清理过期缓存（定期调用）
+ * 清理过期缓存（已废弃：改为永久缓存后不再需要清理过期项）
+ * 保留此函数以兼容旧代码，但不再执行任何操作
  */
 export function cleanExpiredCache(): void {
-    const now = Date.now();
-    let cleaned = 0;
-
-    for (const [key, entry] of probabilityCache.entries()) {
-        if (now - entry.timestamp > CACHE_TTL) {
-            probabilityCache.delete(key);
-            cleaned++;
-        }
-    }
-
-    if (cleaned > 0) {
-        console.log(`[缓存清理] 删除 ${cleaned} 个过期项，剩余 ${probabilityCache.size} 个`);
-    }
+    // 🔥 永久缓存：不再清理过期项
+    // 缓存会在配置变更时主动更新，无需定期清理
+    const cacheSize = probabilityCache.size;
+    const memoryUsage = (JSON.stringify([...probabilityCache.entries()]).length / 1024 / 1024).toFixed(2);
+    console.log(`[缓存状态] 当前缓存 ${cacheSize} 个方案，内存占用约 ${memoryUsage}MB`);
 }
 
 /**
@@ -211,11 +199,8 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
         }
     }
 
-    // 🔥 简化的调试日志（仅在debug模式下）
-    if (debug) {
-        const reqSymbols = requiredArr.length > 0 ? requiredArr.join(',') : '任意';
-        console.log(`[规则匹配] "${rule_name}" [${symbols.join(',')}] - 模式:${match_pattern} 需要:${reqSymbols}`);
-    }
+    // 🔥 完全禁用规则匹配的详细日志（优化性能和日志简洁性）
+    // debug 参数已被忽略，仅在发生错误时输出日志
 
     let matched = false;
 
@@ -278,11 +263,7 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             matched = false;
     }
 
-    // 简化的结果日志
-    if (debug) {
-        console.log(`  ${matched ? '✅' : '❌'} "${rule_name}" (${match_pattern}) → ${matched ? '匹配' : '不匹配'}`);
-    }
-
+    // 🔥 禁用匹配结果日志（已在快速估算中统一输出示例）
     return matched;
 }
 
@@ -300,9 +281,7 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
         if (punishment) {
-            if (debug) {
-                console.log(`  💥 律师函惩罚: ${lshCount}个 => -${punishment.deduct_multiplier}x`);
-            }
+            // 🔥 禁用律师函日志（已在快速估算中统一输出）
             return {
                 ruleName: `律师函×${lshCount}`,
                 multiplier: -punishment.deduct_multiplier,
@@ -543,24 +522,30 @@ export function calculateProbabilityFast(
     });
     quickStats['未中奖'] = 0;
 
-    // 🔥 前10次模拟输出调试日志（帮助诊断规则匹配问题）
+    // 🔥 简化日志：仅输出前3次模拟的最终结果（压缩到3行）
     let debugCount = 0;
-    const maxDebug = 10;
+    const maxDebug = 3;
+    const debugResults: string[] = [];
 
     for (let i = 0; i < quickSimCount; i++) {
         const symbols = generateSymbols(weightConfig);
-        const enableDebug = debugCount < maxDebug;
+        const enableDebug = false; // 禁用规则匹配的详细日志
         const result = matchRuleByPriority(symbols, rewardSchemeId, enableDebug);
 
-        if (enableDebug) {
+        if (debugCount < maxDebug) {
             debugCount++;
-            console.log(`[快速估算 #${debugCount}] [${symbols.join(',')}] => ${result.ruleName} (${result.multiplier}x)`);
+            debugResults.push(`#${debugCount}[${symbols.join(',')}]→${result.ruleName}(${result.multiplier}x)`);
         }
 
         // 排除律师函（已单独计算）
         if (!result.ruleName.includes('律师函')) {
             quickStats[result.ruleName] = (quickStats[result.ruleName] || 0) + 1;
         }
+    }
+
+    // 🔥 一次性输出所有示例（压缩到1行）
+    if (debugResults.length > 0) {
+        console.log(`[快速估算示例] ${debugResults.join(' | ')}`);
     }
 
     let totalExpectedValue = 0;
@@ -637,17 +622,17 @@ function binomialCoefficient(n: number, k: number): number {
  */
 export async function recalculateProbabilityForScheme(schemeId: number): Promise<void> {
     console.log(`[概率预计算] 🔄 方案${schemeId} 开始计算...`);
-    
+
     try {
         const { weightConfigQueries, slotQueries, advancedSlotQueries, supremeSlotQueries } = await import('../database');
-        
+
         // 获取三个场次的配置，看哪些使用了这个方案
         const normalConfig = slotQueries.getConfig.get();
         const advancedConfig = advancedSlotQueries.getAdvancedConfig.get();
         const supremeConfig = supremeSlotQueries.getConfig.get();
-        
+
         const weightConfigsToCalculate = new Set<number>();
-        
+
         // 收集使用该方案的权重配置ID
         if (normalConfig && normalConfig.reward_scheme_id === schemeId) {
             weightConfigsToCalculate.add(normalConfig.weight_config_id || 1);
@@ -658,12 +643,12 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
         if (supremeConfig && supremeConfig.reward_scheme_id === schemeId) {
             weightConfigsToCalculate.add(supremeConfig.weight_config_id || 1);
         }
-        
+
         // 如果没有场次使用该方案，计算默认权重
         if (weightConfigsToCalculate.size === 0) {
             weightConfigsToCalculate.add(1);
         }
-        
+
         // 计算每个权重配置的概率
         let successCount = 0;
         for (const weightConfigId of weightConfigsToCalculate) {
@@ -675,7 +660,7 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
                 console.error(`[概率预计算] ❌ 权重${weightConfigId} 失败:`, error.message);
             }
         }
-        
+
         console.log(`[概率预计算] 🎉 完成${successCount}/${weightConfigsToCalculate.size}`);
     } catch (error: any) {
         console.error(`[概率预计算] 失败:`, error);

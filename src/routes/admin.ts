@@ -531,6 +531,15 @@ app.post('/slot/config/schemes', requireAdmin, async (c) => {
         console.log('✅ 初级场配置方案已成功应用！');
         console.log('='.repeat(80));
 
+        // 🔥 自动重新计算并缓存概率（用户查看规则时直接读取缓存）
+        try {
+            const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+            await recalculateProbabilityForScheme(reward_scheme_id);
+            console.log(`[初级场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+        } catch (error: any) {
+            console.warn('[初级场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+        }
+
         return c.json({
             success: true,
             message: '初级场配置方案已应用'
@@ -726,6 +735,18 @@ app.post('/slot/weights', requireAdmin, async (c) => {
         console.log(`⏰ 更新时间: ${new Date(now).toLocaleString('zh-CN')}`);
         console.log('✅ 初级场符号权重配置已成功应用！');
         console.log('='.repeat(80));
+
+        // 🔥 权重修改后，重新计算所有使用该权重的场次的概率
+        try {
+            const config = slotQueries.getConfig.get();
+            if (config && config.reward_scheme_id) {
+                const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+                await recalculateProbabilityForScheme(config.reward_scheme_id);
+                console.log(`[权重配置] ✅ 已自动重新计算方案 ${config.reward_scheme_id} 的概率并缓存`);
+            }
+        } catch (error: any) {
+            console.warn('[权重配置] ⚠️ 概率重算失败（不影响保存）:', error.message);
+        }
 
         return c.json({
             success: true,
@@ -2116,6 +2137,15 @@ app.post('/slot/advanced/config/schemes', requireAdmin, async (c) => {
         console.log('✅ 高级场配置方案已成功应用！');
         console.log('='.repeat(80));
 
+        // 🔥 自动重新计算并缓存概率（用户查看规则时直接读取缓存）
+        try {
+            const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+            await recalculateProbabilityForScheme(reward_scheme_id);
+            console.log(`[高级场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+        } catch (error: any) {
+            console.warn('[高级场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+        }
+
         return c.json({
             success: true,
             message: '高级场配置方案已应用'
@@ -3260,6 +3290,17 @@ app.post('/supreme/config', requireAdmin, async (c) => {
         console.log(`⏰ 保存时间: ${new Date(now).toLocaleString('zh-CN')}`);
         console.log('✅ 至尊场配置已成功保存！');
         console.log('='.repeat(80));
+
+        // 🔥 自动重新计算并缓存概率（用户查看规则时直接读取缓存）
+        if (reward_scheme_id) {
+            try {
+                const { recalculateProbabilityForScheme } = await import('../services/probability-calculator');
+                await recalculateProbabilityForScheme(reward_scheme_id);
+                console.log(`[至尊场] ✅ 已自动重新计算方案 ${reward_scheme_id} 的概率并缓存`);
+            } catch (error: any) {
+                console.warn('[至尊场] ⚠️ 概率重算失败（不影响保存）:', error.message);
+            }
+        }
 
         return c.json({ success: true, message: '至尊场配置已更新' });
     } catch (error: any) {
