@@ -894,7 +894,7 @@
                 </button>
                 <button 
                   onclick="refreshAdvancedSlotRecordsKeepFilter()" 
-                  class="flex-1 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-1"
+                  class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-1"
                   title="刷新数据（保留筛选条件）"
                 >
                   <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -902,8 +902,17 @@
                   </svg>
                   刷新
                 </button>
+                <button 
+                  onclick="clearAdvancedRecordFilters()" 
+                  class="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors font-medium"
+                >
+                  🔄 重置
+                </button>
               </div>
             </div>
+            
+            <!-- 筛选结果提示 -->
+            <div id="advancedFilterResultHint" class="text-sm text-slate-600 hidden"></div>
           </div>
 
           <!-- 统计信息 -->
@@ -3546,7 +3555,112 @@
 
         <!-- 💎 Supreme Slot Records Section -->
         <div id="supremeRecordsSection" class="hidden">
-          <h2 class="text-2xl font-bold text-slate-900 mb-6">💎 至尊场记录</h2>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">💎 至尊场游戏记录</h2>
+            <button onclick="refreshSupremeRecords()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 hover:from-purple-700 hover:via-pink-700 hover:to-amber-600 text-white rounded-lg transition-colors">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新
+            </button>
+          </div>
+          
+          <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-4 mb-4">
+            <p class="text-sm text-purple-800">
+              💡 <strong>至尊场特色：</strong>投注金额$2000-$5000可选，超高倍率，尊享体验，至尊令牌限时入场
+            </p>
+          </div>
+          
+          <!-- 搜索和筛选栏 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <!-- 搜索用户名 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">搜索用户名</label>
+                <div class="relative">
+                  <input 
+                    type="text" 
+                    id="supremeRecordSearchInput" 
+                    placeholder="输入LinuxDo用户名或公益站用户名..." 
+                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  >
+                  <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </div>
+              </div>
+              
+              <!-- 中奖类型筛选 -->
+              <div>
+                <label class="block text-sm font-medium text-slate-700 mb-2">中奖类型</label>
+                <select 
+                  id="supremeWinTypeFilter" 
+                  class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="all">全部类型</option>
+                  <option value="super_jackpot">🏆 超级大奖</option>
+                  <option value="special_combo">💎 特殊组合</option>
+                  <option value="quad">🎰 四连</option>
+                  <option value="triple">✨ 三连</option>
+                  <option value="double">🎁 双连</option>
+                  <option value="punishment">⚡ 律师函</option>
+                  <option value="none">❌ 未中奖</option>
+                </select>
+              </div>
+              
+              <!-- 操作按钮 -->
+              <div class="flex items-end gap-2">
+                <button 
+                  onclick="filterSupremeSlotRecords()" 
+                  class="flex-1 px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-lg transition-all font-semibold shadow-md"
+                >
+                  🔍 查询
+                </button>
+                <button 
+                  onclick="refreshSupremeRecordsKeepFilter()" 
+                  class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium flex items-center justify-center gap-1"
+                  title="刷新数据（保留筛选条件）"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                  </svg>
+                  刷新
+                </button>
+                <button 
+                  onclick="clearSupremeRecordFilters()" 
+                  class="flex-1 px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors font-medium"
+                >
+                  🔄 重置
+                </button>
+              </div>
+            </div>
+            
+            <!-- 筛选结果提示 -->
+            <div id="supremeFilterResultHint" class="text-sm text-slate-600 hidden"></div>
+          </div>
+
+          <!-- 统计信息 -->
+          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <p class="text-sm text-slate-600">总记录数</p>
+                <p id="supremeSlotTotal" class="text-2xl font-bold text-slate-900">0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">总投注</p>
+                <p id="supremeSlotTotalBet" class="text-2xl font-bold text-blue-600">$0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">总获奖</p>
+                <p id="supremeSlotTotalWin" class="text-2xl font-bold text-green-600">$0</p>
+              </div>
+              <div>
+                <p class="text-sm text-slate-600">实际RTP</p>
+                <p id="supremeSlotRTP" class="text-2xl font-bold text-purple-600">0%</p>
+                <p class="text-xs text-slate-500 mt-1">返还玩家率</p>
+              </div>
+            </div>
+          </div>
           
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <div class="overflow-x-auto">
@@ -3554,16 +3668,20 @@
                 <thead class="bg-gradient-to-r from-purple-50 to-gold-50 border-b border-slate-200">
                   <tr>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">时间</th>
-                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">用户名</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">LINUX DO ID</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">结果符号</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">中奖类型</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">倍率</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">投注</th>
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">赢得</th>
-                    <th class="px-4 py-3 text-center font-semibold text-slate-700">倍率</th>
-                    <th class="px-4 py-3 text-center font-semibold text-slate-700">中奖类型</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">奖惩</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">类型</th>
                   </tr>
                 </thead>
                 <tbody id="supremeRecordsTableBody">
                   <tr>
-                    <td colspan="6" class="text-center py-8 text-slate-500">加载中...</td>
+                    <td colspan="10" class="text-center py-8 text-slate-500">加载中...</td>
                   </tr>
                 </tbody>
               </table>
@@ -10749,6 +10867,13 @@
     
     // ========== 至尊场记录管理 ==========
     
+    // 💎 至尊场记录筛选变量
+    let supremeSlotAllRecords = [];
+    let supremeSlotFilters = {
+      username: '',
+      winType: 'all'
+    };
+
     async function loadSupremeRecords() {
       try {
         const res = await fetch('/api/admin/supreme/records');
@@ -10759,13 +10884,65 @@
           return;
         }
         
+        let records = data.data || [];
+        
+        // 💎 存储所有记录（用于筛选）
+        supremeSlotAllRecords = [...records];
+        
+        // 💎 应用筛选
+        if (supremeSlotFilters.username) {
+          records = records.filter(r => 
+            (r.linux_do_username && r.linux_do_username.toLowerCase().includes(supremeSlotFilters.username.toLowerCase())) ||
+            (r.username && r.username.toLowerCase().includes(supremeSlotFilters.username.toLowerCase()))
+          );
+        }
+        
+        if (supremeSlotFilters.winType !== 'all') {
+          records = records.filter(r => r.win_type === supremeSlotFilters.winType);
+        }
+        
+        // 💎 计算统计数据
+        const stats = {
+          count: supremeSlotAllRecords.length,
+          total_bet: supremeSlotAllRecords.reduce((sum, r) => sum + (r.bet_amount || 0), 0),
+          total_win: supremeSlotAllRecords.reduce((sum, r) => sum + (r.win_amount || 0), 0)
+        };
+        
+        // 💎 更新统计信息
+        document.getElementById('supremeSlotTotal').textContent = stats.count;
+        document.getElementById('supremeSlotTotalBet').textContent = `$${(stats.total_bet / 500000).toFixed(2)}`;
+        document.getElementById('supremeSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
+        const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
+        document.getElementById('supremeSlotRTP').textContent = `${rtp}%`;
+        
+        // 💎 显示筛选提示
+        const hintEl = document.getElementById('supremeFilterResultHint');
+        if (hintEl) {
+          if (records.length !== supremeSlotAllRecords.length) {
+            hintEl.textContent = `📊 筛选结果: ${records.length} / ${supremeSlotAllRecords.length} 条记录`;
+            hintEl.classList.remove('hidden');
+          } else {
+            hintEl.classList.add('hidden');
+          }
+        }
+        
         const tbody = document.getElementById('supremeRecordsTableBody');
-        const records = data.data || [];
         
         if (records.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-slate-500">暂无游戏记录</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-slate-500">暂无游戏记录</td></tr>';
           return;
         }
+        
+        // 💎 中奖类型名称映射
+        const winTypeNames = {
+          'super_jackpot': '🏆 超级大奖',
+          'special_combo': '💎 特殊组合',
+          'quad': '🎰 四连',
+          'triple': '✨ 三连',
+          'double': '🎁 双连',
+          'punishment': '⚡ 律师函',
+          'none': '❌ 未中奖'
+        };
         
         tbody.innerHTML = records.map(record => {
           const gameTime = new Date(record.timestamp).toLocaleString('zh-CN');
@@ -10775,27 +10952,50 @@
           const isWin = multiplier > 0;
           const isLoss = multiplier < 0;
           
+          // 💎 解析结果符号
+          let symbols = [];
+          try {
+            symbols = JSON.parse(record.result_symbols || '[]');
+          } catch (e) {
+            symbols = [];
+          }
+          
           return `
             <tr class="border-b border-slate-100 hover:bg-slate-50">
               <td class="px-4 py-3 text-xs text-slate-500 font-mono">${gameTime}</td>
               <td class="px-4 py-3 text-sm">
-                <div class="font-semibold text-slate-900">${record.username || '未知用户'}</div>
-                ${record.linux_do_username ? `<div class="text-xs text-slate-500">@${record.linux_do_username}</div>` : ''}
+                <div class="font-semibold text-slate-900">${record.linux_do_username || record.username || '未知用户'}</div>
+                <div class="text-xs text-slate-500">${record.username || '-'}</div>
               </td>
-              <td class="px-4 py-3 text-right font-mono text-sm text-slate-900">$${betAmount}</td>
-              <td class="px-4 py-3 text-right font-mono text-sm ${isWin ? 'text-green-600 font-bold' : isLoss ? 'text-red-600 font-bold' : 'text-slate-500'}">
-                ${isWin ? '+' : ''}$${winAmount}
+              <td class="px-4 py-3 text-center text-sm text-slate-600">${record.linux_do_id || '-'}</td>
+              <td class="px-4 py-3">
+                <div class="flex gap-1 justify-center">
+                  ${symbols.map(s => {
+                    const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
+                    return `<img src="/slot-symbols/${s}.${ext}" class="w-8 h-8 object-contain" title="${s}">`;
+                  }).join('')}
+                </div>
+              </td>
+              <td class="px-4 py-3 text-center text-sm">
+                <span class="px-2 py-1 rounded ${isWin ? 'bg-purple-100 text-purple-700' : isLoss ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'} text-xs font-semibold">
+                  ${winTypeNames[record.win_type] || record.win_type || '未中奖'}
+                </span>
               </td>
               <td class="px-4 py-3 text-center">
                 <span class="px-2 py-1 rounded text-xs font-bold ${isWin ? 'bg-green-100 text-green-700' : isLoss ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}">
                   ${multiplier}x
                 </span>
               </td>
-              <td class="px-4 py-3 text-center text-sm">
-                <span class="px-2 py-1 rounded bg-purple-100 text-purple-700 text-xs font-semibold">
-                  ${record.win_type || '未中奖'}
+              <td class="px-4 py-3 text-right font-mono text-sm text-blue-600 font-semibold">$${betAmount}</td>
+              <td class="px-4 py-3 text-right font-mono text-sm ${isWin ? 'text-green-600 font-bold' : isLoss ? 'text-red-600 font-bold' : 'text-slate-500'}">
+                ${isWin ? '+' : ''}$${winAmount}
+              </td>
+              <td class="px-4 py-3 text-center">
+                <span class="px-2 py-1 rounded text-xs font-semibold ${isWin ? 'bg-green-100 text-green-700' : isLoss ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}">
+                  ${isWin ? '🎉 奖励' : isLoss ? '⚡ 惩罚' : '-'}
                 </span>
               </td>
+              <td class="px-4 py-3 text-center text-xs text-slate-500">${record.game_mode || '至尊场'}</td>
             </tr>
           `;
         }).join('');
@@ -10803,8 +11003,49 @@
       } catch (error) {
         console.error('加载至尊场记录失败:', error);
         const tbody = document.getElementById('supremeRecordsTableBody');
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-red-500">加载失败，请刷新重试</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-red-500">加载失败，请刷新重试</td></tr>';
       }
+    }
+    
+    // 💎 至尊场记录筛选函数
+    function filterSupremeSlotRecords() {
+      supremeSlotFilters.username = document.getElementById('supremeRecordSearchInput').value.trim();
+      supremeSlotFilters.winType = document.getElementById('supremeWinTypeFilter').value;
+      
+      loadSupremeRecords();
+    }
+    
+    // 💎 刷新并保留筛选条件
+    async function refreshSupremeRecordsKeepFilter() {
+      const refreshBtn = event?.target?.closest('button');
+      const refreshIcon = refreshBtn?.querySelector('svg');
+      if (refreshIcon) {
+        refreshIcon.classList.add('animate-spin');
+      }
+      
+      await loadSupremeRecords();
+      
+      if (refreshIcon) {
+        refreshIcon.classList.remove('animate-spin');
+      }
+    }
+    
+    // 💎 清除至尊场筛选条件
+    function clearSupremeRecordFilters() {
+      document.getElementById('supremeRecordSearchInput').value = '';
+      document.getElementById('supremeWinTypeFilter').value = 'all';
+      
+      supremeSlotFilters.username = '';
+      supremeSlotFilters.winType = 'all';
+      
+      loadSupremeRecords();
+      
+      showToast('已重置筛选条件', 'success');
+    }
+    
+    // 💎 刷新至尊场记录（清除筛选）
+    function refreshSupremeRecords() {
+      clearSupremeRecordFilters();
     }
     
     async function viewSupremeDropDetail(recordId) {
@@ -11169,6 +11410,20 @@
       if (refreshIcon) {
         refreshIcon.classList.remove('animate-spin');
       }
+    }
+    
+    // 🔥 清除高级场筛选条件
+    function clearAdvancedRecordFilters() {
+      document.getElementById('advancedRecordSearchInput').value = '';
+      document.getElementById('advancedWinTypeFilter').value = 'all';
+      
+      advancedSlotFilters.username = '';
+      advancedSlotFilters.winType = 'all';
+      
+      advancedSlotCurrentPage = 1;
+      loadAdvancedSlotRecords(1);
+      
+      showToast('已重置筛选条件', 'success');
     }
 
     // 入场券掉落记录
