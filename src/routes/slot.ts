@@ -472,7 +472,7 @@ slot.post('/spin', requireAuth, async (c) => {
             // 正常中奖 - 使用 calculationBetAmount 计算奖金
             winAmount = Math.floor(calculationBetAmount * result.multiplier);
 
-            console.log(`[老虎机] 💰 中奖 - 用户: ${user.username}, 类型: ${WIN_TYPE_NAMES[result.winType]}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
+            console.log(`[老虎机] 💰 中奖 - 用户: ${user.username}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
 
             // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
@@ -508,7 +508,7 @@ slot.post('/spin', requireAuth, async (c) => {
                             user.kyx_user_id,
                             user.username,
                             winAmount,
-                            `老虎机中奖 - ${WIN_TYPE_NAMES[result.winType]} ${result.multiplier}倍`,
+                            `老虎机中奖 - ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType} ${result.multiplier}倍`,
                             'pending',
                             0,
                             now,
@@ -540,7 +540,7 @@ slot.post('/spin', requireAuth, async (c) => {
                                     user.kyx_user_id,
                                     user.username,
                                     winAmount,
-                                    `老虎机中奖 - ${WIN_TYPE_NAMES[result.winType]} ${result.multiplier}倍 (验证失败)`,
+                                    `老虎机中奖 - ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType} ${result.multiplier}倍 (验证失败)`,
                                     'pending',
                                     0,
                                     now,
@@ -725,8 +725,8 @@ slot.post('/spin', requireAuth, async (c) => {
                 message += ' | 🚫 已被禁止抽奖60小时（2.5天）';
             }
         } else {
-            // 正常中奖消息
-            message = WIN_TYPE_NAMES[result.winType];
+            // 正常中奖消息 - 使用规则名称而不是固定映射
+            message = result.ruleName || WIN_TYPE_NAMES[result.winType] || '未知';
             if (result.multiplier > 0) {
                 message += ` ${result.multiplier}倍！赢得 $${(winAmount / 500000).toFixed(2)}`;
 
@@ -761,7 +761,7 @@ slot.post('/spin', requireAuth, async (c) => {
             data: {
                 symbols,
                 win_type: result.winType,
-                win_type_name: WIN_TYPE_NAMES[result.winType],
+                win_type_name: result.ruleName || WIN_TYPE_NAMES[result.winType] || '未知',
                 multiplier: result.multiplier,
                 bet_amount: betAmount,
                 win_amount: winAmount,
