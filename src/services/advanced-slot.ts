@@ -2,9 +2,21 @@
  * 高级场系统服务层
  */
 
-import { advancedSlotQueries } from '../database';
+import { advancedSlotQueries, userQueries } from '../database';
 import type { UserTickets, AdvancedSlotConfig } from '../types';
 import { isBannedFromAdvanced, getKunbeiConfig } from './kunbei';
+import logger from '../utils/logger';
+
+/**
+ * 获取用户显示名称（优先使用 linux_do_username，否则使用 linux_do_id）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    const user = userQueries.get.get(linuxDoId);
+    if (user?.linux_do_username) {
+        return user.linux_do_username;
+    }
+    return linuxDoId;
+}
 
 /**
  * 获取用户入场券信息
@@ -26,7 +38,7 @@ export function getUserTickets(linuxDoId: string): UserTickets | null {
 
         return result;
     } catch (error) {
-        console.error(`[高级场] 查询入场券信息失败:`, error);
+        logger.error('高级场', `查询入场券信息失败: ${error}`);
         return null;
     }
 }
@@ -38,7 +50,7 @@ export function getAdvancedSlotConfig(): AdvancedSlotConfig {
     const result = advancedSlotQueries.getAdvancedConfig.get();
 
     if (!result) {
-        console.error('[高级场] 配置未找到，返回默认配置');
+        logger.error('高级场', '配置未找到，返回默认配置');
         // 返回默认配置而不是抛出错误
         return {
             id: 1,
@@ -77,7 +89,7 @@ export function addTicket(linuxDoId: string, count: number = 1): { success: bool
     const ticketsGrantedToday = todayGrant?.ticket_granted || 0;
 
     if (ticketsGrantedToday >= config.daily_ticket_grant_limit) {
-        console.log(`[入场券] 用户 ${linuxDoId} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
+        logger.info('入场券', `用户 ${getUserDisplayName(linuxDoId)} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
         return {
             success: false,
             message: `今日获得入场券已达上限（${config.daily_ticket_grant_limit}张）`
@@ -107,7 +119,7 @@ export function addTicket(linuxDoId: string, count: number = 1): { success: bool
         linuxDoId, today, actualCount, 0, now, actualCount, 0, now
     );
 
-    console.log(`[入场券] 用户 ${linuxDoId} 获得 ${actualCount} 张入场券（今日已获得 ${ticketsGrantedToday + actualCount}/${config.daily_ticket_grant_limit}）`);
+    logger.info('入场券', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${actualCount} 张入场券（今日已获得 ${ticketsGrantedToday + actualCount}/${config.daily_ticket_grant_limit}）`);
 
     return {
         success: true,
@@ -127,7 +139,7 @@ export function addFragment(linuxDoId: string, count: number = 1): void {
         count, now
     );
 
-    console.log(`[碎片] 用户 ${linuxDoId} 获得 ${count} 个碎片`);
+    logger.info('碎片', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${count} 个碎片`);
 }
 
 /**
@@ -150,7 +162,7 @@ export function synthesizeTicket(linuxDoId: string): { success: boolean; message
     const ticketsGrantedToday = todayGrant?.ticket_granted || 0;
 
     if (ticketsGrantedToday >= config.daily_ticket_grant_limit) {
-        console.log(`[合成] 用户 ${linuxDoId} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
+        logger.info('合成', `用户 ${getUserDisplayName(linuxDoId)} 今日已获得 ${ticketsGrantedToday} 张入场券，达到限制 ${config.daily_ticket_grant_limit}`);
         return {
             success: false,
             message: `今日获得入场券已达上限（${config.daily_ticket_grant_limit}张），无法合成`
@@ -186,7 +198,7 @@ export function synthesizeTicket(linuxDoId: string): { success: boolean; message
         linuxDoId, today, 1, 0, now, 1, 0, now
     );
 
-    console.log(`[合成] 用户 ${linuxDoId} 合成了1张入场券（今日已获得 ${ticketsGrantedToday + 1}/${config.daily_ticket_grant_limit}）`);
+    logger.info('合成', `用户 ${getUserDisplayName(linuxDoId)} 合成了1张入场券（今日已获得 ${ticketsGrantedToday + 1}/${config.daily_ticket_grant_limit}）`);
 
     return {
         success: true,
@@ -254,7 +266,7 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
         const banStatus = isBannedFromAdvanced(linuxDoId);
         if (banStatus.banned) {
             const remainingHours = Math.ceil((banStatus.until! - Date.now()) / 3600000);
-            console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 坤呗逾期惩罚中，剩余 ${remainingHours} 小时`);
+            logger.info('高级场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 坤呗逾期惩罚中，剩余 ${remainingHours} 小时`);
             return {
                 success: false,
                 message: `您因逾期未还款被禁止进入高级场，解禁时间：${new Date(banStatus.until!).toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`
@@ -268,7 +280,7 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     const tickets = getUserTickets(linuxDoId);
 
     if (!tickets || tickets.tickets < 1) {
-        console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 入场券不足: ${tickets?.tickets || 0}`);
+        logger.info('高级场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 入场券不足: ${tickets?.tickets || 0}`);
         return {
             success: false,
             message: '入场券不足，无法进入高级场'
@@ -278,7 +290,7 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     const config = getAdvancedSlotConfig();
 
     if (!config.enabled) {
-        console.log(`[高级场] 进入失败 - 高级场功能已关闭`);
+        logger.info('高级场', '进入失败 - 高级场功能已关闭');
         return {
             success: false,
             message: '高级场功能已关闭'
@@ -291,7 +303,7 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     const entryCount = todayEntry?.entry_count || 0;
 
     if (entryCount >= config.daily_entry_limit) {
-        console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
+        logger.info('高级场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
         return {
             success: false,
             message: `今日进入次数已达上限（${config.daily_entry_limit}次）`
@@ -311,9 +323,9 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
             const afterTickets = getUserTickets(linuxDoId);
 
             if (afterTickets && afterTickets.tickets === tickets.tickets - 1 && afterTickets.advanced_mode_until === validUntil) {
-                console.log(`[高级场] 用户 ${linuxDoId} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
+                logger.info('高级场', `用户 ${getUserDisplayName(linuxDoId)} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
             } else {
-                console.error(`[高级场] 进入失败 - 用户: ${linuxDoId}, 验证失败`);
+                logger.error('高级场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 验证失败`);
                 return {
                     success: false,
                     message: '进入失败，请重试'
@@ -322,16 +334,16 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
         } else {
             // 如果 result.changes 存在，直接使用
             if (result.changes === 0) {
-                console.log(`[高级场] 进入失败 - 用户: ${linuxDoId}, 数据库更新失败`);
+                logger.info('高级场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 数据库更新失败`);
                 return {
                     success: false,
                     message: '进入失败，请重试'
                 };
             }
-            console.log(`[高级场] 用户 ${linuxDoId} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
+            logger.info('高级场', `用户 ${getUserDisplayName(linuxDoId)} 成功进入高级场，有效期至 ${new Date(validUntil).toLocaleString()}`);
         }
     } catch (error) {
-        console.error(`[高级场] 进入高级场失败 - 用户: ${linuxDoId}`, error);
+        logger.error('高级场', `进入高级场失败 - 用户: ${getUserDisplayName(linuxDoId)}, 错误: ${error}`);
         return {
             success: false,
             message: '数据库操作失败'
@@ -341,9 +353,9 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     // 记录今日进入次数
     try {
         advancedSlotQueries.updateTodayEntry.run(linuxDoId, today, now, now);
-        console.log(`[高级场] 记录用户 ${linuxDoId} 今日第 ${entryCount + 1} 次进入高级场`);
+        logger.info('高级场', `记录用户 ${getUserDisplayName(linuxDoId)} 今日第 ${entryCount + 1} 次进入高级场`);
     } catch (error) {
-        console.error(`[高级场] 记录进入次数失败:`, error);
+        logger.error('高级场', `记录进入次数失败: ${error}`);
         // 不影响进入成功
     }
 
@@ -362,7 +374,7 @@ export function exitAdvancedMode(linuxDoId: string): void {
 
     advancedSlotQueries.exitAdvancedMode.run(now, linuxDoId);
 
-    console.log(`[高级场] 用户 ${linuxDoId} 退出高级场`);
+    logger.info('高级场', `用户 ${getUserDisplayName(linuxDoId)} 退出高级场`);
 }
 
 /**
@@ -403,7 +415,7 @@ export function recordTicketDrop(
         date
     );
 
-    console.log(`[掉落记录] 用户 ${username} 获得 ${dropType} x${dropCount}，触发: ${triggerWinType}`);
+    logger.info('掉落记录', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${dropType} x${dropCount}，触发: ${triggerWinType}`);
 }
 
 /**

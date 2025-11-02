@@ -5,6 +5,17 @@ import { searchCache } from './search-cache';
 import { userQueries } from '../database';
 import logger from '../utils/logger';
 
+/**
+ * 获取用户显示名称（优先使用 linux_do_username，否则使用 linux_do_id）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    const user = userQueries.get.get(linuxDoId);
+    if (user?.linux_do_username) {
+        return user.linux_do_username;
+    }
+    return linuxDoId;
+}
+
 export interface KyxUser {
     id: number;
     username: string;
@@ -37,7 +48,7 @@ export async function searchKyxUser(
     // 先尝试从缓存获取
     const cachedResult = searchCache.get(username, page);
     if (cachedResult) {
-        console.log(`${context} - ✨ 命中搜索缓存`);
+        logger.debug(context, '✨ 命中搜索缓存');
         return cachedResult;
     }
 
@@ -45,7 +56,7 @@ export async function searchKyxUser(
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 if (attempt > 1) {
-                    console.log(`${context} - 第${attempt}次尝试`);
+                    logger.debug(context, `第${attempt}次尝试`);
                 }
 
                 const url = `${CONFIG.KYX_API_BASE}/api/user/search?keyword=${encodeURIComponent(username)}&p=${page}&page_size=${pageSize}`;
@@ -62,7 +73,7 @@ export async function searchKyxUser(
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
                     const waitTime = Math.min(1000 * attempt, 4000); // 1s, 2s, 3s, 4s
-                    console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
+                    logger.warn(context, `⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -77,7 +88,7 @@ export async function searchKyxUser(
 
                 if (!response.ok) {
                     const errorText = await response.text();
-                    console.error(`${context} - HTTP错误: ${response.status}, 响应: ${errorText}`);
+                    logger.error(context, `HTTP错误: ${response.status}, 响应: ${errorText}`);
 
                     if (attempt < maxRetries) {
                         const backoffTime = 1000 * Math.pow(2, attempt - 1);
@@ -95,14 +106,14 @@ export async function searchKyxUser(
 
                 // 成功后存入缓存
                 searchCache.set(username, page, result);
-                console.log(`${context} - ✅ 搜索成功并缓存`);
+                logger.debug(context, '✅ 搜索成功并缓存');
 
                 return result;
             } catch (error: any) {
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
                 const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
 
-                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+                logger.error(context, `❌ 第${attempt}次尝试失败: ${errorMsg}`);
 
                 if (attempt === maxRetries) {
                     return {
@@ -150,7 +161,7 @@ export function findExactUser(
     );
 
     if (user) {
-        console.log(`[${context}] ⚠️ 用户名大小写不一致 - 输入: "${username}", 实际: "${user.username}"`);
+        logger.warn(context, `⚠️ 用户名大小写不一致 - 输入: "${username}", 实际: "${user.username}"`);
         return user;
     }
 
@@ -166,13 +177,13 @@ export async function searchAndFindExactUser(
     newApiUser: string = '1',
     context: string = '操作'
 ): Promise<SearchResult> {
-    console.log(`[${context}] 🔍 搜索用户: ${username}`);
+    logger.info(context, `🔍 搜索用户: ${username}`);
 
     // 第一次搜索，使用默认分页
     let searchResult = await searchKyxUser(username, session, newApiUser, 1, 100);
 
     if (!searchResult.success) {
-        console.log(`[${context}] ❌ 搜索失败: ${searchResult.message}`);
+        logger.error(context, `❌ 搜索失败: ${searchResult.message}`);
         return { success: false, message: searchResult.message, user: null };
     }
 
@@ -180,7 +191,7 @@ export async function searchAndFindExactUser(
     let user = findExactUser(searchResult, username, context);
 
     if (user) {
-        console.log(`[${context}] ✅ 找到用户 - ID: ${user.id}, Linux Do ID: ${user.linux_do_id}`);
+        logger.info(context, `✅ 找到用户 - ID: ${user.id}, Linux Do ID: ${user.linux_do_id}`);
         return { success: true, user };
     }
 
@@ -191,7 +202,7 @@ export async function searchAndFindExactUser(
 
     // 如果只有一页或没有更多数据，直接返回未找到
     if (totalPages <= 1) {
-        console.log(`[${context}] ❌ 未找到用户: ${username}`);
+        logger.info(context, `❌ 未找到用户: ${username}`);
         return { success: false, message: '未找到该用户', user: null };
     }
 
@@ -213,13 +224,13 @@ export async function searchAndFindExactUser(
 
         user = findExactUser(searchResult, username, context);
         if (user) {
-            console.log(`[${context}] ✅ 找到用户（第${page}页） - ID: ${user.id}, Linux Do ID: ${user.linux_do_id}`);
+            logger.info(context, `✅ 找到用户（第${page}页） - ID: ${user.id}, Linux Do ID: ${user.linux_do_id}`);
             return { success: true, user };
         }
     }
 
     const totalSearched = pageSize * maxPagesToSearch;
-    console.log(`[${context}] ❌ 未找到用户: ${username}（已搜索${maxPagesToSearch}页）`);
+    logger.info(context, `❌ 未找到用户: ${username}（已搜索${maxPagesToSearch}页）`);
 
     return {
         success: false,
@@ -480,7 +491,7 @@ export async function pushKeysToGroup(
         for (let attempt = 1; attempt <= maxRetries; attempt++) {
             try {
                 if (attempt > 1) {
-                    console.log(`${context} - 第${attempt}次尝试`);
+                    logger.debug(context, `第${attempt}次尝试`);
                 }
 
                 const keysText = keys.join('\n');
@@ -501,7 +512,7 @@ export async function pushKeysToGroup(
                 if (response.status === 429) {
                     kyxApiLimiter.recordRateLimit();
                     const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（最多6s）
-                    console.warn(`${context} - ⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
+                    logger.warn(context, `⚠️ 触发限流 (429)，等待 ${waitTime}ms 后重试`);
 
                     if (attempt < maxRetries) {
                         await new Promise(resolve => setTimeout(resolve, waitTime));
@@ -518,7 +529,7 @@ export async function pushKeysToGroup(
                 const result = await response.json();
 
                 if (!response.ok) {
-                    console.error(`${context} - HTTP错误: ${response.status}, 消息: ${result.message || '无'}`);
+                    logger.error(context, `HTTP错误: ${response.status}, 消息: ${result.message || '无'}`);
 
                     if (attempt < maxRetries) {
                         const backoffTime = 1000 * Math.pow(2, attempt - 1);
@@ -541,7 +552,7 @@ export async function pushKeysToGroup(
                 const isTimeout = error.name === 'TimeoutError' || error.name === 'AbortError';
                 const errorMsg = isTimeout ? '请求超时' : error.message || '未知错误';
 
-                console.error(`${context} - ❌ 第${attempt}次尝试失败: ${errorMsg}`);
+                logger.error(context, `❌ 第${attempt}次尝试失败: ${errorMsg}`);
 
                 if (attempt === maxRetries) {
                     return {
@@ -572,7 +583,7 @@ export function getUserQuota(linuxDoId: string): number {
         // 从本地数据库获取用户信息
         const user = userQueries.get.get(linuxDoId);
         if (!user) {
-            console.warn(`[getUserQuota] 用户不存在: ${linuxDoId}`);
+            logger.warn('getUserQuota', `用户不存在: ${getUserDisplayName(linuxDoId)}`);
             return 0;
         }
         
@@ -581,12 +592,12 @@ export function getUserQuota(linuxDoId: string): number {
         if (cachedUser) {
             return cachedUser.quota || 0;
         }
-        
+
         // 如果缓存中没有，返回0（实际场景中应该先确保用户数据已加载）
-        console.warn(`[getUserQuota] 用户 ${linuxDoId} 的额度信息未缓存`);
+        logger.warn('getUserQuota', `用户 ${getUserDisplayName(linuxDoId)} 的额度信息未缓存`);
         return 0;
     } catch (error: any) {
-        console.error(`[getUserQuota] 获取用户额度失败:`, error);
+        logger.error('getUserQuota', `获取用户额度失败: ${error}`);
         return 0;
     }
 }
@@ -614,7 +625,7 @@ export async function addQuota(
         const currentQuota = userResult.user.quota || 0;
         const newQuota = currentQuota + amount;
 
-        console.log(`[${context}] 用户ID: ${userId}, 当前额度: ${currentQuota}, 增加: ${amount}, 新额度: ${newQuota}`);
+        logger.info(context, `用户ID: ${userId}, 当前额度: ${currentQuota}, 增加: ${amount}, 新额度: ${newQuota}`);
 
         // 更新额度
         return await updateKyxUserQuota(
@@ -626,7 +637,7 @@ export async function addQuota(
             userResult.user.group || 'default'
         );
     } catch (error: any) {
-        console.error(`[${context}] 增加额度失败:`, error);
+        logger.error(context, `增加额度失败: ${error}`);
         return {
             success: false,
             message: `增加额度失败: ${error.message}`
@@ -666,7 +677,7 @@ export async function deductQuota(
 
         const newQuota = currentQuota - amount;
 
-        console.log(`[${context}] 用户ID: ${userId}, 当前额度: ${currentQuota}, 扣除: ${amount}, 新额度: ${newQuota}`);
+        logger.info(context, `用户ID: ${userId}, 当前额度: ${currentQuota}, 扣除: ${amount}, 新额度: ${newQuota}`);
 
         // 更新额度
         return await updateKyxUserQuota(
@@ -678,7 +689,7 @@ export async function deductQuota(
             userResult.user.group || 'default'
         );
     } catch (error: any) {
-        console.error(`[${context}] 扣除额度失败:`, error);
+        logger.error(context, `扣除额度失败: ${error}`);
         return {
             success: false,
             message: `扣除额度失败: ${error.message}`

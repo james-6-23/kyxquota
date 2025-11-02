@@ -2,9 +2,20 @@
  * 至尊场系统服务层
  */
 
-import { supremeSlotQueries, weightConfigQueries, rewardConfigQueries } from '../database';
+import { supremeSlotQueries, weightConfigQueries, rewardConfigQueries, userQueries } from '../database';
 import type { SupremeSlotConfig } from '../types';
 import logger from '../utils/logger';
+
+/**
+ * 获取用户显示名称（优先使用 linux_do_username，否则使用 linux_do_id）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    const user = userQueries.get.get(linuxDoId);
+    if (user?.linux_do_username) {
+        return user.linux_do_username;
+    }
+    return linuxDoId;
+}
 
 /**
  * 获取用户至尊令牌信息
@@ -103,7 +114,7 @@ export function checkTokenExpiry(linuxDoId: string): void {
                 tokens.created_at || now,
                 now
             );
-            logger.info('至尊场', `用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+            logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
         }
     }
 }
@@ -120,7 +131,7 @@ export function checkSupremeModeExpiry(linuxDoId: string): void {
     if (tokens.supreme_mode_until < now) {
         // 会话已过期，退出至尊场
         supremeSlotQueries.exitSupremeMode.run(now, linuxDoId);
-        logger.info('至尊场', `用户 ${linuxDoId} 的至尊场会话已过期`);
+        logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 的至尊场会话已过期`);
     }
 }
 
@@ -161,7 +172,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     const validHours = config.token_valid_hours || 168;  // 默认7天
     const expiresAt = now + (validHours * 3600000);
 
-    logger.info('至尊场', `发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+    logger.info('至尊场', `发放令牌 - 用户: ${getUserDisplayName(linuxDoId)}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
 
     supremeSlotQueries.upsertTokens.run(
         linuxDoId,
@@ -173,7 +184,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
         now
     );
 
-    logger.info('至尊场', `管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+    logger.info('至尊场', `管理员发放令牌 - 用户: ${getUserDisplayName(linuxDoId)}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
 
     return {
         success: true,
@@ -199,7 +210,7 @@ export function addSupremeFragment(linuxDoId: string, count: number = 1): void {
         now
     );
 
-    logger.info('至尊场', `用户 ${linuxDoId} 获得 ${count} 个至尊碎片，当前碎片: ${(tokens?.fragments || 0) + count}`);
+    logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${count} 个至尊碎片，当前碎片: ${(tokens?.fragments || 0) + count}`);
 }
 
 /**
@@ -271,7 +282,7 @@ export async function synthesizeSupremeToken(linuxDoId: string): Promise<{ succe
         now
     );
 
-    logger.info('至尊场', `用户 ${linuxDoId} 合成至尊令牌，当前: ${tokens.tokens + 1}个`);
+    logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 合成至尊令牌，当前: ${tokens.tokens + 1}个`);
 
     return {
         success: true,
@@ -333,7 +344,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
         const afterTokens = getSupremeTokens(linuxDoId);
 
         if (afterTokens && afterTokens.tokens === tokens.tokens - 1 && afterTokens.supreme_mode_until === validUntil) {
-            logger.info('至尊场', `用户 ${linuxDoId} 成功进入至尊场，有效期至 ${new Date(validUntil).toLocaleString()}`);
+            logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 成功进入至尊场，有效期至 ${new Date(validUntil).toLocaleString()}`);
 
             // 更新今日进入记录
             supremeSlotQueries.updateTodayEntry.run(
@@ -370,7 +381,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
 export function exitSupremeMode(linuxDoId: string): void {
     const now = Date.now();
     supremeSlotQueries.exitSupremeMode.run(now, linuxDoId);
-    logger.info('至尊场', `用户 ${linuxDoId} 退出至尊场`);
+    logger.info('至尊场', `用户 ${getUserDisplayName(linuxDoId)} 退出至尊场`);
 }
 
 /**
