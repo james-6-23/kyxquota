@@ -8027,7 +8027,7 @@
       if (claimAllBtn && unclaimedRewards > 0) {
         claimAllBtn.disabled = false;
         claimAllBtn.querySelector('span:last-child').textContent =
-          \`一键领取所有奖励 (\${formatAchievementQuota(unclaimedRewards)})\`;
+          `一键领取所有奖励 (${formatAchievementQuota(unclaimedRewards)})`;
       } else if (claimAllBtn) {
         claimAllBtn.disabled = true;
         claimAllBtn.querySelector('span:last-child').textContent = '暂无可领取奖励';
@@ -8045,11 +8045,11 @@
         : achievements.filter(a => a.category === currentFilter);
 
       if (filteredAchievements.length === 0) {
-        container.innerHTML = \`
+        container.innerHTML = `
           <div class="col-span-full text-center py-12">
             <p class="text-slate-400 text-lg">暂无成就</p>
           </div>
-        \`;
+        `;
         return;
       }
 
@@ -8061,62 +8061,62 @@
         let progressHTML = '';
         if (!isUnlocked && progress) {
           const percentage = progress.percentage || 0;
-          progressHTML = \`
+          progressHTML = `
             <div class="mt-3">
               <div class="flex justify-between text-xs text-slate-600 mb-1">
                 <span>进度</span>
-                <span>\${progress.current}/\${progress.target}</span>
+                <span>${progress.current}/${progress.target}</span>
               </div>
               <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                <div class="achievement-progress-bar h-full rounded-full" style="width: \${percentage}%"></div>
+                <div class="achievement-progress-bar h-full rounded-full" style="width: ${percentage}%"></div>
               </div>
             </div>
-          \`;
+          `;
         }
 
         let actionButton = '';
         if (isUnlocked && !isClaimed) {
-          actionButton = \`
-            <button onclick="claimAchievementReward('\${achievement.achievement_key}')"
+          actionButton = `
+            <button onclick="claimAchievementReward('${achievement.achievement_key}')"
                     class="mt-4 w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
-              领取奖励 (+\${formatAchievementQuota(achievement.reward_quota)})
+              领取奖励 (+${formatAchievementQuota(achievement.reward_quota)})
             </button>
-          \`;
+          `;
         } else if (isClaimed) {
-          actionButton = \`
+          actionButton = `
             <div class="mt-4 w-full bg-green-100 text-green-700 py-2 rounded-lg font-semibold text-center">
               ✓ 已领取
             </div>
-          \`;
+          `;
         }
 
-        return \`
-          <div class="achievement-card \${isUnlocked ? 'unlocked' : 'locked'} rarity-\${achievement.rarity} p-5">
+        return `
+          <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'} rarity-${achievement.rarity} p-5">
             <div class="flex items-start gap-3">
-              <div class="text-4xl flex-shrink-0">\${achievement.icon}</div>
+              <div class="text-4xl flex-shrink-0">${achievement.icon}</div>
               <div class="flex-1">
                 <h3 class="text-lg font-bold text-slate-900 mb-1">
-                  \${achievement.achievement_name}
-                  \${isUnlocked ? '<span class="text-amber-500 ml-2">🏆</span>' : ''}
+                  ${achievement.achievement_name}
+                  ${isUnlocked ? '<span class="text-amber-500 ml-2">🏆</span>' : ''}
                 </h3>
-                <p class="text-sm text-slate-600 mb-2">\${achievement.achievement_desc}</p>
+                <p class="text-sm text-slate-600 mb-2">${achievement.achievement_desc}</p>
                 <div class="flex items-center gap-2 text-xs flex-wrap">
                   <span class="px-2 py-1 bg-slate-100 rounded-full text-slate-700">
-                    \${getCategoryName(achievement.category)}
+                    ${getCategoryName(achievement.category)}
                   </span>
                   <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-semibold">
-                    \${getRarityName(achievement.rarity)}
+                    ${getRarityName(achievement.rarity)}
                   </span>
                   <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold">
-                    +\${formatAchievementQuota(achievement.reward_quota)}
+                    +${formatAchievementQuota(achievement.reward_quota)}
                   </span>
                 </div>
-                \${progressHTML}
-                \${actionButton}
+                ${progressHTML}
+                ${actionButton}
               </div>
             </div>
           </div>
-        \`;
+        `;
       }).join('');
     }
 
@@ -8146,7 +8146,7 @@
         const data = await response.json();
 
         if (data.success) {
-          showToast(\`成功领取奖励 +\${formatAchievementQuota(data.reward)}\`, 'success');
+          showToast(`成功领取奖励 +${formatAchievementQuota(data.reward)}`, 'success');
           // 重新加载成就数据
           loadAchievements();
           // 刷新额度
@@ -8170,7 +8170,7 @@
         const data = await response.json();
 
         if (data.success) {
-          showToast(\`成功领取 \${data.count} 个奖励，共 +\${formatAchievementQuota(data.totalReward)}\`, 'success');
+          showToast(`成功领取 ${data.count} 个奖励，共 +${formatAchievementQuota(data.totalReward)}`, 'success');
           // 重新加载成就数据
           loadAchievements();
           // 刷新额度
