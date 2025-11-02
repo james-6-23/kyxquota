@@ -1469,6 +1469,31 @@ slot.get('/rules', requireAuth, async (c) => {
             };
         });
 
+        // 🔥 获取高级场或初级场的配置信息
+        let advancedConfig = null;
+        let normalConfig = null;
+
+        if (inAdvancedMode) {
+            // 高级场配置
+            const advConfig = getAdvancedSlotConfig();
+            advancedConfig = {
+                bet_min: advConfig.bet_min,
+                bet_max: advConfig.bet_max,
+                reward_multiplier: advConfig.reward_multiplier,
+                daily_bet_limit: advConfig.daily_bet_limit,
+                session_valid_hours: advConfig.session_valid_hours
+            };
+        } else {
+            // 初级场配置
+            const normalSlotConfig = getSlotConfig();
+            normalConfig = {
+                bet_amount: normalSlotConfig.bet_amount,
+                max_spins: normalSlotConfig.max_daily_spins,
+                min_quota_required: normalSlotConfig.min_quota_required,
+                buy_spins_enabled: normalSlotConfig.buy_spins_enabled === 1
+            };
+        }
+
         return c.json({
             success: true,
             data: {
@@ -1479,7 +1504,10 @@ slot.get('/rules', requireAuth, async (c) => {
                 noWinProbability: probabilityData ? probabilityData.noWin.probability.toFixed(2) + '%' : null,
                 rtp: probabilityData ? probabilityData.rtp.toFixed(2) + '%' : null,
                 weightConfig: weightConfig,
-                totalWeight: totalWeight
+                totalWeight: totalWeight,
+                // 🔥 添加场次配置信息
+                advancedConfig: advancedConfig,
+                normalConfig: normalConfig
             }
         });
     } catch (error: any) {

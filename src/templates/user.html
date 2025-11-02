@@ -5669,7 +5669,43 @@
               rulesHTML += `<p class="text-xs ${symbolNormalTextLight} mt-3 text-center">总权重: ${totalWeight}</p>`;
               rulesHTML += '</div>';
             }
-            
+
+            // 💎 显示RTP和未中奖概率
+            if (data.data.rtp || data.data.noWinProbability) {
+              const statBg = mode === 'advanced' ? 'bg-amber-900/30' : 'bg-blue-900/30';
+              const statBorder = mode === 'advanced' ? 'border-amber-500/30' : 'border-blue-500/30';
+              const statTitle = mode === 'advanced' ? 'text-amber-300' : 'text-blue-300';
+              const statCardBg = mode === 'advanced' ? 'bg-amber-500/20 border-amber-400/50' : 'bg-blue-500/20 border-blue-400/50';
+              const statTextColor = mode === 'advanced' ? 'text-amber-200' : 'text-blue-200';
+              const statValueColor = mode === 'advanced' ? 'text-amber-300' : 'text-blue-300';
+
+              rulesHTML += `<div class="${statBg} rounded-xl p-4 mb-4 border ${statBorder}">`;
+              rulesHTML += `<h4 class="font-bold ${statTitle} mb-3 text-lg">📊 概率统计</h4>`;
+              rulesHTML += '<div class="grid grid-cols-2 gap-3">';
+
+              if (data.data.rtp) {
+                rulesHTML += `
+                  <div class="${statCardBg} border rounded-lg p-3 text-center">
+                    <div class="${statTextColor} text-xs mb-1">玩家回报率</div>
+                    <div class="${statValueColor} font-bold text-2xl">${data.data.rtp}</div>
+                    <div class="${statTextColor} text-xs mt-1">RTP</div>
+                  </div>
+                `;
+              }
+
+              if (data.data.noWinProbability) {
+                rulesHTML += `
+                  <div class="bg-red-500/20 border border-red-400/50 rounded-lg p-3 text-center">
+                    <div class="text-red-200 text-xs mb-1">未中奖概率</div>
+                    <div class="text-red-300 font-bold text-2xl">${data.data.noWinProbability}</div>
+                    <div class="text-red-200/70 text-xs mt-1">不中奖</div>
+                  </div>
+                `;
+              }
+
+              rulesHTML += '</div></div>';
+            }
+
             // 提示信息
             const tipBg = mode === 'advanced' ? 'bg-amber-500/20 border-amber-400/50' : 'bg-blue-500/20 border-blue-400/50';
             rulesHTML += `
