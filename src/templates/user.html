@@ -420,16 +420,18 @@
 
     .achievement-filter-btn {
       @apply text-slate-600 hover:bg-slate-100 px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200;
-      border: 1.5px solid transparent;
+      border: 1.5px solid #e2e8f0;
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      background-color: white;
+      background-color: #f8fafc;
     }
 
     .achievement-filter-btn:hover {
-      border-color: #e2e8f0;
+      border-color: #cbd5e1;
       background: #f1f5f9;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
     }
 
     .achievement-filter-btn.active {
@@ -438,10 +440,12 @@
       box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
       border: 1.5px solid #fbbf24;
       font-weight: 600;
+      transform: translateY(-1px);
     }
 
     .achievement-filter-btn.active:hover {
       box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
+      transform: translateY(-2px);
     }
 
     .achievement-progress-bar {
@@ -9069,22 +9073,22 @@
       document.querySelectorAll('.achievement-filter-btn').forEach(btn => {
         btn.classList.remove('active');
       });
-      
-      // ✅ 安全检查 event 和 target
-      if (evt && evt.target) {
-        evt.target.classList.add('active');
-      } else if (evt) {
-        // 如果是按钮本身，向上查找按钮元素
-        const btn = evt.currentTarget || evt.target?.closest('.achievement-filter-btn');
-        if (btn) btn.classList.add('active');
+
+      // ✅ 修复：确保总是给按钮元素添加 active 类，而不是内部的 span
+      if (evt) {
+        // 使用 currentTarget（始终是绑定事件的元素）或向上查找按钮
+        const btn = evt.currentTarget || evt.target.closest('.achievement-filter-btn');
+        if (btn) {
+          btn.classList.add('active');
+        }
       }
 
       // ✅ 确保数据是数组
       const data = Array.isArray(window.achievementsData) ? window.achievementsData : [];
-      
+
       // ✅ 更新筛选计数
-      const filteredCount = category === 'all' 
-        ? data.length 
+      const filteredCount = category === 'all'
+        ? data.length
         : data.filter(a => a && a.category === category).length;
       
       const filterCountEl = document.getElementById('filterCount');
