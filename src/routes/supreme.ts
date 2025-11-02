@@ -104,7 +104,8 @@ supreme.get('/tokens', requireAuth, async (c) => {
                     session_valid_hours: config.session_valid_hours,
                     min_bet_amount: config.min_bet_amount,
                     max_bet_amount: config.max_bet_amount,
-                    bet_step: config.bet_step
+                    bet_step: config.bet_step,
+                    daily_bet_limit: config.daily_bet_limit  // 🔥 添加每日投注限额
                 }
             }
         });

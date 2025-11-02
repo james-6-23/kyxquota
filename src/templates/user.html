@@ -353,6 +353,7 @@
       @apply bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden;
       position: relative;
       border: 2px solid transparent;
+      animation: fadeInUp 0.5s ease-out forwards;
     }
 
     .achievement-card.unlocked {
@@ -360,7 +361,7 @@
       background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
       box-shadow: 0 4px 20px rgba(251, 191, 36, 0.2);
     }
-    
+
     .achievement-card.unlocked::before {
       content: '';
       position: absolute;
@@ -372,22 +373,22 @@
       background-size: 200% 100%;
       animation: shimmer 2s linear infinite;
     }
-    
+
     @keyframes shimmer {
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
 
     .achievement-card.locked {
-      opacity: 0.65;
-      filter: grayscale(0.5);
+      opacity: 0.75;
+      filter: grayscale(0.3);
       background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     }
-    
+
     .achievement-card:hover {
       transform: translateY(-4px);
     }
-    
+
     .achievement-card.locked:hover {
       transform: translateY(-2px);
     }
@@ -402,11 +403,6 @@
         opacity: 1;
         transform: translateY(0);
       }
-    }
-
-    .achievement-card {
-      animation: fadeInUp 0.5s ease-out forwards;
-      opacity: 0;
     }
 
     /* 为卡片添加错开的动画延迟 */
@@ -1569,7 +1565,7 @@
             
             <!-- 滑块（紧凑版）-->
             <div class="px-4 mb-3">
-              <input type="range" id="supremeBetSlider" min="1000" max="10000" step="100" value="1000" 
+              <input type="range" id="supremeBetSlider" min="1000" max="50000" step="1000" value="1000"
                      class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer"
                      oninput="updateSupremeBetDisplay(this.value)">
             </div>
@@ -7195,13 +7191,14 @@
           if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
             console.log('[updateSupremeTokensUI] 调用 generateSupremeBetOptions');
             generateSupremeBetOptions(supremeBetMin, supremeBetMax);
-            
+
             // 更新滑块范围
             const slider = document.getElementById('supremeBetSlider');
             if (slider) {
               slider.min = supremeBetMin;
               slider.max = supremeBetMax;
               slider.value = supremeBetMin;
+              slider.step = config.bet_step || 1000;  // 🔥 使用配置的步长
               updateSupremeBetDisplay(supremeBetMin);
             }
           } else {
@@ -7325,12 +7322,13 @@
               
               if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
                 generateSupremeBetOptions(supremeBetMin, supremeBetMax);
-                
+
                 const slider = document.getElementById('supremeBetSlider');
                 if (slider) {
                   slider.min = supremeBetMin;
                   slider.max = supremeBetMax;
                   slider.value = supremeBetMin;
+                  slider.step = supremeTokensData.config.bet_step || 1000;  // 🔥 使用配置的步长
                   updateSupremeBetDisplay(supremeBetMin);
                 }
               } else {
@@ -7697,8 +7695,10 @@
         slider.min = minBet;
         slider.max = maxBet;
         slider.value = supremeBetAmount || minBet;
-        slider.step = Math.max(100, Math.floor(range / 100));
-        console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value });
+        // 🔥 使用配置的步长，如果未配置则使用合理的默认值
+        const configStep = supremeTokensData?.config?.bet_step || 1000;
+        slider.step = configStep;
+        console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value, step: slider.step });
       } else {
         console.error('[至尊场] 找不到 supremeBetSlider 元素');
       }
@@ -8843,6 +8843,9 @@
         const result = await response.json();
 
         if (result.success && result.data) {
+          // 🔥 保存排行榜数据到全局状态（用于分页）
+          window.achievementLeaderboardData = result.data;
+          window.achievementLeaderboardPage = 1;  // 重置到第一页
           renderAchievementLeaderboard(result.data);
         } else {
           container.innerHTML = `
@@ -8883,16 +8886,32 @@
         return;
       }
 
+      // 🎯 分页配置
+      const itemsPerPage = 20;
+      const currentPage = window.achievementLeaderboardPage || 1;
+      const totalPages = Math.ceil(leaderboard.length / itemsPerPage);
+      const startIndex = (currentPage - 1) * itemsPerPage;
+      const endIndex = startIndex + itemsPerPage;
+      const currentPageData = leaderboard.slice(startIndex, endIndex);
+
       // 生成排行榜HTML
       container.innerHTML = `
         <div class="bg-white rounded-2xl shadow-lg overflow-hidden">
           <!-- 排行榜标题 -->
           <div class="bg-gradient-to-r from-amber-500 to-yellow-500 p-6 text-white">
-            <h2 class="text-2xl font-bold flex items-center gap-3">
-              <span>🏆</span>
-              <span>成就排行榜</span>
-            </h2>
-            <p class="text-yellow-100 text-sm mt-2">根据解锁成就数量和累计奖励排名</p>
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="text-2xl font-bold flex items-center gap-3">
+                  <span>🏆</span>
+                  <span>成就排行榜</span>
+                </h2>
+                <p class="text-yellow-100 text-sm mt-2">根据解锁成就数量和累计奖励排名</p>
+              </div>
+              <div class="text-right">
+                <p class="text-yellow-100 text-sm">总计 ${leaderboard.length} 位玩家</p>
+                <p class="text-white text-lg font-bold">第 ${currentPage} / ${totalPages} 页</p>
+              </div>
+            </div>
           </div>
 
           <!-- 排行榜表格 -->
@@ -8909,11 +8928,11 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100">
-                ${leaderboard.map((player, index) => {
-                  const rank = index + 1;
+                ${currentPageData.map((player, pageIndex) => {
+                  const rank = startIndex + pageIndex + 1;
                   const rankIcon = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : '';
                   const rankClass = rank <= 3 ? 'text-yellow-600 font-bold' : 'text-slate-600';
-                  
+
                   return `
                     <tr class="hover:bg-slate-50 transition-colors ${rank <= 3 ? 'bg-yellow-50/30' : ''}">
                       <!-- 排名 -->
@@ -8923,7 +8942,7 @@
                           <span class="${rankClass} text-lg font-semibold">${rank}</span>
                         </div>
                       </td>
-                      
+
                       <!-- 玩家 -->
                       <td class="px-6 py-4 whitespace-nowrap">
                         <div>
@@ -8931,7 +8950,7 @@
                           ${player.username !== player.linux_do_username ? `<div class="text-xs text-slate-500">${escapeHtml(player.username)}</div>` : ''}
                         </div>
                       </td>
-                      
+
                       <!-- 解锁成就 -->
                       <td class="px-6 py-4 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1">
@@ -8940,7 +8959,7 @@
                           <span class="text-xs text-slate-400">/ ${player.total_achievements}</span>
                         </div>
                       </td>
-                      
+
                       <!-- 完成度 -->
                       <td class="px-6 py-4 whitespace-nowrap text-center">
                         <div class="flex flex-col items-center gap-1">
@@ -8952,7 +8971,7 @@
                           </div>
                         </div>
                       </td>
-                      
+
                       <!-- 已领奖励 -->
                       <td class="px-6 py-4 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1">
@@ -8960,7 +8979,7 @@
                           <span class="text-sm font-bold text-green-600">${formatAchievementQuota(player.claimed_rewards)}</span>
                         </div>
                       </td>
-                      
+
                       <!-- 徽章 -->
                       <td class="px-6 py-4 whitespace-nowrap text-center">
                         <div class="flex items-center justify-center gap-1">
@@ -8976,8 +8995,102 @@
               </tbody>
             </table>
           </div>
+
+          <!-- 🎯 分页控件 -->
+          <div class="bg-slate-50 px-6 py-4 border-t border-slate-200">
+            <div class="flex items-center justify-between flex-wrap gap-4">
+              <!-- 左侧：显示范围信息 -->
+              <div class="text-sm text-slate-600">
+                显示 <span class="font-semibold text-slate-900">${startIndex + 1}</span>
+                - <span class="font-semibold text-slate-900">${Math.min(endIndex, leaderboard.length)}</span>
+                / 共 <span class="font-semibold text-slate-900">${leaderboard.length}</span> 位玩家
+              </div>
+
+              <!-- 右侧：分页按钮 -->
+              <div class="flex items-center gap-2">
+                <!-- 首页 -->
+                <button onclick="changeAchievementLeaderboardPage(1)"
+                        ${currentPage === 1 ? 'disabled' : ''}
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-all
+                               ${currentPage === 1 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'}">
+                  <span>⏮️</span>
+                  <span class="hidden sm:inline ml-1">首页</span>
+                </button>
+
+                <!-- 上一页 -->
+                <button onclick="changeAchievementLeaderboardPage(${currentPage - 1})"
+                        ${currentPage === 1 ? 'disabled' : ''}
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-all
+                               ${currentPage === 1 ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'}">
+                  <span>⬅️</span>
+                  <span class="hidden sm:inline ml-1">上一页</span>
+                </button>
+
+                <!-- 页码跳转 -->
+                <div class="flex items-center gap-2">
+                  <input type="number"
+                         id="achievementPageInput"
+                         min="1"
+                         max="${totalPages}"
+                         value="${currentPage}"
+                         class="w-16 px-2 py-2 text-sm text-center border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500"
+                         onkeypress="if(event.key === 'Enter') changeAchievementLeaderboardPage(parseInt(this.value))">
+                  <span class="text-sm text-slate-600">/ ${totalPages}</span>
+                  <button onclick="changeAchievementLeaderboardPage(parseInt(document.getElementById('achievementPageInput').value))"
+                          class="px-3 py-2 text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-all">
+                    跳转
+                  </button>
+                </div>
+
+                <!-- 下一页 -->
+                <button onclick="changeAchievementLeaderboardPage(${currentPage + 1})"
+                        ${currentPage === totalPages ? 'disabled' : ''}
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-all
+                               ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'}">
+                  <span class="hidden sm:inline mr-1">下一页</span>
+                  <span>➡️</span>
+                </button>
+
+                <!-- 末页 -->
+                <button onclick="changeAchievementLeaderboardPage(${totalPages})"
+                        ${currentPage === totalPages ? 'disabled' : ''}
+                        class="px-3 py-2 text-sm font-medium rounded-lg transition-all
+                               ${currentPage === totalPages ? 'bg-slate-200 text-slate-400 cursor-not-allowed' : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-300'}">
+                  <span class="hidden sm:inline mr-1">末页</span>
+                  <span>⏭️</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       `;
+    }
+
+    // 🎯 切换排行榜页码
+    function changeAchievementLeaderboardPage(page) {
+      // 保存排行榜数据到全局变量（如果还没有）
+      if (!window.achievementLeaderboardData) {
+        console.error('排行榜数据未加载');
+        return;
+      }
+
+      const totalPages = Math.ceil(window.achievementLeaderboardData.length / 20);
+
+      // 验证页码范围
+      if (page < 1) page = 1;
+      if (page > totalPages) page = totalPages;
+
+      // 更新当前页码
+      window.achievementLeaderboardPage = page;
+
+      // 重新渲染排行榜
+      renderAchievementLeaderboard(window.achievementLeaderboardData);
+
+      // 滚动到排行榜顶部
+      const container = document.getElementById('achievementLeaderboard');
+      if (container) {
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     // 筛选成就
