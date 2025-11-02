@@ -1,4 +1,5 @@
 import type { CacheStats } from './types';
+import logger from './utils/logger';
 
 interface CacheEntry {
     value: any;
@@ -43,7 +44,7 @@ export class CacheManager {
     private startPeriodicCleanup(): void {
         this.cleanupTimer = setInterval(() => {
             this.cleanupExpiredCache();
-        }, 300000); // 5 分钟
+        }, 1800000); // 30 分钟（从5分钟延长，减少日志频率）
     }
 
     /**
@@ -68,10 +69,9 @@ export class CacheManager {
             this.stats.evictions++;
         }
 
+        // 只在有过期项时输出日志
         if (keysToDelete.length > 0) {
-            console.log(
-                `[缓存] 已清理 ${keysToDelete.length} 个过期项，内存: ${(this.stats.memoryUsage / 1024 / 1024).toFixed(2)}MB`
-            );
+            logger.info('定时任务', `🧹 缓存清理完成 - 清理 ${keysToDelete.length} 个过期项，内存: ${(this.stats.memoryUsage / 1024 / 1024).toFixed(2)}MB`);
         }
     }
 

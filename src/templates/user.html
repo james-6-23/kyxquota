@@ -780,6 +780,17 @@
               </button>
             </div>
             
+            <!-- 💎 至尊场倒计时和返回按钮 -->
+            <div id="supremeModeIndicator" class="hidden flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 rounded-lg shadow-lg ml-2">
+              <div class="text-white">
+                <p class="text-xs opacity-75 leading-tight">剩余时间</p>
+                <p id="supremeTimeRemaining" class="text-sm font-mono font-bold text-yellow-300 leading-tight">23:59:59</p>
+              </div>
+              <button onclick="exitSupremeMode()" class="px-2.5 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-bold rounded transition-all whitespace-nowrap">
+                返回高级场
+              </button>
+            </div>
+            
           </div>
         </div>
       </div>
@@ -1063,18 +1074,6 @@
 
       <!-- ========== 💎 至尊场容器 ========== -->
       <div id="supremeModeContainer" class="hidden flex-1 flex flex-col items-center justify-center p-6 overflow-y-auto pb-[100px] transition-opacity duration-300">
-        
-        <!-- 🔥 至尊场退出按钮（在主界面更明显的位置） -->
-        <div class="flex justify-center mb-4">
-          <button onclick="exitSupremeMode()" 
-                  class="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg 
-                         hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-xl
-                         flex items-center gap-2 animate-pulse">
-            <span class="text-xl">🚪</span>
-            <span>退出至尊场</span>
-            <span class="text-sm opacity-70">（返回高级场）</span>
-          </button>
-        </div>
         
         <!-- 标题 -->
         <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-yellow-400 mb-3 sm:mb-4 drop-shadow-lg animate-pulse">
@@ -6664,6 +6663,9 @@
           updateSlotUI();
           updateBetLimitProgressBar();
           
+          // 💎 启动至尊场倒计时（显示在导航栏）
+          startSupremeModeTimer();
+          
           // 🔥 立即调用更新UI（包括按钮文本）
           await loadSupremeTokens();  // 这会调用updateSupremeTokensUI
           
@@ -6895,6 +6897,7 @@
       const advancedModeTitle = document.getElementById('advancedModeTitle');
       const supremeModeTitle = document.getElementById('supremeModeTitle');
       const advancedModeIndicator = document.getElementById('advancedModeIndicator');
+      const supremeModeIndicator = document.getElementById('supremeModeIndicator');
       const advancedTicketBar = document.getElementById('advancedTicketBar');
       const supremeTokenBar = document.getElementById('supremeTokenBar');
       
@@ -6915,6 +6918,7 @@
         if (advancedModeTitle) advancedModeTitle.classList.add('hidden');
         if (supremeModeTitle) supremeModeTitle.classList.add('hidden');
         if (advancedModeIndicator) advancedModeIndicator.classList.add('hidden');
+        if (supremeModeIndicator) supremeModeIndicator.classList.add('hidden');
         if (advancedTicketBar) advancedTicketBar.classList.add('hidden');
         if (supremeTokenBar) supremeTokenBar.classList.add('hidden');
         
@@ -6937,6 +6941,7 @@
           // 💎 至尊场
           if (supremeContainer) supremeContainer.classList.remove('hidden');
           if (supremeModeTitle) supremeModeTitle.classList.remove('hidden');
+          if (supremeModeIndicator) supremeModeIndicator.classList.remove('hidden');
           if (supremeTokenBar) supremeTokenBar.classList.remove('hidden');
           targetContainer = supremeContainer;
         }
@@ -6976,11 +6981,14 @@
       
       if (!supremeTokensData || !supremeTokensData.supreme_mode_until) return;
       
-      supremeModeTimer = setInterval(() => {
+      const updateTimer = () => {
         const now = Date.now();
         const remaining = supremeTokensData.supreme_mode_until - now;
         
         if (remaining <= 0) {
+          // 时间到，自动退出至尊场
+          const timeEl = document.getElementById('supremeTimeRemaining');
+          if (timeEl) timeEl.textContent = '00:00:00';
           stopSupremeModeTimer();
           showToast('至尊场时间已到，已自动退出', 'error');
           isInSupremeMode = false;
@@ -7004,8 +7012,23 @@
             updateSlotUI();
             updateBetLimitProgressBar();
           });
+          
+          return;
         }
-      }, 1000);
+        
+        const hours = Math.floor(remaining / 3600000);
+        const minutes = Math.floor((remaining % 3600000) / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        
+        const timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        // 🔥 更新导航栏中的倒计时
+        const timeEl = document.getElementById('supremeTimeRemaining');
+        if (timeEl) timeEl.textContent = timeStr;
+      };
+      
+      updateTimer(); // 立即更新一次
+      supremeModeTimer = setInterval(updateTimer, 1000);
     }
     
     // 💎 停止至尊场倒计时

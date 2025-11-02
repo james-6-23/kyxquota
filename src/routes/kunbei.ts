@@ -288,17 +288,17 @@ kunbei.get('/my-loans', requireAuth, async (c) => {
 });
 
 /**
- * 定时检查逾期借款（每1小时执行，作为兜底机制）
+ * 定时检查逾期借款（每6小时执行，作为兜底机制）
  * 主要依赖用户操作时的实时检查（借款、还款、游戏等）
  */
 setInterval(() => {
     try {
-        console.log('[坤呗] 🕐 执行定时逾期检查（兜底机制）...');
+        logger.info('定时任务', '🕐 执行坤呗逾期检查（兜底机制）...');
         checkOverdueLoans();
-    } catch (error) {
-        console.error('[坤呗] 逾期检查失败:', error);
+    } catch (error: any) {
+        logger.error('定时任务', `❌ 坤呗逾期检查失败: ${error.message}`);
     }
-}, 3600000);  // 每1小时（降低服务器压力）
+}, 21600000);  // 每6小时（从1小时延长，减少日志频率）
 
 export default kunbei;
 

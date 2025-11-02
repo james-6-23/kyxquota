@@ -1817,17 +1817,7 @@ function initQueries() {
         ),
     };
 
-    // 定期清理过期 Session（每小时执行一次）
-    setInterval(() => {
-        try {
-        const now = Date.now();
-            sessionQueries.cleanup.run(now);
-            // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
-            console.log(`🧹 已执行过期 Session 清理`);
-        } catch (error: any) {
-            console.error(`❌ Session 清理失败:`, error.message);
-        }
-    }, 3600000);
+    // 🔥 注意：Session清理定时器已在下方统一设置，这里移除重复的定时器
 
     console.log('✅ 数据库查询语句已预编译（含高级场、至尊场和配置方案系统）');
 
@@ -2306,17 +2296,16 @@ function initQueries() {
         ),
     };
 
-    // 定期清理过期 Session（每小时执行一次）
+    // 🔥 统一的定时清理任务（每6小时执行一次，减少频率）
     setInterval(() => {
         try {
-        const now = Date.now();
+            const now = Date.now();
             sessionQueries.cleanup.run(now);
-            // 注意：Bun SQLite 的 run() 可能不返回 changes，所以简化日志
-            console.log(`🧹 已执行过期 Session 清理`);
+            logger.info('定时任务', '🧹 已执行过期 Session 清理');
         } catch (error: any) {
-            console.error(`❌ Session 清理失败:`, error.message);
+            logger.error('定时任务', `❌ Session 清理失败: ${error.message}`);
         }
-    }, 3600000);
+    }, 21600000);  // 每6小时（从1小时延长，减少日志频率）
 
     console.log('✅ 数据库查询语句已预编译（含高级场、至尊场、配置方案和掉落系统）');
 }

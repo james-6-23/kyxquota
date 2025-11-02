@@ -3,6 +3,7 @@
  */
 
 import { kunbeiQueries, userQueries, adminQueries } from '../database';
+import logger from '../utils/logger';
 import type { KunbeiConfig, UserLoan, UserKunbeiStats, KunbeiGradientConfig } from '../types';
 import { getUserQuota, deductQuota } from './kyx-api';
 
@@ -578,13 +579,29 @@ export async function checkOverdueLoans(): Promise<number> {
                 now
             );
 
+            // 🔥 逾期后强制退出高级场和至尊场
+            try {
+                const { exitAdvancedMode } = await import('./advanced-slot');
+                const { exitSupremeMode } = await import('./supreme-slot');
+                
+                // 强制退出高级场
+                exitAdvancedMode(loan.linux_do_id);
+                logger.warn('坤呗逾期', `用户 ${loan.username} 因逾期已被强制退出高级场`);
+                
+                // 强制退出至尊场
+                exitSupremeMode(loan.linux_do_id);
+                logger.warn('坤呗逾期', `用户 ${loan.username} 因逾期已被强制退出至尊场`);
+            } catch (error: any) {
+                logger.error('坤呗逾期', `退出高级场/至尊场失败: ${error.message}`);
+            }
+
             overdueCount++;
-            console.log(`[坤呗] 借款逾期处理完成 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}`);
+            logger.warn('坤呗', `借款逾期处理完成 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}, 已强制退出高级场和至尊场`);
         }
     }
 
     if (overdueCount > 0) {
-        console.log(`[坤呗] 本次检查处理了 ${overdueCount} 笔逾期借款`);
+        logger.info('坤呗', `本次检查处理了 ${overdueCount} 笔逾期借款，已强制退出相关场次`);
     }
 
     return overdueCount;
