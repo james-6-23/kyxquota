@@ -846,9 +846,9 @@
   </div>
 
   <!-- 成就系统界面 -->
-  <div id="achievementSection" class="hidden">
+  <div id="achievementSection" class="hidden fixed inset-0 bg-slate-50 z-50 overflow-y-auto">
     <!-- 固定顶部导航栏（复用主界面导航栏样式）-->
-    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-50">
+    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-[60]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center h-16">
           <!-- Logo -->
@@ -884,18 +884,18 @@
           <div class="flex items-center gap-3 ml-auto">
             <div class="relative">
               <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
-                <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
-                  <span id="userInitial">U</span>
+                <div id="achievementUserAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                  <span id="achievementUserInitial">U</span>
                 </div>
                 <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
-              <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+              <div id="achievementDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
                 <div class="px-4 py-3 border-b border-slate-200">
-                  <p id="linuxDoUsername" class="font-semibold text-slate-900 text-sm">@用户名</p>
-                  <p id="userName" class="text-sm text-slate-600">公益站: 用户名</p>
-                  <p id="userId" class="text-xs text-slate-500">ID: xxx</p>
+                  <p id="achievementLinuxDoUsername" class="font-semibold text-slate-900 text-sm">@用户名</p>
+                  <p id="achievementUserName" class="text-sm text-slate-600">公益站: 用户名</p>
+                  <p id="achievementUserId" class="text-xs text-slate-500">ID: xxx</p>
                 </div>
                 <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
                   <span>🎰</span> 抽奖记录
@@ -1051,7 +1051,7 @@
       <button id="backToTopBtn" onclick="scrollToTop()" 
               class="hidden fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-amber-500 to-yellow-500 
                      text-white rounded-full shadow-xl hover:shadow-2xl transition-all duration-200
-                     flex items-center justify-center z-40
+                     flex items-center justify-center z-50
                      transform hover:scale-110 active:scale-95">
         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
@@ -1098,6 +1098,13 @@
                       class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
                 <span class="text-base sm:text-lg">🎰</span>
                 <span class="hidden sm:inline">娱乐站</span>
+              </button>
+              
+              <!-- 成就 -->
+              <button data-btn="achievement" onclick="switchToAchievement()" 
+                      class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
+                <span class="text-base sm:text-lg">🏆</span>
+                <span class="hidden sm:inline">成就</span>
               </button>
             </div>
           </div>
@@ -2594,10 +2601,16 @@
       const mainSection = document.getElementById('mainSection');
       const achievementSection = document.getElementById('achievementSection');
       const slotModal = document.getElementById('slotMachineModal');
+      const backToTopBtn = document.getElementById('backToTopBtn');
 
       // 隐藏成就界面
       if (achievementSection && !achievementSection.classList.contains('hidden')) {
         achievementSection.classList.add('hidden');
+      }
+      
+      // ✅ 隐藏返回顶部按钮
+      if (backToTopBtn) {
+        backToTopBtn.classList.add('hidden');
       }
 
       // 添加退出动画
@@ -2635,6 +2648,12 @@
 
       // 更新主界面的切换按钮
       updateSwitchButtons('entertain');
+      
+      // ✅ 隐藏返回顶部按钮
+      const backToTopBtn = document.getElementById('backToTopBtn');
+      if (backToTopBtn) {
+        backToTopBtn.classList.add('hidden');
+      }
 
       // 打开老虎机
       showSlotMachine();
@@ -2677,6 +2696,9 @@
       setTimeout(() => {
         achievementSection.classList.remove('fade-enter', 'fade-enter-active');
       }, 300);
+
+      // ✅ 同步用户信息到成就界面
+      syncUserInfoToAchievement();
 
       // 加载成就数据
       loadAchievements();
@@ -2841,7 +2863,18 @@
     }
 
     function toggleDropdown() {
-      document.getElementById('dropdownMenu').classList.toggle('hidden');
+      const dropdown = document.getElementById('dropdownMenu');
+      const achievementDropdown = document.getElementById('achievementDropdownMenu');
+      
+      // 检查当前在哪个页面
+      const achievementSection = document.getElementById('achievementSection');
+      const isInAchievementPage = achievementSection && !achievementSection.classList.contains('hidden');
+      
+      if (isInAchievementPage && achievementDropdown) {
+        achievementDropdown.classList.toggle('hidden');
+      } else if (dropdown) {
+        dropdown.classList.toggle('hidden');
+      }
     }
 
     function toggleSlotDropdown() {
@@ -2851,6 +2884,7 @@
     document.addEventListener('click', (e) => {
       const dropdown = document.getElementById('dropdownMenu');
       const slotDropdown = document.getElementById('slotDropdownMenu');
+      const achievementDropdown = document.getElementById('achievementDropdownMenu');
       
       if (dropdown && !e.target.closest('button[onclick="toggleDropdown()"]') && !dropdown.contains(e.target)) {
         dropdown.classList.add('hidden');
@@ -2858,6 +2892,10 @@
       
       if (slotDropdown && !e.target.closest('button[onclick="toggleSlotDropdown()"]') && !slotDropdown.contains(e.target)) {
         slotDropdown.classList.add('hidden');
+      }
+      
+      if (achievementDropdown && !e.target.closest('button[onclick="toggleDropdown()"]') && !achievementDropdown.contains(e.target)) {
+        achievementDropdown.classList.add('hidden');
       }
     });
 
@@ -4512,6 +4550,49 @@
             // 如果没有头像，显示首字母
             document.getElementById('slotUserInitial').textContent = userInitial;
           }
+        }
+      }
+    }
+    
+    // ✅ 同步用户信息到成就界面
+    function syncUserInfoToAchievement() {
+      // 从主界面复制用户信息到成就界面
+      const linuxDoUsername = document.getElementById('linuxDoUsername')?.textContent;
+      const userName = document.getElementById('userName')?.textContent;
+      const userId = document.getElementById('userId')?.textContent;
+      const userAvatar = document.getElementById('userAvatar');
+      const userInitial = document.getElementById('userInitial')?.textContent;
+      
+      // 同步用户名
+      const achievementLinuxDoUsername = document.getElementById('achievementLinuxDoUsername');
+      const achievementUserName = document.getElementById('achievementUserName');
+      const achievementUserId = document.getElementById('achievementUserId');
+      
+      if (achievementLinuxDoUsername && linuxDoUsername) {
+        achievementLinuxDoUsername.textContent = linuxDoUsername;
+      }
+      if (achievementUserName && userName) {
+        achievementUserName.textContent = userName;
+      }
+      if (achievementUserId && userId) {
+        achievementUserId.textContent = userId;
+      }
+      
+      // 复制头像样式
+      const achievementAvatar = document.getElementById('achievementUserAvatar');
+      const achievementInitial = document.getElementById('achievementUserInitial');
+      
+      if (userAvatar && achievementAvatar) {
+        const bgImage = userAvatar.style.backgroundImage;
+        
+        if (bgImage) {
+          achievementAvatar.style.backgroundImage = bgImage;
+          achievementAvatar.style.backgroundSize = 'cover';
+          achievementAvatar.style.backgroundPosition = 'center';
+          if (achievementInitial) achievementInitial.textContent = '';
+        } else if (userInitial && achievementInitial) {
+          // 如果没有头像，显示首字母
+          achievementInitial.textContent = userInitial;
         }
       }
     }
@@ -7703,6 +7784,8 @@
             document.getElementById('achievementSection').classList.remove('hidden');
             await loadQuota();
             updateSwitchButtons('achievement');
+            // ✅ 同步用户信息到成就界面
+            syncUserInfoToAchievement();
             // 加载成就数据
             loadAchievements();
             // 加载待发放记录统计
@@ -8916,17 +8999,22 @@
       return classes[rarity] || classes.common;
     }
 
-    // 格式化额度显示（成就系统专用）
-    // 📌 注意：此函数接收的是原始聪值（satoshis），不是美元
-    // 例如：500000聪 = $1，显示为 "500K"
-    // 用于成就系统的奖励额度缩写显示（1K=1000聪, 1M=1000000聪）
+    // 格式化额度显示（成就系统专用 - 显示为美元）
+    // 📌 注意：此函数接收的是原始聪值（satoshis），转换为美元显示
+    // 例如：500000聪 = $1，显示为 "$1"
+    // 例如：50000000聪 = $100，显示为 "$100"
+    // 例如：2500000000聪 = $5000，显示为 "$5.0K"
     function formatAchievementQuota(quota) {
-      if (quota >= 1000000) {
-        return (quota / 1000000).toFixed(1) + 'M';
-      } else if (quota >= 1000) {
-        return (quota / 1000).toFixed(1) + 'K';
+      // 转换为美元
+      const usd = quota / 500000;
+      
+      if (usd >= 1000) {
+        return '$' + (usd / 1000).toFixed(1) + 'K';  // $5.0K
+      } else if (usd >= 1) {
+        return '$' + usd.toFixed(0);  // $100
+      } else {
+        return '$' + usd.toFixed(2);  // $0.50
       }
-      return quota.toString();
     }
 
     // ========== 结束：成就系统相关功能 ==========
