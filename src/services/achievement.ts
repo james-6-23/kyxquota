@@ -9,6 +9,21 @@ import logger from '../utils/logger';
 import type { Achievement, AchievementProgress, UserAchievement } from '../types';
 
 /**
+ * 获取用户显示名称（优先使用 linux_do_username）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    try {
+        const user = userQueries.get.get(linuxDoId);
+        if (user?.linux_do_username) {
+            return `@${user.linux_do_username} (${linuxDoId})`;
+        }
+        return linuxDoId;
+    } catch (error) {
+        return linuxDoId;
+    }
+}
+
+/**
  * 检查并解锁成就
  * @param linuxDoId 用户ID
  * @param achievementKey 成就标识
@@ -21,7 +36,7 @@ export async function checkAndUnlockAchievement(
     eventData?: any
 ): Promise<{ unlocked: boolean; achievement?: Achievement }> {
     try {
-        logger.debug('成就检查', `开始检查成就 [${achievementKey}] - 用户: ${linuxDoId}`);
+        logger.debug('成就检查', `开始检查成就 [${achievementKey}] - 用户: ${getUserDisplayName(linuxDoId)}`);
 
         // 检查成就是否已解锁
         const userAchievement = achievementQueries.getUserAchievement.get(linuxDoId, achievementKey);
@@ -60,7 +75,7 @@ export async function checkAndUnlockAchievement(
         // 更新用户统计
         await updateUserAchievementStats(linuxDoId);
 
-        logger.info('成就系统', `🏆 用户 ${linuxDoId} 成功解锁成就: ${achievement.achievement_name} [${achievement.rarity}] +${achievement.reward_quota}`);
+        logger.info('成就系统', `🏆 用户 ${getUserDisplayName(linuxDoId)} 成功解锁成就: ${achievement.achievement_name} [${achievement.rarity}] +${achievement.reward_quota}`);
 
         // 检查完美主义者成就（每次解锁成就后检查）
         await checkPerfectionistAchievement(linuxDoId);
@@ -266,7 +281,7 @@ export async function updateAchievementProgress(
     increment: number = 1
 ): Promise<void> {
     try {
-        logger.debug('成就进度', `更新进度 [${achievementKey}] +${increment} - 用户: ${linuxDoId}`);
+        logger.debug('成就进度', `更新进度 [${achievementKey}] +${increment} - 用户: ${getUserDisplayName(linuxDoId)}`);
 
         // 检查成就是否已解锁
         const userAchievement = achievementQueries.getUserAchievement.get(linuxDoId, achievementKey);
@@ -302,7 +317,7 @@ export async function updateAchievementProgress(
         );
 
         const percentage = ((currentValue / targetValue) * 100).toFixed(1);
-        logger.info('成就进度', `📊 用户 ${linuxDoId} 成就 [${achievement.achievement_name}] 进度: ${oldValue} → ${currentValue}/${targetValue} (${percentage}%)`);
+        logger.info('成就进度', `📊 用户 ${getUserDisplayName(linuxDoId)} 成就 [${achievement.achievement_name}] 进度: ${oldValue} → ${currentValue}/${targetValue} (${percentage}%)`);
 
         // 检查是否达成
         if (currentValue >= targetValue) {
@@ -330,7 +345,7 @@ export async function claimAchievementReward(
     newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; reward?: number }> {
     try {
-        logger.info('成就奖励', `用户 ${linuxDoId} 请求领取成就奖励: ${achievementKey}`);
+        logger.info('成就奖励', `用户 ${getUserDisplayName(linuxDoId)} 请求领取成就奖励: ${achievementKey}`);
 
         // 检查成就是否已解锁
         const userAchievement = achievementQueries.getUserAchievement.get(linuxDoId, achievementKey);
@@ -377,7 +392,7 @@ export async function claimAchievementReward(
         // 更新用户统计
         await updateUserAchievementStats(linuxDoId);
 
-        logger.info('成就奖励', `💰 用户 ${linuxDoId} 成功领取成就奖励: ${achievement.achievement_name} (+${achievement.reward_quota})`);
+        logger.info('成就奖励', `💰 用户 ${getUserDisplayName(linuxDoId)} 成功领取成就奖励: ${achievement.achievement_name} (+${achievement.reward_quota})`);
 
         return {
             success: true,
@@ -403,12 +418,12 @@ export async function claimAllRewards(
     newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; totalReward?: number; count?: number }> {
     try {
-        logger.info('批量领取', `用户 ${linuxDoId} 请求批量领取所有成就奖励`);
+        logger.info('批量领取', `用户 ${getUserDisplayName(linuxDoId)} 请求批量领取所有成就奖励`);
 
         const unclaimedAchievements = achievementQueries.getUnclaimedRewards.all(linuxDoId);
 
         if (unclaimedAchievements.length === 0) {
-            logger.info('批量领取', `用户 ${linuxDoId} 没有可领取的奖励`);
+            logger.info('批量领取', `用户 ${getUserDisplayName(linuxDoId)} 没有可领取的奖励`);
             return { success: false, message: '没有可领取的奖励' };
         }
 
@@ -486,7 +501,7 @@ export function getUserAchievements(linuxDoId: string) {
  */
 export function getAllAchievementsWithStats(linuxDoId?: string) {
     try {
-        logger.debug('成就数据', `获取所有成就及统计数据${linuxDoId ? ` - 用户: ${linuxDoId}` : ''}`);
+        logger.debug('成就数据', `获取所有成就及统计数据${linuxDoId ? ` - 用户: ${getUserDisplayName(linuxDoId)}` : ''}`);
 
         const allAchievements = achievementQueries.getAll.all();
         const achievementStats = achievementQueries.getAchievementStats.all();
@@ -556,7 +571,7 @@ export function getUserAchievementStats(linuxDoId: string) {
         const now = Date.now();
         achievementQueries.updateStats.run(linuxDoId, totalAchievements, 0, 0, 0, 0, now);
         stats = achievementQueries.getStats.get(linuxDoId);
-        logger.debug('统计更新', `创建用户 ${linuxDoId} 初始统计: ${totalAchievements} 个成就`);
+        logger.debug('统计更新', `创建用户 ${getUserDisplayName(linuxDoId)} 初始统计: ${totalAchievements} 个成就`);
     }
 
     return stats;
@@ -567,7 +582,7 @@ export function getUserAchievementStats(linuxDoId: string) {
  */
 async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
     try {
-        logger.debug('统计更新', `开始更新用户 ${linuxDoId} 成就统计`);
+        logger.debug('统计更新', `开始更新用户 ${getUserDisplayName(linuxDoId)} 成就统计`);
 
         const allAchievements = achievementQueries.getAll.all();
         const userAchievements = achievementQueries.getUserAchievements.all(linuxDoId);
@@ -603,9 +618,9 @@ async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
             now
         );
 
-        logger.debug('统计更新', `✅ 用户 ${linuxDoId} 统计更新完成: ${unlockedAchievements}/${totalAchievements} (${completionRate.toFixed(1)}%), 已领奖励: ${claimedRewards}/${totalRewards}`);
+        logger.debug('统计更新', `✅ 用户 ${getUserDisplayName(linuxDoId)} 统计更新完成: ${unlockedAchievements}/${totalAchievements} (${completionRate.toFixed(1)}%), 已领奖励: ${claimedRewards}/${totalRewards}`);
     } catch (error: any) {
-        logger.error('成就系统', `❌ 更新统计失败 [${linuxDoId}]: ${error.message}`, error.stack);
+        logger.error('成就系统', `❌ 更新统计失败 [${getUserDisplayName(linuxDoId)}]: ${error.message}`, error.stack);
     }
 }
 
@@ -629,7 +644,7 @@ export function setUserBadges(
     badge3?: string
 ): { success: boolean; message: string } {
     try {
-        logger.info('徽章设置', `用户 ${linuxDoId} 设置徽章: [${badge1 || '-'}, ${badge2 || '-'}, ${badge3 || '-'}]`);
+        logger.info('徽章设置', `用户 ${getUserDisplayName(linuxDoId)} 设置徽章: [${badge1 || '-'}, ${badge2 || '-'}, ${badge3 || '-'}]`);
 
         // 验证徽章是否已解锁
         const badges = [badge1, badge2, badge3].filter(b => b);
@@ -650,10 +665,10 @@ export function setUserBadges(
             linuxDoId
         );
 
-        logger.info('徽章设置', `✅ 用户 ${linuxDoId} 徽章设置成功`);
+        logger.info('徽章设置', `✅ 用户 ${getUserDisplayName(linuxDoId)} 徽章设置成功`);
         return { success: true, message: '徽章设置成功' };
     } catch (error: any) {
-        logger.error('成就系统', `❌ 设置徽章失败 [${linuxDoId}]: ${error.message}`, error.stack);
+        logger.error('成就系统', `❌ 设置徽章失败 [${getUserDisplayName(linuxDoId)}]: ${error.message}`, error.stack);
         return { success: false, message: `设置失败: ${error.message}` };
     }
 }

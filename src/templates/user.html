@@ -392,30 +392,56 @@
       transform: translateY(-2px);
     }
 
+    /* 成就卡片淡入动画 */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .achievement-card {
+      animation: fadeInUp 0.5s ease-out forwards;
+      opacity: 0;
+    }
+
+    /* 为卡片添加错开的动画延迟 */
+    .achievement-card:nth-child(1) { animation-delay: 0.05s; }
+    .achievement-card:nth-child(2) { animation-delay: 0.1s; }
+    .achievement-card:nth-child(3) { animation-delay: 0.15s; }
+    .achievement-card:nth-child(4) { animation-delay: 0.2s; }
+    .achievement-card:nth-child(5) { animation-delay: 0.25s; }
+    .achievement-card:nth-child(6) { animation-delay: 0.3s; }
+    .achievement-card:nth-child(n+7) { animation-delay: 0.35s; }
+
     .achievement-filter-btn {
-      @apply text-slate-600 hover:bg-slate-100 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200;
-      border: 2px solid transparent;
+      @apply text-slate-600 hover:bg-slate-100 px-3 py-1.5 rounded-md font-medium text-xs transition-all duration-200;
+      border: 1.5px solid transparent;
       display: inline-flex;
       align-items: center;
-      gap: 0.375rem;
+      gap: 0.25rem;
+      background-color: white;
     }
-    
+
     .achievement-filter-btn:hover {
       border-color: #e2e8f0;
       background: #f1f5f9;
     }
 
     .achievement-filter-btn.active {
-      background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%);
-      color: white;
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-      border: 2px solid #fbbf24;
-      transform: scale(1.05);
+      background: linear-gradient(135deg, #f59e0b 0%, #eab308 100%) !important;
+      color: white !important;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+      border: 1.5px solid #fbbf24;
+      font-weight: 600;
     }
-    
+
     .achievement-filter-btn.active:hover {
-      box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
-      transform: scale(1.08);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.5);
     }
 
     .achievement-progress-bar {
@@ -915,95 +941,88 @@
     
     <!-- 内容区域 - 添加顶部padding -->
     <div class="max-w-6xl mx-auto p-6 pt-24">
-      <!-- 成就统计面板 - 优化布局 -->
-      <div class="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-2xl p-6 md:p-8 text-white mb-6 shadow-xl animate-in relative overflow-hidden">
+      <!-- 成就统计面板 - 紧凑优化 -->
+      <div class="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-xl p-4 md:p-5 text-white mb-4 shadow-lg animate-in relative overflow-hidden">
         <!-- 背景装饰 -->
-        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2"></div>
-        
+        <div class="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
+
         <!-- 内容 -->
         <div class="relative z-10">
-          <!-- 头部信息 -->
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
-            <div>
-              <h2 class="text-3xl md:text-4xl font-bold mb-2 flex items-center gap-3">
-                <span class="text-4xl">🏆</span>
-                <span>我的成就</span>
-              </h2>
-              <p class="text-sm md:text-base opacity-90">收集成就，解锁奖励，成为传奇玩家</p>
+          <!-- 头部信息 - 紧凑布局 -->
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2">
+              <span class="text-2xl">🏆</span>
+              <div>
+                <h2 class="text-xl md:text-2xl font-bold">我的成就</h2>
+                <p class="text-xs opacity-90 hidden md:block">收集成就，解锁奖励</p>
+              </div>
             </div>
-            <div class="text-center md:text-right bg-white/20 backdrop-blur-md rounded-2xl p-4 min-w-[120px]">
-              <p class="text-xs md:text-sm opacity-90 mb-1">完成度</p>
-              <p id="achievementCompletion" class="text-4xl md:text-5xl font-bold text-yellow-200">0%</p>
+            <div class="text-center bg-white/20 backdrop-blur-md rounded-lg px-3 py-2">
+              <p class="text-xs opacity-90">完成度</p>
+              <p id="achievementCompletion" class="text-2xl font-bold text-yellow-200">0%</p>
             </div>
           </div>
 
-          <!-- 统计卡片 - 响应式网格 -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <!-- 统计卡片 - 紧凑网格 -->
+          <div class="grid grid-cols-4 gap-2 mb-3">
             <!-- 总成就数 -->
-            <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all group">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-2xl group-hover:scale-110 transition-transform">📚</span>
-                <p class="text-xs opacity-75">总数</p>
-              </div>
-              <p id="totalAchievements" class="text-3xl font-bold">0</p>
+            <div class="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center hover:bg-white/25 transition-all">
+              <span class="text-lg block mb-1">📚</span>
+              <p id="totalAchievements" class="text-lg font-bold">0</p>
+              <p class="text-xs opacity-75">总数</p>
             </div>
-            
+
             <!-- 已解锁 -->
-            <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all group">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-2xl group-hover:scale-110 transition-transform">🔓</span>
-                <p class="text-xs opacity-75">解锁</p>
-              </div>
-              <p id="unlockedAchievements" class="text-3xl font-bold text-green-200">0</p>
+            <div class="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center hover:bg-white/25 transition-all">
+              <span class="text-lg block mb-1">🔓</span>
+              <p id="unlockedAchievements" class="text-lg font-bold text-green-200">0</p>
+              <p class="text-xs opacity-75">解锁</p>
             </div>
-            
+
             <!-- 总奖励 -->
-            <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all group">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-2xl group-hover:scale-110 transition-transform">💰</span>
-                <p class="text-xs opacity-75">奖励</p>
-              </div>
-              <p id="totalRewards" class="text-3xl font-bold text-yellow-200">0</p>
+            <div class="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center hover:bg-white/25 transition-all">
+              <span class="text-lg block mb-1">💰</span>
+              <p id="totalRewards" class="text-lg font-bold text-yellow-200">0</p>
+              <p class="text-xs opacity-75">奖励</p>
             </div>
-            
+
             <!-- 已领取 -->
-            <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4 hover:bg-white/30 transition-all group">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-2xl group-hover:scale-110 transition-transform">✅</span>
-                <p class="text-xs opacity-75">已领</p>
-              </div>
-              <p id="claimedRewards" class="text-3xl font-bold text-emerald-200">0</p>
+            <div class="bg-white/15 backdrop-blur-sm rounded-lg p-2 text-center hover:bg-white/25 transition-all">
+              <span class="text-lg block mb-1">✅</span>
+              <p id="claimedRewards" class="text-lg font-bold text-emerald-200">0</p>
+              <p class="text-xs opacity-75">已领</p>
             </div>
           </div>
 
-          <!-- 一键领取按钮 - 优化样式 -->
-          <button id="claimAllRewardsBtn" onclick="claimAllAchievementRewards()" 
-                  class="w-full bg-white hover:bg-yellow-50 text-amber-600 py-4 rounded-xl font-bold text-base
-                         shadow-xl hover:shadow-2xl transition-all duration-200
-                         flex items-center justify-center gap-3
+          <!-- 一键领取按钮 - 紧凑样式 -->
+          <button id="claimAllRewardsBtn" onclick="claimAllAchievementRewards()"
+                  class="w-full bg-white hover:bg-yellow-50 text-amber-600 py-2.5 rounded-lg font-bold text-sm
+                         shadow-lg hover:shadow-xl transition-all duration-200
+                         flex items-center justify-center gap-2
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white
-                         transform hover:scale-[1.02] active:scale-[0.98]
-                         border-2 border-white/50">
-            <span class="text-2xl">💎</span>
+                         transform hover:scale-[1.01] active:scale-[0.99]
+                         border border-white/50">
+            <span class="text-lg">💎</span>
             <span>一键领取所有奖励</span>
           </button>
         </div>
       </div>
 
-      <!-- 视图切换按钮 -->
-      <div class="bg-white rounded-xl shadow-lg p-5 mb-6">
-        <div class="flex items-center gap-3">
-          <span class="text-xl">👀</span>
-          <h3 class="text-lg font-bold text-slate-900">视图模式</h3>
-          <div class="ml-auto flex gap-2">
-            <button id="viewAchievementsBtn" onclick="switchAchievementView('achievements')" 
-                    class="px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-semibold shadow-md text-sm flex items-center gap-2">
+      <!-- 视图切换按钮 - 紧凑版 -->
+      <div class="bg-white rounded-lg shadow p-3 mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-base">👀</span>
+            <h3 class="text-sm font-bold text-slate-900">视图</h3>
+          </div>
+          <div class="flex gap-2">
+            <button id="viewAchievementsBtn" onclick="switchAchievementView('achievements')"
+                    class="px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-md font-semibold shadow-sm text-xs flex items-center gap-1.5">
               <span>🏆</span>
               <span>成就列表</span>
             </button>
-            <button id="viewLeaderboardBtn" onclick="switchAchievementView('leaderboard')" 
-                    class="px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all">
+            <button id="viewLeaderboardBtn" onclick="switchAchievementView('leaderboard')"
+                    class="px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-md font-semibold text-xs flex items-center gap-1.5 transition-all">
               <span>📊</span>
               <span>排行榜</span>
             </button>
@@ -1011,14 +1030,16 @@
         </div>
       </div>
 
-      <!-- 分类筛选 - 优化布局（仅在成就列表视图显示）-->
-      <div id="achievementFilters" class="bg-white rounded-xl shadow-lg p-5 mb-6">
-        <div class="flex items-center gap-3 mb-4">
-          <span class="text-xl">🏷️</span>
-          <h3 class="text-lg font-bold text-slate-900">分类筛选</h3>
-          <span id="filterCount" class="ml-auto text-sm text-slate-500"></span>
+      <!-- 分类筛选 - 紧凑版（仅在成就列表视图显示）-->
+      <div id="achievementFilters" class="bg-white rounded-lg shadow p-3 mb-4">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-base">🏷️</span>
+            <h3 class="text-sm font-bold text-slate-900">筛选</h3>
+          </div>
+          <span id="filterCount" class="text-xs text-slate-500"></span>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-1.5">
           <button onclick="filterAchievements('all', event)" class="achievement-filter-btn active">
             <span>📋</span>
             <span>全部</span>
@@ -1067,7 +1088,7 @@
       </div>
 
       <!-- 成就列表 - 优化响应式布局 -->
-      <div id="achievementsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div id="achievementsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
         <!-- 成就卡片将通过JS动态生成 -->
       </div>
 
@@ -4591,44 +4612,52 @@
     
     // ✅ 同步用户信息到成就界面
     function syncUserInfoToAchievement() {
-      // 从主界面复制用户信息到成就界面
-      const linuxDoUsername = document.getElementById('linuxDoUsername')?.textContent;
-      const userName = document.getElementById('userName')?.textContent;
-      const userId = document.getElementById('userId')?.textContent;
-      const userAvatar = document.getElementById('userAvatar');
-      const userInitial = document.getElementById('userInitial')?.textContent;
-      
-      // 同步用户名
-      const achievementLinuxDoUsername = document.getElementById('achievementLinuxDoUsername');
-      const achievementUserName = document.getElementById('achievementUserName');
-      const achievementUserId = document.getElementById('achievementUserId');
-      
-      if (achievementLinuxDoUsername && linuxDoUsername) {
-        achievementLinuxDoUsername.textContent = linuxDoUsername;
-      }
-      if (achievementUserName && userName) {
-        achievementUserName.textContent = userName;
-      }
-      if (achievementUserId && userId) {
-        achievementUserId.textContent = userId;
-      }
-      
-      // 复制头像样式
-      const achievementAvatar = document.getElementById('achievementUserAvatar');
-      const achievementInitial = document.getElementById('achievementUserInitial');
-      
-      if (userAvatar && achievementAvatar) {
-        const bgImage = userAvatar.style.backgroundImage;
-        
-        if (bgImage) {
-          achievementAvatar.style.backgroundImage = bgImage;
-          achievementAvatar.style.backgroundSize = 'cover';
-          achievementAvatar.style.backgroundPosition = 'center';
-          if (achievementInitial) achievementInitial.textContent = '';
-        } else if (userInitial && achievementInitial) {
-          // 如果没有头像，显示首字母
-          achievementInitial.textContent = userInitial;
+      // ✅ 优化：直接从全局数据或主界面 DOM 同步用户信息
+      try {
+        // 从主界面获取用户信息
+        const linuxDoUsername = document.getElementById('linuxDoUsername')?.textContent;
+        const userName = document.getElementById('userName')?.textContent;
+        const userId = document.getElementById('userId')?.textContent;
+        const userAvatar = document.getElementById('userAvatar');
+        const userInitial = document.getElementById('userInitial')?.textContent;
+
+        // 同步到成就界面
+        const achievementLinuxDoUsername = document.getElementById('achievementLinuxDoUsername');
+        const achievementUserName = document.getElementById('achievementUserName');
+        const achievementUserId = document.getElementById('achievementUserId');
+        const achievementAvatar = document.getElementById('achievementUserAvatar');
+        const achievementInitial = document.getElementById('achievementUserInitial');
+
+        // 更新用户名信息
+        if (achievementLinuxDoUsername && linuxDoUsername) {
+          achievementLinuxDoUsername.textContent = linuxDoUsername;
         }
+        if (achievementUserName && userName) {
+          achievementUserName.textContent = userName;
+        }
+        if (achievementUserId && userId) {
+          achievementUserId.textContent = userId;
+        }
+
+        // 更新头像
+        if (userAvatar && achievementAvatar) {
+          const bgImage = userAvatar.style.backgroundImage;
+
+          if (bgImage) {
+            // 复制背景图片样式
+            achievementAvatar.style.backgroundImage = bgImage;
+            achievementAvatar.style.backgroundSize = 'cover';
+            achievementAvatar.style.backgroundPosition = 'center';
+            if (achievementInitial) achievementInitial.textContent = '';
+          } else if (userInitial && achievementInitial) {
+            // 如果没有头像，显示首字母
+            achievementInitial.textContent = userInitial;
+          }
+        }
+
+        console.log('✅ 用户信息已同步到成就界面');
+      } catch (error) {
+        console.error('❌ 同步用户信息失败:', error);
       }
     }
 
@@ -8858,20 +8887,20 @@
         achievementsList.classList.remove('hidden');
         achievementFilters.classList.remove('hidden');
         achievementLeaderboard.classList.add('hidden');
-        
-        // 更新按钮样式
-        viewAchievementsBtn.className = 'px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-semibold shadow-md text-sm flex items-center gap-2';
-        viewLeaderboardBtn.className = 'px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all';
+
+        // 更新按钮样式 - 紧凑版
+        viewAchievementsBtn.className = 'px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-md font-semibold shadow-sm text-xs flex items-center gap-1.5';
+        viewLeaderboardBtn.className = 'px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-md font-semibold text-xs flex items-center gap-1.5 transition-all';
       } else if (view === 'leaderboard') {
         // 显示排行榜
         achievementsList.classList.add('hidden');
         achievementFilters.classList.add('hidden');
         achievementLeaderboard.classList.remove('hidden');
-        
-        // 更新按钮样式
-        viewAchievementsBtn.className = 'px-4 py-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg font-semibold text-sm flex items-center gap-2 transition-all';
-        viewLeaderboardBtn.className = 'px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-lg font-semibold shadow-md text-sm flex items-center gap-2';
-        
+
+        // 更新按钮样式 - 紧凑版
+        viewAchievementsBtn.className = 'px-3 py-1.5 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-md font-semibold text-xs flex items-center gap-1.5 transition-all';
+        viewLeaderboardBtn.className = 'px-3 py-1.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-md font-semibold shadow-sm text-xs flex items-center gap-1.5';
+
         // 加载排行榜数据
         loadAchievementLeaderboard();
       }

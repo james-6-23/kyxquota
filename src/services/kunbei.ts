@@ -8,6 +8,21 @@ import type { KunbeiConfig, UserLoan, UserKunbeiStats, KunbeiGradientConfig } fr
 import { getUserQuota, deductQuota } from './kyx-api';
 
 /**
+ * 获取用户显示名称（优先使用 linux_do_username）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    try {
+        const user = userQueries.get.get(linuxDoId);
+        if (user?.linux_do_username) {
+            return `@${user.linux_do_username} (${linuxDoId})`;
+        }
+        return linuxDoId;
+    } catch (error) {
+        return linuxDoId;
+    }
+}
+
+/**
  * 获取坤呗配置
  */
 export function getKunbeiConfig(): KunbeiConfig {
@@ -583,20 +598,20 @@ export async function checkOverdueLoans(): Promise<number> {
             try {
                 const { exitAdvancedMode } = await import('./advanced-slot');
                 const { exitSupremeMode } = await import('./supreme-slot');
-                
+
                 // 强制退出高级场
                 exitAdvancedMode(loan.linux_do_id);
-                logger.warn('坤呗逾期', `用户 ${loan.username} 因逾期已被强制退出高级场`);
-                
+                logger.warn('坤呗逾期', `用户 ${getUserDisplayName(loan.linux_do_id)} 因逾期已被强制退出高级场`);
+
                 // 强制退出至尊场
                 exitSupremeMode(loan.linux_do_id);
-                logger.warn('坤呗逾期', `用户 ${loan.username} 因逾期已被强制退出至尊场`);
+                logger.warn('坤呗逾期', `用户 ${getUserDisplayName(loan.linux_do_id)} 因逾期已被强制退出至尊场`);
             } catch (error: any) {
                 logger.error('坤呗逾期', `退出高级场/至尊场失败: ${error.message}`);
             }
 
             overdueCount++;
-            logger.warn('坤呗', `借款逾期处理完成 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}, 已强制退出高级场和至尊场`);
+            logger.warn('坤呗', `借款逾期处理完成 - 用户: ${getUserDisplayName(loan.linux_do_id)}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}, 已强制退出高级场和至尊场`);
 
             // 🏆 逾期成就
             try {

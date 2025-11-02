@@ -50,6 +50,21 @@ import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 import { getAndUseBuff } from '../services/kunbei';
 import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
 
+/**
+ * 获取用户显示名称（优先使用 linux_do_username）
+ */
+function getUserDisplayName(linuxDoId: string): string {
+    try {
+        const user = userQueries.get.get(linuxDoId);
+        if (user?.linux_do_username) {
+            return `@${user.linux_do_username} (${linuxDoId})`;
+        }
+        return linuxDoId;
+    } catch (error) {
+        return linuxDoId;
+    }
+}
+
 const slot = new Hono();
 
 /**
@@ -331,7 +346,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const newTodayBet = todayBetTotal + betAmount;
                 const newTodayBetAmount = newTodayBet / 500000;
 
-                logger.info('高级场检查', `用户: ${user.username}, 今日已投注: $${todayBetAmount.toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${newTodayBetAmount.toFixed(2)}, 限额: $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}`);
+                logger.info('高级场检查', `用户: ${getUserDisplayName(session.linux_do_id)}, 今日已投注: $${todayBetAmount.toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${newTodayBetAmount.toFixed(2)}, 限额: $${(advancedConfig.daily_bet_limit / 500000).toFixed(2)}`);
 
                 if (newTodayBet > advancedConfig.daily_bet_limit) {
                     const remaining = (advancedConfig.daily_bet_limit - todayBetTotal) / 500000;
@@ -390,7 +405,7 @@ slot.post('/spin', requireAuth, async (c) => {
             // 扣除投注额度（计算新额度 = 当前额度 - 投注金额）
             const newQuotaAfterBet = currentQuota - betAmount;
 
-            logger.info('老虎机', `准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+            logger.info('老虎机', `准备扣除投注 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
 
             const deductResult = await updateKyxUserQuota(
                 user.kyx_user_id,
@@ -402,14 +417,14 @@ slot.post('/spin', requireAuth, async (c) => {
             );
 
             if (!deductResult || !deductResult.success) {
-                logger.error('老虎机', `❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+                logger.error('老虎机', `❌ 扣除投注失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 错误: ${deductResult?.message || '未知错误'}`);
                 return c.json({
                     success: false,
                     message: `扣除投注额度失败: ${deductResult?.message || '未知错误'}，请稍后重试`
                 }, 500);
             }
 
-            logger.info('老虎机', `✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
+            logger.info('老虎机', `✅ 扣除投注成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
         }
 
         // 🔥 获取高级场配置（用于倍率）
@@ -474,12 +489,12 @@ slot.post('/spin', requireAuth, async (c) => {
             // 正常中奖 - 使用 calculationBetAmount 计算奖金
             winAmount = Math.floor(calculationBetAmount * result.multiplier);
 
-            logger.info('老虎机', `💰 中奖 - 用户: ${user.username}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
+            logger.info('老虎机', `💰 中奖 - 用户: ${getUserDisplayName(session.linux_do_id)}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
 
             // 增加额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
             if (!currentKyxUser.success || !currentKyxUser.user) {
-                logger.error('老虎机', `❌ 中奖后获取用户信息失败 - 用户: ${user.username}`);
+                logger.error('老虎机', `❌ 中奖后获取用户信息失败 - 用户: ${getUserDisplayName(session.linux_do_id)}`);
                 quotaUpdateFailed = true;
                 quotaUpdateError = '获取用户信息失败，请联系管理员补发奖金';
             } else {

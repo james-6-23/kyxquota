@@ -541,7 +541,8 @@ export function saveGameRecord(
         today
     );
 
-    logger.info('记录保存', `模式: ${slotMode}, 用户: ${username}, 倍率: ${multiplier}`);
+    const displayName = linuxDoUsername ? `@${linuxDoUsername} (${linuxDoId})` : username;
+    logger.info('记录保存', `模式: ${slotMode}, 用户: ${displayName}, 倍率: ${multiplier}`);
 }
 
 /**
