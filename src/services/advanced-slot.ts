@@ -259,7 +259,7 @@ function getTodayDate(): string {
 /**
  * 进入高级场（消耗1张入场券）
  */
-export function enterAdvancedMode(linuxDoId: string): { success: boolean; message: string; validUntil?: number } {
+export async function enterAdvancedMode(linuxDoId: string): Promise<{ success: boolean; message: string; validUntil?: number }> {
     // 🔥 检查坤呗逾期惩罚（禁止进入高级场）
     const kunbeiConfig = getKunbeiConfig();
     if (kunbeiConfig.overdue_ban_advanced) {
@@ -357,6 +357,19 @@ export function enterAdvancedMode(linuxDoId: string): { success: boolean; messag
     } catch (error) {
         logger.error('高级场', `记录进入次数失败: ${error}`);
         // 不影响进入成功
+    }
+
+    // 🏆 触发成就检查
+    try {
+        const { checkAndUnlockAchievement, updateAchievementProgress } = await import('./achievement');
+
+        // 首次进入高级场成就
+        await checkAndUnlockAchievement(linuxDoId, 'first_advanced');
+
+        // 高级场常客成就（进入10次）
+        await updateAchievementProgress(linuxDoId, 'advanced_10_times', 1);
+    } catch (error: any) {
+        logger.warn('高级场', `成就检查失败: ${error.message}`);
     }
 
     return {

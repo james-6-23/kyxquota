@@ -497,9 +497,11 @@ export function getUserAchievementStats(linuxDoId: string) {
 
     if (!stats) {
         // 如果没有统计数据，创建初始数据
+        const totalAchievements = achievementQueries.getAll.all().length;
         const now = Date.now();
-        achievementQueries.updateStats.run(linuxDoId, 0, 0, 0, 0, 0, now);
+        achievementQueries.updateStats.run(linuxDoId, totalAchievements, 0, 0, 0, 0, now);
         stats = achievementQueries.getStats.get(linuxDoId);
+        logger.debug('统计更新', `创建用户 ${linuxDoId} 初始统计: ${totalAchievements} 个成就`);
     }
 
     return stats;

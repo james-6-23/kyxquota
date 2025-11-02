@@ -355,6 +355,19 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
                 now
             );
 
+            // 🏆 触发成就检查
+            try {
+                const { checkAndUnlockAchievement, updateAchievementProgress } = await import('./achievement');
+                
+                // 首次进入至尊场成就
+                await checkAndUnlockAchievement(linuxDoId, 'first_supreme');
+                
+                // 至尊场霸主成就（进入10次）
+                await updateAchievementProgress(linuxDoId, 'supreme_10_times', 1);
+            } catch (error: any) {
+                logger.warn('至尊场', `成就检查失败: ${error.message}`);
+            }
+
             return {
                 success: true,
                 message: `🏆 成功进入至尊场！会话有效期 ${config.session_valid_hours} 小时`,
