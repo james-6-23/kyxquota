@@ -687,7 +687,7 @@ export function recordSupremeGame(
         now
     );
 
-    logger.info('至尊场', `记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}, 规则: ${winType}, 倍率: ${multiplier}x`);
+    logger.info('至尊场', `记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}, 规则: ${winType}, 倍率: ${winMultiplier}x`);
 }
 
 /**

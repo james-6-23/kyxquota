@@ -19,6 +19,10 @@ import type {
     UserLoan,
     UserKunbeiStats,
     KunbeiGradientConfig,
+    Achievement,
+    UserAchievement,
+    AchievementProgress,
+    UserAchievementStats,
 } from './types';
 // 数据库迁移已整合到本文件中
 
@@ -945,7 +949,78 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_grants_date ON supreme_daily_token_grants(grant_date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_grants_user ON supreme_daily_token_grants(linux_do_id)');
 
-    console.log('✅ 数据库表结构创建完成（含权重/奖励方案和至尊场系统）');
+    // ========== 成就系统表 ==========
+
+    // 成就定义表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            achievement_key TEXT UNIQUE NOT NULL,
+            achievement_name TEXT NOT NULL,
+            achievement_desc TEXT NOT NULL,
+            category TEXT NOT NULL,
+            icon TEXT NOT NULL,
+            condition_type TEXT NOT NULL,
+            condition_value TEXT NOT NULL,
+            reward_quota INTEGER NOT NULL,
+            rarity TEXT NOT NULL DEFAULT 'common',
+            display_order INTEGER DEFAULT 0,
+            is_hidden INTEGER DEFAULT 0,
+            is_active INTEGER DEFAULT 1,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_achievements_category ON achievements(category)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_achievements_active ON achievements(is_active)');
+
+    // 用户成就表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_achievements (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            achievement_key TEXT NOT NULL,
+            unlocked_at INTEGER NOT NULL,
+            reward_claimed INTEGER DEFAULT 0,
+            claimed_at INTEGER,
+            progress TEXT,
+            UNIQUE(linux_do_id, achievement_key)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_achievements_user ON user_achievements(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_user_achievements_unlocked ON user_achievements(unlocked_at)');
+
+    // 成就进度表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS achievement_progress (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            achievement_key TEXT NOT NULL,
+            current_value INTEGER DEFAULT 0,
+            target_value INTEGER NOT NULL,
+            last_updated INTEGER NOT NULL,
+            UNIQUE(linux_do_id, achievement_key)
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_achievement_progress_user ON achievement_progress(linux_do_id)');
+
+    // 用户成就统计表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_achievement_stats (
+            linux_do_id TEXT PRIMARY KEY,
+            total_achievements INTEGER DEFAULT 0,
+            unlocked_achievements INTEGER DEFAULT 0,
+            completion_rate REAL DEFAULT 0,
+            total_rewards INTEGER DEFAULT 0,
+            claimed_rewards INTEGER DEFAULT 0,
+            badge_slot_1 TEXT,
+            badge_slot_2 TEXT,
+            badge_slot_3 TEXT,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+
+    console.log('✅ 数据库表结构创建完成（含权重/奖励方案、至尊场和成就系统）');
 
     // 插入默认数据
     insertDefaultData();
@@ -1086,7 +1161,67 @@ function insertDefaultData() {
             WHERE id = 1
         `);
 
-        console.log('✅ 默认数据插入完成（含配置方案和至尊场）');
+        // ========== 插入默认成就数据 ==========
+        console.log('📝 插入默认成就数据...');
+
+        const now = Date.now();
+
+        const defaultAchievements = [
+            // 新手成就
+            { key: 'first_bind', name: '踏入坤圈', desc: '成功绑定公益站账号', category: 'beginner', icon: '🎉', condition_type: 'once', condition_value: '{}', reward: 100, rarity: 'common', order: 1 },
+            { key: 'first_game', name: '初来乍到', desc: '完成首次老虎机游戏', category: 'beginner', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 50, rarity: 'common', order: 2 },
+            { key: 'first_win', name: '幸运新手', desc: '首次中奖（任意）', category: 'beginner', icon: '🍀', condition_type: 'once', condition_value: '{}', reward: 100, rarity: 'common', order: 3 },
+            { key: 'daily_claim_3', name: '每日打卡', desc: '连续3天领取每日额度', category: 'beginner', icon: '📅', condition_type: 'count', condition_value: JSON.stringify({ target: 3 }), reward: 200, rarity: 'common', order: 4 },
+            { key: 'first_donate', name: '投喂达人', desc: '首次投喂Keys', category: 'beginner', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50, rarity: 'common', order: 5 },
+
+            // 游戏成就
+            { key: 'play_10_games', name: '小试牛刀', desc: '游玩10次老虎机', category: 'gaming', icon: '🎮', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 50, rarity: 'common', order: 10 },
+            { key: 'play_50_games', name: '渐入佳境', desc: '游玩50次老虎机', category: 'gaming', icon: '🎯', condition_type: 'count', condition_value: JSON.stringify({ target: 50 }), reward: 200, rarity: 'rare', order: 11 },
+            { key: 'play_200_games', name: '老司机', desc: '游玩200次老虎机', category: 'gaming', icon: '🚗', condition_type: 'count', condition_value: JSON.stringify({ target: 200 }), reward: 500, rarity: 'epic', order: 12 },
+
+            // 中奖成就
+            { key: 'double_win', name: '双连达成', desc: '获得双连中奖', category: 'jackpot', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50, rarity: 'common', order: 20 },
+            { key: 'triple_win', name: '三连达成', desc: '获得三连中奖', category: 'jackpot', icon: '✨', condition_type: 'once', condition_value: '{}', reward: 100, rarity: 'rare', order: 21 },
+            { key: 'quad_win', name: '四连奇迹', desc: '获得四连中奖', category: 'jackpot', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 500, rarity: 'epic', order: 22 },
+            { key: 'special_combo_win', name: '特殊组合', desc: '获得特殊组合（乱序jntm）', category: 'jackpot', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 1000, rarity: 'legendary', order: 23 },
+            { key: 'super_jackpot_win', name: '超级大奖', desc: '获得超级大奖（256x）', category: 'jackpot', icon: '🏆', condition_type: 'once', condition_value: '{}', reward: 5000, rarity: 'mythic', order: 24 },
+
+            // 探索成就
+            { key: 'first_advanced', name: '勇闯高级场', desc: '首次进入高级场', category: 'explorer', icon: '🎫', condition_type: 'once', condition_value: '{}', reward: 200, rarity: 'rare', order: 30 },
+            { key: 'first_supreme', name: '至尊挑战者', desc: '首次进入至尊场', category: 'explorer', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 500, rarity: 'epic', order: 31 },
+
+            // 社交成就
+            { key: 'donate_5_times', name: '慷慨解囊', desc: '投喂5次Keys', category: 'social', icon: '🎁', condition_type: 'count', condition_value: JSON.stringify({ target: 5 }), reward: 300, rarity: 'rare', order: 40 },
+
+            // 坤呗成就
+            { key: 'first_kunbei', name: '初次借款', desc: '首次使用坤呗借款', category: 'kunbei', icon: '🏦', condition_type: 'once', condition_value: '{}', reward: 100, rarity: 'common', order: 50 },
+
+            // 惩罚成就（黑色幽默）
+            { key: 'first_lsh', name: '收到律师函', desc: '首次抽到律师函', category: 'punishment', icon: '📧', condition_type: 'once', condition_value: '{}', reward: 50, rarity: 'common', order: 60 }
+        ];
+
+        // 插入成就数据
+        for (const ach of defaultAchievements) {
+            try {
+                db.exec(`
+                    INSERT OR IGNORE INTO achievements (
+                        achievement_key, achievement_name, achievement_desc, category, icon,
+                        condition_type, condition_value, reward_quota, rarity, display_order,
+                        is_hidden, is_active, created_at, updated_at
+                    ) VALUES (
+                        '${ach.key}', '${ach.name}', '${ach.desc}', '${ach.category}', '${ach.icon}',
+                        '${ach.condition_type}', '${ach.condition_value}', ${ach.reward}, '${ach.rarity}', ${ach.order},
+                        0, 1, ${now}, ${now}
+                    )
+                `);
+            } catch (error: any) {
+                console.error(`插入成就 ${ach.key} 失败:`, error.message);
+            }
+        }
+
+        console.log(`✅ 已插入 ${defaultAchievements.length} 个默认成就`);
+
+        console.log('✅ 默认数据插入完成（含配置方案、至尊场和成就系统）');
     } catch (error) {
         console.error('❌ 插入默认数据失败:', error);
         throw error; // 重新抛出错误，让调用者处理
@@ -1110,6 +1245,7 @@ export let weightConfigQueries: any;  // 权重配置查询
 export let rewardConfigQueries: any;  // 奖励配置查询
 export let supremeSlotQueries: any;  // 至尊场查询
 export let dropConfigQueries: any;  // 掉落配置查询
+export let achievementQueries: any;  // 成就系统查询
 
 /**
  * 初始化预编译查询语句
@@ -2294,6 +2430,95 @@ function initQueries() {
         delete: db.query(
             'DELETE FROM drop_configs WHERE id = ?'
         ),
+    };
+
+    // ========== 成就系统查询 ==========
+    achievementQueries = {
+        // 成就定义
+        getAll: db.query<Achievement, never>('SELECT * FROM achievements WHERE is_active = 1 ORDER BY display_order ASC, id ASC'),
+        getByKey: db.query<Achievement, string>('SELECT * FROM achievements WHERE achievement_key = ? AND is_active = 1'),
+        getByCategory: db.query<Achievement, string>('SELECT * FROM achievements WHERE category = ? AND is_active = 1 ORDER BY display_order ASC'),
+        insert: db.query(`
+            INSERT INTO achievements (
+                achievement_key, achievement_name, achievement_desc, category, icon,
+                condition_type, condition_value, reward_quota, rarity, display_order,
+                is_hidden, is_active, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `),
+        update: db.query(`
+            UPDATE achievements SET
+                achievement_name = ?, achievement_desc = ?, category = ?, icon = ?,
+                condition_type = ?, condition_value = ?, reward_quota = ?, rarity = ?,
+                display_order = ?, is_hidden = ?, is_active = ?, updated_at = ?
+            WHERE achievement_key = ?
+        `),
+        delete: db.query('DELETE FROM achievements WHERE achievement_key = ?'),
+
+        // 用户成就
+        getUserAchievement: db.query<UserAchievement, [string, string]>(
+            'SELECT * FROM user_achievements WHERE linux_do_id = ? AND achievement_key = ?'
+        ),
+        getUserAchievements: db.query<UserAchievement, string>(
+            'SELECT * FROM user_achievements WHERE linux_do_id = ? ORDER BY unlocked_at DESC'
+        ),
+        insertUserAchievement: db.query(`
+            INSERT OR IGNORE INTO user_achievements (
+                linux_do_id, achievement_key, unlocked_at, reward_claimed, progress
+            ) VALUES (?, ?, ?, 0, ?)
+        `),
+        claimReward: db.query(`
+            UPDATE user_achievements SET reward_claimed = 1, claimed_at = ?
+            WHERE linux_do_id = ? AND achievement_key = ?
+        `),
+        getUnclaimedRewards: db.query<UserAchievement, string>(
+            'SELECT * FROM user_achievements WHERE linux_do_id = ? AND reward_claimed = 0'
+        ),
+
+        // 成就进度
+        getProgress: db.query<AchievementProgress, [string, string]>(
+            'SELECT * FROM achievement_progress WHERE linux_do_id = ? AND achievement_key = ?'
+        ),
+        getUserProgress: db.query<AchievementProgress, string>(
+            'SELECT * FROM achievement_progress WHERE linux_do_id = ?'
+        ),
+        updateProgress: db.query(`
+            INSERT INTO achievement_progress (linux_do_id, achievement_key, current_value, target_value, last_updated)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(linux_do_id, achievement_key) DO UPDATE SET
+                current_value = excluded.current_value,
+                last_updated = excluded.last_updated
+        `),
+        deleteProgress: db.query('DELETE FROM achievement_progress WHERE linux_do_id = ? AND achievement_key = ?'),
+
+        // 用户成就统计
+        getStats: db.query<UserAchievementStats, string>(
+            'SELECT * FROM user_achievement_stats WHERE linux_do_id = ?'
+        ),
+        updateStats: db.query(`
+            INSERT INTO user_achievement_stats (
+                linux_do_id, total_achievements, unlocked_achievements, completion_rate,
+                total_rewards, claimed_rewards, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(linux_do_id) DO UPDATE SET
+                total_achievements = excluded.total_achievements,
+                unlocked_achievements = excluded.unlocked_achievements,
+                completion_rate = excluded.completion_rate,
+                total_rewards = excluded.total_rewards,
+                claimed_rewards = excluded.claimed_rewards,
+                updated_at = excluded.updated_at
+        `),
+        updateBadges: db.query(`
+            UPDATE user_achievement_stats SET
+                badge_slot_1 = ?, badge_slot_2 = ?, badge_slot_3 = ?, updated_at = ?
+            WHERE linux_do_id = ?
+        `),
+        getLeaderboard: db.query<UserAchievementStats & { username: string, linux_do_username: string }, number>(`
+            SELECT s.*, u.username, u.linux_do_username
+            FROM user_achievement_stats s
+            JOIN users u ON s.linux_do_id = u.linux_do_id
+            ORDER BY s.unlocked_achievements DESC, s.claimed_rewards DESC
+            LIMIT ?
+        `),
     };
 
     // 🔥 统一的定时清理任务（每6小时执行一次，减少频率）

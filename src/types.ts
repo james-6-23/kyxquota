@@ -530,3 +530,91 @@ export interface SupremeTokenDropRecord {
     date: string;
     created_at: number;
 }
+
+
+// ========== 成就系统类型 ==========
+
+// 成就类别
+export type AchievementCategory =
+    | 'beginner'     // 新手成就
+    | 'gaming'       // 游戏成就
+    | 'wealth'       // 财富成就
+    | 'jackpot'      // 中奖成就
+    | 'explorer'     // 探索成就
+    | 'social'       // 社交成就
+    | 'challenge'    // 挑战成就
+    | 'collection'   // 收藏成就
+    | 'kunbei'       // 坤呗成就
+    | 'punishment';  // 惩罚成就
+
+// 条件类型
+export type AchievementConditionType =
+    | 'count'        // 计数（如：游玩X次）
+    | 'threshold'    // 阈值（如：余额达到X）
+    | 'rate'         // 比率（如：中奖率达到X%）
+    | 'combo'        // 连续（如：连续X次中奖）
+    | 'collection'   // 收集（如：收集所有符号）
+    | 'rank'         // 排名（如：进入前X名）
+    | 'once';        // 一次性（如：首次绑定账号）
+
+// 稀有度
+export type AchievementRarity =
+    | 'common'       // 普通（白色）
+    | 'rare'         // 稀有（蓝色）
+    | 'epic'         // 史诗（紫色）
+    | 'legendary'    // 传说（橙色）
+    | 'mythic';      // 神话（红色）
+
+// 成就定义
+export interface Achievement {
+    id?: number;
+    achievement_key: string;
+    achievement_name: string;
+    achievement_desc: string;
+    category: AchievementCategory;
+    icon: string;
+    condition_type: AchievementConditionType;
+    condition_value: string;
+    reward_quota: number;
+    rarity: AchievementRarity;
+    display_order: number;
+    is_hidden: number;
+    is_active: number;
+    created_at: number;
+    updated_at: number;
+}
+
+// 用户成就
+export interface UserAchievement {
+    id?: number;
+    linux_do_id: string;
+    achievement_key: string;
+    unlocked_at: number;
+    reward_claimed: number;
+    claimed_at?: number;
+    progress?: string;
+}
+
+// 成就进度
+export interface AchievementProgress {
+    id?: number;
+    linux_do_id: string;
+    achievement_key: string;
+    current_value: number;
+    target_value: number;
+    last_updated: number;
+}
+
+// 用户成就统计
+export interface UserAchievementStats {
+    linux_do_id: string;
+    total_achievements: number;
+    unlocked_achievements: number;
+    completion_rate: number;
+    total_rewards: number;
+    claimed_rewards: number;
+    badge_slot_1?: string;
+    badge_slot_2?: string;
+    badge_slot_3?: string;
+    updated_at: number;
+}

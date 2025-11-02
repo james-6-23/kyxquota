@@ -343,10 +343,43 @@
       background: rgba(255, 255, 255, 0.2);
       border-radius: 3px;
     }
-    
+
     .scrollbar-thin::-webkit-scrollbar-thumb:hover {
       background: rgba(255, 255, 255, 0.3);
     }
+
+    /* 成就系统样式 */
+    .achievement-card {
+      @apply bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden;
+    }
+
+    .achievement-card.unlocked {
+      @apply border-2 border-amber-400 bg-gradient-to-br from-amber-50 to-yellow-50;
+    }
+
+    .achievement-card.locked {
+      @apply opacity-60 grayscale;
+    }
+
+    .achievement-filter-btn {
+      @apply text-slate-600 hover:bg-slate-100;
+    }
+
+    .achievement-filter-btn.active {
+      @apply bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md;
+    }
+
+    .achievement-progress-bar {
+      height: 6px;
+      background: linear-gradient(90deg, #f59e0b 0%, #eab308 100%);
+      transition: width 0.3s ease;
+    }
+
+    .rarity-common { border-left: 4px solid #9ca3af; }
+    .rarity-rare { border-left: 4px solid #3b82f6; }
+    .rarity-epic { border-left: 4px solid #a855f7; }
+    .rarity-legendary { border-left: 4px solid #f97316; }
+    .rarity-mythic { border-left: 4px solid #ef4444; }
   </style>
 </head>
 <body class="bg-slate-50 min-h-screen">
@@ -447,17 +480,24 @@
             <!-- 导航选项卡 -->
             <div class="flex items-center gap-1" data-switch-container>
               <!-- 加油站 -->
-              <button data-btn="refuel" onclick="switchToRefuel()" 
+              <button data-btn="refuel" onclick="switchToRefuel()"
                       class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md">
                 <span>⛽</span>
                 <span>加油站</span>
               </button>
-              
+
               <!-- 娱乐站 -->
-              <button data-btn="entertain" onclick="switchToEntertain()" 
+              <button data-btn="entertain" onclick="switchToEntertain()"
                       class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
                 <span>🎰</span>
                 <span>娱乐站</span>
+              </button>
+
+              <!-- 成就 -->
+              <button data-btn="achievement" onclick="switchToAchievement()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>🏆</span>
+                <span>成就</span>
               </button>
             </div>
           </div>
@@ -651,6 +691,91 @@
         </div>
         <div id="claimRecords" class="tab-content overflow-y-auto max-h-96"></div>
         <div id="donateRecords" class="tab-content hidden overflow-y-auto max-h-96"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 成就系统界面 -->
+  <div id="achievementSection" class="hidden">
+    <div class="max-w-6xl mx-auto p-6">
+      <!-- 成就统计面板 -->
+      <div class="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-2xl p-8 text-white mb-6 shadow-xl animate-in">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-3xl font-bold mb-2">🏆 我的成就</h2>
+            <p class="text-sm opacity-90">收集成就，解锁奖励</p>
+          </div>
+          <div class="text-right">
+            <p class="text-sm opacity-90 mb-1">完成度</p>
+            <p id="achievementCompletion" class="text-4xl font-bold">0%</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+            <p class="text-xs opacity-90 mb-1">总成就数</p>
+            <p id="totalAchievements" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+            <p class="text-xs opacity-90 mb-1">已解锁</p>
+            <p id="unlockedAchievements" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+            <p class="text-xs opacity-90 mb-1">总奖励</p>
+            <p id="totalRewards" class="text-2xl font-bold">0</p>
+          </div>
+          <div class="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+            <p class="text-xs opacity-90 mb-1">已领取</p>
+            <p id="claimedRewards" class="text-2xl font-bold">0</p>
+          </div>
+        </div>
+
+        <!-- 一键领取按钮 -->
+        <button id="claimAllRewardsBtn" onclick="claimAllAchievementRewards()" class="mt-6 w-full bg-white text-amber-600 py-3 rounded-xl font-bold hover:bg-amber-50 transition-all shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+          <span>💎</span>
+          <span>一键领取所有奖励</span>
+        </button>
+      </div>
+
+      <!-- 分类筛选 -->
+      <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+        <div class="flex flex-wrap gap-2">
+          <button onclick="filterAchievements('all')" class="achievement-filter-btn active px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            全部
+          </button>
+          <button onclick="filterAchievements('beginner')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            🎉 新手
+          </button>
+          <button onclick="filterAchievements('gaming')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            🎮 游戏
+          </button>
+          <button onclick="filterAchievements('wealth')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            💰 财富
+          </button>
+          <button onclick="filterAchievements('jackpot')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            🎰 中奖
+          </button>
+          <button onclick="filterAchievements('explorer')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            🎫 探索
+          </button>
+          <button onclick="filterAchievements('social')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            💝 社交
+          </button>
+          <button onclick="filterAchievements('challenge')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            💪 挑战
+          </button>
+          <button onclick="filterAchievements('kunbei')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            🏦 坤呗
+          </button>
+          <button onclick="filterAchievements('punishment')" class="achievement-filter-btn px-4 py-2 rounded-lg font-medium text-sm transition-all">
+            ⚖️ 惩罚
+          </button>
+        </div>
+      </div>
+
+      <!-- 成就列表 -->
+      <div id="achievementsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- 成就卡片将通过JS动态生成 -->
       </div>
     </div>
   </div>
@@ -2176,38 +2301,44 @@
     // 切换到加油站模式
     async function switchToRefuel() {
       if (currentMode === 'refuel') return;
-      
+
       saveCurrentMode('refuel');
-      
+
       // 更新主界面的切换按钮
       updateSwitchButtons('refuel');
-      
+
       const mainSection = document.getElementById('mainSection');
+      const achievementSection = document.getElementById('achievementSection');
       const slotModal = document.getElementById('slotMachineModal');
-      
+
+      // 隐藏成就界面
+      if (achievementSection && !achievementSection.classList.contains('hidden')) {
+        achievementSection.classList.add('hidden');
+      }
+
       // 添加退出动画
       slotModal.classList.add('fade-exit');
-      
+
       // 等待动画完成
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // 切换显示
       slotModal.classList.add('hidden');
       slotModal.classList.remove('fade-exit');
-      
+
       mainSection.classList.remove('hidden');
       mainSection.classList.add('fade-enter');
-      
+
       // 触发进入动画
       requestAnimationFrame(() => {
         mainSection.classList.add('fade-enter-active');
       });
-      
+
       // 完成动画后清理
       setTimeout(() => {
         mainSection.classList.remove('fade-enter', 'fade-enter-active');
       }, 300);
-      
+
       // 刷新额度
       loadQuota();
     }
@@ -2215,50 +2346,102 @@
     // 切换到娱乐站模式
     function switchToEntertain() {
       if (currentMode === 'entertain') return;
-      
+
       saveCurrentMode('entertain');
-      
+
       // 更新主界面的切换按钮
       updateSwitchButtons('entertain');
-      
+
       // 打开老虎机
       showSlotMachine();
+    }
+
+    // 切换到成就模式
+    async function switchToAchievement() {
+      if (currentMode === 'achievement') return;
+
+      saveCurrentMode('achievement');
+
+      // 更新主界面的切换按钮
+      updateSwitchButtons('achievement');
+
+      const mainSection = document.getElementById('mainSection');
+      const achievementSection = document.getElementById('achievementSection');
+      const slotModal = document.getElementById('slotMachineModal');
+
+      // 关闭老虎机界面（如果打开）
+      if (!slotModal.classList.contains('hidden')) {
+        slotModal.classList.add('fade-exit');
+        await new Promise(resolve => setTimeout(resolve, 200));
+        slotModal.classList.add('hidden');
+        slotModal.classList.remove('fade-exit');
+      }
+
+      // 隐藏加油站界面
+      mainSection.classList.add('hidden');
+
+      // 显示成就界面
+      achievementSection.classList.remove('hidden');
+      achievementSection.classList.add('fade-enter');
+
+      // 触发进入动画
+      requestAnimationFrame(() => {
+        achievementSection.classList.add('fade-enter-active');
+      });
+
+      // 完成动画后清理
+      setTimeout(() => {
+        achievementSection.classList.remove('fade-enter', 'fade-enter-active');
+      }, 300);
+
+      // 加载成就数据
+      loadAchievements();
     }
 
     // 更新所有切换按钮的样式（主界面和老虎机界面同步）
     function updateSwitchButtons(mode) {
       // 获取所有切换按钮容器
       const containers = document.querySelectorAll('[data-switch-container]');
-      
+
       containers.forEach((container) => {
         const refuelBtn = container.querySelector('[data-btn="refuel"]');
         const entertainBtn = container.querySelector('[data-btn="entertain"]');
-        
+        const achievementBtn = container.querySelector('[data-btn="achievement"]');
+
         // 检查是否在老虎机界面（暗色主题）
         const isDarkTheme = container.closest('#slotMachineModal') !== null;
-        
+
         if (mode === 'refuel') {
           // 加油站模式激活
           if (isDarkTheme) {
             // 老虎机界面 - 暗色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           }
-        } else {
+        } else if (mode === 'entertain') {
           // 娱乐站模式激活
           if (isDarkTheme) {
             // 老虎机界面 - 暗色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg';
+            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-md';
+            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           }
+        } else if (mode === 'achievement') {
+          // 成就模式激活
+          refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md';
         }
       });
     }
@@ -7793,6 +7976,255 @@
       // 显示模态框
       document.getElementById('kunbeiRulesModal').classList.remove('hidden');
     }
+
+    // ========== 成就系统相关功能 ==========
+
+    let achievementsData = [];
+    let currentFilter = 'all';
+
+    // 加载成就数据
+    async function loadAchievements() {
+      try {
+        const [achievementsRes, statsRes] = await Promise.all([
+          fetch('/api/achievement/user'),
+          fetch('/api/achievement/stats')
+        ]);
+
+        if (achievementsRes.ok) {
+          const achievementsResult = await achievementsRes.json();
+          if (achievementsResult.success) {
+            window.achievementsData = achievementsResult.data;
+            renderAchievements(achievementsResult.data);
+          }
+        }
+
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
+          if (statsData.success) {
+            updateAchievementStats(statsData.data);
+          }
+        }
+      } catch (error) {
+        console.error('加载成就失败:', error);
+        showToast('加载成就失败', 'error');
+      }
+    }
+
+    // 更新成就统计
+    function updateAchievementStats(stats) {
+      if (!stats) return;
+
+      document.getElementById('totalAchievements').textContent = stats.total_achievements || 0;
+      document.getElementById('unlockedAchievements').textContent = stats.unlocked_achievements || 0;
+      document.getElementById('totalRewards').textContent = formatAchievementQuota(stats.total_rewards || 0);
+      document.getElementById('claimedRewards').textContent = formatAchievementQuota(stats.claimed_rewards || 0);
+      document.getElementById('achievementCompletion').textContent =
+        (stats.completion_rate || 0).toFixed(1) + '%';
+
+      // 更新一键领取按钮状态
+      const unclaimedRewards = (stats.total_rewards || 0) - (stats.claimed_rewards || 0);
+      const claimAllBtn = document.getElementById('claimAllRewardsBtn');
+      if (claimAllBtn && unclaimedRewards > 0) {
+        claimAllBtn.disabled = false;
+        claimAllBtn.querySelector('span:last-child').textContent =
+          \`一键领取所有奖励 (\${formatAchievementQuota(unclaimedRewards)})\`;
+      } else if (claimAllBtn) {
+        claimAllBtn.disabled = true;
+        claimAllBtn.querySelector('span:last-child').textContent = '暂无可领取奖励';
+      }
+    }
+
+    // 渲染成就列表
+    function renderAchievements(achievements) {
+      const container = document.getElementById('achievementsList');
+      if (!container) return;
+
+      // 筛选成就
+      const filteredAchievements = currentFilter === 'all'
+        ? achievements
+        : achievements.filter(a => a.category === currentFilter);
+
+      if (filteredAchievements.length === 0) {
+        container.innerHTML = \`
+          <div class="col-span-full text-center py-12">
+            <p class="text-slate-400 text-lg">暂无成就</p>
+          </div>
+        \`;
+        return;
+      }
+
+      container.innerHTML = filteredAchievements.map(achievement => {
+        const isUnlocked = achievement.unlocked;
+        const isClaimed = achievement.reward_claimed;
+        const progress = achievement.progress;
+
+        let progressHTML = '';
+        if (!isUnlocked && progress) {
+          const percentage = progress.percentage || 0;
+          progressHTML = \`
+            <div class="mt-3">
+              <div class="flex justify-between text-xs text-slate-600 mb-1">
+                <span>进度</span>
+                <span>\${progress.current}/\${progress.target}</span>
+              </div>
+              <div class="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                <div class="achievement-progress-bar h-full rounded-full" style="width: \${percentage}%"></div>
+              </div>
+            </div>
+          \`;
+        }
+
+        let actionButton = '';
+        if (isUnlocked && !isClaimed) {
+          actionButton = \`
+            <button onclick="claimAchievementReward('\${achievement.achievement_key}')"
+                    class="mt-4 w-full bg-gradient-to-r from-amber-500 to-yellow-500 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all">
+              领取奖励 (+\${formatAchievementQuota(achievement.reward_quota)})
+            </button>
+          \`;
+        } else if (isClaimed) {
+          actionButton = \`
+            <div class="mt-4 w-full bg-green-100 text-green-700 py-2 rounded-lg font-semibold text-center">
+              ✓ 已领取
+            </div>
+          \`;
+        }
+
+        return \`
+          <div class="achievement-card \${isUnlocked ? 'unlocked' : 'locked'} rarity-\${achievement.rarity} p-5">
+            <div class="flex items-start gap-3">
+              <div class="text-4xl flex-shrink-0">\${achievement.icon}</div>
+              <div class="flex-1">
+                <h3 class="text-lg font-bold text-slate-900 mb-1">
+                  \${achievement.achievement_name}
+                  \${isUnlocked ? '<span class="text-amber-500 ml-2">🏆</span>' : ''}
+                </h3>
+                <p class="text-sm text-slate-600 mb-2">\${achievement.achievement_desc}</p>
+                <div class="flex items-center gap-2 text-xs flex-wrap">
+                  <span class="px-2 py-1 bg-slate-100 rounded-full text-slate-700">
+                    \${getCategoryName(achievement.category)}
+                  </span>
+                  <span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full font-semibold">
+                    \${getRarityName(achievement.rarity)}
+                  </span>
+                  <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold">
+                    +\${formatAchievementQuota(achievement.reward_quota)}
+                  </span>
+                </div>
+                \${progressHTML}
+                \${actionButton}
+              </div>
+            </div>
+          </div>
+        \`;
+      }).join('');
+    }
+
+    // 筛选成就
+    function filterAchievements(category) {
+      currentFilter = category;
+
+      // 更新筛选按钮样式
+      document.querySelectorAll('.achievement-filter-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      event.target.classList.add('active');
+
+      // 重新渲染
+      renderAchievements(window.achievementsData || []);
+    }
+
+    // 领取单个成就奖励
+    async function claimAchievementReward(achievementKey) {
+      try {
+        const response = await fetch('/api/achievement/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ achievement_key: achievementKey })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(\`成功领取奖励 +\${formatAchievementQuota(data.reward)}\`, 'success');
+          // 重新加载成就数据
+          loadAchievements();
+          // 刷新额度
+          loadQuota();
+        } else {
+          showToast(data.message || '领取失败', 'error');
+        }
+      } catch (error) {
+        console.error('领取奖励失败:', error);
+        showToast('领取奖励失败', 'error');
+      }
+    }
+
+    // 批量领取所有奖励
+    async function claimAllAchievementRewards() {
+      try {
+        const response = await fetch('/api/achievement/claim-all', {
+          method: 'POST'
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(\`成功领取 \${data.count} 个奖励，共 +\${formatAchievementQuota(data.totalReward)}\`, 'success');
+          // 重新加载成就数据
+          loadAchievements();
+          // 刷新额度
+          loadQuota();
+        } else {
+          showToast(data.message || '领取失败', 'error');
+        }
+      } catch (error) {
+        console.error('批量领取失败:', error);
+        showToast('批量领取失败', 'error');
+      }
+    }
+
+    // 获取分类名称
+    function getCategoryName(category) {
+      const names = {
+        beginner: '新手',
+        gaming: '游戏',
+        wealth: '财富',
+        jackpot: '中奖',
+        explorer: '探索',
+        social: '社交',
+        challenge: '挑战',
+        collection: '收藏',
+        kunbei: '坤呗',
+        punishment: '惩罚'
+      };
+      return names[category] || category;
+    }
+
+    // 获取稀有度名称
+    function getRarityName(rarity) {
+      const names = {
+        common: '普通',
+        rare: '稀有',
+        epic: '史诗',
+        legendary: '传说',
+        mythic: '神话'
+      };
+      return names[rarity] || rarity;
+    }
+
+    // 格式化额度显示（成就系统专用）
+    function formatAchievementQuota(quota) {
+      if (quota >= 1000000) {
+        return (quota / 1000000).toFixed(1) + 'M';
+      } else if (quota >= 1000) {
+        return (quota / 1000).toFixed(1) + 'K';
+      }
+      return quota.toString();
+    }
+
+    // ========== 结束：成就系统相关功能 ==========
+
   </script>
 </body>
 </html>

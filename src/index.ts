@@ -24,6 +24,7 @@ import oauthRoutes from './routes/oauth';
 import slotRoutes from './routes/slot';
 import kunbeiRoutes from './routes/kunbei';
 import supremeRoutes from './routes/supreme';
+import achievementRoutes from './routes/achievement';
 
 // 中间件
 app.use('*', cors());
@@ -35,6 +36,7 @@ app.route('/oauth', oauthRoutes);
 app.route('/api/slot', slotRoutes);
 app.route('/api/kunbei', kunbeiRoutes);
 app.route('/api/supreme', supremeRoutes);
+app.route('/api/achievement', achievementRoutes);
 
 // 静态文件服务（老虎机符号图片）
 app.get('/slot-symbols/:filename', async (c) => {
