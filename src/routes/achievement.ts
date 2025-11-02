@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { sessionMiddleware } from '../utils';
+import { getCookie, getSession } from '../utils';
 import {
     getUserAchievements,
     getUserAchievementStats,
@@ -18,10 +18,38 @@ import logger from '../utils/logger';
 const achievement = new Hono();
 
 /**
+ * 中间件：验证用户登录
+ */
+async function requireAuth(c: any, next: any) {
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.json({ success: false, message: '未登录' }, 401);
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.json({ success: false, message: '会话无效' }, 401);
+    }
+
+    // 检查用户是否被封禁
+    const user = userQueries.get.get(session.linux_do_id);
+    if (user && user.is_banned) {
+        return c.json({
+            success: false,
+            message: `您的账号已被封禁${user.banned_reason ? '，原因：' + user.banned_reason : ''}`,
+            banned: true
+        }, 403);
+    }
+
+    c.set('session', session);
+    await next();
+}
+
+/**
  * 获取用户所有成就及进度
  * GET /api/achievement/user
  */
-achievement.get('/user', sessionMiddleware, async (c) => {
+achievement.get('/user', requireAuth, async (c) => {
     try {
         const session = c.get('session');
         const linuxDoId = session.linux_do_id;
@@ -45,7 +73,7 @@ achievement.get('/user', sessionMiddleware, async (c) => {
  * 获取用户成就统计
  * GET /api/achievement/stats
  */
-achievement.get('/stats', sessionMiddleware, async (c) => {
+achievement.get('/stats', requireAuth, async (c) => {
     try {
         const session = c.get('session');
         const linuxDoId = session.linux_do_id;
@@ -70,7 +98,7 @@ achievement.get('/stats', sessionMiddleware, async (c) => {
  * POST /api/achievement/claim
  * Body: { achievement_key: string }
  */
-achievement.post('/claim', sessionMiddleware, async (c) => {
+achievement.post('/claim', requireAuth, async (c) => {
     try {
         const session = c.get('session');
         const linuxDoId = session.linux_do_id;
@@ -124,7 +152,7 @@ achievement.post('/claim', sessionMiddleware, async (c) => {
  * 批量领取所有未领取的奖励
  * POST /api/achievement/claim-all
  */
-achievement.post('/claim-all', sessionMiddleware, async (c) => {
+achievement.post('/claim-all', requireAuth, async (c) => {
     try {
         const session = c.get('session');
         const linuxDoId = session.linux_do_id;
@@ -192,7 +220,7 @@ achievement.get('/leaderboard', async (c) => {
  * POST /api/achievement/badges
  * Body: { badge1?: string, badge2?: string, badge3?: string }
  */
-achievement.post('/badges', sessionMiddleware, async (c) => {
+achievement.post('/badges', requireAuth, async (c) => {
     try {
         const session = c.get('session');
         const linuxDoId = session.linux_do_id;
