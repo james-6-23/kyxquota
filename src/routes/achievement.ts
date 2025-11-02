@@ -12,7 +12,7 @@ import {
     getAchievementLeaderboard,
     setUserBadges,
 } from '../services/achievement';
-import { userQueries } from '../database';
+import { userQueries, adminQueries } from '../database';
 import logger from '../utils/logger';
 
 const achievement = new Hono();
@@ -93,7 +93,22 @@ achievement.post('/claim', sessionMiddleware, async (c) => {
             }, 404);
         }
 
-        const result = await claimAchievementReward(linuxDoId, user.kyx_user_id, achievement_key);
+        // 获取管理员配置
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({
+                success: false,
+                message: '系统配置未找到'
+            }, 500);
+        }
+
+        const result = await claimAchievementReward(
+            linuxDoId,
+            user.kyx_user_id,
+            achievement_key,
+            adminConfig.session,
+            adminConfig.new_api_user
+        );
 
         return c.json(result);
     } catch (error: any) {
@@ -123,7 +138,21 @@ achievement.post('/claim-all', sessionMiddleware, async (c) => {
             }, 404);
         }
 
-        const result = await claimAllRewards(linuxDoId, user.kyx_user_id);
+        // 获取管理员配置
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({
+                success: false,
+                message: '系统配置未找到'
+            }, 500);
+        }
+
+        const result = await claimAllRewards(
+            linuxDoId,
+            user.kyx_user_id,
+            adminConfig.session,
+            adminConfig.new_api_user
+        );
 
         return c.json(result);
     } catch (error: any) {

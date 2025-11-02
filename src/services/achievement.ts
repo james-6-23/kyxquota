@@ -3,8 +3,8 @@
  * 处理成就的检查、解锁、进度更新和奖励发放
  */
 
-import { achievementQueries } from '../database';
-import { rechargeQuota } from './kyx-api';
+import { achievementQueries, userQueries, adminQueries } from '../database';
+import { addQuota } from './kyx-api';
 import logger from '../utils/logger';
 import type { Achievement, AchievementProgress, UserAchievement } from '../types';
 
@@ -240,11 +240,15 @@ export async function updateAchievementProgress(
  * @param linuxDoId 用户ID
  * @param kyxUserId 公益站用户ID
  * @param achievementKey 成就标识
+ * @param session 管理员session
+ * @param newApiUser 新API用户标识
  */
 export async function claimAchievementReward(
     linuxDoId: string,
     kyxUserId: number,
-    achievementKey: string
+    achievementKey: string,
+    session: string,
+    newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; reward?: number }> {
     try {
         // 检查成就是否已解锁
@@ -265,7 +269,13 @@ export async function claimAchievementReward(
         }
 
         // 发放奖励
-        const rechargeResult = await rechargeQuota(kyxUserId, achievement.reward_quota);
+        const rechargeResult = await addQuota(
+            kyxUserId,
+            achievement.reward_quota,
+            session,
+            newApiUser,
+            '成就奖励'
+        );
         if (!rechargeResult.success) {
             return {
                 success: false,
@@ -301,7 +311,9 @@ export async function claimAchievementReward(
  */
 export async function claimAllRewards(
     linuxDoId: string,
-    kyxUserId: number
+    kyxUserId: number,
+    session: string,
+    newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; totalReward?: number; count?: number }> {
     try {
         const unclaimedAchievements = achievementQueries.getUnclaimedRewards.all(linuxDoId);
@@ -314,7 +326,7 @@ export async function claimAllRewards(
         let successCount = 0;
 
         for (const userAchievement of unclaimedAchievements) {
-            const result = await claimAchievementReward(linuxDoId, kyxUserId, userAchievement.achievement_key);
+            const result = await claimAchievementReward(linuxDoId, kyxUserId, userAchievement.achievement_key, session, newApiUser);
             if (result.success && result.reward) {
                 totalReward += result.reward;
                 successCount++;
