@@ -250,7 +250,7 @@ function getTodayDate(): string {
         month: '2-digit',
         day: '2-digit'
     });
-    
+
     // 转换格式：'2025/10/31' → '2025-10-31'
     const [year, month, day] = beijingDateStr.split('/');
     return `${year}-${month}-${day}`;

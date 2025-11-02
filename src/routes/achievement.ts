@@ -11,6 +11,7 @@ import {
     claimAllRewards,
     getAchievementLeaderboard,
     setUserBadges,
+    getAllAchievementsWithStats,
 } from '../services/achievement';
 import { userQueries, adminQueries } from '../database';
 import logger from '../utils/logger';
@@ -44,6 +45,42 @@ async function requireAuth(c: any, next: any) {
     c.set('session', session);
     await next();
 }
+
+/**
+ * 获取所有成就及全局统计（包括达成率）
+ * GET /api/achievement/all
+ * 可选：传入session获取当前用户的成就数据
+ */
+achievement.get('/all', async (c) => {
+    try {
+        // 尝试获取session（可选）
+        const sessionId = getCookie(c.req.raw.headers, 'session_id');
+        let linuxDoId: string | undefined;
+        
+        if (sessionId) {
+            const session = await getSession(sessionId);
+            if (session?.linux_do_id) {
+                const user = userQueries.get.get(session.linux_do_id);
+                if (user && !user.is_banned) {
+                    linuxDoId = session.linux_do_id;
+                }
+            }
+        }
+
+        const achievements = getAllAchievementsWithStats(linuxDoId);
+
+        return c.json({
+            success: true,
+            data: achievements
+        });
+    } catch (error: any) {
+        logger.error('成就API', `获取成就统计失败: ${error.message}`);
+        return c.json({
+            success: false,
+            message: '获取成就统计失败'
+        }, 500);
+    }
+});
 
 /**
  * 获取用户所有成就及进度

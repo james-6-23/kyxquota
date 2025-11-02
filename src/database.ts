@@ -1170,36 +1170,78 @@ function insertDefaultData() {
         // 📌 格式：reward: $金额 * 500000
         const defaultAchievements = [
             // 新手成就
-            { key: 'first_bind', name: '踏入坤圈', desc: '成功绑定公益站账号', category: 'beginner', icon: '🎉', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 1 },  // $100
-            { key: 'first_game', name: '初来乍到', desc: '完成首次老虎机游戏', category: 'beginner', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 2 },  // $50
-            { key: 'first_win', name: '幸运新手', desc: '首次中奖（任意）', category: 'beginner', icon: '🍀', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 3 },  // $100
-            { key: 'daily_claim_3', name: '每日打卡', desc: '连续3天领取每日额度', category: 'beginner', icon: '📅', condition_type: 'count', condition_value: JSON.stringify({ target: 3 }), reward: 200 * 500000, rarity: 'common', order: 4 },  // $200
-            { key: 'first_donate', name: '投喂达人', desc: '首次投喂Keys', category: 'beginner', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 5 },  // $50
+            { key: 'first_bind', name: '踏入坤圈', desc: '成功绑定公益站账号', category: 'beginner', icon: '🎉', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 1 },
+            { key: 'first_game', name: '初来乍到', desc: '完成首次老虎机游戏', category: 'beginner', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 2 },
+            { key: 'first_win', name: '幸运新手', desc: '首次中奖（任意）', category: 'beginner', icon: '🍀', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 3 },
+            { key: 'daily_claim_3', name: '每日打卡', desc: '连续3天领取每日额度', category: 'beginner', icon: '📅', condition_type: 'count', condition_value: JSON.stringify({ target: 3 }), reward: 200 * 500000, rarity: 'common', order: 4 },
+            { key: 'first_donate', name: '投喂达人', desc: '首次投喂Keys', category: 'beginner', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 5 },
+            { key: 'daily_claim_7', name: '每日坚持', desc: '连续7天领取每日额度', category: 'beginner', icon: '⭐', condition_type: 'count', condition_value: JSON.stringify({ target: 7 }), reward: 500 * 500000, rarity: 'rare', order: 6 },
 
             // 游戏成就
-            { key: 'play_10_games', name: '小试牛刀', desc: '游玩10次老虎机', category: 'gaming', icon: '🎮', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 50 * 500000, rarity: 'common', order: 10 },  // $50
-            { key: 'play_50_games', name: '渐入佳境', desc: '游玩50次老虎机', category: 'gaming', icon: '🎯', condition_type: 'count', condition_value: JSON.stringify({ target: 50 }), reward: 200 * 500000, rarity: 'rare', order: 11 },  // $200
-            { key: 'play_200_games', name: '老司机', desc: '游玩200次老虎机', category: 'gaming', icon: '🚗', condition_type: 'count', condition_value: JSON.stringify({ target: 200 }), reward: 500 * 500000, rarity: 'epic', order: 12 },  // $500
+            { key: 'play_10_games', name: '小试牛刀', desc: '游玩10次老虎机', category: 'gaming', icon: '🎮', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 50 * 500000, rarity: 'common', order: 10 },
+            { key: 'play_50_games', name: '渐入佳境', desc: '游玩50次老虎机', category: 'gaming', icon: '🎯', condition_type: 'count', condition_value: JSON.stringify({ target: 50 }), reward: 200 * 500000, rarity: 'rare', order: 11 },
+            { key: 'play_200_games', name: '老司机', desc: '游玩200次老虎机', category: 'gaming', icon: '🚗', condition_type: 'count', condition_value: JSON.stringify({ target: 200 }), reward: 500 * 500000, rarity: 'epic', order: 12 },
+            { key: 'play_1000_games', name: '骨灰玩家', desc: '游玩1000次老虎机', category: 'gaming', icon: '👑', condition_type: 'count', condition_value: JSON.stringify({ target: 1000 }), reward: 2000 * 500000, rarity: 'legendary', order: 13 },
+            { key: 'win_10_times', name: '中奖小王子', desc: '累计中奖10次', category: 'gaming', icon: '✨', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 100 * 500000, rarity: 'common', order: 14 },
+            { key: 'win_50_times', name: '中奖大师', desc: '累计中奖50次', category: 'gaming', icon: '💎', condition_type: 'count', condition_value: JSON.stringify({ target: 50 }), reward: 500 * 500000, rarity: 'rare', order: 15 },
+            { key: 'win_100_times', name: '中奖传说', desc: '累计中奖100次', category: 'gaming', icon: '🌟', condition_type: 'count', condition_value: JSON.stringify({ target: 100 }), reward: 1000 * 500000, rarity: 'epic', order: 16 },
 
             // 中奖成就
-            { key: 'double_win', name: '双连达成', desc: '获得双连中奖', category: 'jackpot', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 20 },  // $50
-            { key: 'triple_win', name: '三连达成', desc: '获得三连中奖', category: 'jackpot', icon: '✨', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'rare', order: 21 },  // $100
-            { key: 'quad_win', name: '四连奇迹', desc: '获得四连中奖', category: 'jackpot', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 500 * 500000, rarity: 'epic', order: 22 },  // $500
-            { key: 'special_combo_win', name: '特殊组合', desc: '获得特殊组合（乱序jntm）', category: 'jackpot', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 1000 * 500000, rarity: 'legendary', order: 23 },  // $1,000
-            { key: 'super_jackpot_win', name: '超级大奖', desc: '获得超级大奖（256x）', category: 'jackpot', icon: '🏆', condition_type: 'once', condition_value: '{}', reward: 5000 * 500000, rarity: 'mythic', order: 24 },  // $5,000
+            { key: 'double_win', name: '双连达成', desc: '获得双连中奖', category: 'jackpot', icon: '🎁', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 20 },
+            { key: 'triple_win', name: '三连达成', desc: '获得三连中奖', category: 'jackpot', icon: '✨', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'rare', order: 21 },
+            { key: 'quad_win', name: '四连奇迹', desc: '获得四连中奖', category: 'jackpot', icon: '🎰', condition_type: 'once', condition_value: '{}', reward: 500 * 500000, rarity: 'epic', order: 22 },
+            { key: 'special_combo_win', name: '特殊组合', desc: '获得特殊组合（乱序jntm）', category: 'jackpot', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 1000 * 500000, rarity: 'legendary', order: 23 },
+            { key: 'super_jackpot_win', name: '超级大奖', desc: '获得超级大奖（256x）', category: 'jackpot', icon: '🏆', condition_type: 'once', condition_value: '{}', reward: 5000 * 500000, rarity: 'mythic', order: 24 },
+            { key: 'combo_3_wins', name: '连续中奖', desc: '连续3次中奖', category: 'jackpot', icon: '🔥', condition_type: 'combo', condition_value: JSON.stringify({ count: 3 }), reward: 300 * 500000, rarity: 'rare', order: 25 },
+            { key: 'combo_5_wins', name: '连胜王者', desc: '连续5次中奖', category: 'jackpot', icon: '👑', condition_type: 'combo', condition_value: JSON.stringify({ count: 5 }), reward: 1000 * 500000, rarity: 'epic', order: 26 },
+
+            // 财富成就
+            { key: 'earn_10k', name: '小富即安', desc: '累计获得10,000 quota', category: 'wealth', icon: '💰', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 10000 }), reward: 100 * 500000, rarity: 'common', order: 27 },
+            { key: 'earn_100k', name: '财源滚滚', desc: '累计获得100,000 quota', category: 'wealth', icon: '💸', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 100000 }), reward: 500 * 500000, rarity: 'rare', order: 28 },
+            { key: 'earn_1m', name: '富甲一方', desc: '累计获得1,000,000 quota', category: 'wealth', icon: '💵', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 1000000 }), reward: 2000 * 500000, rarity: 'epic', order: 29 },
+            { key: 'balance_50k', name: '土豪本豪', desc: '账户余额达到50,000', category: 'wealth', icon: '👑', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'quota', threshold: 50000 }), reward: 500 * 500000, rarity: 'rare', order: 30 },
+            { key: 'single_win_5k', name: '单次暴富', desc: '单次中奖超过5,000 quota', category: 'wealth', icon: '🎊', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'win_amount', threshold: 5000 }), reward: 500 * 500000, rarity: 'epic', order: 31 },
+            { key: 'rank_1_profit', name: '坤圈首富', desc: '登上盈利榜第1名', category: 'wealth', icon: '🏆', condition_type: 'rank', condition_value: JSON.stringify({ rank: 1, type: 'profit' }), reward: 5000 * 500000, rarity: 'mythic', order: 32 },
 
             // 探索成就
-            { key: 'first_advanced', name: '勇闯高级场', desc: '首次进入高级场', category: 'explorer', icon: '🎫', condition_type: 'once', condition_value: '{}', reward: 200 * 500000, rarity: 'rare', order: 30 },  // $200
-            { key: 'first_supreme', name: '至尊挑战者', desc: '首次进入至尊场', category: 'explorer', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 500 * 500000, rarity: 'epic', order: 31 },  // $500
+            { key: 'first_advanced', name: '勇闯高级场', desc: '首次进入高级场', category: 'explorer', icon: '🎫', condition_type: 'once', condition_value: '{}', reward: 200 * 500000, rarity: 'rare', order: 40 },
+            { key: 'advanced_10_times', name: '高级场常客', desc: '进入高级场10次', category: 'explorer', icon: '🎪', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 500 * 500000, rarity: 'rare', order: 41 },
+            { key: 'first_supreme', name: '至尊挑战者', desc: '首次进入至尊场', category: 'explorer', icon: '💎', condition_type: 'once', condition_value: '{}', reward: 500 * 500000, rarity: 'epic', order: 42 },
+            { key: 'supreme_10_times', name: '至尊场霸主', desc: '进入至尊场10次', category: 'explorer', icon: '👑', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 2000 * 500000, rarity: 'legendary', order: 43 },
+            { key: 'fragment_10', name: '碎片收集者', desc: '累计获得10个碎片', category: 'explorer', icon: '🍀', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 200 * 500000, rarity: 'rare', order: 44 },
+            { key: 'ticket_5', name: '入场券大户', desc: '同时持有5张入场券', category: 'explorer', icon: '🎫', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'tickets', threshold: 5 }), reward: 500 * 500000, rarity: 'epic', order: 45 },
 
             // 社交成就
-            { key: 'donate_5_times', name: '慷慨解囊', desc: '投喂5次Keys', category: 'social', icon: '🎁', condition_type: 'count', condition_value: JSON.stringify({ target: 5 }), reward: 300 * 500000, rarity: 'rare', order: 40 },  // $300
+            { key: 'donate_5_times', name: '慷慨解囊', desc: '投喂5次Keys', category: 'social', icon: '🎁', condition_type: 'count', condition_value: JSON.stringify({ target: 5 }), reward: 300 * 500000, rarity: 'rare', order: 50 },
+            { key: 'donate_20_times', name: '大慈善家', desc: '投喂20次Keys', category: 'social', icon: '💝', condition_type: 'count', condition_value: JSON.stringify({ target: 20 }), reward: 1000 * 500000, rarity: 'epic', order: 51 },
+            { key: 'rank_top10', name: '榜上有名', desc: '进入盈利榜前10', category: 'social', icon: '📊', condition_type: 'rank', condition_value: JSON.stringify({ rank: 10, type: 'profit' }), reward: 500 * 500000, rarity: 'rare', order: 52 },
+            { key: 'rank_top3', name: '名扬四海', desc: '进入盈利榜前3', category: 'social', icon: '🌟', condition_type: 'rank', condition_value: JSON.stringify({ rank: 3, type: 'profit' }), reward: 2000 * 500000, rarity: 'epic', order: 53 },
+
+            // 挑战成就
+            { key: 'daily_profit_10k', name: '赌神之路', desc: '单日盈利超过10,000', category: 'challenge', icon: '🎲', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'daily_profit', threshold: 10000 }), reward: 1000 * 500000, rarity: 'epic', order: 60 },
+            { key: 'bet_5k_advanced', name: '梭哈大师', desc: '在高级场单次下注5000+', category: 'challenge', icon: '💪', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'bet_amount', threshold: 5000 }), reward: 500 * 500000, rarity: 'rare', order: 61 },
+            { key: 'comeback_5k', name: '逆风翻盘', desc: '从-5000盈利回正', category: 'challenge', icon: '🔄', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'comeback', threshold: 5000 }), reward: 1000 * 500000, rarity: 'epic', order: 62 },
+            { key: 'comeback_10k', name: '惊天逆转', desc: '从-10000盈利回正', category: 'challenge', icon: '🚀', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'comeback', threshold: 10000 }), reward: 3000 * 500000, rarity: 'legendary', order: 63 },
+            { key: 'free_game_10', name: '免费之王', desc: '累计获得10次免费游戏', category: 'challenge', icon: '🎰', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 500 * 500000, rarity: 'rare', order: 64 },
+
+            // 收藏成就
+            { key: 'symbol_collector', name: '符号学者', desc: '抽出所有9种符号各1次', category: 'collection', icon: '📚', condition_type: 'collection', condition_value: JSON.stringify({ items: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'] }), reward: 200 * 500000, rarity: 'rare', order: 70 },
+            { key: 'combo_master', name: '组合大师', desc: '获得5种不同中奖类型', category: 'collection', icon: '🎯', condition_type: 'collection', condition_value: JSON.stringify({ items: ['double', 'triple', 'quad', 'special', 'super'] }), reward: 500 * 500000, rarity: 'epic', order: 71 },
+            { key: 'perfectionist', name: '完美主义者', desc: '完成所有基础成就', category: 'collection', icon: '💯', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'completion_rate', threshold: 80 }), reward: 5000 * 500000, rarity: 'mythic', order: 72 },
 
             // 坤呗成就
-            { key: 'first_kunbei', name: '初次借款', desc: '首次使用坤呗借款', category: 'kunbei', icon: '🏦', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 50 },  // $100
+            { key: 'first_kunbei', name: '初次借款', desc: '首次使用坤呗借款', category: 'kunbei', icon: '🏦', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'common', order: 80 },
+            { key: 'repay_5_times', name: '信用良好', desc: '按时还款5次', category: 'kunbei', icon: '✅', condition_type: 'count', condition_value: JSON.stringify({ target: 5 }), reward: 300 * 500000, rarity: 'rare', order: 81 },
+            { key: 'credit_100', name: '信用卡神', desc: '信用分达到100', category: 'kunbei', icon: '⭐', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'credit_score', threshold: 100 }), reward: 1000 * 500000, rarity: 'epic', order: 82 },
+            { key: 'early_repay_3', name: '提前还款', desc: '提前还款3次', category: 'kunbei', icon: '⚡', condition_type: 'count', condition_value: JSON.stringify({ target: 3 }), reward: 500 * 500000, rarity: 'rare', order: 83 },
 
             // 惩罚成就（黑色幽默）
-            { key: 'first_lsh', name: '收到律师函', desc: '首次抽到律师函', category: 'punishment', icon: '📧', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 60 }  // $50
+            { key: 'first_lsh', name: '收到律师函', desc: '首次抽到律师函', category: 'punishment', icon: '📧', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 90 },
+            { key: 'lsh_10_times', name: '律师函收割机', desc: '累计抽到10个律师函', category: 'punishment', icon: '⚖️', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 200 * 500000, rarity: 'rare', order: 91 },
+            { key: 'lsh_quad', name: '满手律师函', desc: '单次抽到4个律师函', category: 'punishment', icon: '😱', condition_type: 'once', condition_value: '{}', reward: 1000 * 500000, rarity: 'legendary', order: 92 },
+            { key: 'first_ban', name: '禁赛玩家', desc: '因律师函被禁1次', category: 'punishment', icon: '🚫', condition_type: 'once', condition_value: '{}', reward: 100 * 500000, rarity: 'rare', order: 93 },
+            { key: 'rank_1_loss', name: '坤圈首负', desc: '登上亏损榜第1名', category: 'punishment', icon: '😭', condition_type: 'rank', condition_value: JSON.stringify({ rank: 1, type: 'loss' }), reward: 2000 * 500000, rarity: 'epic', order: 94 },
+            { key: 'kunbei_overdue', name: '逾期达人', desc: '坤呗逾期1次', category: 'punishment', icon: '⏰', condition_type: 'once', condition_value: '{}', reward: 0, rarity: 'common', order: 95 }
         ];
 
         // 插入成就数据
@@ -2520,6 +2562,25 @@ function initQueries() {
             JOIN users u ON s.linux_do_id = u.linux_do_id
             ORDER BY s.unlocked_achievements DESC, s.claimed_rewards DESC
             LIMIT ?
+        `),
+        
+        // 成就统计 - 获取每个成就的达成人数
+        getAchievementStats: db.query<{ achievement_key: string, unlock_count: number }, never>(`
+            SELECT achievement_key, COUNT(*) as unlock_count
+            FROM user_achievements
+            GROUP BY achievement_key
+        `),
+        
+        // 获取总用户数（用于计算达成率）
+        getTotalUsers: db.query<{ total: number }, never>(`
+            SELECT COUNT(DISTINCT linux_do_id) as total FROM users
+        `),
+        
+        // 获取单个成就的达成人数
+        getAchievementUnlockCount: db.query<{ unlock_count: number }, string>(`
+            SELECT COUNT(*) as unlock_count
+            FROM user_achievements
+            WHERE achievement_key = ?
         `),
     };
 
