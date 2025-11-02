@@ -7395,97 +7395,12 @@
         showToast('您还未进入至尊场', 'error');
         return;
       }
-      
-      const button = document.getElementById('supremeSpinButton');
-      if (!button || button.disabled) return;
-      
-      button.disabled = true;
-      const originalText = button.innerHTML;
-      button.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="animate-spin">⚙️</span><span>转动中...</span></span>';
-      
-      // 获取当前选择的投注金额（坤币）
-      const betAmount = parseInt(document.getElementById('supremeBetSlider')?.value || '1000') * 500000;
-      
-      try {
-        const res = await fetch('/api/supreme/spin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ betAmount })
-        });
-        
-        const data = await res.json();
-        
-        if (data.success) {
-          const { symbols, win_type: winType, multiplier, win_amount: winAmount, quota_after: quotaAfter } = data.data;
-          
-          // 🔥 播放转动动画（使用统一的动画函数）
-          await playSpinAnimation(symbols);
-          
-          // 🔥 更新用户额度并同步到UI
-          if (slotUserData) {
-            slotUserData.quota = quotaAfter;
-            console.log('[至尊场] 已更新 slotUserData.quota:', quotaAfter);
-          } else {
-            console.warn('[至尊场] slotUserData 不存在，尝试初始化');
-            // 如果 slotUserData 不存在，创建一个基本对象
-            slotUserData = {
-              quota: quotaAfter,
-              remaining_spins: 0,
-              free_spins: 0,
-              today_count: 0,
-              today_bet: 0,
-              today_win: 0,
-              total_spins: 0,
-              total_bet: 0,
-              total_win: 0
-            };
-          }
-          
-          // 🔥 更新老虎机界面余额显示
-          updateSlotUI();
-          
-          // 🔥 同步余额到主界面右上角（加油站页面的余额显示）
-          const quotaValueEl = document.getElementById('quotaValue');
-          if (quotaValueEl) {
-            quotaValueEl.textContent = `$${(quotaAfter / 500000).toFixed(2)}`;
-          }
-          
-          // 🔥 更新待发放统计和余额显示
-          setTimeout(() => loadPendingRewardsSummary(), 500);
-          
-          // 显示中奖结果
-          const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
-          if (multiplier > 0) {
-            soundManager.playWin(multiplier);
-            showToast(`💎 恭喜中奖！${multiplier}x 赢得 $${winAmountUSD}`, 'success');
-          } else if (multiplier < 0) {
-            soundManager.playPunishment();
-            showToast(`⚖️ 律师函惩罚！扣除 $${winAmountUSD}`, 'error');
-          } else {
-            soundManager.playLose();
-            showToast('未中奖', 'error');
-          }
-          
-          // 🔥 重新加载至尊令牌信息
-          await loadSupremeTokens();
-          
-          // 🔥 刷新排行榜（如果有变化）
-          if (winAmount !== 0) {
-            setTimeout(() => loadSidebarLeaderboard(), 1000);
-          }
-        } else {
-          showToast(data.message, 'error');
-        }
-      } catch (error) {
-        console.error('[至尊场] 旋转失败:', error);
-        showToast('旋转失败，请重试', 'error');
-      } finally {
-        // 🔥 恢复按钮状态
-        if (button) {
-          button.disabled = false;
-          button.innerHTML = originalText;
-        }
-      }
+
+      // 🔥 获取投注金额并更新全局变量
+      supremeBetAmount = parseInt(document.getElementById('supremeBetSlider')?.value || '1000');
+
+      // 🔥 使用统一的 spinSlot() 函数（会自动处理至尊场）
+      await spinSlot(false);
     }
     
     // 💎 退出至尊场
