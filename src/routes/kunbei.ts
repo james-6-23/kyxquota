@@ -18,6 +18,7 @@ import {
 } from '../services/kunbei';
 import { kunbeiQueries, userQueries, adminQueries } from '../database';
 import { addQuota, deductQuota, getKyxUserById } from '../services/kyx-api';
+import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
 
 const kunbei = new Hono();
 
@@ -178,6 +179,13 @@ kunbei.post('/borrow', requireAuth, async (c) => {
             }, 500);
         }
 
+        // 🏆 坤呗借款成就
+        try {
+            await checkAndUnlockAchievement(session.linux_do_id!, 'first_kunbei');
+        } catch (achievementError) {
+            console.error('[成就系统] 检查借款成就时出错:', achievementError);
+        }
+
         return c.json(result);
     } catch (error: any) {
         console.error('[坤呗] 借款失败:', error);
@@ -243,6 +251,26 @@ kunbei.post('/repay/:loanId', requireAuth, async (c) => {
 
         // 执行还款
         const result = repayLoan(session.linux_do_id!, loanId);
+
+        // 🏆 坤呗还款成就（只在成功时触发）
+        if (result.success) {
+            try {
+                // 按时还款成就
+                await updateAchievementProgress(session.linux_do_id!, 'repay_5_times', 1);
+
+                // 提前还款成就（判断是否提前）
+                if (now < loan.due_at) {
+                    await updateAchievementProgress(session.linux_do_id!, 'early_repay_3', 1);
+                }
+
+                // 信用卡神成就（信用分达到100）
+                if (result.data && result.data.new_credit_score >= 100) {
+                    await checkAndUnlockAchievement(session.linux_do_id!, 'credit_100');
+                }
+            } catch (achievementError) {
+                console.error('[成就系统] 检查还款成就时出错:', achievementError);
+            }
+        }
 
         return c.json(result);
     } catch (error: any) {

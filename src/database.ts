@@ -2497,6 +2497,7 @@ function initQueries() {
             WHERE achievement_key = ?
         `),
         delete: db.query('DELETE FROM achievements WHERE achievement_key = ?'),
+        updateReward: db.query('UPDATE achievements SET reward_quota = ? WHERE achievement_key = ?'),
 
         // 用户成就
         getUserAchievement: db.query<UserAchievement, [string, string]>(

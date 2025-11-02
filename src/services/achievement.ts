@@ -62,6 +62,9 @@ export async function checkAndUnlockAchievement(
 
         logger.info('成就系统', `🏆 用户 ${linuxDoId} 成功解锁成就: ${achievement.achievement_name} [${achievement.rarity}] +${achievement.reward_quota}`);
 
+        // 检查完美主义者成就（每次解锁成就后检查）
+        await checkPerfectionistAchievement(linuxDoId);
+
         return { unlocked: true, achievement };
     } catch (error: any) {
         logger.error('成就系统', `❌ 检查成就失败 [${achievementKey}]: ${error.message}`, error.stack);
@@ -178,7 +181,21 @@ async function checkComboCondition(
 ): Promise<boolean> {
     // 例如: { count: 3 } 连续3次
     // 需要维护连续计数器
-    return false;
+    try {
+        const targetCount = condition.count || 1;
+
+        // 从进度表获取当前连续计数
+        const progress = achievementProgressQueries.getProgress.get(linuxDoId, eventData?.achievementKey);
+
+        if (progress && progress.current_value >= targetCount) {
+            return true;
+        }
+
+        return false;
+    } catch (error: any) {
+        logger.error('成就系统', `检查连续条件失败: ${error.message}`);
+        return false;
+    }
 }
 
 /**
@@ -187,16 +204,54 @@ async function checkComboCondition(
 async function checkCollectionCondition(linuxDoId: string, condition: any): Promise<boolean> {
     // 例如: { items: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'] }
     // 需要检查用户是否收集了所有指定项目
-    return false;
+    try {
+        const requiredItems = condition.items || [];
+        if (requiredItems.length === 0) return false;
+
+        // 查询用户的游戏记录，提取所有出现过的符号
+        const { slotQueries } = await import('../database');
+        const records = slotQueries.getUserRecords.all(linuxDoId);
+
+        // 收集所有符号
+        const collectedSymbols = new Set<string>();
+        records.forEach((record: any) => {
+            if (record.symbols) {
+                const symbols = JSON.parse(record.symbols);
+                symbols.forEach((s: string) => collectedSymbols.add(s));
+            }
+        });
+
+        // 检查是否收集了所有必需的符号
+        return requiredItems.every((item: string) => collectedSymbols.has(item));
+    } catch (error: any) {
+        logger.error('成就系统', `检查收集条件失败: ${error.message}`);
+        return false;
+    }
 }
 
 /**
  * 检查排名条件
  */
 async function checkRankCondition(linuxDoId: string, condition: any): Promise<boolean> {
-    // 例如: { rank: 10, type: 'profit' }
-    // 需要从排行榜查询用户排名
-    return false;
+    // 例如: { rank: 10, type: 'profit' } 或 { rank: 1, type: 'loss' }
+    try {
+        const { getUserRank, getUserLossRank } = await import('./slot');
+        const rankType = condition.type || 'profit';
+        const targetRank = condition.rank;
+
+        if (rankType === 'profit') {
+            const userRank = getUserRank(linuxDoId);
+            return userRank > 0 && userRank <= targetRank;
+        } else if (rankType === 'loss') {
+            const userLossRank = getUserLossRank(linuxDoId);
+            return userLossRank > 0 && userLossRank <= targetRank;
+        }
+
+        return false;
+    } catch (error: any) {
+        logger.error('成就系统', `检查排名条件失败: ${error.message}`);
+        return false;
+    }
 }
 
 /**
@@ -600,5 +655,48 @@ export function setUserBadges(
     } catch (error: any) {
         logger.error('成就系统', `❌ 设置徽章失败 [${linuxDoId}]: ${error.message}`, error.stack);
         return { success: false, message: `设置失败: ${error.message}` };
+    }
+}
+
+/**
+ * 检查并解锁完美主义者成就（完成80%基础成就）
+ * 应在每次解锁成就后调用
+ */
+export async function checkPerfectionistAchievement(linuxDoId: string): Promise<void> {
+    try {
+        // 定义基础成就类别（不包括收藏成就类别）
+        const basicAchievementCategories = [
+            '新手成就', '游戏成就', '中奖成就', '探索成就',
+            '社交成就', '挑战成就', '坤呗成就', '惩罚成就'
+        ];
+
+        // 获取所有基础成就（通过类别逐个获取）
+        let allBasicAchievements: any[] = [];
+        for (const category of basicAchievementCategories) {
+            const achievements = achievementQueries.getByCategory.all(category);
+            allBasicAchievements = allBasicAchievements.concat(achievements);
+        }
+
+        if (allBasicAchievements.length === 0) {
+            return;
+        }
+
+        // 获取用户已解锁的基础成就
+        const userAchievements = userAchievementQueries.getUserAchievements.all(linuxDoId);
+        const unlockedBasicCount = userAchievements.filter((ua: any) => {
+            // 找到对应的成就定义
+            const achievement = allBasicAchievements.find((a: any) => a.achievement_key === ua.achievement_key);
+            return achievement !== undefined;
+        }).length;
+
+        // 计算完成率
+        const completionRate = unlockedBasicCount / allBasicAchievements.length;
+
+        // 如果完成率达到80%，解锁完美主义者成就
+        if (completionRate >= 0.8) {
+            await checkAndUnlockAchievement(linuxDoId, 'perfectionist');
+        }
+    } catch (error: any) {
+        logger.error('成就系统', `检查完美主义者成就失败: ${error.message}`);
     }
 }

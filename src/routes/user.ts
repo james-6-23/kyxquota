@@ -11,6 +11,7 @@ import { validateAndDonateKeys } from '../services/keys';
 import { addUserFreeSpins, getUserFreeSpins } from '../services/slot';
 import { CONFIG } from '../config';
 import type { User } from '../types';
+import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
 
 const app = new Hono();
 
@@ -206,6 +207,13 @@ app.post('/auth/bind', requireAuth, async (c) => {
             today
         );
         console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
+
+        // 🏆 首次绑定成就
+        try {
+            await checkAndUnlockAchievement(session.linux_do_id, 'first_bind');
+        } catch (achievementError) {
+            console.error('[成就系统] 检查首次绑定成就时出错:', achievementError);
+        }
 
         return c.json({
             success: true,
@@ -498,6 +506,16 @@ app.post('/claim/daily', requireAuth, async (c) => {
 
     console.log(`[用户操作] 💰 每日领取成功 - 用户: ${user.username}, 额度: $${(adminConfig.claim_quota / 500000).toFixed(2)}, 今日第 ${todayClaimsResult + 1} 次`);
 
+    // 🏆 每日签到成就
+    try {
+        // 注意：这里是累计签到次数，不是连续天数
+        // 连续天数需要在阶段3实现特殊的追踪逻辑
+        await updateAchievementProgress(session.linux_do_id, 'daily_claim_3', 1);
+        await updateAchievementProgress(session.linux_do_id, 'daily_claim_7', 1);
+    } catch (achievementError) {
+        console.error('[成就系统] 检查每日签到成就时出错:', achievementError);
+    }
+
     return c.json({
         success: true,
         message: `成功添加额度 $${(adminConfig.claim_quota / 500000).toFixed(2)}`,
@@ -537,6 +555,15 @@ app.post('/donate/validate', requireAuth, async (c) => {
         addUserFreeSpins(user.linux_do_id, 1);
 
         console.log(`[用户操作] 🎁 ModelScope 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
+
+        // 🏆 投喂成就
+        try {
+            await checkAndUnlockAchievement(user.linux_do_id, 'first_donate');
+            await updateAchievementProgress(user.linux_do_id, 'donate_5_times', 1);
+            await updateAchievementProgress(user.linux_do_id, 'donate_20_times', 1);
+        } catch (achievementError) {
+            console.error('[成就系统] 检查投喂成就时出错:', achievementError);
+        }
 
         // ✅ 获取更新后的免费次数
         const freeSpins = getUserFreeSpins(user.linux_do_id);
@@ -585,6 +612,15 @@ app.post('/donate/iflow', requireAuth, async (c) => {
         addUserFreeSpins(user.linux_do_id, 1);
 
         console.log(`[用户操作] ✨ iFlow 投喂成功 - 用户: ${user.username}, Keys数: ${result.data.valid_keys}, 额度: $${(result.data.quota_added / 500000).toFixed(2)}, 奖励免费抽奖次数: 1`);
+
+        // 🏆 投喂成就
+        try {
+            await checkAndUnlockAchievement(user.linux_do_id, 'first_donate');
+            await updateAchievementProgress(user.linux_do_id, 'donate_5_times', 1);
+            await updateAchievementProgress(user.linux_do_id, 'donate_20_times', 1);
+        } catch (achievementError) {
+            console.error('[成就系统] 检查投喂成就时出错:', achievementError);
+        }
 
         // ✅ 获取更新后的免费次数
         const freeSpins = getUserFreeSpins(user.linux_do_id);

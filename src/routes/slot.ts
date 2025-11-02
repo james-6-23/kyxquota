@@ -48,6 +48,7 @@ import {
 } from '../services/supreme-slot';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 import { getAndUseBuff } from '../services/kunbei';
+import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
 
 const slot = new Hono();
 
@@ -752,6 +753,133 @@ slot.post('/spin', requireAuth, async (c) => {
 
         // 获取最新的入场券信息
         const ticketsInfo = getUserTickets(session.linux_do_id);
+
+        // ========== 成就系统检查 ==========
+        try {
+            // 1. 首次游戏成就
+            await checkAndUnlockAchievement(session.linux_do_id, 'first_game');
+
+            // 2. 游玩次数成就（每次游戏增加进度）
+            await updateAchievementProgress(session.linux_do_id, 'play_10_games', 1);
+            await updateAchievementProgress(session.linux_do_id, 'play_50_games', 1);
+            await updateAchievementProgress(session.linux_do_id, 'play_200_games', 1);
+            await updateAchievementProgress(session.linux_do_id, 'play_1000_games', 1);
+
+            // 3. 中奖相关成就
+            if (result.winType !== 'none' && result.winType !== WinType.PUNISHMENT && result.multiplier > 0) {
+                // 首次中奖
+                await checkAndUnlockAchievement(session.linux_do_id, 'first_win');
+
+                // 中奖次数成就
+                await updateAchievementProgress(session.linux_do_id, 'win_10_times', 1);
+                await updateAchievementProgress(session.linux_do_id, 'win_50_times', 1);
+                await updateAchievementProgress(session.linux_do_id, 'win_100_times', 1);
+
+                // 4. 中奖类型成就（双连、三连、四连等）
+                if (result.winType === WinType.DOUBLE) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'double_win');
+                } else if (result.winType === WinType.TRIPLE) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'triple_win');
+                } else if (result.winType === WinType.QUAD) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'quad_win');
+                } else if (result.winType === 'special_combo' || result.ruleName?.includes('特殊')) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'special_combo_win');
+                } else if (result.winType === 'super_jackpot' || result.multiplier >= 256) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'super_jackpot_win');
+                }
+
+                // 5. 单次大额中奖成就（单次中奖超过 5000 quota）
+                if (winAmount >= 2500000) { // 5000 * 500000 = 2500000
+                    await checkAndUnlockAchievement(session.linux_do_id, 'single_win_5k');
+                }
+            }
+
+            // 6. 律师函相关成就
+            const lshCount = symbols.filter((s: string) => s === 'lsh').length;
+            if (lshCount > 0) {
+                // 首次收到律师函
+                await checkAndUnlockAchievement(session.linux_do_id, 'first_lsh');
+
+                // 律师函数量累计
+                await updateAchievementProgress(session.linux_do_id, 'lsh_10_times', lshCount);
+
+                // 单次4个律师函
+                if (lshCount === 4) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'lsh_quad');
+                }
+            }
+
+            // 7. 禁赛成就（被禁止抽奖）
+            if (result.shouldBan || shouldBan) {
+                await checkAndUnlockAchievement(session.linux_do_id, 'first_ban');
+            }
+
+            // 8. 免费游戏成就
+            if (result.freeSpinAwarded) {
+                await updateAchievementProgress(session.linux_do_id, 'free_game_10', 1);
+            }
+
+            // 9. 高级场梭哈大师成就（高级场单次下注5k+）
+            if (inAdvancedMode && betAmount >= 2500000) { // 5000 * 500000 = 2500000
+                await checkAndUnlockAchievement(session.linux_do_id, 'bet_5k_advanced');
+            }
+
+            // 10. 财富成就 - 余额达标（余额达到50k）
+            if (quotaAfter >= 25000000) { // 50000 * 500000 = 25000000
+                await checkAndUnlockAchievement(session.linux_do_id, 'balance_50k');
+            }
+
+            // 11. 财富成就 - 累计盈利（从用户总统计获取）
+            const userTotalStats = getUserTotalStats(session.linux_do_id);
+            if (userTotalStats) {
+                const totalProfit = userTotalStats.total_win - userTotalStats.total_bet;
+
+                // 累计盈利10k
+                if (totalProfit >= 5000000) { // 10000 * 500000 = 5000000
+                    await checkAndUnlockAchievement(session.linux_do_id, 'earn_10k');
+                }
+                // 累计盈利100k
+                if (totalProfit >= 50000000) { // 100000 * 500000 = 50000000
+                    await checkAndUnlockAchievement(session.linux_do_id, 'earn_100k');
+                }
+                // 累计盈利1m
+                if (totalProfit >= 500000000) { // 1000000 * 500000 = 500000000
+                    await checkAndUnlockAchievement(session.linux_do_id, 'earn_1m');
+                }
+            }
+
+            // 12. 挑战成就 - 单日盈利（从今日统计获取）
+            const todayStats = getUserTodayStats(session.linux_do_id);
+            if (todayStats) {
+                const todayProfit = todayStats.total_win - todayStats.total_bet;
+
+                // 单日盈利10k+
+                if (todayProfit >= 5000000) { // 10000 * 500000 = 5000000
+                    await checkAndUnlockAchievement(session.linux_do_id, 'daily_profit_10k');
+                }
+            }
+
+            // 13. 收藏成就 - 符号收集者（收集所有9种符号）
+            // 使用 collection 条件类型自动检查
+            await checkAndUnlockAchievement(session.linux_do_id, 'symbol_collector');
+
+            // 14. 收藏成就 - 组合大师（获得5种不同中奖类型）
+            // 检查用户是否获得了多种中奖类型
+            const userRecords = getUserRecords(session.linux_do_id);
+            const uniqueWinTypes = new Set(
+                userRecords
+                    .filter((r: any) => r.win_type !== 'none' && r.win_type !== 'punishment')
+                    .map((r: any) => r.win_type)
+            );
+            if (uniqueWinTypes.size >= 5) {
+                await checkAndUnlockAchievement(session.linux_do_id, 'combo_master');
+            }
+
+        } catch (achievementError) {
+            // 成就系统错误不应该影响游戏正常进行，只记录日志
+            console.error('[成就系统] 检查成就时出错:', achievementError);
+        }
+        // ========== 成就系统检查结束 ==========
 
         return c.json({
             success: true,

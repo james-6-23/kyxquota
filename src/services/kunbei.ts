@@ -597,6 +597,14 @@ export async function checkOverdueLoans(): Promise<number> {
 
             overdueCount++;
             logger.warn('坤呗', `借款逾期处理完成 - 用户: ${loan.username}, 借款ID: ${loan.id}, 惩罚至: ${new Date(penaltyUntil).toLocaleString()}, 自动扣款: $${(autoDeductedAmount / 500000).toFixed(2)}, 已强制退出高级场和至尊场`);
+
+            // 🏆 逾期成就
+            try {
+                const { checkAndUnlockAchievement } = await import('./achievement');
+                await checkAndUnlockAchievement(loan.linux_do_id, 'kunbei_overdue');
+            } catch (achievementError) {
+                logger.error('成就系统', `检查逾期成就时出错: ${achievementError}`);
+            }
         }
     }
 

@@ -4,6 +4,7 @@ import { CONFIG, validateConfig } from './config';
 import { initDatabase, db } from './database';
 import { cacheManager } from './cache';
 import { startRewardProcessor } from './services/reward-processor';
+import { startRankAchievementChecker } from './services/rank-achievement-checker';
 
 // 验证配置
 validateConfig();
@@ -13,6 +14,9 @@ initDatabase();
 
 // 启动奖金自动发放服务
 startRewardProcessor();
+
+// 启动排行榜成就检查服务
+startRankAchievementChecker();
 
 // 创建应用
 const app = new Hono();
