@@ -39,7 +39,7 @@ export function getSupremeSlotConfig(): any {
     const config = supremeSlotQueries.getConfig.get();
 
     if (!config) {
-        console.warn('[至尊场] 配置未找到，使用默认配置');
+        logger.warn('至尊场', '配置未找到，使用默认配置');
         // 返回默认配置
         return {
             id: 1,
@@ -103,7 +103,7 @@ export function checkTokenExpiry(linuxDoId: string): void {
                 tokens.created_at || now,
                 now
             );
-            console.log(`[至尊场] 用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+            logger.info('至尊场', `用户 ${linuxDoId} 的令牌已过期并清除 - 过期时间: ${new Date(tokens.tokens_expires_at).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
         }
     }
 }
@@ -120,7 +120,7 @@ export function checkSupremeModeExpiry(linuxDoId: string): void {
     if (tokens.supreme_mode_until < now) {
         // 会话已过期，退出至尊场
         supremeSlotQueries.exitSupremeMode.run(now, linuxDoId);
-        console.log(`[至尊场] 用户 ${linuxDoId} 的至尊场会话已过期`);
+        logger.info('至尊场', `用户 ${linuxDoId} 的至尊场会话已过期`);
     }
 }
 
@@ -161,7 +161,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
     const validHours = config.token_valid_hours || 168;  // 默认7天
     const expiresAt = now + (validHours * 3600000);
 
-    console.log(`[至尊场] 发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+    logger.info('至尊场', `发放令牌 - 用户: ${linuxDoId}, 有效期: ${validHours}小时, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
 
     supremeSlotQueries.upsertTokens.run(
         linuxDoId,
@@ -173,7 +173,7 @@ export function addSupremeToken(linuxDoId: string, count: number = 1): { success
         now
     );
 
-    console.log(`[至尊场] 管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
+    logger.info('至尊场', `管理员发放令牌 - 用户: ${linuxDoId}, 数量: ${actualGrant}, 当前: ${currentTokens + actualGrant}个, 过期时间: ${new Date(expiresAt).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false })}`);
 
     return {
         success: true,
@@ -199,7 +199,7 @@ export function addSupremeFragment(linuxDoId: string, count: number = 1): void {
         now
     );
 
-    console.log(`[至尊场] 用户 ${linuxDoId} 获得 ${count} 个至尊碎片，当前碎片: ${(tokens?.fragments || 0) + count}`);
+    logger.info('至尊场', `用户 ${linuxDoId} 获得 ${count} 个至尊碎片，当前碎片: ${(tokens?.fragments || 0) + count}`);
 }
 
 /**
@@ -271,7 +271,7 @@ export async function synthesizeSupremeToken(linuxDoId: string): Promise<{ succe
         now
     );
 
-    console.log(`[至尊场] 用户 ${linuxDoId} 合成至尊令牌，当前: ${tokens.tokens + 1}个`);
+    logger.info('至尊场', `用户 ${linuxDoId} 合成至尊令牌，当前: ${tokens.tokens + 1}个`);
 
     return {
         success: true,
@@ -294,7 +294,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
     const config = getSupremeSlotConfig();
 
     if (!tokens || tokens.tokens < 1) {
-        console.log(`[至尊场] 进入失败 - 用户: ${linuxDoId}, 令牌不足: ${tokens?.tokens || 0}`);
+        logger.debug('至尊场', `进入失败 - 用户: ${linuxDoId}, 令牌不足: ${tokens?.tokens || 0}`);
         return {
             success: false,
             message: '至尊令牌不足，无法进入至尊场'
@@ -302,7 +302,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
     }
 
     if (!config.enabled) {
-        console.log(`[至尊场] 进入失败 - 至尊场功能已关闭`);
+        logger.debug('至尊场', `进入失败 - 至尊场功能已关闭`);
         return {
             success: false,
             message: '至尊场功能已关闭'
@@ -316,7 +316,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
     const entryCount = todayEntry?.entry_count || 0;
 
     if (entryCount >= config.daily_entry_limit) {
-        console.log(`[至尊场] 进入失败 - 用户: ${linuxDoId}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
+        logger.debug('至尊场', `进入失败 - 用户: ${linuxDoId}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
         return {
             success: false,
             message: `今日进入次数已达上限（${config.daily_entry_limit}次）`
@@ -333,7 +333,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
         const afterTokens = getSupremeTokens(linuxDoId);
 
         if (afterTokens && afterTokens.tokens === tokens.tokens - 1 && afterTokens.supreme_mode_until === validUntil) {
-            console.log(`[至尊场] 用户 ${linuxDoId} 成功进入至尊场，有效期至 ${new Date(validUntil).toLocaleString()}`);
+            logger.info('至尊场', `用户 ${linuxDoId} 成功进入至尊场，有效期至 ${new Date(validUntil).toLocaleString()}`);
 
             // 更新今日进入记录
             supremeSlotQueries.updateTodayEntry.run(
@@ -370,7 +370,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
 export function exitSupremeMode(linuxDoId: string): void {
     const now = Date.now();
     supremeSlotQueries.exitSupremeMode.run(now, linuxDoId);
-    console.log(`[至尊场] 用户 ${linuxDoId} 退出至尊场`);
+    logger.info('至尊场', `用户 ${linuxDoId} 退出至尊场`);
 }
 
 /**
@@ -400,7 +400,7 @@ export function recordSupremeDrop(
         now
     );
 
-    console.log(`[至尊场] 记录掉落 - 用户: ${username}, 类型: ${dropType}, 数量: ${dropCount}, 来源: ${source}`);
+    logger.info('至尊场', `记录掉落 - 用户: ${username}, 类型: ${dropType}, 数量: ${dropCount}, 来源: ${source}`);
 }
 
 /**
@@ -411,7 +411,7 @@ export function getSupremeWeights(): any {
     const weightConfig = weightConfigQueries.getById.get(config.weight_config_id);
 
     if (!weightConfig) {
-        console.warn('[至尊场] 权重配置不存在，使用默认值');
+        logger.warn('至尊场', '权重配置不存在，使用默认值');
         return {
             weight_m: 100,
             weight_t: 100,
@@ -502,16 +502,16 @@ export function calculateSupremeWin(symbols: string[]): {
     const { rules } = getSupremeRewardRules();
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
 
-    console.log(`[至尊场] 符号结果: [${symbols.join(', ')}]`);
-    console.log(`[至尊场] 激活的规则数量: ${activeRules.length}`);
+    logger.debug('至尊场判定', `符号结果: [${symbols.join(', ')}]`);
+    logger.debug('至尊场判定', `激活的规则数量: ${activeRules.length}`);
 
     // 按优先级检查规则
     for (const rule of activeRules) {
-        console.log(`[至尊场] 检查规则: ${rule.rule_name} (类型: ${rule.match_pattern}, 数量: ${rule.match_count})`);
+        logger.debug('至尊场判定', `检查规则: ${rule.rule_name} (类型: ${rule.match_pattern}, 数量: ${rule.match_count})`);
         const matched = checkRuleMatch(symbols, rule);
 
         if (matched) {
-            console.log(`[至尊场] ✅ 匹配规则: ${rule.rule_name}, 倍率: ${rule.win_multiplier}x`);
+            logger.info('至尊场判定', `✅ 匹配规则: ${rule.rule_name}, 倍率: ${rule.win_multiplier}x`);
             return {
                 winType: rule.rule_type,
                 multiplier: rule.win_multiplier,
@@ -521,7 +521,7 @@ export function calculateSupremeWin(symbols: string[]): {
         }
     }
 
-    console.log(`[至尊场] ❌ 未匹配任何规则`);
+    logger.debug('至尊场判定', '❌ 未匹配任何规则');
     return {
         winType: 'none',
         multiplier: 0,
@@ -573,20 +573,20 @@ function checkRuleMatch(symbols: string[], rule: any): boolean {
  * 检查是否有连续匹配
  */
 function hasConsecutiveMatch(symbols: string[], count: number): boolean {
-    console.log(`[至尊场] 检查连续匹配 - 符号: [${symbols.join(', ')}], 需要数量: ${count}`);
+    // 🔥 调试日志已移除（性能优化）
 
     for (let i = 0; i <= symbols.length - count; i++) {
         const slice = symbols.slice(i, i + count);
         const isMatch = slice.every(s => s === slice[0]);
-        console.log(`[至尊场] 位置${i}: [${slice.join(', ')}] - ${isMatch ? '✅匹配' : '❌不匹配'}`);
+        // 🔥 调试日志已移除（性能优化）
 
         if (isMatch) {
-            console.log(`[至尊场] ✅ 找到${count}连: ${slice[0]}`);
+            // logger.debug('至尊场判定', `✅ 找到${count}连: ${slice[0]}`);
             return true;
         }
     }
 
-    console.log(`[至尊场] ❌ 未找到${count}连`);
+    // logger.debug('至尊场判定', `❌ 未找到${count}连`);
     return false;
 }
 
@@ -629,7 +629,7 @@ function hasDoublePair(symbols: string[]): boolean {
     const pairs = Object.values(pairCounts).filter(count => count === 2);
     const matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
 
-    console.log(`[至尊场] 两对2连检查: 符号计数=`, pairCounts, `2次对数=${pairs.length}, 匹配=${matched}`);
+    // logger.debug('至尊场判定', `两对2连检查: 符号计数=${JSON.stringify(pairCounts)}, 2次对数=${pairs.length}, 匹配=${matched}`);
     return matched;
 }
 
@@ -639,7 +639,7 @@ function hasDoublePair(symbols: string[]): boolean {
 function hasSymmetric(symbols: string[]): boolean {
     if (symbols.length === 4) {
         const matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
-        console.log(`[至尊场] 对称检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
+        // logger.debug('至尊场判定', `对称检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
         return matched;
     }
     return false;
@@ -676,7 +676,7 @@ export function recordSupremeGame(
         now
     );
 
-    console.log(`[至尊场] 记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}`);
+    logger.info('至尊场', `记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}, 规则: ${winType}, 倍率: ${multiplier}x`);
 }
 
 /**

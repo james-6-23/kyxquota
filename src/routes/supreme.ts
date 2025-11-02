@@ -94,7 +94,7 @@ supreme.get('/tokens', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        console.error('[至尊场] 获取令牌信息失败:', error);
+        logger.error('至尊场', `获取令牌信息失败: ${error.message}`);
         return c.json({ success: false, message: '获取令牌信息失败' }, 500);
     }
 });
@@ -109,7 +109,7 @@ supreme.post('/tokens/synthesize', requireAuth, async (c) => {
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
-        console.error('[至尊场] 合成令牌失败:', error);
+        logger.error('至尊场', `合成令牌失败: ${error.message}`);
         return c.json({ success: false, message: '合成失败' }, 500);
     }
 });
@@ -127,7 +127,7 @@ supreme.post('/enter', requireAuth, async (c) => {
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
-        console.error('[至尊场] 进入失败:', error);
+        logger.error('至尊场', `进入失败: ${error.message}`);
         return c.json({ success: false, message: '进入失败' }, 500);
     }
 });
@@ -146,7 +146,7 @@ supreme.post('/exit', requireAuth, async (c) => {
             message: '已退出至尊场'
         });
     } catch (error: any) {
-        console.error('[至尊场] 退出失败:', error);
+        logger.error('至尊场', `退出失败: ${error.message}`);
         return c.json({ success: false, message: '退出失败' }, 500);
     }
 });
@@ -164,7 +164,7 @@ supreme.post('/spin', requireAuth, async (c) => {
             const { checkOverdueLoans } = await import('../services/kunbei');
             await checkOverdueLoans();
         } catch (err: any) {
-            console.warn('[至尊场] 坤呗逾期检查失败:', err.message);
+            logger.warn('至尊场', `坤呗逾期检查失败: ${err.message}`);
         }
 
         // 验证参数
@@ -247,7 +247,7 @@ supreme.post('/spin', requireAuth, async (c) => {
         // 🔥 扣除投注额度（计算新额度 = 当前额度 - 投注金额，与初级场/高级场保持一致）
         const newQuotaAfterBet = currentQuota - betAmount;
 
-        console.log(`[至尊场] 准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+        logger.info('至尊场', `准备扣除投注 - 用户: ${user.username}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
 
         const deductResult = await updateKyxUserQuota(
             user.kyx_user_id,
@@ -259,14 +259,14 @@ supreme.post('/spin', requireAuth, async (c) => {
         );
 
         if (!deductResult || !deductResult.success) {
-            console.error(`[至尊场] ❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+            logger.error('至尊场', `❌ 扣除投注失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
             return c.json({
                 success: false,
                 message: `扣除投注失败: ${deductResult?.message || '未知错误'}，请稍后重试`
             }, 500);
         }
 
-        console.log(`[至尊场] ✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
+        logger.info('至尊场', `✅ 扣除投注成功 - 用户: ${user.username}, 剩余: ${newQuotaAfterBet}`);
 
         // 记录游戏
         recordSupremeGame(
@@ -287,12 +287,12 @@ supreme.post('/spin', requireAuth, async (c) => {
             // 🔥 获取当前最新额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
             if (!currentKyxUser.success || !currentKyxUser.user) {
-                console.error(`[至尊场] ❌ 中奖时获取用户信息失败 - 用户: ${user.username}`);
+                logger.error('至尊场', `❌ 中奖时获取用户信息失败 - 用户: ${user.username}`);
             } else {
                 const currentQuotaForWin = currentKyxUser.user.quota;
                 const newQuotaAfterWin = currentQuotaForWin + winAmount;
 
-                console.log(`[至尊场] 准备添加奖金 - 用户: ${user.username}, 当前: ${currentQuotaForWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
+                logger.info('至尊场', `准备添加奖金 - 用户: ${user.username}, 当前: ${currentQuotaForWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
 
                 const addResult = await updateKyxUserQuota(
                     user.kyx_user_id,
@@ -304,10 +304,10 @@ supreme.post('/spin', requireAuth, async (c) => {
                 );
 
                 if (!addResult || !addResult.success) {
-                    console.error(`[至尊场] ❌ 添加奖金失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${addResult?.message || '未知错误'}`);
+                    logger.error('至尊场', `❌ 添加奖金失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${addResult?.message || '未知错误'}`);
                 } else {
                     quotaAfter = newQuotaAfterWin;
-                    console.log(`[至尊场] ✅ 添加奖金成功 - 用户: ${user.username}, 新余额: ${quotaAfter}`);
+                    logger.info('至尊场', `✅ 添加奖金成功 - 用户: ${user.username}, 新余额: ${quotaAfter}`);
                 }
             }
         }
@@ -345,7 +345,7 @@ supreme.post('/spin', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        console.error('[至尊场] 旋转失败:', error);
+        logger.error('至尊场', `旋转失败: ${error.message}`);
         return c.json({ success: false, message: '旋转失败: ' + error.message }, 500);
     }
 });
@@ -363,7 +363,7 @@ supreme.get('/records', requireAuth, async (c) => {
             data: records
         });
     } catch (error: any) {
-        console.error('[至尊场] 获取记录失败:', error);
+        logger.error('至尊场', `获取记录失败: ${error.message}`);
         return c.json({ success: false, message: '获取记录失败' }, 500);
     }
 });
@@ -446,7 +446,7 @@ supreme.get('/rules', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        console.error('[至尊场规则] 获取失败:', error);
+        logger.error('至尊场规则', `获取失败: ${error.message}`);
         return c.json({ success: false, message: '获取规则失败' }, 500);
     }
 });
