@@ -5712,7 +5712,7 @@
         const data = await res.json();
         
         if (data.success) {
-          const { mode, in_supreme_mode, rules, punishments, weightConfig, totalWeight, config } = data.data;
+          const { mode, in_supreme_mode, rules, punishments, weightConfig, totalWeight, config, noWinProbability, rtp } = data.data;
           
           const rulesContainer = document.getElementById('supremeRulesDisplay');
           if (!rulesContainer) return;
@@ -5761,7 +5761,10 @@
                       <span class="text-amber-300 font-bold">${index + 1}.</span>
                       <span class="text-white font-bold">${rule.rule_name}</span>
                     </div>
-                    <span class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</span>
+                    <div class="text-right">
+                      <div class="text-green-300 font-bold text-xl">${rule.win_multiplier}x</div>
+                      ${rule.probability ? `<div class="text-xs text-purple-300 mt-1">📊 ${rule.probability}</div>` : ''}
+                    </div>
                   </div>
                   ${rule.description ? `<p class="text-sm text-green-200/70 mt-1 ml-6">${rule.description}</p>` : ''}
                   ${rule.grant_free_spin > 0 ? `<p class="text-xs text-amber-300 mt-1 ml-6">🎁 赠送${rule.grant_free_spin}次免费</p>` : ''}
@@ -5800,6 +5803,35 @@
                 </div>
               `;
             });
+            
+            html += '</div></div>';
+          }
+          
+          // 💎 显示RTP和未中奖概率
+          if (rtp || noWinProbability) {
+            html += '<div class="bg-purple-900/30 rounded-xl p-4 mb-4 border border-purple-500/30">';
+            html += '<h4 class="font-bold text-purple-300 mb-3 text-lg">📊 概率统计</h4>';
+            html += '<div class="grid grid-cols-2 gap-3">';
+            
+            if (rtp) {
+              html += `
+                <div class="bg-purple-500/20 border border-purple-400/50 rounded-lg p-3 text-center">
+                  <div class="text-purple-200 text-xs mb-1">玩家回报率</div>
+                  <div class="text-purple-300 font-bold text-2xl">${rtp}</div>
+                  <div class="text-purple-200/70 text-xs mt-1">RTP</div>
+                </div>
+              `;
+            }
+            
+            if (noWinProbability) {
+              html += `
+                <div class="bg-red-500/20 border border-red-400/50 rounded-lg p-3 text-center">
+                  <div class="text-red-200 text-xs mb-1">未中奖概率</div>
+                  <div class="text-red-300 font-bold text-2xl">${noWinProbability}</div>
+                  <div class="text-red-200/70 text-xs mt-1">Miss Rate</div>
+                </div>
+              `;
+            }
             
             html += '</div></div>';
           }
