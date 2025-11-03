@@ -308,7 +308,7 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
             };
         } else if (manCount === 3 || manConsecutive === 3) {
             manMultiplier = 10;
-        } else if (manConsecutive === 2) {
+        } else if (manCount === 2 || manConsecutive === 2) {
             manMultiplier = 5;
         } else if (manCount === 1) {
             manMultiplier = 2.5;
@@ -352,16 +352,33 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
             
             // 应用man加成
             if (manMultiplier > 1.0) {
-                if (rule.match_pattern === 'consecutive' || 
-                    rule.match_pattern === '2-consecutive' || 
-                    rule.match_pattern === '3-consecutive' ||
-                    rule.match_pattern === '4-consecutive') {
-                    finalMultiplier = rule.win_multiplier * manMultiplier;
-                    ruleName = `${rule.rule_name}+man×${manMultiplier}`;
-                } else if (rule.match_pattern === 'double_pair') {
-                    if (hasManConsecutivePairProb(symbols)) {
-                        finalMultiplier = rule.win_multiplier * 10;
-                        ruleName = `${rule.rule_name}+man严格2连`;
+                // 🔥 检查是否是专门的Man规则（避免双重计算）
+                let isManSpecificRule = false;
+                try {
+                    if (rule.required_symbols) {
+                        const requiredArr = Array.isArray(rule.required_symbols) 
+                            ? rule.required_symbols 
+                            : JSON.parse(rule.required_symbols);
+                        // 如果required_symbols只包含"man"，说明是专门的man规则
+                        isManSpecificRule = requiredArr.length === 1 && requiredArr[0] === 'man';
+                    }
+                } catch (e) {
+                    // 解析失败，按非man专用规则处理
+                }
+                
+                // 只对非man专用规则应用man加成
+                if (!isManSpecificRule) {
+                    if (rule.match_pattern === 'consecutive' || 
+                        rule.match_pattern === '2-consecutive' || 
+                        rule.match_pattern === '3-consecutive' ||
+                        rule.match_pattern === '4-consecutive') {
+                        finalMultiplier = rule.win_multiplier * manMultiplier;
+                        ruleName = `${rule.rule_name}+man×${manMultiplier}`;
+                    } else if (rule.match_pattern === 'double_pair') {
+                        if (hasManConsecutivePairProb(symbols)) {
+                            finalMultiplier = rule.win_multiplier * 10;
+                            ruleName = `${rule.rule_name}+man严格2连`;
+                        }
                     }
                 }
             }
@@ -736,9 +753,10 @@ function binomialCoefficient(n: number, k: number): number {
 /**
  * 🔥 为指定方案重新计算概率（管理员保存配置时调用）
  * 遍历所有使用该方案的场次，预先计算并缓存概率
+ * 使用蒙特卡洛方法进行精确计算
  */
 export async function recalculateProbabilityForScheme(schemeId: number): Promise<void> {
-    logger.info('概率预计算', `🔄 方案${schemeId} 开始计算...`);
+    logger.info('概率预计算', `🔄 方案${schemeId} 开始计算（蒙特卡洛精确计算）...`);
 
     try {
         const { weightConfigQueries, slotQueries, advancedSlotQueries, supremeSlotQueries } = await import('../database');
@@ -766,12 +784,13 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
             weightConfigsToCalculate.add(1);
         }
 
-        // 计算每个权重配置的概率
+        // 计算每个权重配置的概率（使用蒙特卡洛方法）
         let successCount = 0;
         for (const weightConfigId of weightConfigsToCalculate) {
             try {
-                const result = calculateProbabilityFast(weightConfigId, schemeId);
-                logger.info('概率预计算', `✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}%`);
+                // 🔥 改用蒙特卡洛方法（100万次模拟）
+                const result = calculateProbabilityMonteCarlo(weightConfigId, schemeId, 1000000);
+                logger.info('概率预计算', `✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}% (耗时:${result.calculationTime}ms)`);
                 successCount++;
             } catch (error: any) {
                 logger.error('概率预计算', `❌ 权重${weightConfigId} 失败: ${error.message}`);
@@ -788,76 +807,147 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
 /**
  * 🔥 启动时预热所有场次的概率缓存
  * 在应用启动时调用，避免重启后缓存丢失
+ * 使用蒙特卡洛方法进行精确计算
  */
 export async function warmupAllProbabilityCache(): Promise<void> {
-    logger.info('缓存预热', '🔥 开始预热所有场次的概率缓存...');
+    logger.info('缓存预热', '🔥 开始预热所有场次的概率缓存（蒙特卡洛精确计算）...');
 
     // 🔥 先清除旧缓存（确保使用最新的计算逻辑）
     clearAllCache();
 
     try {
-        const { slotQueries, advancedSlotQueries, supremeSlotQueries, rewardConfigQueries } = await import('../database');
+        const { slotQueries, advancedSlotQueries, supremeSlotQueries, rewardConfigQueries, weightConfigQueries, dropConfigQueries } = await import('../database');
 
         // 获取所有场次的配置
         const normalConfig = slotQueries.getConfig.get();
         const advancedConfig = advancedSlotQueries.getAdvancedConfig.get();
         const supremeConfig = supremeSlotQueries.getConfig.get();
 
-        // 收集所有需要计算的 (weightConfigId, schemeId) 组合
-        const combinations = new Set<string>();
+        // 定义场次配置
+        const venues = [
+            { name: '初级场', config: normalConfig, type: 'normal' as const },
+            { name: '高级场', config: advancedConfig, type: 'advanced' as const },
+            { name: '至尊场', config: supremeConfig, type: 'supreme' as const }
+        ];
 
-        if (normalConfig) {
-            const key = `${normalConfig.weight_config_id || 1}-${normalConfig.reward_scheme_id || 1}`;
-            combinations.add(key);
-            logger.debug('缓存预热', `初级场: 权重${normalConfig.weight_config_id || 1}, 方案${normalConfig.reward_scheme_id || 1}`);
-        }
-
-        if (advancedConfig) {
-            const key = `${advancedConfig.weight_config_id || 1}-${advancedConfig.reward_scheme_id || 1}`;
-            combinations.add(key);
-            logger.debug('缓存预热', `高级场: 权重${advancedConfig.weight_config_id || 1}, 方案${advancedConfig.reward_scheme_id || 1}`);
-        }
-
-        if (supremeConfig) {
-            const key = `${supremeConfig.weight_config_id || 1}-${supremeConfig.reward_scheme_id || 1}`;
-            combinations.add(key);
-            logger.debug('缓存预热', `至尊场: 权重${supremeConfig.weight_config_id || 1}, 方案${supremeConfig.reward_scheme_id || 1}`);
-        }
-
-        // 如果没有任何配置，使用默认值
-        if (combinations.size === 0) {
-            combinations.add('1-1');
-            logger.debug('缓存预热', '使用默认配置: 权重1, 方案1');
-        }
-
-        // 计算每个组合的概率
         let successCount = 0;
         let totalCount = 0;
 
-        for (const key of combinations) {
-            const [weightConfigId, schemeId] = key.split('-').map(Number);
+        for (const venue of venues) {
+            const { name, config, type } = venue;
+
+            if (!config) {
+                logger.warn('缓存预热', `⚠️ ${name}配置不存在，跳过`);
+                continue;
+            }
+
             totalCount++;
+
+            const weightConfigId = config.weight_config_id || 1;
+            const schemeId = config.reward_scheme_id || 1;
 
             try {
                 // 检查方案是否存在
                 const scheme = rewardConfigQueries.getSchemeById.get(schemeId);
                 if (!scheme) {
-                    logger.warn('缓存预热', `⚠️ 方案${schemeId}不存在，跳过`);
+                    logger.warn('缓存预热', `⚠️ ${name}方案${schemeId}不存在，跳过`);
                     continue;
                 }
 
-                // 计算并缓存
-                const result = calculateProbabilityFast(weightConfigId, schemeId);
-                logger.info('缓存预热', `✅ 权重${weightConfigId} + 方案${schemeId} → RTP:${result.rtp.toFixed(2)}%`);
+                // 获取权重配置
+                const weightConfig = weightConfigQueries.getById.get(weightConfigId);
+                if (!weightConfig) {
+                    logger.warn('缓存预热', `⚠️ ${name}权重${weightConfigId}不存在，跳过`);
+                    continue;
+                }
+
+                logger.info('缓存预热', `\n${'='.repeat(60)}`);
+                logger.info('缓存预热', `📍 ${name} - 开始计算概率`);
+                logger.info('缓存预热', `${'='.repeat(60)}`);
+
+                // 🔥 使用蒙特卡洛方法计算（100万次模拟）
+                const result = calculateProbabilityMonteCarlo(
+                    weightConfigId,
+                    schemeId,
+                    1000000,
+                    (current, total, percentage) => {
+                        // 每10%报告一次进度
+                        if (percentage % 10 === 0 && percentage > 0) {
+                            logger.info('缓存预热', `${name} 计算进度: ${percentage.toFixed(0)}%`);
+                        }
+                    }
+                );
+
+                // 显示权重配置
+                logger.info('缓存预热', `\n📊 权重配置 (ID:${weightConfigId}):`);
+                const totalWeight = weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
+                    weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk +
+                    weightConfig.weight_lsh + (weightConfig.weight_man || 0);
+
+                logger.info('缓存预热', `  M:${weightConfig.weight_m} T:${weightConfig.weight_t} N:${weightConfig.weight_n} J:${weightConfig.weight_j}`);
+                logger.info('缓存预热', `  LQ:${weightConfig.weight_lq} BJ:${weightConfig.weight_bj} ZFT:${weightConfig.weight_zft} BDK:${weightConfig.weight_bdk}`);
+                logger.info('缓存预热', `  LSH:${weightConfig.weight_lsh} MAN:${weightConfig.weight_man || 0} | 总权重:${totalWeight}`);
+
+                // 显示中奖规则概率（前10个）
+                logger.info('缓存预热', `\n🎰 中奖规则概率 (方案ID:${schemeId}):`);
+                result.rules.slice(0, 10).forEach((rule, idx) => {
+                    logger.info('缓存预热', `  ${idx + 1}. ${rule.ruleName} - ${rule.probability.toFixed(4)}% (${rule.multiplier}x) [期望:${rule.expectedValue.toFixed(4)}]`);
+                });
+                if (result.rules.length > 10) {
+                    logger.info('缓存预热', `  ... 还有 ${result.rules.length - 10} 个规则`);
+                }
+
+                // 显示惩罚规则
+                if (result.punishments.length > 0) {
+                    logger.info('缓存预热', `\n⚖️ 惩罚规则:`);
+                    result.punishments.forEach((punishment) => {
+                        logger.info('缓存预热', `  ${punishment.ruleName} - ${punishment.probability.toFixed(4)}% (${punishment.multiplier}x)`);
+                    });
+                }
+
+                // 显示未中奖概率
+                logger.info('缓存预热', `\n❌ 未中奖概率: ${result.noWin.probability.toFixed(4)}%`);
+
+                // 显示RTP和庄家优势
+                logger.info('缓存预热', `\n💰 玩家回报率(RTP): ${result.rtp.toFixed(2)}%`);
+                logger.info('缓存预热', `🏦 庄家优势: ${result.houseEdge.toFixed(2)}%`);
+                logger.info('缓存预热', `⏱️  计算耗时: ${result.calculationTime}ms`);
+                logger.info('缓存预热', `📦 模拟次数: ${result.simulationCount?.toLocaleString()}`);
+
+                // 显示掉落配置
+                try {
+                    const dropConfigs = dropConfigQueries.getByVenue.all(type);
+                    if (dropConfigs.length > 0) {
+                        logger.info('缓存预热', `\n🎁 掉落配置:`);
+                        dropConfigs.forEach((drop: any) => {
+                            const dropRate = (drop.drop_rate * 100).toFixed(2);
+                            const triggerInfo = drop.trigger_rule_name || '任意规则';
+                            logger.info('缓存预热', `  ${drop.item_name} x${drop.quantity} - ${dropRate}% (触发:${triggerInfo})`);
+                        });
+                    }
+                } catch (error: any) {
+                    // 掉落配置获取失败不影响预热
+                    logger.debug('缓存预热', `掉落配置获取失败: ${error.message}`);
+                }
+
+                logger.info('缓存预热', `\n✅ ${name}概率缓存预热成功！`);
+                logger.info('缓存预热', `${'='.repeat(60)}\n`);
+
                 successCount++;
             } catch (error: any) {
-                logger.error('缓存预热', `❌ 权重${weightConfigId} + 方案${schemeId} 失败: ${error.message}`);
+                logger.error('缓存预热', `❌ ${name}预热失败: ${error.message}`);
+                if (error.stack) {
+                    logger.debug('缓存预热', `错误堆栈: ${error.stack}`);
+                }
             }
         }
 
-        logger.info('缓存预热', `🎉 完成 ${successCount}/${totalCount} 个场次的概率缓存预热`);
+        logger.info('缓存预热', `\n🎉 概率缓存预热完成: ${successCount}/${totalCount} 个场次成功`);
     } catch (error: any) {
         logger.error('缓存预热', `预热失败: ${error.message}`);
+        if (error.stack) {
+            logger.error('缓存预热', `错误堆栈: ${error.stack}`);
+        }
         // 不抛出异常，避免影响应用启动
     }
 }

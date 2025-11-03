@@ -33,7 +33,7 @@ export function calculateWinByScheme(
         const manConsecutive = getMaxConsecutive(symbols, 'man');
 
         if (manCount === 4 || manConsecutive === 4) {
-            // 4连man：25倍（不参与组合）
+            // 4个man或4连man：25倍（不参与组合）
             return {
                 winType: 'man_quad',
                 multiplier: 25,
@@ -41,10 +41,10 @@ export function calculateWinByScheme(
                 grantFreeSpin: false
             };
         } else if (manCount === 3 || manConsecutive === 3) {
-            // 3连man：10倍（可与其他规则组合）
+            // 3个man或3连man：10倍（可与其他规则组合）
             manMultiplier = 10;
-        } else if (manConsecutive === 2) {
-            // 严格连续2连man：5倍（可与其他规则组合）
+        } else if (manCount === 2 || manConsecutive === 2) {
+            // 2个man或2连man：5倍（可与其他规则组合）
             manMultiplier = 5;
         } else if (manCount === 1) {
             // 单个man：2.5倍（可与其他规则组合）
@@ -101,20 +101,37 @@ export function calculateWinByScheme(
             
             // 如果有man符号，并且匹配的是严格连续规则，应用man加成
             if (manMultiplier > 1.0) {
-                // 检查是否是严格连续规则
-                if (rule.match_pattern === 'consecutive' || 
-                    rule.match_pattern === '2-consecutive' || 
-                    rule.match_pattern === '3-consecutive' ||
-                    rule.match_pattern === '4-consecutive') {
-                    
-                    // 严格连续规则可以与man组合
-                    finalMultiplier = rule.win_multiplier * manMultiplier;
-                    ruleName = `${rule.rule_name}+man×${manMultiplier}`;
-                } else if (rule.match_pattern === 'double_pair') {
-                    // 两对严格2连，检查是否有man的严格2连
-                    if (hasManConsecutivePair(symbols)) {
-                        finalMultiplier = rule.win_multiplier * 10;
-                        ruleName = `${rule.rule_name}+man严格2连`;
+                // 🔥 检查是否是专门的Man规则（避免双重计算）
+                let isManSpecificRule = false;
+                try {
+                    if (rule.required_symbols) {
+                        const requiredArr = Array.isArray(rule.required_symbols) 
+                            ? rule.required_symbols 
+                            : JSON.parse(rule.required_symbols);
+                        // 如果required_symbols只包含"man"，说明是专门的man规则
+                        isManSpecificRule = requiredArr.length === 1 && requiredArr[0] === 'man';
+                    }
+                } catch (e) {
+                    // 解析失败，按非man专用规则处理
+                }
+                
+                // 只对非man专用规则应用man加成
+                if (!isManSpecificRule) {
+                    // 检查是否是严格连续规则
+                    if (rule.match_pattern === 'consecutive' || 
+                        rule.match_pattern === '2-consecutive' || 
+                        rule.match_pattern === '3-consecutive' ||
+                        rule.match_pattern === '4-consecutive') {
+                        
+                        // 严格连续规则可以与man组合
+                        finalMultiplier = rule.win_multiplier * manMultiplier;
+                        ruleName = `${rule.rule_name}+man×${manMultiplier}`;
+                    } else if (rule.match_pattern === 'double_pair') {
+                        // 两对严格2连，检查是否有man的严格2连
+                        if (hasManConsecutivePair(symbols)) {
+                            finalMultiplier = rule.win_multiplier * 10;
+                            ruleName = `${rule.rule_name}+man严格2连`;
+                        }
                     }
                 }
             }
