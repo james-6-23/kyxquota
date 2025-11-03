@@ -3477,7 +3477,7 @@ app.delete('/drop-configs/:id', requireAdmin, async (c) => {
 app.post('/update-achievement-rewards', requireAdmin, async (c) => {
     try {
         console.log('🔧 [成就更新] 开始更新成就奖励额度...');
-        
+
         // 成就奖励梯度：common=$100, rare=$200, epic=$500, legendary=$1000, mythic=$2000
         const rewardMap = {
             'common': 100 * 500000,
@@ -3486,31 +3486,31 @@ app.post('/update-achievement-rewards', requireAdmin, async (c) => {
             'legendary': 1000 * 500000,
             'mythic': 2000 * 500000
         };
-        
+
         let updatedCount = 0;
         const now = Date.now();
-        
+
         for (const [rarity, reward] of Object.entries(rewardMap)) {
             db.exec(`
                 UPDATE achievements 
                 SET reward_quota = ${reward}, updated_at = ${now}
                 WHERE rarity = '${rarity}' AND achievement_key != 'kunbei_overdue'
             `);
-            
+
             const result = db.query<{ changes: number }, never>('SELECT changes() as changes').get();
             if (result && result.changes > 0) {
                 console.log(`  ✅ 更新了 ${result.changes} 个 ${rarity} 级别成就 → $${reward / 500000}`);
                 updatedCount += result.changes;
             }
         }
-        
+
         // 特殊处理：逾期达人奖励为0
         db.exec(`UPDATE achievements SET reward_quota = 0, updated_at = ${now} WHERE achievement_key = 'kunbei_overdue'`);
-        
+
         console.log(`✅ [成就更新] 完成，共更新 ${updatedCount} 个成就的奖励额度`);
-        
-        return c.json({ 
-            success: true, 
+
+        return c.json({
+            success: true,
             message: `成功更新 ${updatedCount} 个成就的奖励额度`,
             updated_count: updatedCount,
             reward_map: {
@@ -3534,9 +3534,9 @@ app.post('/fix-man-rules', requireAdmin, async (c) => {
     try {
         const now = Date.now();
         let fixedCount = 0;
-        
+
         console.log('🔧 [手动修复] 开始修复Man专用规则...');
-        
+
         // 修复所有可能的Man规则命名
         const manKeywords = ['man', 'kun', 'Man', 'Kun', 'MAN', 'KUN', '男人'];
         const patterns = [
@@ -3544,12 +3544,12 @@ app.post('/fix-man-rules', requireAdmin, async (c) => {
             { name: ['三连', '3连'], pattern: '3-consecutive' },
             { name: ['四连', '4连'], pattern: '4-consecutive' }
         ];
-        
+
         patterns.forEach(p => {
-            const nameConditions = manKeywords.flatMap(kw => 
+            const nameConditions = manKeywords.flatMap(kw =>
                 p.name.map(n => `rule_name LIKE '%${kw}${n}%'`)
             ).join(' OR ');
-            
+
             const sql = `
                 UPDATE reward_rules 
                 SET required_symbols = '["man"]', updated_at = ${now}
@@ -3558,7 +3558,7 @@ app.post('/fix-man-rules', requireAdmin, async (c) => {
                 AND (required_symbols IS NULL OR required_symbols = '' OR required_symbols = '[]' 
                      OR required_symbols = 'null' OR required_symbols = 'undefined')
             `;
-            
+
             db.exec(sql);
             const result = db.query<{ changes: number }, never>('SELECT changes() as changes').get();
             if (result && result.changes > 0) {
@@ -3566,15 +3566,15 @@ app.post('/fix-man-rules', requireAdmin, async (c) => {
                 fixedCount += result.changes;
             }
         });
-        
+
         // 清除概率缓存，强制重新计算
         const { clearAllCache } = await import('../services/probability-calculator');
         clearAllCache();
-        
+
         console.log(`✅ [手动修复] 完成，共修复 ${fixedCount} 条规则，已清除概率缓存`);
-        
-        return c.json({ 
-            success: true, 
+
+        return c.json({
+            success: true,
             message: `成功修复 ${fixedCount} 条Man规则的配置`,
             fixed_count: fixedCount
         });

@@ -253,17 +253,17 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
                 }
             } else {
                 // 没有指定required_symbols，任意符号N连即可
-                let maxConsecutive = 1;
-                let currentConsecutive = 1;
-                for (let i = 1; i < symbols.length; i++) {
-                    if (symbols[i] === symbols[i - 1]) {
-                        currentConsecutive++;
-                        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-                    } else {
-                        currentConsecutive = 1;
-                    }
+            let maxConsecutive = 1;
+            let currentConsecutive = 1;
+            for (let i = 1; i < symbols.length; i++) {
+                if (symbols[i] === symbols[i - 1]) {
+                    currentConsecutive++;
+                    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+                } else {
+                    currentConsecutive = 1;
                 }
-                matched = maxConsecutive >= (match_count || 2);
+            }
+            matched = maxConsecutive >= (match_count || 2);
             }
             break;
 
@@ -387,16 +387,16 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
                 
                 // 只对非man专用规则应用man加成
                 if (!isManSpecificRule) {
-                    if (rule.match_pattern === 'consecutive' || 
-                        rule.match_pattern === '2-consecutive' || 
-                        rule.match_pattern === '3-consecutive' ||
-                        rule.match_pattern === '4-consecutive') {
-                        finalMultiplier = rule.win_multiplier * manMultiplier;
-                        ruleName = `${rule.rule_name}+man×${manMultiplier}`;
-                    } else if (rule.match_pattern === 'double_pair') {
-                        if (hasManConsecutivePairProb(symbols)) {
-                            finalMultiplier = rule.win_multiplier * 10;
-                            ruleName = `${rule.rule_name}+man严格2连`;
+                if (rule.match_pattern === 'consecutive' || 
+                    rule.match_pattern === '2-consecutive' || 
+                    rule.match_pattern === '3-consecutive' ||
+                    rule.match_pattern === '4-consecutive') {
+                    finalMultiplier = rule.win_multiplier * manMultiplier;
+                    ruleName = `${rule.rule_name}+man×${manMultiplier}`;
+                } else if (rule.match_pattern === 'double_pair') {
+                    if (hasManConsecutivePairProb(symbols)) {
+                        finalMultiplier = rule.win_multiplier * 10;
+                        ruleName = `${rule.rule_name}+man严格2连`;
                         }
                     }
                 }
@@ -622,7 +622,7 @@ export function calculateProbabilityFast(
 
     // 🔥 调试：输出权重配置
     console.log(`[快速估算] 权重配置ID:${weightConfigId}, weight_man字段:`, weightConfig.weight_man);
-    
+
     const weights = [
         weightConfig.weight_m,
         weightConfig.weight_t,

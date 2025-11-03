@@ -796,7 +796,7 @@ export function initDatabase() {
             updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
         )
     `);
-
+    
     // 添加逾期扣款倍数字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE kunbei_config ADD COLUMN overdue_deduct_multiplier REAL DEFAULT 2.5');
@@ -835,7 +835,7 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_status ON user_loans(status)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_due_at ON user_loans(due_at)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_created_at ON user_loans(created_at)');
-
+    
     // 添加逾期自动扣款字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE user_loans ADD COLUMN auto_deducted_amount INTEGER DEFAULT 0');
@@ -843,7 +843,7 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
-
+    
     // 添加扣款后余额字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE user_loans ADD COLUMN balance_after_deduct INTEGER DEFAULT 0');
@@ -1164,7 +1164,7 @@ function insertDefaultData() {
             )
             VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, 3, ${Date.now()})
         `);
-
+        
         // 🔥 确保坤呗配置字段完整（修复缺失字段）
         db.exec(`
             UPDATE kunbei_config 
@@ -1246,7 +1246,7 @@ function insertDefaultData() {
             )
             VALUES (1, 1, 10, 3, 168, 2, 500000000, 5000000000, 100000000, 3, 1, 50000000000, 1, 1, ${Date.now()})
         `);
-
+        
         // 🔥 确保至尊场配置存在（修复：如果INSERT OR IGNORE没有插入，则UPDATE）
         db.exec(`
             UPDATE supreme_slot_config 
@@ -2672,19 +2672,19 @@ function initQueries() {
             ORDER BY s.unlocked_achievements DESC, s.claimed_rewards DESC
             LIMIT ?
         `),
-
+        
         // 成就统计 - 获取每个成就的达成人数
         getAchievementStats: db.query<{ achievement_key: string, unlock_count: number }, never>(`
             SELECT achievement_key, COUNT(*) as unlock_count
             FROM user_achievements
             GROUP BY achievement_key
         `),
-
+        
         // 获取总用户数（用于计算达成率）
         getTotalUsers: db.query<{ total: number }, never>(`
             SELECT COUNT(DISTINCT linux_do_id) as total FROM users
         `),
-
+        
         // 获取单个成就的达成人数
         getAchievementUnlockCount: db.query<{ unlock_count: number }, string>(`
             SELECT COUNT(*) as unlock_count

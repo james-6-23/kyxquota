@@ -7130,11 +7130,17 @@
       try {
         const res = await fetch('/api/supreme/tokens');
         const data = await res.json();
-        
+
         if (data.success) {
           supremeTokensData = data.data;
           console.log('[loadSupremeTokens] 令牌数据加载成功，skipUIUpdate:', skipUIUpdate);
-          
+
+          // 🔥 同步今日投注金额到 slotUserData，用于进度条显示
+          if (slotUserData && data.data.today_bet_amount !== undefined) {
+            slotUserData.today_supreme_bet = data.data.today_bet_amount;
+            console.log('[loadSupremeTokens] 同步今日投注金额:', data.data.today_bet_amount / 500000, 'USD');
+          }
+
           // 🔥 可选：跳过UI更新（避免覆盖手动设置的状态）
           if (!skipUIUpdate) {
             updateSupremeTokensUI();
@@ -7317,14 +7323,26 @@
           if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
             console.log('[updateSupremeTokensUI] 调用 generateSupremeBetOptions');
             generateSupremeBetOptions(supremeBetMin, supremeBetMax);
-            
+
             // 更新滑块范围
             const slider = document.getElementById('supremeBetSlider');
             if (slider) {
+              // 🔥 保存用户当前选择的投注额度
+              const currentValue = parseInt(slider.value) || supremeBetMin;
+
               slider.min = supremeBetMin;
               slider.max = supremeBetMax;
-              slider.value = supremeBetMin;
-              updateSupremeBetDisplay(supremeBetMin);
+
+              // 🔥 如果当前值在新的范围内，保持不变；否则重置为最小值
+              if (currentValue >= supremeBetMin && currentValue <= supremeBetMax) {
+                slider.value = currentValue;
+                updateSupremeBetDisplay(currentValue);
+                console.log('[updateSupremeTokensUI] 保持用户选择的投注额度:', currentValue);
+              } else {
+                slider.value = supremeBetMin;
+                updateSupremeBetDisplay(supremeBetMin);
+                console.log('[updateSupremeTokensUI] 重置投注额度为最小值:', supremeBetMin);
+              }
             }
           } else {
             console.error('[至尊场] 计算的投注范围无效:', { supremeBetMin, supremeBetMax });
