@@ -796,7 +796,7 @@ export function initDatabase() {
             updated_at INTEGER NOT NULL DEFAULT (strftime('%s', 'now') * 1000)
         )
     `);
-    
+
     // 添加逾期扣款倍数字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE kunbei_config ADD COLUMN overdue_deduct_multiplier REAL DEFAULT 2.5');
@@ -835,7 +835,7 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_status ON user_loans(status)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_due_at ON user_loans(due_at)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_loans_created_at ON user_loans(created_at)');
-    
+
     // 添加逾期自动扣款字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE user_loans ADD COLUMN auto_deducted_amount INTEGER DEFAULT 0');
@@ -843,7 +843,7 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
-    
+
     // 添加扣款后余额字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE user_loans ADD COLUMN balance_after_deduct INTEGER DEFAULT 0');
@@ -1164,7 +1164,7 @@ function insertDefaultData() {
             )
             VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, 3, ${Date.now()})
         `);
-        
+
         // 🔥 确保坤呗配置字段完整（修复缺失字段）
         db.exec(`
             UPDATE kunbei_config 
@@ -1246,7 +1246,7 @@ function insertDefaultData() {
             )
             VALUES (1, 1, 10, 3, 168, 2, 500000000, 5000000000, 100000000, 3, 1, 50000000000, 1, 1, ${Date.now()})
         `);
-        
+
         // 🔥 确保至尊场配置存在（修复：如果INSERT OR IGNORE没有插入，则UPDATE）
         db.exec(`
             UPDATE supreme_slot_config 
@@ -2670,19 +2670,19 @@ function initQueries() {
             ORDER BY s.unlocked_achievements DESC, s.claimed_rewards DESC
             LIMIT ?
         `),
-        
+
         // 成就统计 - 获取每个成就的达成人数
         getAchievementStats: db.query<{ achievement_key: string, unlock_count: number }, never>(`
             SELECT achievement_key, COUNT(*) as unlock_count
             FROM user_achievements
             GROUP BY achievement_key
         `),
-        
+
         // 获取总用户数（用于计算达成率）
         getTotalUsers: db.query<{ total: number }, never>(`
             SELECT COUNT(DISTINCT linux_do_id) as total FROM users
         `),
-        
+
         // 获取单个成就的达成人数
         getAchievementUnlockCount: db.query<{ unlock_count: number }, string>(`
             SELECT COUNT(*) as unlock_count
@@ -2788,6 +2788,48 @@ function fixRewardRulesData(): void {
         if (statsAfter) {
             console.log(`📊 [数据修复] 统计: NULL=${statsAfter.null_count}, 有效JSON=${statsAfter.valid_count}`);
         }
+
+        // 🔥 智能修复Man专用规则的required_symbols字段
+        console.log('🔧 [数据修复] 智能检测并修复Man专用规则...');
+
+        const now = Date.now();
+
+        // 方式1：基于规则名称模糊匹配（匹配所有可能的命名方式）
+        const manKeywords = ['man', 'kun', 'Man', 'Kun', 'MAN', 'KUN', '男人'];
+        const patterns = [
+            { name: ['二连', '2连', '两连'], pattern: '2-consecutive', count: 2 },
+            { name: ['三连', '3连'], pattern: '3-consecutive', count: 3 },
+            { name: ['四连', '4连'], pattern: '4-consecutive', count: 4 }
+        ];
+
+        let fixedCount = 0;
+
+        patterns.forEach(p => {
+            // 构建匹配条件
+            const nameConditions = manKeywords.flatMap(kw =>
+                p.name.map(n => `rule_name LIKE '%${kw}${n}%'`)
+            ).join(' OR ');
+
+            const sql = `
+                UPDATE reward_rules 
+                SET required_symbols = '["man"]', updated_at = ${now}
+                WHERE (${nameConditions})
+                AND match_pattern = '${p.pattern}'
+                AND (required_symbols IS NULL OR required_symbols = '' OR required_symbols = '[]' 
+                     OR required_symbols = 'null' OR required_symbols = 'undefined')
+            `;
+
+            db.exec(sql);
+
+            // 统计修复数量
+            const result = db.query<{ changes: number }, never>('SELECT changes() as changes').get();
+            if (result && result.changes > 0) {
+                console.log(`  ✅ 修复了 ${result.changes} 条 ${p.pattern} 的Man规则`);
+                fixedCount += result.changes;
+            }
+        });
+
+        console.log(`✅ [数据修复] Man专用规则修复完成，共修复 ${fixedCount} 条规则`);
 
     } catch (error: any) {
         console.error('❌ [数据修复] 修复 reward_rules 数据时出错:', error);

@@ -3265,9 +3265,15 @@
         <div id="rewardConfigsSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">🎁 奖励配置管理</h2>
-            <button onclick="showAddRewardSchemeModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
-              ➕ 添加新方案
-            </button>
+            <div class="flex gap-3">
+              <button onclick="fixManRules()" class="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2">
+                <span>🔧</span>
+                <span>修复Man规则</span>
+              </button>
+              <button onclick="showAddRewardSchemeModal()" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold">
+                ➕ 添加新方案
+              </button>
+            </div>
           </div>
 
           <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -8808,6 +8814,33 @@
     }
     
     // ========== 奖励配置管理功能 ==========
+    
+    // 🔧 修复Man规则的required_symbols字段
+    async function fixManRules() {
+      if (!confirm('确定要修复所有Man规则的required_symbols字段吗？\n\n这将自动为所有名称包含"man/kun/男人"的规则设置required_symbols为["man"]')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/fix-man-rules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ 成功修复 ${data.fixed_count} 条Man规则，概率缓存已清除`, 'success');
+          // 重新加载奖励配置
+          loadRewardConfigs();
+        } else {
+          showToast(data.message || '修复失败', 'error');
+        }
+      } catch (error) {
+        console.error('修复Man规则失败:', error);
+        showToast('修复失败', 'error');
+      }
+    }
     
     async function loadRewardConfigs() {
       try {

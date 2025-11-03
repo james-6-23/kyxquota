@@ -3472,6 +3472,63 @@ app.delete('/drop-configs/:id', requireAdmin, async (c) => {
 // ========== 概率计算 API ==========
 
 /**
+ * 🔧 手动修复Man规则的required_symbols字段
+ */
+app.post('/fix-man-rules', requireAdmin, async (c) => {
+    try {
+        const now = Date.now();
+        let fixedCount = 0;
+        
+        console.log('🔧 [手动修复] 开始修复Man专用规则...');
+        
+        // 修复所有可能的Man规则命名
+        const manKeywords = ['man', 'kun', 'Man', 'Kun', 'MAN', 'KUN', '男人'];
+        const patterns = [
+            { name: ['二连', '2连', '两连'], pattern: '2-consecutive' },
+            { name: ['三连', '3连'], pattern: '3-consecutive' },
+            { name: ['四连', '4连'], pattern: '4-consecutive' }
+        ];
+        
+        patterns.forEach(p => {
+            const nameConditions = manKeywords.flatMap(kw => 
+                p.name.map(n => `rule_name LIKE '%${kw}${n}%'`)
+            ).join(' OR ');
+            
+            const sql = `
+                UPDATE reward_rules 
+                SET required_symbols = '["man"]', updated_at = ${now}
+                WHERE (${nameConditions})
+                AND match_pattern = '${p.pattern}'
+                AND (required_symbols IS NULL OR required_symbols = '' OR required_symbols = '[]' 
+                     OR required_symbols = 'null' OR required_symbols = 'undefined')
+            `;
+            
+            db.exec(sql);
+            const result = db.query<{ changes: number }, never>('SELECT changes() as changes').get();
+            if (result && result.changes > 0) {
+                console.log(`  ✅ 修复了 ${result.changes} 条 ${p.pattern} 的Man规则`);
+                fixedCount += result.changes;
+            }
+        });
+        
+        // 清除概率缓存，强制重新计算
+        const { clearAllCache } = await import('../services/probability-calculator');
+        clearAllCache();
+        
+        console.log(`✅ [手动修复] 完成，共修复 ${fixedCount} 条规则，已清除概率缓存`);
+        
+        return c.json({ 
+            success: true, 
+            message: `成功修复 ${fixedCount} 条Man规则的配置`,
+            fixed_count: fixedCount
+        });
+    } catch (error: any) {
+        console.error('❌ [手动修复] 失败:', error);
+        return c.json({ success: false, message: '修复失败: ' + error.message }, 500);
+    }
+});
+
+/**
  * 计算规则概率和RTP
  */
 app.post('/calculate-probability', requireAdmin, async (c) => {
