@@ -638,8 +638,12 @@ async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
         logger.debug('统计更新', `✅ ${getUserDisplayName(linuxDoId)} 统计更新完成: ${unlockedAchievements}/${totalAchievements} (${completionRate.toFixed(1)}%), 已领奖励: ${claimedRewards}/${totalRewards}`);
 
         // 🏆 完美主义者成就（完成度达到80%）
+        // 🔥 先检查是否已解锁，避免无限递归导致堆栈溢出
         if (completionRate >= 80) {
-            await checkAndUnlockAchievement(linuxDoId, 'perfectionist');
+            const existingAchievement = achievementQueries.getUserAchievement.get(linuxDoId, 'perfectionist');
+            if (!existingAchievement) {  // 仅在未解锁时检查
+                await checkAndUnlockAchievement(linuxDoId, 'perfectionist');
+            }
         }
     } catch (error: any) {
         logger.error('成就系统', `❌ 更新统计失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`, error.stack);

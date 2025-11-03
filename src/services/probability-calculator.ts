@@ -72,6 +72,15 @@ export function cleanExpiredCache(): void {
 }
 
 /**
+ * 🔥 清除所有概率缓存（用于修复计算逻辑后重新计算）
+ */
+export function clearAllCache(): void {
+    const oldSize = probabilityCache.size;
+    probabilityCache.clear();
+    logger.info('缓存清理', `已清除所有缓存（共${oldSize}个方案）`);
+}
+
+/**
  * 权重配置接口
  */
 interface WeightConfig {
@@ -592,40 +601,27 @@ export function calculateProbabilityFast(
     const rules: RuleProbability[] = [];
     const punishments: RuleProbability[] = [];
 
-    // 1. 计算律师函概率
-    const lshProb = symbolProbs[8];  // lsh是第9个
-    for (let lshCount = 1; lshCount <= 4; lshCount++) {
-        // 计算恰好lshCount个律师函的概率（二项分布）
-        const combinations = binomialCoefficient(4, lshCount);
-        const probability = combinations * Math.pow(lshProb, lshCount) * Math.pow(1 - lshProb, 4 - lshCount) * 100;
-
-        // 获取惩罚倍率
-        const allPunishments = rewardConfigQueries.getPunishmentsByScheme.all(rewardSchemeId);
-        const punishment = allPunishments.find(p => p.lsh_count === lshCount && p.is_active);
-        const multiplier = punishment ? -punishment.deduct_multiplier : -lshCount;
-
-        punishments.push({
-            ruleName: `律师函×${lshCount}`,
-            multiplier,
-            probability,
-            expectedValue: (probability / 100) * multiplier
-        });
-    }
-
-    // 2. 估算其他规则（简化计算）
-    // 🔥 使用更多次模拟以提高准确性（从10000提升到100000）
+    // 🔥 使用模拟来计算所有规则概率（包括律师函），确保总和为100%
     const quickSimCount = 100000;
-    const quickStats: Record<string, number> = {};
+    const quickStats: Record<string, { count: number; multiplier: number }> = {};
 
-    // 🔥 获取所有激活的规则，确保它们都会出现在结果中
+    // 🔥 获取所有激活的规则
     const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
     const activeRules = allRules.filter(r => r.is_active);
 
-    // 🔥 初始化所有激活规则的统计为0
+    // 🔥 初始化所有激活规则的统计
     activeRules.forEach(rule => {
-        quickStats[rule.rule_name] = 0;
+        quickStats[rule.rule_name] = { count: 0, multiplier: rule.win_multiplier };
     });
-    quickStats['未中奖'] = 0;
+
+    // 🔥 初始化所有可能的律师函惩罚
+    const allPunishments = rewardConfigQueries.getPunishmentsByScheme.all(rewardSchemeId);
+    allPunishments.filter(p => p.is_active).forEach(p => {
+        quickStats[`律师函×${p.lsh_count}`] = { count: 0, multiplier: -p.deduct_multiplier };
+    });
+
+    // 🔥 初始化未中奖
+    quickStats['未中奖'] = { count: 0, multiplier: 0 };
 
     // 🔥 简化日志：仅输出前3次模拟的最终结果（压缩到3行）
     let debugCount = 0;
@@ -642,10 +638,12 @@ export function calculateProbabilityFast(
             debugResults.push(`#${debugCount}[${symbols.join(',')}]→${result.ruleName}(${result.multiplier}x)`);
         }
 
-        // 排除律师函（已单独计算）
-        if (!result.ruleName.includes('律师函')) {
-            quickStats[result.ruleName] = (quickStats[result.ruleName] || 0) + 1;
+        // 🔥 统计所有规则（不再排除律师函）
+        if (!quickStats[result.ruleName]) {
+            // 如果规则不存在（理论上不应该发生），动态添加
+            quickStats[result.ruleName] = { count: 0, multiplier: result.multiplier };
         }
+        quickStats[result.ruleName].count++;
     }
 
     // 🔥 一次性输出所有示例（压缩到1行）
@@ -655,32 +653,36 @@ export function calculateProbabilityFast(
 
     let totalExpectedValue = 0;
 
-    // 🔥 计算奖励规则概率（遍历所有激活规则）
-    for (const rule of activeRules) {
-        const count = quickStats[rule.rule_name] || 0;
-        const probability = (count / quickSimCount) * 100;
-        const multiplier = rule.win_multiplier;
-        const expectedValue = (probability / 100) * multiplier;
-
+    // 🔥 计算所有规则的概率（包括奖励、惩罚、未中奖）
+    for (const [ruleName, stat] of Object.entries(quickStats)) {
+        const probability = (stat.count / quickSimCount) * 100;
+        const expectedValue = (probability / 100) * stat.multiplier;
         totalExpectedValue += expectedValue;
 
-        rules.push({
-            ruleName: rule.rule_name,
-            multiplier,
+        const item: RuleProbability = {
+            ruleName,
+            multiplier: stat.multiplier,
             probability,
             expectedValue
-        });
+        };
+
+        if (ruleName === '未中奖') {
+            // 未中奖单独处理（后面会用到）
+            continue;
+        } else if (ruleName.includes('律师函')) {
+            punishments.push(item);
+        } else {
+            rules.push(item);
+        }
     }
 
-    // 添加律师函期望值
-    punishments.forEach(p => {
-        totalExpectedValue += p.expectedValue;
-    });
-
     // 未中奖概率
-    const noWinProb = quickStats['未中奖'] ? (quickStats['未中奖'] / quickSimCount * 100) : 0;
+    const noWinStat = quickStats['未中奖'];
+    const noWinProb = noWinStat ? (noWinStat.count / quickSimCount * 100) : 0;
 
+    // 按概率降序排序
     rules.sort((a, b) => b.probability - a.probability);
+    punishments.sort((a, b) => a.ruleName.localeCompare(b.ruleName));  // 按律师函数量排序
 
     const calculationTime = Date.now() - startTime;
 
@@ -779,6 +781,9 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
  */
 export async function warmupAllProbabilityCache(): Promise<void> {
     logger.info('缓存预热', '🔥 开始预热所有场次的概率缓存...');
+
+    // 🔥 先清除旧缓存（确保使用最新的计算逻辑）
+    clearAllCache();
 
     try {
         const { slotQueries, advancedSlotQueries, supremeSlotQueries, rewardConfigQueries } = await import('../database');

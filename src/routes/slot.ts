@@ -1700,14 +1700,36 @@ slot.get('/rules', requireAuth, async (c) => {
         const lshSingleProb = lshWeight / totalWeight;
         const lshAtLeastOneProb = (1 - Math.pow(1 - lshSingleProb, 4)) * 100;
 
-        // 🔥 将概率数据附加到规则上
-        const rulesWithProb = rules.filter(r => r.is_active).map(r => {
+        // 🔥 将概率数据附加到规则上，并包含动态生成的规则（如man组合）
+        let rulesWithProb = rules.filter(r => r.is_active).map(r => {
             const probData = probabilityData?.rules.find(p => p.ruleName === r.rule_name);
             return {
                 ...r,
                 probability: probData ? probData.probability.toFixed(2) + '%' : '计算中'
             };
         });
+
+        // 🔥 添加概率计算器中动态生成的规则（如man组合）
+        if (probabilityData && probabilityData.rules) {
+            probabilityData.rules.forEach(probRule => {
+                // 如果这个规则不在数据库中（即动态生成的规则）
+                const existsInDb = rules.some(r => r.rule_name === probRule.ruleName);
+                if (!existsInDb && probRule.probability > 0) {
+                    // 添加动态规则到结果中
+                    rulesWithProb.push({
+                        rule_name: probRule.ruleName,
+                        win_multiplier: probRule.multiplier,
+                        probability: probRule.probability.toFixed(2) + '%',
+                        description: null,  // 动态规则没有描述
+                        grant_free_spin: 0,
+                        is_active: 1,
+                        priority: 0,
+                        rule_type: 'dynamic',
+                        rule_category: 'combo'
+                    } as any);
+                }
+            });
+        }
 
         const punishmentsWithProb = punishments.filter(p => p.is_active).map(p => {
             const probData = probabilityData?.punishments.find(pr => pr.ruleName === `律师函×${p.lsh_count}`);
