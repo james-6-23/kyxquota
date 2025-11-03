@@ -286,6 +286,9 @@ supreme.post('/spin', requireAuth, async (c) => {
 
         logger.info('至尊场', `✅ 扣除投注成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
 
+        // 🔥 显示中奖判定符号（与高级场保持一致）
+        logger.info('中奖判定', `符号: ${symbols.join(',')}, 规则: ${winResult.ruleName}, 倍率: ${winResult.multiplier}`);
+
         // 记录游戏
         recordSupremeGame(
             session.linux_do_id!,
