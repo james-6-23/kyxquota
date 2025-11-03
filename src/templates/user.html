@@ -7406,31 +7406,35 @@
       if (!confirm('确定要退出至尊场吗？\n退出后将返回高级场。')) {
         return;
       }
-      
+
       try {
         const res = await fetch('/api/supreme/exit', {
           method: 'POST'
         });
         const data = await res.json();
-        
+
         if (data.success) {
           showToast(data.message, 'success');
           isInSupremeMode = false;
-          
+
           // 🔥 并行加载配置和状态，并正确保存配置
           const [_, configRes, __] = await Promise.all([
             loadSupremeTokens(),
             fetch('/api/slot/config').then(res => res.json()),
-            loadAdvancedTickets()  // 检查是否还在高级场
+            loadAdvancedTickets()  // 这会更新 isInAdvancedMode 状态
           ]);
-          
+
           // 🔥 保存加载的配置数据
           if (configRes && configRes.success) {
             slotConfig = configRes.data.config;
             slotUserData = configRes.data.user;
           }
-          
-          // 🔥 使用新的容器切换逻辑（退出至尊场回到高级场或初级场）
+
+          // 🔥 等待下一帧，确保 updateAdvancedTicketsUI 完全执行完毕
+          await new Promise(resolve => requestAnimationFrame(resolve));
+
+          // 🔥 现在使用最新的 isInAdvancedMode 状态来决定切换到哪个容器
+          console.log('[exitSupremeMode] 当前状态 - isInAdvancedMode:', isInAdvancedMode);
           if (isInAdvancedMode) {
             switchToModeContainer('advanced');
           } else {
