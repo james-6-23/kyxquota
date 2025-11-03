@@ -8,6 +8,9 @@ import { addQuota } from './kyx-api';
 import logger from '../utils/logger';
 import type { Achievement, AchievementProgress, UserAchievement } from '../types';
 
+// 🔥 递归保护：防止 updateUserAchievementStats 和 checkAndUnlockAchievement 之间无限递归
+const updatingStatsUsers = new Set<string>();
+
 /**
  * 获取用户显示名称（优先使用 linux_do_username）
  */
@@ -598,6 +601,15 @@ export function getUserAchievementStats(linuxDoId: string) {
  * 更新用户成就统计
  */
 async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
+    // 🔥 递归保护：如果正在更新该用户的统计，则直接返回，避免无限递归
+    if (updatingStatsUsers.has(linuxDoId)) {
+        logger.debug('统计更新', `🚫 ${getUserDisplayName(linuxDoId)} 正在更新统计中，跳过递归调用`);
+        return;
+    }
+
+    // 🔥 标记该用户正在更新统计
+    updatingStatsUsers.add(linuxDoId);
+
     try {
         logger.debug('统计更新', `开始更新 ${getUserDisplayName(linuxDoId)} 成就统计`);
 
@@ -647,6 +659,9 @@ async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
         }
     } catch (error: any) {
         logger.error('成就系统', `❌ 更新统计失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`, error.stack);
+    } finally {
+        // 🔥 清除标记，允许下次更新
+        updatingStatsUsers.delete(linuxDoId);
     }
 }
 
