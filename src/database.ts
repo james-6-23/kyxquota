@@ -706,6 +706,14 @@ export function initDatabase() {
     `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_weight_configs_deleted ON symbol_weight_configs(is_deleted)');
 
+    // 🔥 数据库迁移：为 symbol_weight_configs 添加 weight_man 列（如果不存在）
+    try {
+        db.exec('ALTER TABLE symbol_weight_configs ADD COLUMN weight_man INTEGER DEFAULT 25');
+        console.log('✅ 已添加 symbol_weight_configs.weight_man 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // ========== 奖励配置方案表（通用）==========
 
     // 奖励配置方案表

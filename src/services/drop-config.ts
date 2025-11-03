@@ -5,6 +5,7 @@
 
 import { addTicket, addFragment } from './advanced-slot';
 import { addSupremeToken, addSupremeFragment } from './supreme-slot';
+import { logger } from '../utils/logger';
 
 /**
  * 掉落配置接口
@@ -98,28 +99,28 @@ export async function handleDrops(
             switch (config.drop_item_type) {
                 case 'ticket':
                     const ticketResult = addTicket(linuxDoId, config.drop_count);
-                    console.log(`[掉落] 🎟️ ${username} 从 ${ruleName} 获得 ${config.drop_count}张入场券 (${config.drop_probability * 100}%概率)`);
+                    logger.info('掉落系统', `🎟️ ${username} 从 ${ruleName} 获得 ${config.drop_count}张入场券 (${config.drop_probability * 100}%概率)`);
                     if (!ticketResult.success) {
-                        console.log(`[掉落] ⚠️ ${ticketResult.message}`);
+                        logger.warn('掉落系统', `⚠️ ${ticketResult.message}`);
                     }
                     break;
-                    
+
                 case 'fragment':
                     addFragment(linuxDoId, config.drop_count);
-                    console.log(`[掉落] 🍀 ${username} 从 ${ruleName} 获得 ${config.drop_count}个碎片 (${config.drop_probability * 100}%概率)`);
+                    logger.info('掉落系统', `🍀 ${username} 从 ${ruleName} 获得 ${config.drop_count}个碎片 (${config.drop_probability * 100}%概率)`);
                     break;
-                    
+
                 case 'supreme_token':
                     const tokenResult = addSupremeToken(linuxDoId, config.drop_count);
-                    console.log(`[掉落] 💎 ${username} 从 ${ruleName} 获得 ${config.drop_count}个至尊令牌 (${config.drop_probability * 100}%概率)`);
+                    logger.info('掉落系统', `💎 ${username} 从 ${ruleName} 获得 ${config.drop_count}个至尊令牌 (${config.drop_probability * 100}%概率)`);
                     if (!tokenResult.success) {
-                        console.log(`[掉落] ⚠️ ${tokenResult.message}`);
+                        logger.warn('掉落系统', `⚠️ ${tokenResult.message}`);
                     }
                     break;
-                    
+
                 case 'supreme_fragment':
                     addSupremeFragment(linuxDoId, config.drop_count);
-                    console.log(`[掉落] 💠 ${username} 从 ${ruleName} 获得 ${config.drop_count}个至尊碎片 (${config.drop_probability * 100}%概率)`);
+                    logger.info('掉落系统', `💠 ${username} 从 ${ruleName} 获得 ${config.drop_count}个至尊碎片 (${config.drop_probability * 100}%概率)`);
                     break;
             }
         }
