@@ -681,7 +681,8 @@ export function recordSupremeGame(
     symbols: string[],
     winType: string,
     winMultiplier: number,
-    winAmount: number
+    winAmount: number,
+    ruleName: string | null = null  // 🔥 新增：规则名称
 ): void {
     const now = Date.now();
     const { getTodayDate } = require('./slot');
@@ -696,12 +697,13 @@ export function recordSupremeGame(
         winType,
         winMultiplier,
         winAmount,
+        ruleName || null,  // 🔥 记录规则名称
         now,
         today,
         now
     );
 
-    logger.info('至尊场', `记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}, 规则: ${winType}, 倍率: ${winMultiplier}x`);
+    logger.info('至尊场', `记录游戏 - 用户: ${username}, 投注: $${(betAmount / 500000).toFixed(2)}, 赢得: $${(winAmount / 500000).toFixed(2)}, 规则: ${ruleName || winType}, 倍率: ${winMultiplier}x`);
 }
 
 /**

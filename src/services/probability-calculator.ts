@@ -250,12 +250,18 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
             // 必须恰好有2个不同符号，每个出现2次
             const pairs = Object.values(pairCounts).filter(count => count === 2);
-            matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
+            if (pairs.length === 2 && Object.keys(pairCounts).length === 2) {
+                // 🔥 检查是否严格连续：前两个相同且后两个相同（MMNN 或 NNMM）
+                matched = symbols[0] === symbols[1] && symbols[2] === symbols[3] && symbols[0] !== symbols[2];
+            } else {
+                matched = false;
+            }
             break;
 
-        case 'symmetric':  // 对称（前两个和后两个相同：AABB）
+        case 'symmetric':  // 对称（ABBA格式：前后对称）
             if (symbols.length === 4) {
-                matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
+                // 🔥 ABBA: 第一个和第四个相同，第二个和第三个相同，但第一个和第二个不同
+                matched = symbols[0] === symbols[3] && symbols[1] === symbols[2] && symbols[0] !== symbols[1];
             } else {
                 matched = false;
             }
@@ -277,27 +283,14 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
     multiplier: number;
     punishmentCount?: number;
 } {
-    // 🔥 1. 先检查律师函惩罚（最高优先级）
-    const lshCount = symbols.filter(s => s === 'lsh').length;
-    if (lshCount > 0) {
-        const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
-        const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
-        if (punishment) {
-            return {
-                ruleName: `律师函×${lshCount}`,
-                multiplier: -punishment.deduct_multiplier,
-                punishmentCount: lshCount
-            };
-        }
-    }
-
-    // 🔥 2. 检查man符号并计算组合倍率
+    // 🔥 1. 先检查man符号并计算组合倍率（最高优先级）
+    // 如果有man，则不会触发律师函惩罚
     const manCount = symbols.filter(s => s === 'man').length;
     let manMultiplier = 1.0;
-    
+
     if (manCount > 0) {
         const manConsecutive = getMaxConsecutiveSymbol(symbols, 'man');
-        
+
         if (manCount === 4 || manConsecutive === 4) {
             return {
                 ruleName: 'man×4',
@@ -309,6 +302,22 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
             manMultiplier = 5;
         } else if (manCount === 1) {
             manMultiplier = 2.5;
+        }
+    }
+
+    // 🔥 2. 检查律师函惩罚（仅在没有man符号时触发）
+    if (manCount === 0) {
+        const lshCount = symbols.filter(s => s === 'lsh').length;
+        if (lshCount > 0) {
+            const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
+            const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
+            if (punishment) {
+                return {
+                    ruleName: `律师函×${lshCount}`,
+                    multiplier: -punishment.deduct_multiplier,
+                    punishmentCount: lshCount
+                };
+            }
         }
     }
 
@@ -571,7 +580,8 @@ export function calculateProbabilityFast(
         weightConfig.weight_bj,
         weightConfig.weight_zft,
         weightConfig.weight_bdk,
-        weightConfig.weight_lsh
+        weightConfig.weight_lsh,
+        weightConfig.weight_man || 25  // 🔥 添加man符号权重
     ];
 
     const totalWeight = weights.reduce((a, b) => a + b, 0);

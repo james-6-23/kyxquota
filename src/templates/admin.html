@@ -887,18 +887,12 @@
               <!-- 中奖类型筛选 -->
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">中奖类型</label>
-                <select 
-                  id="advancedWinTypeFilter" 
+                <select
+                  id="advancedWinTypeFilter"
                   class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                 >
                   <option value="all">全部类型</option>
-                  <option value="super_jackpot">🏆 超级大奖</option>
-                  <option value="special_combo">💎 特殊组合</option>
-                  <option value="quad">🎰 四连</option>
-                  <option value="triple">✨ 三连</option>
-                  <option value="double">🎁 双连</option>
-                  <option value="punishment">⚡ 律师函</option>
-                  <option value="none">❌ 未中奖</option>
+                  <!-- 🔥 动态加载规则选项 -->
                 </select>
               </div>
               
@@ -3699,18 +3693,12 @@
               <!-- 中奖类型筛选 -->
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">中奖类型</label>
-                <select 
-                  id="supremeWinTypeFilter" 
+                <select
+                  id="supremeWinTypeFilter"
                   class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 >
                   <option value="all">全部类型</option>
-                  <option value="super_jackpot">🏆 超级大奖</option>
-                  <option value="special_combo">💎 特殊组合</option>
-                  <option value="quad">🎰 四连</option>
-                  <option value="triple">✨ 三连</option>
-                  <option value="double">🎁 双连</option>
-                  <option value="punishment">⚡ 律师函</option>
-                  <option value="none">❌ 未中奖</option>
+                  <!-- 🔥 动态加载规则选项 -->
                 </select>
               </div>
               
@@ -3987,7 +3975,15 @@
 
     // 🔥 动态加载规则筛选下拉框选项
     function initializeRuleFilterOptions() {
-      const filterSelect = document.getElementById('adminWinTypeFilter');
+      // 🔥 初始化所有场次的筛选下拉框
+      initializeSingleFilterSelect('adminWinTypeFilter');
+      initializeSingleFilterSelect('advancedWinTypeFilter');
+      initializeSingleFilterSelect('supremeWinTypeFilter');
+    }
+
+    // 🔥 通用函数：初始化单个筛选下拉框
+    function initializeSingleFilterSelect(selectId) {
+      const filterSelect = document.getElementById(selectId);
       if (!filterSelect) return;
 
       // 清空现有选项（保留"全部类型"）
@@ -11141,7 +11137,15 @@
         }
         
         if (supremeSlotFilters.winType !== 'all') {
-          records = records.filter(r => r.win_type === supremeSlotFilters.winType);
+          // 🔥 优先使用 rule_name 匹配，如果没有则回退到 win_type 匹配
+          records = records.filter(r => {
+            // 如果有 rule_name，直接匹配
+            if (r.rule_name) {
+              return r.rule_name === supremeSlotFilters.winType;
+            }
+            // 如果没有 rule_name，回退到 win_type 匹配
+            return r.win_type === supremeSlotFilters.winType;
+          });
         }
         
         // 💎 计算统计数据
@@ -11176,7 +11180,7 @@
           return;
         }
         
-        // 💎 中奖类型名称映射
+        // 💎 中奖类型名称映射（fallback使用）
         const winTypeNames = {
           'super_jackpot': '🏆 超级大奖',
           'special_combo': '💎 特殊组合',
@@ -11186,7 +11190,7 @@
           'punishment': '⚡ 律师函',
           'none': '❌ 未中奖'
         };
-        
+
         tbody.innerHTML = records.map(record => {
           const gameTime = new Date(record.timestamp).toLocaleString('zh-CN');
           const betAmount = (record.bet_amount / 500000).toFixed(2);
@@ -11194,7 +11198,7 @@
           const multiplier = record.win_multiplier;
           const isWin = multiplier > 0;
           const isLoss = multiplier < 0;
-          
+
           // 💎 解析结果符号
           let symbols = [];
           try {
@@ -11202,7 +11206,18 @@
           } catch (e) {
             symbols = [];
           }
-          
+
+          // 🔥 优先使用 rule_name，如果没有则回退到 win_type 映射
+          const displayWinType = record.rule_name || (() => {
+            // 🔥 从 RULE_TEMPLATES 中查找匹配的规则
+            const matchedRule = RULE_TEMPLATES.find(r => r.id === record.win_type);
+            if (matchedRule) {
+              return matchedRule.name;
+            }
+            // 🔥 最后才使用硬编码映射
+            return winTypeNames[record.win_type] || record.win_type || '未中奖';
+          })();
+
           return `
             <tr class="border-b border-slate-100 hover:bg-slate-50">
               <td class="px-4 py-3 text-xs text-slate-500 font-mono">${gameTime}</td>
@@ -11221,7 +11236,7 @@
               </td>
               <td class="px-4 py-3 text-center text-sm">
                 <span class="px-2 py-1 rounded ${isWin ? 'bg-purple-100 text-purple-700' : isLoss ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'} text-xs font-semibold">
-                  ${winTypeNames[record.win_type] || record.win_type || '未中奖'}
+                  ${displayWinType}
                 </span>
               </td>
               <td class="px-4 py-3 text-center">
@@ -11540,7 +11555,15 @@
           }
           
           if (advancedSlotFilters.winType !== 'all') {
-            records = records.filter(r => r.win_type === advancedSlotFilters.winType);
+            // 🔥 优先使用 rule_name 匹配，如果没有则回退到 win_type 匹配
+            records = records.filter(r => {
+              // 如果有 rule_name，直接匹配
+              if (r.rule_name) {
+                return r.rule_name === advancedSlotFilters.winType;
+              }
+              // 如果没有 rule_name，回退到 win_type 匹配
+              return r.win_type === advancedSlotFilters.winType;
+            });
           }
           
           // 更新总数（筛选后）
@@ -11561,18 +11584,24 @@
           } else {
             tbody.innerHTML = records.map(r => {
               const symbols = JSON.parse(r.result_symbols);
-              const winTypeNames = {
-                'super_jackpot': '🏆 超级大奖',
-                'special_combo': '💎 特殊组合',
-                'quad': '🎰 四连',
-                'triple': '✨ 三连',
-                'double': '🎁 双连',
-                'punishment': '⚡ 律师函',
-                'none': '❌ 未中奖'
-              };
+
+              // 🔥 优先显示rule_name，如果为空则使用winType映射
+              const displayWinType = r.rule_name || (() => {
+                const winTypeNames = {
+                  'super_jackpot': '🏆 超级大奖',
+                  'special_combo': '💎 特殊组合',
+                  'quad': '🎰 四连',
+                  'triple': '✨ 三连',
+                  'double': '🎁 双连',
+                  'punishment': '⚡ 律师函',
+                  'none': '❌ 未中奖'
+                };
+                return winTypeNames[r.win_type] || r.win_type;
+              })();
+
               const winAmount = r.win_amount;
               const amountClass = winAmount > 0 ? 'text-green-600 font-semibold' : (winAmount < 0 ? 'text-red-600 font-semibold' : 'text-slate-600');
-              
+
               return `
                 <tr class="border-t border-slate-200 hover:bg-slate-50">
                   <td class="px-4 py-3 text-sm text-slate-600">${r.id}</td>
@@ -11591,7 +11620,7 @@
                       }).join('')}
                     </div>
                   </td>
-                  <td class="px-4 py-3 text-sm">${winTypeNames[r.win_type] || r.win_type}</td>
+                  <td class="px-4 py-3 text-sm">${displayWinType}</td>
                   <td class="px-4 py-3 text-sm font-semibold">${r.win_multiplier}x</td>
                   <td class="px-4 py-3 text-sm ${amountClass}">${winAmount >= 0 ? '+' : ''}$${(winAmount / 500000).toFixed(2)}</td>
                 </tr>

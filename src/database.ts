@@ -956,6 +956,14 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_timestamp ON supreme_slot_records(timestamp)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_date ON supreme_slot_records(date)');
 
+    // 添加 rule_name 字段到至尊场记录表（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE supreme_slot_records ADD COLUMN rule_name TEXT');
+        console.log('✅ 已添加 rule_name 字段到 supreme_slot_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 至尊令牌掉落记录表
     db.exec(`
         CREATE TABLE IF NOT EXISTS supreme_token_drop_records (
@@ -2058,7 +2066,7 @@ function initQueries() {
 
         // 游戏记录
         insertRecord: db.query(
-            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, rule_name, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getRecordsByUser: db.query<any, string>(
             'SELECT * FROM supreme_slot_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'
@@ -2506,7 +2514,7 @@ function initQueries() {
 
         // 游戏记录
         insertRecord: db.query(
-            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO supreme_slot_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, rule_name, timestamp, date, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getRecordsByUser: db.query<any, string>(
             'SELECT * FROM supreme_slot_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'

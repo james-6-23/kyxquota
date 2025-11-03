@@ -23,33 +23,15 @@ export function calculateWinByScheme(
     punishmentCount?: number;
     banHours?: number;
 } {
-    // 🔥 1. 先检查律师函惩罚（最高优先级）
-    const lshCount = symbols.filter(s => s === 'lsh').length;
-
-    if (lshCount > 0) {
-        const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
-        const activePunishment = punishments.find((p: any) => p.lsh_count === lshCount && p.is_active);
-
-        if (activePunishment) {
-            return {
-                winType: 'punishment',
-                multiplier: -activePunishment.deduct_multiplier,
-                ruleName: `律师函惩罚×${lshCount}`,
-                grantFreeSpin: false,
-                punishmentCount: lshCount,
-                banHours: activePunishment.ban_hours
-            };
-        }
-    }
-
-    // 🔥 2. 检查man符号并计算组合倍率
+    // 🔥 1. 先检查man符号并计算组合倍率（最高优先级）
+    // 如果有man，则不会触发律师函惩罚
     const manCount = symbols.filter(s => s === 'man').length;
     let manMultiplier = 1.0;  // man的基础倍率
-    
+
     if (manCount > 0) {
         // 检查man符号的连续性
         const manConsecutive = getMaxConsecutive(symbols, 'man');
-        
+
         if (manCount === 4 || manConsecutive === 4) {
             // 4连man：25倍（不参与组合）
             return {
@@ -67,6 +49,27 @@ export function calculateWinByScheme(
         } else if (manCount === 1) {
             // 单个man：2.5倍（可与其他规则组合）
             manMultiplier = 2.5;
+        }
+    }
+
+    // 🔥 2. 检查律师函惩罚（仅在没有man符号时触发）
+    if (manCount === 0) {
+        const lshCount = symbols.filter(s => s === 'lsh').length;
+
+        if (lshCount > 0) {
+            const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
+            const activePunishment = punishments.find((p: any) => p.lsh_count === lshCount && p.is_active);
+
+            if (activePunishment) {
+                return {
+                    winType: 'punishment',
+                    multiplier: -activePunishment.deduct_multiplier,
+                    ruleName: `律师函惩罚×${lshCount}`,
+                    grantFreeSpin: false,
+                    punishmentCount: lshCount,
+                    banHours: activePunishment.ban_hours
+                };
+            }
         }
     }
 

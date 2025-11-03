@@ -15,10 +15,10 @@ import {
     checkSupremeModeExpiry,
     isInSupremeMode,
     generateSupremeSymbols,
-    calculateSupremeWin,
     recordSupremeGame,
     getTodaySupremeBet
 } from '../services/supreme-slot';
+import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
 import logger from '../utils/logger';
@@ -247,8 +247,9 @@ supreme.post('/spin', requireAuth, async (c) => {
         // 生成符号
         const symbols = generateSupremeSymbols();
 
-        // 计算中奖
-        const winResult = calculateSupremeWin(symbols);
+        // 🔥 计算中奖（使用统一的配置方案系统）
+        // 至尊场使用严格连续判定（与高级场一致）
+        const winResult = calculateWinByScheme(symbols, config.reward_scheme_id, true);
 
         // 计算赢得金额
         let winAmount = 0;
@@ -293,7 +294,8 @@ supreme.post('/spin', requireAuth, async (c) => {
             symbols,
             winResult.winType,
             winResult.multiplier,
-            winAmount
+            winAmount,
+            winResult.ruleName  // 🔥 记录规则名称
         );
 
         let quotaAfter = newQuotaAfterBet;

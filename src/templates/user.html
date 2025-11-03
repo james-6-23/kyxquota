@@ -5454,26 +5454,32 @@
         if (resultText) resultText.textContent = data.message;
         if (resultDiv) resultDiv.classList.remove('hidden');
 
-        // 🔥 根据中奖类型动态设置提示停留时间
+        // 🔥 根据倍率动态设置提示停留时间（适配任意规则配置）
         let displayDuration = 3000; // 默认3秒
-        
-        if (result.win_type === 'super_jackpot') {
-          // 超级大奖：5秒
+
+        if (result.multiplier >= 100) {
+          // 超高倍率（≥100x）：5秒
           displayDuration = 5000;
-        } else if (result.win_type === 'special_combo' || result.win_type === 'quad') {
-          // 特殊组合、四连：4秒
+        } else if (result.multiplier >= 20) {
+          // 高倍率（20-99x）：4.5秒
+          displayDuration = 4500;
+        } else if (result.multiplier >= 10) {
+          // 中高倍率（10-19x）：4秒
           displayDuration = 4000;
-        } else if (result.win_type === 'triple') {
-          // 三连：3秒
+        } else if (result.multiplier >= 5) {
+          // 中等倍率（5-9x）：3.5秒
+          displayDuration = 3500;
+        } else if (result.multiplier >= 2) {
+          // 低倍率（2-4x）：3秒
           displayDuration = 3000;
-        } else if (result.win_type === 'double'|| result.win_type === 'punishment') {
-          // 双连：2.5秒
-          displayDuration = 2500;
-        } else if (result.win_type === 'none' ) {
-          // 未中奖、惩罚：3秒（让玩家看清楚结果）
+        } else if (result.multiplier < 0) {
+          // 惩罚：3秒（让玩家看清楚扣款）
+          displayDuration = 3000;
+        } else {
+          // 未中奖：1秒
           displayDuration = 1000;
         }
-        
+
         setTimeout(() => {
           resultDiv.classList.add('hidden');
         }, displayDuration);
@@ -7568,8 +7574,45 @@
           
           // 🔥 更新待发放统计和余额显示
           setTimeout(() => loadPendingRewardsSummary(), 500);
-          
-          // 显示中奖结果
+
+          // 🔥 显示结果（使用至尊场的结果容器）
+          const supremeResultDiv = document.getElementById('supremeSlotResult');
+          const supremeResultText = document.getElementById('supremeSlotResultText');
+
+          if (supremeResultText) supremeResultText.textContent = data.message;
+          if (supremeResultDiv) supremeResultDiv.classList.remove('hidden');
+
+          // 🔥 根据倍率动态设置提示停留时间（适配任意规则配置）
+          let displayDuration = 3000; // 默认3秒
+
+          if (multiplier >= 100) {
+            // 超高倍率（≥100x）：5秒
+            displayDuration = 5000;
+          } else if (multiplier >= 20) {
+            // 高倍率（20-99x）：4.5秒
+            displayDuration = 4500;
+          } else if (multiplier >= 10) {
+            // 中高倍率（10-19x）：4秒
+            displayDuration = 4000;
+          } else if (multiplier >= 5) {
+            // 中等倍率（5-9x）：3.5秒
+            displayDuration = 3500;
+          } else if (multiplier >= 2) {
+            // 低倍率（2-4x）：3秒
+            displayDuration = 3000;
+          } else if (multiplier < 0) {
+            // 惩罚：3秒（让玩家看清楚扣款）
+            displayDuration = 3000;
+          } else {
+            // 未中奖：1秒
+            displayDuration = 1000;
+          }
+
+          setTimeout(() => {
+            if (supremeResultDiv) supremeResultDiv.classList.add('hidden');
+          }, displayDuration);
+
+          // 播放音效和显示Toast
           const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
           if (multiplier > 0) {
             soundManager.playWin(multiplier);
