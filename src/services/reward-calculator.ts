@@ -312,18 +312,28 @@ function hasNOfAKind(symbols: string[], n: number): boolean {
 }
 
 /**
- * 检查是否有两对2连（MMNN格式，排除4连）
+ * 检查是否有两对严格2连（MMNN或NNMM格式，排除4连）
+ * 要求：两对符号必须各自连续，如 MMNN、NNMM
+ * 不匹配：MNMN、MNNM 等交错格式
  */
 function hasTwoPairs(symbols: string[]): boolean {
-    const counts: { [key: string]: number } = {};
+    if (symbols.length !== 4) return false;
 
+    const counts: { [key: string]: number } = {};
     for (const symbol of symbols) {
         counts[symbol] = (counts[symbol] || 0) + 1;
     }
 
     // 必须恰好有2个不同符号，每个出现2次
     const pairs = Object.values(counts).filter(count => count === 2);
-    return pairs.length === 2 && Object.keys(counts).length === 2;
+    if (pairs.length !== 2 || Object.keys(counts).length !== 2) {
+        return false;
+    }
+
+    // 🔥 检查是否严格连续：前两个相同且后两个相同（MMNN 或 NNMM）
+    const isMmnn = symbols[0] === symbols[1] && symbols[2] === symbols[3] && symbols[0] !== symbols[2];
+
+    return isMmnn;
 }
 
 /**

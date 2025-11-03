@@ -523,7 +523,8 @@ export function saveGameRecord(
     winAmount: number,
     freeSpinAwarded: boolean,
     isFreeSpin: boolean,
-    slotMode: 'normal' | 'advanced' = 'normal'  // 🔥 新增：场次模式
+    slotMode: 'normal' | 'advanced' = 'normal',  // 🔥 新增：场次模式
+    ruleName: string | null = null  // 🔥 新增：规则名称（用于显示）
 ) {
     const now = Date.now();
     const today = getTodayDate();
@@ -540,12 +541,13 @@ export function saveGameRecord(
         freeSpinAwarded ? 1 : 0,
         isFreeSpin ? 1 : 0,
         slotMode,  // 🔥 记录场次模式
+        ruleName || null,  // 🔥 记录规则名称
         now,
         today
     );
 
     const displayName = linuxDoUsername ? `@${linuxDoUsername} (${linuxDoId})` : username;
-    logger.info('记录保存', `模式: ${slotMode}, 用户: ${displayName}, 倍率: ${multiplier}`);
+    logger.info('记录保存', `模式: ${slotMode}, 用户: ${displayName}, 倍率: ${multiplier}${ruleName ? `, 规则: ${ruleName}` : ''}`);
 }
 
 /**

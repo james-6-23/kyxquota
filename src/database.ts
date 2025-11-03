@@ -396,6 +396,14 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
+    // 添加 rule_name 字段（兼容旧数据库）- 用于显示具体的规则名称
+    try {
+        db.exec('ALTER TABLE slot_machine_records ADD COLUMN rule_name TEXT');
+        console.log('✅ 已添加 rule_name 字段到 slot_machine_records');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 用户免费次数表
     db.exec(`
     CREATE TABLE IF NOT EXISTS user_free_spins (
@@ -1531,7 +1539,7 @@ function initQueries() {
 
         // 游戏记录
         insertRecord: db.query(
-            'INSERT INTO slot_machine_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, slot_mode, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO slot_machine_records (linux_do_id, username, linux_do_username, bet_amount, result_symbols, win_type, win_multiplier, win_amount, free_spin_awarded, is_free_spin, slot_mode, rule_name, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         ),
         getRecordsByUser: db.query<SlotMachineRecord, string>(
             'SELECT * FROM slot_machine_records WHERE linux_do_id = ? ORDER BY timestamp DESC LIMIT 50'

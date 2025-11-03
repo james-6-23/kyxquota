@@ -2107,18 +2107,12 @@
               <!-- 中奖类型筛选 -->
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">中奖类型</label>
-                <select 
-                  id="adminWinTypeFilter" 
+                <select
+                  id="adminWinTypeFilter"
                   class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                 >
                   <option value="all">全部类型</option>
-                  <option value="super_jackpot">🏆 超级大奖</option>
-                  <option value="special_combo">💎 特殊组合</option>
-                  <option value="quad">🎰 四连</option>
-                  <option value="triple">✨ 三连</option>
-                  <option value="double">🎁 双连</option>
-                  <option value="punishment">⚡ 律师函</option>
-                  <option value="none">❌ 未中奖</option>
+                  <!-- 🔥 动态加载规则模板选项（在页面初始化时填充）-->
                 </select>
               </div>
               
@@ -3988,6 +3982,74 @@
       await loadDonateRecords();
       await loadKeysList();
       await loadUsersCount();
+      initializeRuleFilterOptions();  // 🔥 初始化筛选下拉框选项
+    }
+
+    // 🔥 动态加载规则筛选下拉框选项
+    function initializeRuleFilterOptions() {
+      const filterSelect = document.getElementById('adminWinTypeFilter');
+      if (!filterSelect) return;
+
+      // 清空现有选项（保留"全部类型"）
+      filterSelect.innerHTML = '<option value="all">全部类型</option>';
+
+      // 按分类组织规则
+      const categories = {
+        'jackpot': [],
+        'special': [],
+        'high': [],
+        'medium': [],
+        'normal': []
+      };
+
+      RULE_TEMPLATES.forEach(template => {
+        const category = template.category || 'normal';
+        if (categories[category]) {
+          categories[category].push(template);
+        }
+      });
+
+      // 添加分类选项
+      const categoryLabels = {
+        'jackpot': '🏆 超级大奖',
+        'special': '💪 特殊符号',
+        'high': '🎰 高级奖励',
+        'medium': '✨ 中级奖励',
+        'normal': '🎁 普通奖励'
+      };
+
+      Object.entries(categories).forEach(([category, templates]) => {
+        if (templates.length > 0) {
+          // 添加分类标签
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = categoryLabels[category] || category;
+
+          templates.forEach(template => {
+            const option = document.createElement('option');
+            option.value = template.name;
+            option.textContent = template.name;
+            optgroup.appendChild(option);
+          });
+
+          filterSelect.appendChild(optgroup);
+        }
+      });
+
+      // 添加特殊状态
+      const specialGroup = document.createElement('optgroup');
+      specialGroup.label = '⚡ 特殊状态';
+
+      const punishmentOption = document.createElement('option');
+      punishmentOption.value = 'punishment';
+      punishmentOption.textContent = '⚡ 律师函惩罚';
+      specialGroup.appendChild(punishmentOption);
+
+      const noneOption = document.createElement('option');
+      noneOption.value = 'none';
+      noneOption.textContent = '❌ 未中奖';
+      specialGroup.appendChild(noneOption);
+
+      filterSelect.appendChild(specialGroup);
     }
 
     async function loadUsersCount() {
@@ -5650,16 +5712,20 @@
             const typeClass = r.is_free_spin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
             const typeLabel = r.is_free_spin ? '免费' : '普通';
 
-            const winTypeLabels = {
-              'super_jackpot': '🏆 超级大奖',
-              'special_combo': '💎 特殊组合',
-              'quad': '🎰 四连',
-              'triple': '✨ 三连',
-              'double': '🎁 双连',
-              'punishment': '⚡ 惩罚',
-              'none': '❌ 未中奖'
-            };
-            
+            // 🔥 优先显示rule_name，如果为空则使用winType映射
+            const displayWinType = r.rule_name || (() => {
+              const winTypeLabels = {
+                'super_jackpot': '🏆 超级大奖',
+                'special_combo': '💎 特殊组合',
+                'quad': '🎰 四连',
+                'triple': '✨ 三连',
+                'double': '🎁 双连',
+                'punishment': '⚡ 惩罚',
+                'none': '❌ 未中奖'
+              };
+              return winTypeLabels[r.win_type] || r.win_type;
+            })();
+
             // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
             const displayName = r.linux_do_username || r.username;
             const hasLinuxDoUsername = r.linux_do_username && r.linux_do_username !== r.username;
@@ -5673,7 +5739,7 @@
                 </td>
                 <td class="px-4 py-3 font-mono text-xs text-slate-600">${r.linux_do_id}</td>
                 <td class="px-4 py-3 text-center">${symbolsHTML}</td>
-                <td class="px-4 py-3 text-center text-sm font-semibold">${winTypeLabels[r.win_type] || r.win_type}</td>
+                <td class="px-4 py-3 text-center text-sm font-semibold">${displayWinType}</td>
                 <td class="px-4 py-3 text-right font-bold ${winClass}">${r.win_multiplier}x</td>
                 <td class="px-4 py-3 text-right font-semibold">$${(r.bet_amount / 500000).toFixed(2)}</td>
                 <td class="px-4 py-3 text-right font-bold ${winClass}">$${(r.win_amount / 500000).toFixed(2)}</td>
@@ -5729,11 +5795,15 @@
       }
       // 如果searchInput为空，不过滤，显示所有记录
       
-      // 按中奖类型筛选（修复：空字符串也要过滤）
+      // 按中奖类型筛选（🔥 优先使用rule_name）
       if (winTypeFilter && winTypeFilter !== 'all') {
         filtered = filtered.filter(r => {
-          const recordWinType = r.win_type || '';
-          return recordWinType === winTypeFilter;
+          // 优先使用rule_name进行匹配
+          if (r.rule_name) {
+            return r.rule_name === winTypeFilter;
+          }
+          // 如果rule_name为空，回退到win_type匹配
+          return r.win_type === winTypeFilter;
         });
       }
       
@@ -9130,6 +9200,10 @@
                         <label class="text-xs text-slate-600">⚖️ 律师函 (lsh)</label>
                         <input type="number" id="editWeight_lsh" value="${config.weight_lsh}" min="1" max="1000" class="w-full px-3 py-2 border border-red-300 rounded-lg bg-red-50 text-sm">
                       </div>
+                      <div>
+                        <label class="text-xs text-slate-600">💪 男人 (man)</label>
+                        <input type="number" id="editWeight_man" value="${config.weight_man || 25}" min="1" max="1000" class="w-full px-3 py-2 border border-green-300 rounded-lg bg-green-50 text-sm">
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -9168,7 +9242,8 @@
         weight_bj: parseInt(document.getElementById('editWeight_bj').value),
         weight_zft: parseInt(document.getElementById('editWeight_zft').value),
         weight_bdk: parseInt(document.getElementById('editWeight_bdk').value),
-        weight_lsh: parseInt(document.getElementById('editWeight_lsh').value)
+        weight_lsh: parseInt(document.getElementById('editWeight_lsh').value),
+        weight_man: parseInt(document.getElementById('editWeight_man').value)
       };
       
       try {
@@ -9275,6 +9350,10 @@
                       <div class="bg-red-50 border border-red-300 rounded-lg p-3">
                         <div class="text-xs text-red-600 mb-1">⚖️ 律师函 (lsh)</div>
                         <div class="text-lg font-bold text-red-900">${config.weight_lsh}</div>
+                      </div>
+                      <div class="bg-green-50 border border-green-300 rounded-lg p-3">
+                        <div class="text-xs text-green-600 mb-1">💪 男人 (man)</div>
+                        <div class="text-lg font-bold text-green-900">${config.weight_man || 25}</div>
                       </div>
                     </div>
                   </div>
@@ -9839,6 +9918,48 @@
         emoji: '🎁'
       },
       {
+        id: 'man_quad',
+        name: '💪 Man四连',
+        description: '4个man符号连续出现，25倍独立奖励（不可与其他规则组合）',
+        category: 'special',
+        rule_type: 'match',
+        match_pattern: '4-consecutive',
+        required_symbols: '["man"]',
+        match_count: 4,
+        win_multiplier: 25,
+        grant_free_spin: 0,
+        priority: 85,
+        emoji: '💪'
+      },
+      {
+        id: 'man_triple',
+        name: '🦸 Man三连',
+        description: '3个man符号连续出现，10倍（由于只剩1个位置，实际无法与其他规则组合）',
+        category: 'special',
+        rule_type: 'match',
+        match_pattern: '3-consecutive',
+        required_symbols: '["man"]',
+        match_count: 3,
+        win_multiplier: 10,
+        grant_free_spin: 0,
+        priority: 75,
+        emoji: '🦸'
+      },
+      {
+        id: 'man_double_strict',
+        name: '🏋️ Man严格二连',
+        description: '2个man符号连续出现，5倍（可与其他规则组合加成）',
+        category: 'special',
+        rule_type: 'match',
+        match_pattern: '2-consecutive',
+        required_symbols: '["man"]',
+        match_count: 2,
+        win_multiplier: 5,
+        grant_free_spin: 0,
+        priority: 45,
+        emoji: '🏋️'
+      },
+      {
         id: '3_consecutive_strict',
         name: '💎 严格3连',
         description: '任意3个相同符号连续出现（严格相邻）',
@@ -9868,22 +9989,22 @@
       },
       {
         id: 'symmetric',
-        name: '🔄 对称奖励',
-        description: '前两个和后两个相同（AABB格式）',
+        name: '🔄 对称奖励（ABBA）',
+        description: '前后对称格式（ABBA：首尾相同，中间相同，如JTTJ）',
         category: 'normal',
         rule_type: 'match',
         match_pattern: 'symmetric',
         required_symbols: null,
         match_count: 4,
-        win_multiplier: 6,
+        win_multiplier: 10,
         grant_free_spin: 0,
-        priority: 55,
+        priority: 56,
         emoji: '🔄'
       },
       {
         id: 'double_pair',
-        name: '🎰 两对2连',
-        description: '两对不同的相同符号（MMNN格式，排除4连）',
+        name: '🎰 两对严格2连',
+        description: '两对不同符号各自连续（MMNN或NNMM格式，排除4连和交错格式MNMN）',
         category: 'normal',
         rule_type: 'match',
         match_pattern: 'double_pair',
