@@ -21,6 +21,7 @@ import {
 import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
+import { checkAndUnlockAchievement, updateAchievementProgress, recordSymbols, updateProfitTracking } from '../services/achievement';
 import logger from '../utils/logger';
 
 /**
@@ -348,26 +349,20 @@ supreme.post('/spin', requireAuth, async (c) => {
                 unlockedAchievements.push(result1.achievement);
             }
 
-            // 🔥 2. 游玩次数成就（每次游戏增加进度，收集解锁信息）
-            const playProgress1 = await updateAchievementProgress(session.linux_do_id!, 'play_10_games', 1);
-            if (playProgress1.unlocked && playProgress1.achievement) {
-                unlockedAchievements.push(playProgress1.achievement);
-            }
+            // 🔥 2. 游玩次数成就（并发检查，避免深度调用链）
+            const playProgressResults = await Promise.allSettled([
+                updateAchievementProgress(session.linux_do_id!, 'play_10_games', 1),
+                updateAchievementProgress(session.linux_do_id!, 'play_50_games', 1),
+                updateAchievementProgress(session.linux_do_id!, 'play_200_games', 1),
+                updateAchievementProgress(session.linux_do_id!, 'play_1000_games', 1)
+            ]);
 
-            const playProgress2 = await updateAchievementProgress(session.linux_do_id!, 'play_50_games', 1);
-            if (playProgress2.unlocked && playProgress2.achievement) {
-                unlockedAchievements.push(playProgress2.achievement);
-            }
-
-            const playProgress3 = await updateAchievementProgress(session.linux_do_id!, 'play_200_games', 1);
-            if (playProgress3.unlocked && playProgress3.achievement) {
-                unlockedAchievements.push(playProgress3.achievement);
-            }
-
-            const playProgress4 = await updateAchievementProgress(session.linux_do_id!, 'play_1000_games', 1);
-            if (playProgress4.unlocked && playProgress4.achievement) {
-                unlockedAchievements.push(playProgress4.achievement);
-            }
+            // 收集解锁的成就
+            playProgressResults.forEach(result => {
+                if (result.status === 'fulfilled' && result.value.unlocked && result.value.achievement) {
+                    unlockedAchievements.push(result.value.achievement);
+                }
+            });
 
             // 3. 中奖相关成就
             if (winResult.multiplier > 0) {
@@ -377,21 +372,19 @@ supreme.post('/spin', requireAuth, async (c) => {
                     unlockedAchievements.push(result2.achievement);
                 }
 
-                // 🔥 中奖次数成就（收集解锁信息）
-                const winProgress1 = await updateAchievementProgress(session.linux_do_id!, 'win_10_times', 1);
-                if (winProgress1.unlocked && winProgress1.achievement) {
-                    unlockedAchievements.push(winProgress1.achievement);
-                }
+                // 🔥 中奖次数成就（并发检查）
+                const winProgressResults = await Promise.allSettled([
+                    updateAchievementProgress(session.linux_do_id!, 'win_10_times', 1),
+                    updateAchievementProgress(session.linux_do_id!, 'win_50_times', 1),
+                    updateAchievementProgress(session.linux_do_id!, 'win_100_times', 1)
+                ]);
 
-                const winProgress2 = await updateAchievementProgress(session.linux_do_id!, 'win_50_times', 1);
-                if (winProgress2.unlocked && winProgress2.achievement) {
-                    unlockedAchievements.push(winProgress2.achievement);
-                }
-
-                const winProgress3 = await updateAchievementProgress(session.linux_do_id!, 'win_100_times', 1);
-                if (winProgress3.unlocked && winProgress3.achievement) {
-                    unlockedAchievements.push(winProgress3.achievement);
-                }
+                // 收集解锁的成就
+                winProgressResults.forEach(result => {
+                    if (result.status === 'fulfilled' && result.value.unlocked && result.value.achievement) {
+                        unlockedAchievements.push(result.value.achievement);
+                    }
+                });
                 
                 // 🔥 连击计数器（连续中奖）
                 const streakResult = userQueries.getWinStreak.get(session.linux_do_id!);
@@ -446,6 +439,18 @@ supreme.post('/spin', requireAuth, async (c) => {
                 }
             }
 
+            // 🔥 6. 符号收集者成就 - 记录本次抽到的符号（与高级场保持一致）
+            await recordSymbols(session.linux_do_id!, symbols);
+
+            // 🔥 7. 逆风翻盘成就 - 更新盈利追踪（与高级场保持一致）
+            // 注意：至尊场需要从用户总统计获取盈利数据
+            const { getUserTotalStats } = await import('../services/slot');
+            const userTotalStats = getUserTotalStats(session.linux_do_id!);
+            if (userTotalStats) {
+                const currentProfit = userTotalStats.total_win - userTotalStats.total_bet;
+                await updateProfitTracking(session.linux_do_id!, currentProfit);
+            }
+
         } catch (achievementError) {
             logger.warn('至尊场', `成就检查失败: ${achievementError}`);
         }
@@ -480,8 +485,15 @@ supreme.post('/spin', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        logger.error('至尊场', `旋转失败: ${error.message}`);
-        return c.json({ success: false, message: '旋转失败: ' + error.message }, 500);
+        logger.error('至尊场', '旋转失败', error);
+        if (error instanceof Error && error.stack) {
+            logger.error('至尊场', '错误堆栈', error.stack);
+        }
+        const errorMessage = error instanceof Error ? error.message : '未知错误';
+        return c.json({
+            success: false,
+            message: `旋转失败: ${errorMessage}`
+        }, 500);
     }
 });
 

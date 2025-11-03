@@ -790,26 +790,20 @@ slot.post('/spin', requireAuth, async (c) => {
                 unlockedAchievements.push(result1.achievement);
             }
 
-            // 🔥 2. 游玩次数成就（每次游戏增加进度，收集解锁信息）
-            const playProgress1 = await updateAchievementProgress(session.linux_do_id, 'play_10_games', 1);
-            if (playProgress1.unlocked && playProgress1.achievement) {
-                unlockedAchievements.push(playProgress1.achievement);
-            }
+            // 🔥 2. 游玩次数成就（并发检查，避免深度调用链）
+            const playProgressResults = await Promise.allSettled([
+                updateAchievementProgress(session.linux_do_id, 'play_10_games', 1),
+                updateAchievementProgress(session.linux_do_id, 'play_50_games', 1),
+                updateAchievementProgress(session.linux_do_id, 'play_200_games', 1),
+                updateAchievementProgress(session.linux_do_id, 'play_1000_games', 1)
+            ]);
 
-            const playProgress2 = await updateAchievementProgress(session.linux_do_id, 'play_50_games', 1);
-            if (playProgress2.unlocked && playProgress2.achievement) {
-                unlockedAchievements.push(playProgress2.achievement);
-            }
-
-            const playProgress3 = await updateAchievementProgress(session.linux_do_id, 'play_200_games', 1);
-            if (playProgress3.unlocked && playProgress3.achievement) {
-                unlockedAchievements.push(playProgress3.achievement);
-            }
-
-            const playProgress4 = await updateAchievementProgress(session.linux_do_id, 'play_1000_games', 1);
-            if (playProgress4.unlocked && playProgress4.achievement) {
-                unlockedAchievements.push(playProgress4.achievement);
-            }
+            // 收集解锁的成就
+            playProgressResults.forEach(result => {
+                if (result.status === 'fulfilled' && result.value.unlocked && result.value.achievement) {
+                    unlockedAchievements.push(result.value.achievement);
+                }
+            });
 
             // 3. 中奖相关成就
             if (result.winType !== 'none' && result.winType !== WinType.PUNISHMENT && result.multiplier > 0) {
@@ -819,21 +813,19 @@ slot.post('/spin', requireAuth, async (c) => {
                     unlockedAchievements.push(result2.achievement);
                 }
 
-                // 🔥 中奖次数成就（收集解锁信息）
-                const winProgress1 = await updateAchievementProgress(session.linux_do_id, 'win_10_times', 1);
-                if (winProgress1.unlocked && winProgress1.achievement) {
-                    unlockedAchievements.push(winProgress1.achievement);
-                }
+                // 🔥 中奖次数成就（并发检查）
+                const winProgressResults = await Promise.allSettled([
+                    updateAchievementProgress(session.linux_do_id, 'win_10_times', 1),
+                    updateAchievementProgress(session.linux_do_id, 'win_50_times', 1),
+                    updateAchievementProgress(session.linux_do_id, 'win_100_times', 1)
+                ]);
 
-                const winProgress2 = await updateAchievementProgress(session.linux_do_id, 'win_50_times', 1);
-                if (winProgress2.unlocked && winProgress2.achievement) {
-                    unlockedAchievements.push(winProgress2.achievement);
-                }
-
-                const winProgress3 = await updateAchievementProgress(session.linux_do_id, 'win_100_times', 1);
-                if (winProgress3.unlocked && winProgress3.achievement) {
-                    unlockedAchievements.push(winProgress3.achievement);
-                }
+                // 收集解锁的成就
+                winProgressResults.forEach(result => {
+                    if (result.status === 'fulfilled' && result.value.unlocked && result.value.achievement) {
+                        unlockedAchievements.push(result.value.achievement);
+                    }
+                });
 
                 // 🔥 连击计数器（连续中奖）
                 const streakResult = userQueries.getWinStreak.get(session.linux_do_id);
