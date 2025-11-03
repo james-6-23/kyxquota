@@ -539,7 +539,8 @@ export function recordSupremeGame(
  * 获取今日至尊场投注总额
  */
 export function getTodaySupremeBet(linuxDoId: string): number {
-    const today = new Date().toISOString().split('T')[0];
+    // 🔥 使用北京时间的日期（与recordSupremeGame保持一致）
+    const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
     const records = supremeSlotQueries.getRecordsByUser.all(linuxDoId);
 
     const todayRecords = records.filter((r: any) => r.date === today);

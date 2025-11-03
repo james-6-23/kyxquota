@@ -86,6 +86,9 @@ supreme.get('/tokens', requireAuth, async (c) => {
         const todayEntry = supremeSlotQueries.getTodayEntry.get(session.linux_do_id!, today);
         const todayGrant = supremeSlotQueries.getTodayGrant.get(session.linux_do_id!, today);
 
+        // 🔥 获取今日已投注金额（用于显示限额进度条）
+        const todayBetAmount = getTodaySupremeBet(session.linux_do_id!);
+
         return c.json({
             success: true,
             data: {
@@ -99,6 +102,7 @@ supreme.get('/tokens', requireAuth, async (c) => {
                 in_supreme_mode: inSupremeMode,
                 today_entry_count: todayEntry?.entry_count || 0,
                 today_tokens_granted: todayGrant?.tokens_granted || 0,
+                today_bet_amount: todayBetAmount,  // 🔥 今日已投注金额
                 config: {
                     daily_entry_limit: config.daily_entry_limit,
                     daily_token_grant_limit: config.daily_token_grant_limit,
@@ -106,7 +110,7 @@ supreme.get('/tokens', requireAuth, async (c) => {
                     min_bet_amount: config.min_bet_amount,
                     max_bet_amount: config.max_bet_amount,
                     bet_step: config.bet_step,
-                    daily_bet_limit: config.daily_bet_limit  // 🔥 添加每日投注限额
+                    daily_bet_limit: config.daily_bet_limit  // 🔥 每日投注限额
                 }
             }
         });
@@ -209,6 +213,7 @@ supreme.post('/spin', requireAuth, async (c) => {
 
         // 检查每日投注限额
         const todayBet = getTodaySupremeBet(session.linux_do_id!);
+        logger.info('至尊场检查', `用户: ${getUserDisplayName(session.linux_do_id)}, 今日已投注: $${(todayBet / 500000).toFixed(2)}, 本次投注: $${(betAmount / 500000).toFixed(2)}, 投注后总计: $${((todayBet + betAmount) / 500000).toFixed(2)}, 限额: $${(config.daily_bet_limit / 500000).toFixed(2)}`);
         if (todayBet + betAmount > config.daily_bet_limit) {
             return c.json({
                 success: false,
