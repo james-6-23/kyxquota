@@ -48,7 +48,7 @@ import {
 } from '../services/supreme-slot';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
 import { getAndUseBuff } from '../services/kunbei';
-import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
+import { checkAndUnlockAchievement, updateAchievementProgress, recordSymbols, updateProfitTracking } from '../services/achievement';
 
 /**
  * 获取用户显示名称（优先使用 linux_do_username）
@@ -916,6 +916,15 @@ slot.post('/spin', requireAuth, async (c) => {
                 await checkAndUnlockAchievement(session.linux_do_id, 'combo_master');
             }
 
+            // 15. 符号收集者成就 - 记录本次抽到的符号
+            await recordSymbols(session.linux_do_id, symbols);
+
+            // 16. 逆风翻盘成就 - 更新盈利追踪
+            if (userTotalStats) {
+                const currentProfit = userTotalStats.total_win - userTotalStats.total_bet;
+                await updateProfitTracking(session.linux_do_id, currentProfit);
+            }
+
         } catch (achievementError) {
             // 成就系统错误不应该影响游戏正常进行，只记录日志
             console.error('[成就系统] 检查成就时出错:', achievementError);
@@ -1494,7 +1503,7 @@ slot.post('/tickets/synthesize', requireAuth, async (c) => {
         // 检查过期
         checkTicketExpiry(session.linux_do_id);
 
-        const result = synthesizeTicket(session.linux_do_id);
+        const result = await synthesizeTicket(session.linux_do_id);
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error) {

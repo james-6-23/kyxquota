@@ -218,11 +218,28 @@ async function checkComboCondition(
 async function checkCollectionCondition(linuxDoId: string, condition: any): Promise<boolean> {
     try {
         // 例如: { items: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'] }
-        // 需要检查用户是否收集了所有指定项目
+        // 检查用户是否收集了所有指定项目
 
-        // TODO: 实现收集条件检查逻辑
-        // 目前暂不支持，返回 false
-        logger.debug('条件检查', `收集型条件暂未实现`);
+        if (condition.items && Array.isArray(condition.items)) {
+            // 🔥 获取用户符号收集记录
+            const collection = achievementQueries.getSymbolCollection.get(linuxDoId);
+
+            if (!collection) {
+                logger.debug('条件检查', `收藏型条件 - 用户 ${linuxDoId} 无符号收集记录`);
+                return false;
+            }
+
+            // 检查是否所有符号都至少收集了1个
+            const allCollected = condition.items.every((symbol: string) => {
+                const key = `symbol_${symbol}`;
+                return collection[key] && collection[key] > 0;
+            });
+
+            logger.debug('条件检查', `收藏型条件 - 符号收集: ${allCollected ? '✅全部收集' : '❌未全部收集'}`);
+            return allCollected;
+        }
+
+        logger.debug('条件检查', `收藏型条件缺少items参数`);
         return false;
     } catch (error: any) {
         logger.error('成就系统', `检查收集条件失败: ${error.message}`);
@@ -671,5 +688,100 @@ export function setUserBadges(
     } catch (error: any) {
         logger.error('成就系统', `❌ 设置徽章失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`, error.stack);
         return { success: false, message: `设置失败: ${error.message}` };
+    }
+}
+
+/**
+ * 记录用户抽到的符号（用于符号学者成就）
+ */
+export async function recordSymbols(linuxDoId: string, symbols: string[]): Promise<void> {
+    try {
+        const now = Date.now();
+
+        // 统计每个符号的出现次数
+        const symbolCount: any = {
+            m: 0, t: 0, n: 0, j: 0,
+            lq: 0, bj: 0, zft: 0, bdk: 0, lsh: 0
+        };
+
+        symbols.forEach(symbol => {
+            if (symbolCount.hasOwnProperty(symbol)) {
+                symbolCount[symbol] = 1; // 只要出现过就标记为1
+            }
+        });
+
+        // 记录到数据库（使用MAX确保只增不减）
+        achievementQueries.recordSymbol.run(
+            linuxDoId,
+            symbolCount.m,
+            symbolCount.t,
+            symbolCount.n,
+            symbolCount.j,
+            symbolCount.lq,
+            symbolCount.bj,
+            symbolCount.zft,
+            symbolCount.bdk,
+            symbolCount.lsh,
+            now
+        );
+
+        // 检查符号学者成就
+        await checkAndUnlockAchievement(linuxDoId, 'symbol_collector');
+    } catch (error: any) {
+        logger.error('成就系统', `❌ 记录符号失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`);
+    }
+}
+
+/**
+ * 更新用户盈利追踪并检查逆风翻盘成就
+ */
+export async function updateProfitTracking(
+    linuxDoId: string,
+    currentProfit: number
+): Promise<void> {
+    try {
+        const now = Date.now();
+
+        // 获取当前追踪数据
+        let tracking = achievementQueries.getProfitTracking.get(linuxDoId);
+
+        if (!tracking) {
+            // 首次记录
+            achievementQueries.updateProfitTracking.run(
+                linuxDoId,
+                currentProfit,
+                currentProfit,
+                currentProfit,
+                now
+            );
+            return;
+        }
+
+        const lowestProfit = Math.min(tracking.lowest_profit, currentProfit);
+        const highestProfit = Math.max(tracking.highest_profit, currentProfit);
+
+        // 更新追踪数据
+        achievementQueries.updateProfitTracking.run(
+            linuxDoId,
+            lowestProfit,
+            highestProfit,
+            currentProfit,
+            now
+        );
+
+        // 检查逆风翻盘成就
+        // comeback_5k: 从-5000回正
+        if (tracking.lowest_profit <= -2500000 && currentProfit >= 0) { // -5000 * 500000 = -2500000
+            await checkAndUnlockAchievement(linuxDoId, 'comeback_5k');
+        }
+
+        // comeback_10k: 从-10000回正
+        if (tracking.lowest_profit <= -5000000 && currentProfit >= 0) { // -10000 * 500000 = -5000000
+            await checkAndUnlockAchievement(linuxDoId, 'comeback_10k');
+        }
+
+        logger.debug('盈利追踪', `${getUserDisplayName(linuxDoId)} 盈利: ${currentProfit / 500000}, 最低: ${lowestProfit / 500000}, 最高: ${highestProfit / 500000}`);
+    } catch (error: any) {
+        logger.error('成就系统', `❌ 更新盈利追踪失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`);
     }
 }

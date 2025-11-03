@@ -1027,6 +1027,36 @@ export function initDatabase() {
         )
     `);
 
+    // 用户符号收集表（用于符号学者成就）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_symbol_collection (
+            linux_do_id TEXT PRIMARY KEY,
+            symbol_m INTEGER DEFAULT 0,
+            symbol_t INTEGER DEFAULT 0,
+            symbol_n INTEGER DEFAULT 0,
+            symbol_j INTEGER DEFAULT 0,
+            symbol_lq INTEGER DEFAULT 0,
+            symbol_bj INTEGER DEFAULT 0,
+            symbol_zft INTEGER DEFAULT 0,
+            symbol_bdk INTEGER DEFAULT 0,
+            symbol_lsh INTEGER DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_symbol_collection_user ON user_symbol_collection(linux_do_id)');
+
+    // 用户盈利追踪表（用于逆风翻盘成就）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS user_profit_tracking (
+            linux_do_id TEXT PRIMARY KEY,
+            lowest_profit INTEGER DEFAULT 0,
+            highest_profit INTEGER DEFAULT 0,
+            last_profit INTEGER DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_profit_tracking_user ON user_profit_tracking(linux_do_id)');
+
     console.log('✅ 数据库表结构创建完成（含权重/奖励方案、至尊场和成就系统）');
 
     // 插入默认数据
@@ -2595,6 +2625,38 @@ function initQueries() {
             SELECT COUNT(*) as unlock_count
             FROM user_achievements
             WHERE achievement_key = ?
+        `),
+
+        // 符号收集追踪
+        getSymbolCollection: db.query<any, string>(`SELECT * FROM user_symbol_collection WHERE linux_do_id = ?`),
+        recordSymbol: db.query(`
+            INSERT INTO user_symbol_collection (
+                linux_do_id, symbol_m, symbol_t, symbol_n, symbol_j,
+                symbol_lq, symbol_bj, symbol_zft, symbol_bdk, symbol_lsh, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(linux_do_id) DO UPDATE SET
+                symbol_m = MAX(symbol_m, excluded.symbol_m),
+                symbol_t = MAX(symbol_t, excluded.symbol_t),
+                symbol_n = MAX(symbol_n, excluded.symbol_n),
+                symbol_j = MAX(symbol_j, excluded.symbol_j),
+                symbol_lq = MAX(symbol_lq, excluded.symbol_lq),
+                symbol_bj = MAX(symbol_bj, excluded.symbol_bj),
+                symbol_zft = MAX(symbol_zft, excluded.symbol_zft),
+                symbol_bdk = MAX(symbol_bdk, excluded.symbol_bdk),
+                symbol_lsh = MAX(symbol_lsh, excluded.symbol_lsh),
+                updated_at = excluded.updated_at
+        `),
+
+        // 盈利追踪
+        getProfitTracking: db.query<any, string>(`SELECT * FROM user_profit_tracking WHERE linux_do_id = ?`),
+        updateProfitTracking: db.query(`
+            INSERT INTO user_profit_tracking (linux_do_id, lowest_profit, highest_profit, last_profit, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            ON CONFLICT(linux_do_id) DO UPDATE SET
+                lowest_profit = MIN(lowest_profit, excluded.lowest_profit),
+                highest_profit = MAX(highest_profit, excluded.highest_profit),
+                last_profit = excluded.last_profit,
+                updated_at = excluded.updated_at
         `),
     };
 

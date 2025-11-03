@@ -333,6 +333,55 @@ supreme.post('/spin', requireAuth, async (c) => {
             // TODO: 实现禁止抽奖逻辑（需要在 user_free_spins 表中设置）
         }
 
+        // ========== 成就系统检查 ==========
+        try {
+            const { checkAndUnlockAchievement, updateAchievementProgress } = await import('../services/achievement');
+            
+            // 1. 首次游戏成就（至尊场也算游戏）
+            await checkAndUnlockAchievement(session.linux_do_id!, 'first_game');
+            
+            // 2. 游玩次数成就（每次游戏增加进度）
+            await updateAchievementProgress(session.linux_do_id!, 'play_10_games', 1);
+            await updateAchievementProgress(session.linux_do_id!, 'play_50_games', 1);
+            await updateAchievementProgress(session.linux_do_id!, 'play_200_games', 1);
+            await updateAchievementProgress(session.linux_do_id!, 'play_1000_games', 1);
+            
+            // 3. 中奖相关成就
+            if (winResult.multiplier > 0) {
+                // 首次中奖
+                await checkAndUnlockAchievement(session.linux_do_id!, 'first_win');
+                
+                // 中奖次数成就
+                await updateAchievementProgress(session.linux_do_id!, 'win_10_times', 1);
+                await updateAchievementProgress(session.linux_do_id!, 'win_50_times', 1);
+                await updateAchievementProgress(session.linux_do_id!, 'win_100_times', 1);
+                
+                // 🔥 连击计数器（连续中奖）
+                const streakResult = userQueries.getWinStreak.get(session.linux_do_id!);
+                const currentStreak = (streakResult?.win_streak || 0) + 1;
+                userQueries.updateWinStreak.run(currentStreak, session.linux_do_id!);
+                
+                // 连续中奖成就
+                if (currentStreak >= 3) {
+                    await checkAndUnlockAchievement(session.linux_do_id!, 'combo_3_wins');
+                }
+                if (currentStreak >= 5) {
+                    await checkAndUnlockAchievement(session.linux_do_id!, 'combo_5_wins');
+                }
+                
+                // 单次大额中奖成就（单次中奖超过 5000 quota）
+                if (winAmount >= 2500000) {
+                    await checkAndUnlockAchievement(session.linux_do_id!, 'single_win_5k');
+                }
+            } else {
+                // 未中奖或惩罚，重置连击计数器
+                userQueries.updateWinStreak.run(0, session.linux_do_id!);
+            }
+            
+        } catch (achievementError) {
+            logger.warn('至尊场', `成就检查失败: ${achievementError}`);
+        }
+
         // 构建响应消息
         let message = '';
         if (winResult.multiplier > 0) {

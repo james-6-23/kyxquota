@@ -1689,7 +1689,7 @@ app.post('/grant-tickets', requireAdmin, async (c) => {
 
         // 调用添加入场券的服务函数
         const { addTicket } = await import('../services/advanced-slot');
-        const result = addTicket(linux_do_id, count);
+        const result = await addTicket(linux_do_id, count);
 
         if (result.success) {
             console.log(`[管理员] ✅ 发放入场券成功 - 用户: ${user.username}, 数量: ${result.granted || count}, 原因: ${reason || '管理员发放'}`);
