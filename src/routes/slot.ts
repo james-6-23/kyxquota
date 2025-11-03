@@ -655,6 +655,16 @@ slot.post('/spin', requireAuth, async (c) => {
             result.winType
         );
 
+        // 🏆 排名成就检查（每次游戏后检查）
+        try {
+            await checkAndUnlockAchievement(session.linux_do_id, 'rank_top10');
+            await checkAndUnlockAchievement(session.linux_do_id, 'rank_top3');
+            await checkAndUnlockAchievement(session.linux_do_id, 'rank_1_profit');
+            await checkAndUnlockAchievement(session.linux_do_id, 'rank_1_loss');
+        } catch (rankError) {
+            // 排名检查失败不影响游戏
+        }
+
         // ========== 高级场掉落逻辑 ==========
         let ticketDropped = false;
         let dropType: 'ticket' | 'fragment' | null = null;
@@ -790,6 +800,19 @@ slot.post('/spin', requireAuth, async (c) => {
                 await updateAchievementProgress(session.linux_do_id, 'win_50_times', 1);
                 await updateAchievementProgress(session.linux_do_id, 'win_100_times', 1);
 
+                // 🔥 连击计数器（连续中奖）
+                const streakResult = userQueries.getWinStreak.get(session.linux_do_id);
+                const currentStreak = (streakResult?.win_streak || 0) + 1;
+                userQueries.updateWinStreak.run(currentStreak, session.linux_do_id);
+
+                // 连续中奖成就
+                if (currentStreak >= 3) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'combo_3_wins');
+                }
+                if (currentStreak >= 5) {
+                    await checkAndUnlockAchievement(session.linux_do_id, 'combo_5_wins');
+                }
+
                 // 4. 中奖类型成就（双连、三连、四连等）
                 if (result.winType === WinType.DOUBLE) {
                     await checkAndUnlockAchievement(session.linux_do_id, 'double_win');
@@ -807,6 +830,9 @@ slot.post('/spin', requireAuth, async (c) => {
                 if (winAmount >= 2500000) { // 5000 * 500000 = 2500000
                     await checkAndUnlockAchievement(session.linux_do_id, 'single_win_5k');
                 }
+            } else {
+                // 未中奖，重置连击计数器
+                userQueries.updateWinStreak.run(0, session.linux_do_id);
             }
 
             // 6. 律师函相关成就
@@ -875,8 +901,8 @@ slot.post('/spin', requireAuth, async (c) => {
             }
 
             // 13. 收藏成就 - 符号收集者（收集所有9种符号）
-            // 使用 collection 条件类型自动检查
-            await checkAndUnlockAchievement(session.linux_do_id, 'symbol_collector');
+            // TODO: 需要实现符号收集追踪逻辑，暂时禁用
+            // await checkAndUnlockAchievement(session.linux_do_id, 'symbol_collector');
 
             // 14. 收藏成就 - 组合大师（获得5种不同中奖类型）
             // 检查用户是否获得了多种中奖类型
@@ -1488,7 +1514,7 @@ slot.post('/advanced/enter', requireAuth, async (c) => {
             return c.json({ success: false, message: '会话无效' }, 401);
         }
 
-        const result = enterAdvancedMode(session.linux_do_id);
+        const result = await enterAdvancedMode(session.linux_do_id);
         return c.json(result, result.success ? 200 : 400);
     } catch (error) {
         console.error('进入高级场失败:', error);

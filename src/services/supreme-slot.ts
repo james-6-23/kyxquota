@@ -305,7 +305,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
     const config = getSupremeSlotConfig();
 
     if (!tokens || tokens.tokens < 1) {
-        logger.debug('至尊场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 令牌不足: ${tokens?.tokens || 0}`);
+        logger.debug('至尊场', `进入失败 - 用户: ${linuxDoId}, 令牌不足: ${tokens?.tokens || 0}`);
         return {
             success: false,
             message: '至尊令牌不足，无法进入至尊场'
@@ -327,7 +327,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
     const entryCount = todayEntry?.entry_count || 0;
 
     if (entryCount >= config.daily_entry_limit) {
-        logger.debug('至尊场', `进入失败 - 用户: ${getUserDisplayName(linuxDoId)}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
+        logger.debug('至尊场', `进入失败 - 用户: ${linuxDoId}, 今日已进入 ${entryCount} 次，达到限制 ${config.daily_entry_limit}`);
         return {
             success: false,
             message: `今日进入次数已达上限（${config.daily_entry_limit}次）`

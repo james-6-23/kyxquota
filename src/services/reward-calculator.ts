@@ -87,8 +87,12 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
             if (Array.isArray(rule.required_symbols)) {
                 requiredSymbols = rule.required_symbols;
             } else if (typeof rule.required_symbols === 'string') {
-                // 如果是字符串，尝试解析
-                requiredSymbols = JSON.parse(rule.required_symbols);
+                // 过滤空字符串和无效字符串
+                const trimmed = rule.required_symbols.trim();
+                if (trimmed && trimmed !== '' && trimmed !== 'null' && trimmed !== 'undefined') {
+                    // 如果是字符串，尝试解析
+                    requiredSymbols = JSON.parse(trimmed);
+                }
             }
         } catch (error) {
             console.error('[规则匹配] JSON解析失败:', rule.required_symbols, error);

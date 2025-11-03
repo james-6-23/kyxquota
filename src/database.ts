@@ -81,6 +81,13 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
+    // 添加连击计数器字段（用于连续中奖成就）
+    try {
+        db.exec('ALTER TABLE users ADD COLUMN win_streak INTEGER DEFAULT 0');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 领取记录表
     db.exec(`
     CREATE TABLE IF NOT EXISTS claim_records (
@@ -1322,6 +1329,13 @@ function initQueries() {
         delete: db.query(
             'DELETE FROM users WHERE linux_do_id = ?'
         ),
+        // 连击计数器（用于连续中奖成就）
+        updateWinStreak: db.query(
+            'UPDATE users SET win_streak = ? WHERE linux_do_id = ?'
+        ),
+        getWinStreak: db.query<{ win_streak: number }, string>(
+            'SELECT win_streak FROM users WHERE linux_do_id = ?'
+        ),
     };
 
     // 领取记录相关
@@ -2497,7 +2511,6 @@ function initQueries() {
             WHERE achievement_key = ?
         `),
         delete: db.query('DELETE FROM achievements WHERE achievement_key = ?'),
-        updateReward: db.query('UPDATE achievements SET reward_quota = ? WHERE achievement_key = ?'),
 
         // 用户成就
         getUserAchievement: db.query<UserAchievement, [string, string]>(

@@ -79,7 +79,7 @@ export function getAdvancedSlotConfig(): AdvancedSlotConfig {
 /**
  * 添加入场券（最多持有N张，有效期24小时）
  */
-export function addTicket(linuxDoId: string, count: number = 1): { success: boolean; message?: string; granted?: number } {
+export async function addTicket(linuxDoId: string, count: number = 1): Promise<{ success: boolean; message?: string; granted?: number }> {
     const now = Date.now();
     const config = getAdvancedSlotConfig();
     const today = getTodayDate();
@@ -121,6 +121,17 @@ export function addTicket(linuxDoId: string, count: number = 1): { success: bool
 
     logger.info('入场券', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${actualCount} 张入场券（今日已获得 ${ticketsGrantedToday + actualCount}/${config.daily_ticket_grant_limit}）`);
 
+    // 🏆 入场券大户成就（同时持有5张入场券）
+    try {
+        const tickets = getUserTickets(linuxDoId);
+        if (tickets && tickets.tickets >= 5) {
+            const { checkAndUnlockAchievement } = await import('./achievement');
+            await checkAndUnlockAchievement(linuxDoId, 'ticket_5');
+        }
+    } catch (error: any) {
+        logger.warn('入场券', `成就检查失败: ${error.message}`);
+    }
+
     return {
         success: true,
         granted: actualCount,
@@ -131,7 +142,7 @@ export function addTicket(linuxDoId: string, count: number = 1): { success: bool
 /**
  * 添加碎片
  */
-export function addFragment(linuxDoId: string, count: number = 1): void {
+export async function addFragment(linuxDoId: string, count: number = 1): Promise<void> {
     const now = Date.now();
 
     advancedSlotQueries.addFragments.run(
@@ -140,12 +151,20 @@ export function addFragment(linuxDoId: string, count: number = 1): void {
     );
 
     logger.info('碎片', `用户 ${getUserDisplayName(linuxDoId)} 获得 ${count} 个碎片`);
+
+    // 🏆 碎片收集者成就（累计获得10个碎片）
+    try {
+        const { updateAchievementProgress } = await import('./achievement');
+        await updateAchievementProgress(linuxDoId, 'fragment_10', count);
+    } catch (error: any) {
+        logger.warn('碎片', `成就检查失败: ${error.message}`);
+    }
 }
 
 /**
  * 合成入场券（5碎片 → 1券）
  */
-export function synthesizeTicket(linuxDoId: string): { success: boolean; message: string; data?: any } {
+export async function synthesizeTicket(linuxDoId: string): Promise<{ success: boolean; message: string; data?: any }> {
     const tickets = getUserTickets(linuxDoId);
     const config = getAdvancedSlotConfig();
     const today = getTodayDate();
