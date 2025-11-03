@@ -2822,7 +2822,7 @@ app.post('/weights', requireAdmin, async (c) => {
     try {
         const { weightConfigQueries } = await import('../database');
         const body = await c.req.json();
-        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description } = body;
+        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description } = body;
 
         if (!config_name) {
             return c.json({ success: false, message: '配置名称不能为空' }, 400);
@@ -2842,8 +2842,9 @@ app.post('/weights', requireAdmin, async (c) => {
         console.log(`  • 真粉头 (zft): ${weight_zft}`);
         console.log(`  • 不打工 (bdk): ${weight_bdk}`);
         console.log(`  • 律师函 (lsh): ${weight_lsh}`);
+        console.log(`  • 男人 (man): ${weight_man}`);
 
-        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh;
+        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh + weight_man;
         console.log(`📈 总权重: ${totalWeight}`);
         if (description) {
             console.log(`📝 描述: ${description}`);
@@ -2851,7 +2852,7 @@ app.post('/weights', requireAdmin, async (c) => {
 
         const now = Date.now();
         weightConfigQueries.insert.run(
-            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, now
+            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, now, now
         );
 
         console.log(`⏰ 创建时间: ${new Date(now).toLocaleString('zh-CN')}`);
@@ -2873,7 +2874,7 @@ app.put('/weights/:id', requireAdmin, async (c) => {
         const { weightConfigQueries } = await import('../database');
         const id = parseInt(c.req.param('id'));
         const body = await c.req.json();
-        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description } = body;
+        const { config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description } = body;
 
         console.log('='.repeat(80));
         console.log('⚙️ [权重配置] 更新配置方案');
@@ -2889,8 +2890,9 @@ app.put('/weights/:id', requireAdmin, async (c) => {
         console.log(`  • 真粉头 (zft): ${weight_zft}`);
         console.log(`  • 不打工 (bdk): ${weight_bdk}`);
         console.log(`  • 律师函 (lsh): ${weight_lsh}`);
+        console.log(`  • 男人 (man): ${weight_man}`);
 
-        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh;
+        const totalWeight = weight_m + weight_t + weight_n + weight_j + weight_lq + weight_bj + weight_zft + weight_bdk + weight_lsh + weight_man;
         console.log(`📈 总权重: ${totalWeight}`);
         if (description) {
             console.log(`📝 描述: ${description}`);
@@ -2898,7 +2900,7 @@ app.put('/weights/:id', requireAdmin, async (c) => {
 
         const now = Date.now();
         weightConfigQueries.update.run(
-            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, now, id
+            config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, now, id
         );
 
         console.log(`⏰ 更新时间: ${new Date(now).toLocaleString('zh-CN')}`);

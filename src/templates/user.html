@@ -3569,8 +3569,8 @@
     }
 
     // ========== 老虎机相关功能 ==========
-    
-    const SLOT_SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
+
+    const SLOT_SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh', 'man'];
     let slotConfig = null;
     let slotUserData = null;
     let isSpinning = false;
@@ -6376,7 +6376,8 @@
                 { key: 'bj', name: '背景', weight: weightConfig.weight_bj },
                 { key: 'zft', name: '中分头', weight: weightConfig.weight_zft },
                 { key: 'bdk', name: '背带裤', weight: weightConfig.weight_bdk },
-                { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh }
+                { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh },
+                { key: 'man', name: '男人', weight: weightConfig.weight_man }
               ];
               
               const symbolNormalBg = mode === 'advanced' ? 'bg-amber-500/20 border-amber-400/50' : 'bg-blue-500/20 border-blue-400/50';
@@ -6617,7 +6618,8 @@
               { key: 'bj', name: '背景', weight: weightConfig.weight_bj },
               { key: 'zft', name: '真粉头', weight: weightConfig.weight_zft },
               { key: 'bdk', name: '不打工', weight: weightConfig.weight_bdk },
-              { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh }
+              { key: 'lsh', name: '律师函', weight: weightConfig.weight_lsh },
+              { key: 'man', name: '男人', weight: weightConfig.weight_man }
             ];
             
             symbols.forEach(s => {
@@ -7586,6 +7588,17 @@
           // 🔥 刷新排行榜（如果有变化）
           if (winAmount !== 0) {
             setTimeout(() => loadSidebarLeaderboard(), 1000);
+          }
+
+          // 🏆 显示成就解锁Toast（左上角）
+          if (data.data.unlocked_achievements && data.data.unlocked_achievements.length > 0) {
+            const achievementDelay = winAmount > 0 ? 2000 : 1000;
+
+            data.data.unlocked_achievements.forEach((achievement, index) => {
+              setTimeout(() => {
+                showAchievementToast(achievement);
+              }, achievementDelay + (index * 1000));
+            });
           }
         } else {
           showToast(data.message, 'error');

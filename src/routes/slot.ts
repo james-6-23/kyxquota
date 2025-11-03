@@ -790,11 +790,26 @@ slot.post('/spin', requireAuth, async (c) => {
                 unlockedAchievements.push(result1.achievement);
             }
 
-            // 2. 游玩次数成就（每次游戏增加进度）
-            await updateAchievementProgress(session.linux_do_id, 'play_10_games', 1);
-            await updateAchievementProgress(session.linux_do_id, 'play_50_games', 1);
-            await updateAchievementProgress(session.linux_do_id, 'play_200_games', 1);
-            await updateAchievementProgress(session.linux_do_id, 'play_1000_games', 1);
+            // 🔥 2. 游玩次数成就（每次游戏增加进度，收集解锁信息）
+            const playProgress1 = await updateAchievementProgress(session.linux_do_id, 'play_10_games', 1);
+            if (playProgress1.unlocked && playProgress1.achievement) {
+                unlockedAchievements.push(playProgress1.achievement);
+            }
+
+            const playProgress2 = await updateAchievementProgress(session.linux_do_id, 'play_50_games', 1);
+            if (playProgress2.unlocked && playProgress2.achievement) {
+                unlockedAchievements.push(playProgress2.achievement);
+            }
+
+            const playProgress3 = await updateAchievementProgress(session.linux_do_id, 'play_200_games', 1);
+            if (playProgress3.unlocked && playProgress3.achievement) {
+                unlockedAchievements.push(playProgress3.achievement);
+            }
+
+            const playProgress4 = await updateAchievementProgress(session.linux_do_id, 'play_1000_games', 1);
+            if (playProgress4.unlocked && playProgress4.achievement) {
+                unlockedAchievements.push(playProgress4.achievement);
+            }
 
             // 3. 中奖相关成就
             if (result.winType !== 'none' && result.winType !== WinType.PUNISHMENT && result.multiplier > 0) {
@@ -804,10 +819,21 @@ slot.post('/spin', requireAuth, async (c) => {
                     unlockedAchievements.push(result2.achievement);
                 }
 
-                // 中奖次数成就
-                await updateAchievementProgress(session.linux_do_id, 'win_10_times', 1);
-                await updateAchievementProgress(session.linux_do_id, 'win_50_times', 1);
-                await updateAchievementProgress(session.linux_do_id, 'win_100_times', 1);
+                // 🔥 中奖次数成就（收集解锁信息）
+                const winProgress1 = await updateAchievementProgress(session.linux_do_id, 'win_10_times', 1);
+                if (winProgress1.unlocked && winProgress1.achievement) {
+                    unlockedAchievements.push(winProgress1.achievement);
+                }
+
+                const winProgress2 = await updateAchievementProgress(session.linux_do_id, 'win_50_times', 1);
+                if (winProgress2.unlocked && winProgress2.achievement) {
+                    unlockedAchievements.push(winProgress2.achievement);
+                }
+
+                const winProgress3 = await updateAchievementProgress(session.linux_do_id, 'win_100_times', 1);
+                if (winProgress3.unlocked && winProgress3.achievement) {
+                    unlockedAchievements.push(winProgress3.achievement);
+                }
 
                 // 🔥 连击计数器（连续中奖）
                 const streakResult = userQueries.getWinStreak.get(session.linux_do_id);
@@ -865,14 +891,39 @@ slot.post('/spin', requireAuth, async (c) => {
                 }
             }
 
+            // 🔥 6.5. Man符号相关成就
+            const manCount = symbols.filter((s: string) => s === 'man').length;
+            if (manCount > 0) {
+                // 累计抽到25个Man符号
+                const manProgress = await updateAchievementProgress(session.linux_do_id, 'man_25_times', manCount);
+                if (manProgress.unlocked && manProgress.achievement) {
+                    unlockedAchievements.push(manProgress.achievement);
+                }
+            }
+
+            // 🔥 6.6. 偶像练习生成就（按顺序抽到 BJ→ZFT→BDK→LQ）
+            if (symbols.length === 4 &&
+                symbols[0] === 'bj' &&
+                symbols[1] === 'zft' &&
+                symbols[2] === 'bdk' &&
+                symbols[3] === 'lq') {
+                const idolResult = await checkAndUnlockAchievement(session.linux_do_id, 'idol_trainee');
+                if (idolResult.unlocked && idolResult.achievement) {
+                    unlockedAchievements.push(idolResult.achievement);
+                }
+            }
+
             // 7. 禁赛成就（被禁止抽奖）
             if (result.shouldBan || shouldBan) {
                 await checkAndUnlockAchievement(session.linux_do_id, 'first_ban');
             }
 
-            // 8. 免费游戏成就
+            // 🔥 8. 免费游戏成就（收集解锁信息）
             if (result.freeSpinAwarded) {
-                await updateAchievementProgress(session.linux_do_id, 'free_game_10', 1);
+                const freeGameProgress = await updateAchievementProgress(session.linux_do_id, 'free_game_10', 1);
+                if (freeGameProgress.unlocked && freeGameProgress.achievement) {
+                    unlockedAchievements.push(freeGameProgress.achievement);
+                }
             }
 
             // 9. 高级场梭哈大师成就（高级场单次下注5k+）

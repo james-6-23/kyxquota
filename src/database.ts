@@ -1307,6 +1307,10 @@ function insertDefaultData() {
             { key: 'credit_100', name: '信用卡神', desc: '信用分达到100', category: 'kunbei', icon: '⭐', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'credit_score', threshold: 100 }), reward: 1000 * 500000, rarity: 'epic', order: 82 },
             { key: 'early_repay_3', name: '提前还款', desc: '提前还款3次', category: 'kunbei', icon: '⚡', condition_type: 'count', condition_value: JSON.stringify({ target: 3 }), reward: 500 * 500000, rarity: 'rare', order: 83 },
 
+            // 🔥 特殊符号成就
+            { key: 'man_25_times', name: '一个真正的Man', desc: '累计抽到25个Man符号', category: 'special', icon: '💪', condition_type: 'count', condition_value: JSON.stringify({ target: 25 }), reward: 500 * 500000, rarity: 'rare', order: 85 },
+            { key: 'idol_trainee', name: '偶像练习生', desc: '按顺序抽到 BJ→ZFT→BDK→LQ', category: 'special', icon: '🎤', condition_type: 'once', condition_value: '{}', reward: 1000 * 500000, rarity: 'epic', order: 86 },
+
             // 惩罚成就（黑色幽默）
             { key: 'first_lsh', name: '收到律师函', desc: '首次抽到律师函', category: 'punishment', icon: '📧', condition_type: 'once', condition_value: '{}', reward: 50 * 500000, rarity: 'common', order: 90 },
             { key: 'lsh_10_times', name: '律师函收割机', desc: '累计抽到10个律师函', category: 'punishment', icon: '⚖️', condition_type: 'count', condition_value: JSON.stringify({ target: 10 }), reward: 200 * 500000, rarity: 'rare', order: 91 },
@@ -1938,12 +1942,12 @@ function initQueries() {
                 (SELECT COUNT(*) FROM supreme_slot_config WHERE weight_config_id = ?) as usage_count
         `),
         insert: db.query(
-            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
         ),
         update: db.query(
-            `UPDATE symbol_weight_configs SET 
-             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, description = ?, updated_at = ?
+            `UPDATE symbol_weight_configs SET
+             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, weight_man = ?, description = ?, updated_at = ?
              WHERE id = ?`
         ),
         softDelete: db.query(
@@ -2386,12 +2390,12 @@ function initQueries() {
                 (SELECT COUNT(*) FROM supreme_slot_config WHERE weight_config_id = ?) as usage_count
         `),
         insert: db.query(
-            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
+            `INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, is_deleted, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`
         ),
         update: db.query(
-            `UPDATE symbol_weight_configs SET 
-             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, description = ?, updated_at = ?
+            `UPDATE symbol_weight_configs SET
+             config_name = ?, weight_m = ?, weight_t = ?, weight_n = ?, weight_j = ?, weight_lq = ?, weight_bj = ?, weight_zft = ?, weight_bdk = ?, weight_lsh = ?, weight_man = ?, description = ?, updated_at = ?
              WHERE id = ?`
         ),
         softDelete: db.query(

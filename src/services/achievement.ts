@@ -292,7 +292,7 @@ export async function updateAchievementProgress(
     linuxDoId: string,
     achievementKey: string,
     increment: number = 1
-): Promise<void> {
+): Promise<{ unlocked: boolean; achievement?: Achievement }> {
     try {
         logger.debug('成就进度', `更新进度 [${achievementKey}] +${increment} - 用户: ${getUserDisplayName(linuxDoId)}`);
 
@@ -300,14 +300,14 @@ export async function updateAchievementProgress(
         const userAchievement = achievementQueries.getUserAchievement.get(linuxDoId, achievementKey);
         if (userAchievement) {
             logger.debug('成就进度', `成就 [${achievementKey}] 已解锁，跳过进度更新`);
-            return; // 已解锁，不需要更新进度
+            return { unlocked: false }; // 已解锁，不需要更新进度
         }
 
         // 获取成就定义
         const achievement = achievementQueries.getByKey.get(achievementKey);
         if (!achievement) {
             logger.warn('成就进度', `成就 [${achievementKey}] 不存在，无法更新进度`);
-            return;
+            return { unlocked: false };
         }
 
         // 获取条件
@@ -335,10 +335,14 @@ export async function updateAchievementProgress(
         // 检查是否达成
         if (currentValue >= targetValue) {
             logger.info('成就进度', `🎯 成就 [${achievement.achievement_name}] 进度已达成，触发解锁检查 - 用户: ${getUserDisplayName(linuxDoId)}`);
-            await checkAndUnlockAchievement(linuxDoId, achievementKey);
+            const result = await checkAndUnlockAchievement(linuxDoId, achievementKey);
+            return result; // 🔥 返回解锁结果
         }
+
+        return { unlocked: false };
     } catch (error: any) {
         logger.error('成就系统', `❌ 更新进度失败 [${achievementKey}] - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`, error.stack);
+        return { unlocked: false };
     }
 }
 
