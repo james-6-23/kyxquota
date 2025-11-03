@@ -185,7 +185,7 @@ export function createGradientConfig(config: {
         );
         return { success: true, message: '梯度配置创建成功' };
     } catch (error) {
-        console.error('[坤呗] 创建梯度配置失败:', error);
+        logger.error('坤呗', '创建梯度配置失败', error);
         return { success: false, message: '创建失败：' + error.message };
     }
 }
@@ -213,7 +213,7 @@ export function updateGradientConfig(
         );
         return { success: true, message: '梯度配置更新成功' };
     } catch (error) {
-        console.error('[坤呗] 更新梯度配置失败:', error);
+        logger.error('坤呗', '更新梯度配置失败', error);
         return { success: false, message: '更新失败：' + error.message };
     }
 }
@@ -226,7 +226,7 @@ export function deleteGradientConfig(id: number): { success: boolean; message: s
         kunbeiQueries.deleteGradientConfig.run(id);
         return { success: true, message: '梯度配置删除成功' };
     } catch (error) {
-        console.error('[坤呗] 删除梯度配置失败:', error);
+        logger.error('坤呗', '删除梯度配置失败', error);
         return { success: false, message: '删除失败：' + error.message };
     }
 }
@@ -341,14 +341,14 @@ export async function borrowLoan(
         now
     );
 
-    console.log(`[坤呗] 用户 ${username} 借款记录已创建 - 金额: $${(amount / 500000).toFixed(2)}${isFirstToday ? '（今日首借，已获得抽奖buff×2.5）' : ''}`);
-    
+    logger.info('坤呗', `用户 ${username} 借款记录已创建 - 金额: $${(amount / 500000).toFixed(2)}${isFirstToday ? '（今日首借，已获得抽奖buff×2.5）' : ''}`);
+
     // 7. 💰 增加用户额度（借款到账）
     // 注意：这里不能使用 async/await，因为函数签名是同步的
     // 额度增加在前端调用API成功后由前端代码处理（updateSlotUI）
     // 这里只记录借款关系，实际额度增加由调用方负责
-    console.log(`[坤呗] 💡 提示：借款金额需要由调用方增加到用户额度`);
-    console.log(`[坤呗] 📊 逾期警告：到期时将从用户额度中扣除 $${(deductAmount / 500000).toFixed(2)}（应还 $${(repayAmount / 500000).toFixed(2)} × ${deductMultiplier}倍）`);
+    logger.info('坤呗', `💡 提示：借款金额需要由调用方增加到用户额度`);
+    logger.info('坤呗', `📊 逾期警告：到期时将从用户额度中扣除 $${(deductAmount / 500000).toFixed(2)}（应还 $${(repayAmount / 500000).toFixed(2)} × ${deductMultiplier}倍）`);
 
     return {
         success: true,
@@ -445,7 +445,7 @@ export function repayLoan(
         now
     );
 
-    console.log(`[坤呗] 用户 ${loan.username} 还款 $${(actualRepayAmount / 500000).toFixed(2)}${cashback > 0 ? `（返现 $${(cashback / 500000).toFixed(2)}）` : ''}`);
+    logger.info('坤呗', `用户 ${loan.username} 还款 $${(actualRepayAmount / 500000).toFixed(2)}${cashback > 0 ? `（返现 $${(cashback / 500000).toFixed(2)}）` : ''}`);
 
     return {
         success: true,
@@ -487,40 +487,40 @@ export async function checkOverdueLoans(): Promise<number> {
             // 🔥 获取用户信息和管理员配置
             const user = userQueries.get.get(loan.linux_do_id);
             if (!user) {
-                console.error(`[坤呗] 用户不存在: ${loan.linux_do_id}`);
+                logger.error('坤呗', `用户不存在: ${loan.linux_do_id}`);
                 continue;
             }
-            
+
             const adminConfig = adminQueries.get.get();
             if (!adminConfig) {
-                console.error(`[坤呗] 管理员配置未找到`);
+                logger.error('坤呗', `管理员配置未找到`);
                 continue;
             }
-            
+
             // 🔥 获取用户当前额度（实时查询，与初级场/高级场/至尊场保持一致）
-            console.log(`[坤呗逾期] 开始获取用户额度 - 用户: ${loan.username} (ID: ${user.kyx_user_id})`);
+            logger.info('坤呗逾期', `开始获取用户额度 - 用户: ${loan.username} (ID: ${user.kyx_user_id})`);
             const { getKyxUserById } = await import('./kyx-api');
             const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-            
+
             let userQuota = 0;
             if (kyxUserResult.success && kyxUserResult.user) {
                 userQuota = kyxUserResult.user.quota;
-                console.log(`[坤呗逾期] ✅ 获取用户额度成功 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}`);
+                logger.info('坤呗逾期', `✅ 获取用户额度成功 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}`);
             } else {
-                console.error(`[坤呗逾期] ❌ 获取用户额度失败 - 用户: ${loan.username}, kyx_user_id: ${user.kyx_user_id}`);
-                console.error(`[坤呗逾期] 错误详情:`, kyxUserResult);
+                logger.error('坤呗逾期', `❌ 获取用户额度失败 - 用户: ${loan.username}, kyx_user_id: ${user.kyx_user_id}`);
+                logger.error('坤呗逾期', `错误详情`, kyxUserResult);
             }
-            
+
             // 实际扣款金额：不超过用户额度，不扣为负数
             let actualDeductAmount = Math.min(deductAmount, Math.max(0, userQuota));
             let autoDeductedAmount = 0;
-            
-            console.log(`[坤呗逾期] 📊 扣款计算 - 用户: ${loan.username}`);
-            console.log(`[坤呗逾期]   - 应还金额: $${(loan.repay_amount / 500000).toFixed(2)}`);
-            console.log(`[坤呗逾期]   - 扣除倍数: ${deductMultiplier}x`);
-            console.log(`[坤呗逾期]   - 应扣金额: $${(deductAmount / 500000).toFixed(2)}`);
-            console.log(`[坤呗逾期]   - 用户额度: $${(userQuota / 500000).toFixed(2)}`);
-            console.log(`[坤呗逾期]   - 实际扣款: $${(actualDeductAmount / 500000).toFixed(2)}`);
+
+            logger.info('坤呗逾期', `📊 扣款计算 - 用户: ${loan.username}`);
+            logger.info('坤呗逾期', `  - 应还金额: $${(loan.repay_amount / 500000).toFixed(2)}`);
+            logger.info('坤呗逾期', `  - 扣除倍数: ${deductMultiplier}x`);
+            logger.info('坤呗逾期', `  - 应扣金额: $${(deductAmount / 500000).toFixed(2)}`);
+            logger.info('坤呗逾期', `  - 用户额度: $${(userQuota / 500000).toFixed(2)}`);
+            logger.info('坤呗逾期', `  - 实际扣款: $${(actualDeductAmount / 500000).toFixed(2)}`);
             
             // 如果有额度可扣，执行扣款
             if (actualDeductAmount > 0) {
@@ -529,7 +529,7 @@ export async function checkOverdueLoans(): Promise<number> {
                 
                 // 🔥 确保余额不会为负数（双重保险）
                 if (newQuotaAfterDeduct < 0) {
-                    console.error(`[坤呗] 计算错误：扣款后余额为负 - 用户: ${loan.username}, 当前: ${userQuota}, 扣除: ${actualDeductAmount}`);
+                    logger.error('坤呗', `计算错误：扣款后余额为负 - 用户: ${loan.username}, 当前: ${userQuota}, 扣除: ${actualDeductAmount}`);
                     actualDeductAmount = userQuota; // 只扣除可用余额
                 }
                 
@@ -546,12 +546,12 @@ export async function checkOverdueLoans(): Promise<number> {
                 
                 if (deductResult && deductResult.success) {
                     autoDeductedAmount = actualDeductAmount;
-                    console.log(`[坤呗] 逾期扣款成功 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 当前额度: $${(userQuota / 500000).toFixed(2)}, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}, 剩余: $${(Math.max(0, newQuotaAfterDeduct) / 500000).toFixed(2)}`);
+                    logger.info('坤呗', `逾期扣款成功 - 用户: ${loan.username}, 应还: $${(loan.repay_amount / 500000).toFixed(2)}, 扣款倍数: ${deductMultiplier}x, 当前额度: $${(userQuota / 500000).toFixed(2)}, 自动扣除: $${(actualDeductAmount / 500000).toFixed(2)}, 剩余: $${(Math.max(0, newQuotaAfterDeduct) / 500000).toFixed(2)}`);
                 } else {
-                    console.error(`[坤呗] 逾期扣除额度失败 - 用户: ${loan.username}, 错误: ${deductResult?.message || '未知错误'}`);
+                    logger.error('坤呗', `逾期扣除额度失败 - 用户: ${loan.username}, 错误: ${deductResult?.message || '未知错误'}`);
                 }
             } else {
-                console.log(`[坤呗] 逾期但用户额度不足 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}, 应扣: $${(deductAmount / 500000).toFixed(2)}`);
+                logger.info('坤呗', `逾期但用户额度不足 - 用户: ${loan.username}, 当前额度: $${(userQuota / 500000).toFixed(2)}, 应扣: $${(deductAmount / 500000).toFixed(2)}`);
             }
 
             // 🔥 计算扣款后余额（不为负数）
@@ -666,15 +666,15 @@ export function clearOverduePenalty(loanId: number): { success: boolean; message
         
         const now = Date.now();
         kunbeiQueries.clearOverduePenalty.run(now, loanId);
-        
-        console.log(`[坤呗] 管理员解除逾期惩罚 - 用户: ${loan.username}, 借款ID: ${loanId}`);
-        
-        return { 
-            success: true, 
-            message: `已解除用户 ${loan.username} 的逾期惩罚（高级场禁入已解除）` 
+
+        logger.info('坤呗', `管理员解除逾期惩罚 - 用户: ${loan.username}, 借款ID: ${loanId}`);
+
+        return {
+            success: true,
+            message: `已解除用户 ${loan.username} 的逾期惩罚（高级场禁入已解除）`
         };
     } catch (error: any) {
-        console.error('[坤呗] 解除逾期惩罚失败:', error);
+        logger.error('坤呗', '解除逾期惩罚失败', error);
         return { success: false, message: '解除失败: ' + error.message };
     }
 }
@@ -735,7 +735,7 @@ export function forgiveLoan(loanId: number): { success: boolean; message: string
         now
     );
 
-    console.log(`[坤呗] 管理员豁免借款 - 用户: ${loan.username}, 借款ID: ${loanId}`);
+    logger.info('坤呗', `管理员豁免借款 - 用户: ${loan.username}, 借款ID: ${loanId}`);
 
     return { success: true, message: '已豁免该笔借款' };
 }
@@ -751,7 +751,7 @@ export function getAndUseBuff(linuxDoId: string): number {
         const now = Date.now();
         kunbeiQueries.useBuff.run(now, linuxDoId);
 
-        console.log(`[坤呗Buff] 用户 ${linuxDoId} 使用坤呗buff×${stats.buff_multiplier}`);
+        logger.info('坤呗Buff', `用户 ${linuxDoId} 使用坤呗buff×${stats.buff_multiplier}`);
         return stats.buff_multiplier;
     }
 

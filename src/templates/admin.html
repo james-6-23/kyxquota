@@ -2579,12 +2579,18 @@
         <div id="achievementManagementSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">🏆 成就管理</h2>
-            <button onclick="refreshAchievements()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg id="achievementRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              刷新
-            </button>
+            <div class="flex gap-3">
+              <button onclick="updateAchievementRewards()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:shadow-lg transition-all font-semibold flex items-center gap-2">
+                <span>💰</span>
+                <span>更新奖励额度</span>
+              </button>
+              <button onclick="refreshAchievements()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                <svg id="achievementRefreshIcon" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                刷新
+              </button>
+            </div>
           </div>
 
           <!-- 统计概览 -->
@@ -8814,6 +8820,32 @@
     }
     
     // ========== 奖励配置管理功能 ==========
+    
+    // 🔧 更新所有成就的奖励额度
+    async function updateAchievementRewards() {
+      if (!confirm('确定要更新所有成就的奖励额度吗？\n\n奖励梯度：\nCommon(普通)=$100\nRare(稀有)=$200\nEpic(史诗)=$500\nLegendary(传奇)=$1000\nMythic(神话)=$2000')) {
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/admin/update-achievement-rewards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          showToast(`✅ 成功更新 ${data.updated_count} 个成就的奖励额度`, 'success');
+          console.log('奖励梯度:', data.reward_map);
+        } else {
+          showToast(data.message || '更新失败', 'error');
+        }
+      } catch (error) {
+        console.error('更新成就奖励失败:', error);
+        showToast('更新失败', 'error');
+      }
+    }
     
     // 🔧 修复Man规则的required_symbols字段
     async function fixManRules() {

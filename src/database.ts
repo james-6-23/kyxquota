@@ -1344,22 +1344,24 @@ function insertDefaultData() {
             { key: 'kunbei_overdue', name: '逾期达人', desc: '坤呗逾期1次', category: 'punishment', icon: '⏰', condition_type: 'once', condition_value: '{}', reward: 0, rarity: 'common', order: 95 }
         ];
 
-        // 插入成就数据
+        // 插入或更新成就数据（使用INSERT OR REPLACE确保奖励额度会更新）
         for (const ach of defaultAchievements) {
             try {
                 db.exec(`
-                    INSERT OR IGNORE INTO achievements (
+                    INSERT OR REPLACE INTO achievements (
                         achievement_key, achievement_name, achievement_desc, category, icon,
                         condition_type, condition_value, reward_quota, rarity, display_order,
                         is_hidden, is_active, created_at, updated_at
                     ) VALUES (
                         '${ach.key}', '${ach.name}', '${ach.desc}', '${ach.category}', '${ach.icon}',
                         '${ach.condition_type}', '${ach.condition_value}', ${ach.reward}, '${ach.rarity}', ${ach.order},
-                        0, 1, ${now}, ${now}
+                        0, 1, 
+                        COALESCE((SELECT created_at FROM achievements WHERE achievement_key = '${ach.key}'), ${now}),
+                        ${now}
                     )
                 `);
             } catch (error: any) {
-                console.error(`插入成就 ${ach.key} 失败:`, error.message);
+                console.error(`插入/更新成就 ${ach.key} 失败:`, error.message);
             }
         }
 

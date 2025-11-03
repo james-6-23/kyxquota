@@ -3472,6 +3472,62 @@ app.delete('/drop-configs/:id', requireAdmin, async (c) => {
 // ========== 概率计算 API ==========
 
 /**
+ * 🔧 更新所有成就的奖励额度
+ */
+app.post('/update-achievement-rewards', requireAdmin, async (c) => {
+    try {
+        console.log('🔧 [成就更新] 开始更新成就奖励额度...');
+        
+        // 成就奖励梯度：common=$100, rare=$200, epic=$500, legendary=$1000, mythic=$2000
+        const rewardMap = {
+            'common': 100 * 500000,
+            'rare': 200 * 500000,
+            'epic': 500 * 500000,
+            'legendary': 1000 * 500000,
+            'mythic': 2000 * 500000
+        };
+        
+        let updatedCount = 0;
+        const now = Date.now();
+        
+        for (const [rarity, reward] of Object.entries(rewardMap)) {
+            db.exec(`
+                UPDATE achievements 
+                SET reward_quota = ${reward}, updated_at = ${now}
+                WHERE rarity = '${rarity}' AND achievement_key != 'kunbei_overdue'
+            `);
+            
+            const result = db.query<{ changes: number }, never>('SELECT changes() as changes').get();
+            if (result && result.changes > 0) {
+                console.log(`  ✅ 更新了 ${result.changes} 个 ${rarity} 级别成就 → $${reward / 500000}`);
+                updatedCount += result.changes;
+            }
+        }
+        
+        // 特殊处理：逾期达人奖励为0
+        db.exec(`UPDATE achievements SET reward_quota = 0, updated_at = ${now} WHERE achievement_key = 'kunbei_overdue'`);
+        
+        console.log(`✅ [成就更新] 完成，共更新 ${updatedCount} 个成就的奖励额度`);
+        
+        return c.json({ 
+            success: true, 
+            message: `成功更新 ${updatedCount} 个成就的奖励额度`,
+            updated_count: updatedCount,
+            reward_map: {
+                'common': '$100',
+                'rare': '$200',
+                'epic': '$500',
+                'legendary': '$1000',
+                'mythic': '$2000'
+            }
+        });
+    } catch (error: any) {
+        console.error('❌ [成就更新] 失败:', error);
+        return c.json({ success: false, message: '更新失败: ' + error.message }, 500);
+    }
+});
+
+/**
  * 🔧 手动修复Man规则的required_symbols字段
  */
 app.post('/fix-man-rules', requireAdmin, async (c) => {
