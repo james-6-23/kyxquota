@@ -553,27 +553,7 @@ supreme.get('/rules', requireAuth, async (c) => {
             };
         });
 
-        // 🔥 添加概率计算器中动态生成的规则（如man组合）
-        if (probabilityData && probabilityData.rules) {
-            probabilityData.rules.forEach(probRule => {
-                // 如果这个规则不在数据库中（即动态生成的规则）
-                const existsInDb = rules.some(r => r.rule_name === probRule.ruleName);
-                if (!existsInDb && probRule.probability > 0) {
-                    // 添加动态规则到结果中
-                    rulesWithProb.push({
-                        rule_name: probRule.ruleName,
-                        win_multiplier: probRule.multiplier,
-                        probability: probRule.probability.toFixed(2) + '%',
-                        description: null,  // 动态规则没有描述
-                        grant_free_spin: 0,
-                        is_active: 1,
-                        priority: 0,
-                        rule_type: 'dynamic',
-                        rule_category: 'combo'
-                    } as any);
-                }
-            });
-        }
+        // 🔥 不再添加动态生成的组合规则，只显示配置的规则的真实概率
 
         const punishmentsWithProb = punishments.filter(p => p.is_active).map(p => {
             const probData = probabilityData?.punishments.find(pr => pr.ruleName === `律师函×${p.lsh_count}`);

@@ -358,10 +358,10 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
             // 🏆 触发成就检查
             try {
                 const { checkAndUnlockAchievement, updateAchievementProgress } = await import('./achievement');
-                
+
                 // 首次进入至尊场成就
                 await checkAndUnlockAchievement(linuxDoId, 'first_supreme');
-                
+
                 // 至尊场霸主成就（进入10次）
                 await updateAchievementProgress(linuxDoId, 'supreme_10_times', 1);
             } catch (error: any) {
@@ -409,8 +409,7 @@ export function recordSupremeDrop(
     triggerWinType?: string
 ): void {
     const now = Date.now();
-    const { getTodayDate } = require('./slot');
-    const today = getTodayDate();
+    const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
 
     supremeSlotQueries.insertDropRecord.run(
         linuxDoId,
@@ -487,188 +486,19 @@ export function generateSupremeSymbols(): string[] {
     const symbols: string[] = [];
     for (let i = 0; i < 4; i++) {
         const randomIndex = Math.floor(Math.random() * symbolPool.length);
-        symbols.push(symbolPool[randomIndex]);
+        const symbol = symbolPool[randomIndex];
+        if (symbol) {
+            symbols.push(symbol);
+        }
     }
 
     return symbols;
 }
 
-/**
- * 判断中奖（根据奖励规则配置）
- */
-export function calculateSupremeWin(symbols: string[]): {
-    winType: string;
-    multiplier: number;
-    ruleName: string;
-    grantFreeSpin: boolean;
-    punishmentCount?: number;
-    banHours?: number;
-} {
-    // 先检查律师函惩罚
-    const lshCount = symbols.filter(s => s === 'lsh').length;
-
-    if (lshCount > 0) {
-        const { punishments } = getSupremeRewardRules();
-        const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
-
-        if (punishment) {
-            return {
-                winType: 'punishment',
-                multiplier: -punishment.deduct_multiplier,
-                ruleName: `律师函惩罚×${lshCount}`,
-                grantFreeSpin: false,
-                punishmentCount: lshCount,
-                banHours: punishment.ban_hours
-            };
-        }
-    }
-
-    // 获取奖励规则并按优先级排序
-    const { rules } = getSupremeRewardRules();
-    const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
-
-    logger.debug('至尊场判定', `符号结果: [${symbols.join(', ')}]`);
-    logger.debug('至尊场判定', `激活的规则数量: ${activeRules.length}`);
-
-    // 按优先级检查规则
-    for (const rule of activeRules) {
-        logger.debug('至尊场判定', `检查规则: ${rule.rule_name} (类型: ${rule.match_pattern}, 数量: ${rule.match_count})`);
-        const matched = checkRuleMatch(symbols, rule);
-
-        if (matched) {
-            logger.info('至尊场判定', `✅ 匹配规则: ${rule.rule_name}, 倍率: ${rule.win_multiplier}x`);
-            return {
-                winType: rule.rule_type,
-                multiplier: rule.win_multiplier,
-                ruleName: rule.rule_name,
-                grantFreeSpin: !!rule.grant_free_spin
-            };
-        }
-    }
-
-    logger.debug('至尊场判定', '❌ 未匹配任何规则');
-    return {
-        winType: 'none',
-        multiplier: 0,
-        ruleName: '未中奖',
-        grantFreeSpin: false
-    };
-}
-
-/**
- * 检查规则是否匹配
- */
-function checkRuleMatch(symbols: string[], rule: any): boolean {
-    const pattern = rule.match_pattern;
-    const count = rule.match_count;
-
-    // 🔥 处理带数字前缀的模式（如 4-consecutive, 3-any）
-    let normalizedPattern = pattern;
-    if (pattern.includes('-')) {
-        const parts = pattern.split('-');
-        normalizedPattern = parts[1]; // 取 "consecutive" 或 "any"
-    }
-
-    if (normalizedPattern === 'consecutive') {
-        // 严格连续匹配
-        return hasConsecutiveMatch(symbols, count);
-    } else if (normalizedPattern === 'any') {
-        // 任意位置匹配
-        return hasAnyMatch(symbols, count);
-    } else if (pattern === 'sequence') {
-        // 按顺序匹配特定符号
-        const requiredSymbols = JSON.parse(rule.required_symbols || '[]');
-        return arraysEqual(symbols, requiredSymbols);
-    } else if (pattern === 'combination') {
-        // 组合匹配（包含所有符号但不按顺序）
-        const requiredSymbols = JSON.parse(rule.required_symbols || '[]');
-        return containsAll(symbols, requiredSymbols);
-    } else if (pattern === 'double_pair') {
-        // 两对2连（MMNN格式，排除4连）
-        return hasDoublePair(symbols);
-    } else if (pattern === 'symmetric') {
-        // 对称（前两个和后两个相同：AABB）
-        return hasSymmetric(symbols);
-    }
-
-    return false;
-}
-
-/**
- * 检查是否有连续匹配
- */
-function hasConsecutiveMatch(symbols: string[], count: number): boolean {
-    // 🔥 调试日志已移除（性能优化）
-
-    for (let i = 0; i <= symbols.length - count; i++) {
-        const slice = symbols.slice(i, i + count);
-        const isMatch = slice.every(s => s === slice[0]);
-        // 🔥 调试日志已移除（性能优化）
-
-        if (isMatch) {
-            // logger.debug('至尊场判定', `✅ 找到${count}连: ${slice[0]}`);
-            return true;
-        }
-    }
-
-    // logger.debug('至尊场判定', `❌ 未找到${count}连`);
-    return false;
-}
-
-/**
- * 检查任意位置是否有足够数量的相同符号
- */
-function hasAnyMatch(symbols: string[], count: number): boolean {
-    const symbolCounts: { [key: string]: number } = {};
-
-    for (const symbol of symbols) {
-        symbolCounts[symbol] = (symbolCounts[symbol] || 0) + 1;
-    }
-
-    return Object.values(symbolCounts).some(c => c >= count);
-}
-
-/**
- * 检查数组是否完全相等
- */
-function arraysEqual(arr1: string[], arr2: string[]): boolean {
-    if (arr1.length !== arr2.length) return false;
-    return arr1.every((val, index) => val === arr2[index]);
-}
-
-/**
- * 检查是否包含所有目标符号
- */
-function containsAll(arr: string[], target: string[]): boolean {
-    return target.every(t => arr.includes(t));
-}
-
-/**
- * 检查是否有两对2连（MMNN格式，排除4连）
- */
-function hasDoublePair(symbols: string[]): boolean {
-    const pairCounts: Record<string, number> = {};
-    symbols.forEach(s => pairCounts[s] = (pairCounts[s] || 0) + 1);
-
-    // 必须恰好有2个不同符号，每个出现2次
-    const pairs = Object.values(pairCounts).filter(count => count === 2);
-    const matched = pairs.length === 2 && Object.keys(pairCounts).length === 2;
-
-    // logger.debug('至尊场判定', `两对2连检查: 符号计数=${JSON.stringify(pairCounts)}, 2次对数=${pairs.length}, 匹配=${matched}`);
-    return matched;
-}
-
-/**
- * 检查是否对称（前两个和后两个相同：AABB）
- */
-function hasSymmetric(symbols: string[]): boolean {
-    if (symbols.length === 4) {
-        const matched = symbols[0] === symbols[1] && symbols[2] === symbols[3];
-        // logger.debug('至尊场判定', `对称检查: [${symbols[0]},${symbols[1]}] == [${symbols[2]},${symbols[3]}], 匹配=${matched}`);
-        return matched;
-    }
-    return false;
-}
+// 🔥 至尊场已统一使用 reward-calculator.ts 中的 calculateWinByScheme 函数
+// 这样确保所有场次（初级场、高级场、至尊场）使用相同的规则匹配逻辑
+// 包括完整的 man 符号处理、对称规则ABBA、律师函惩罚等
+// 原有的 calculateSupremeWin 和辅助函数已移除，避免代码重复和混淆
 
 /**
  * 记录至尊场游戏
@@ -685,8 +515,7 @@ export function recordSupremeGame(
     ruleName: string | null = null  // 🔥 新增：规则名称
 ): void {
     const now = Date.now();
-    const { getTodayDate } = require('./slot');
-    const today = getTodayDate();
+    const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
 
     supremeSlotQueries.insertRecord.run(
         linuxDoId,
