@@ -24,7 +24,8 @@ export function getNormalSlotWeights(): any {
             weight_bj: 100,
             weight_zft: 100,
             weight_bdk: 100,
-            weight_lsh: 25
+            weight_lsh: 25,
+            weight_man: 25
         };
     }
 
@@ -65,7 +66,8 @@ export function getAdvancedSlotWeights(): any {
             weight_bj: 100,
             weight_zft: 100,
             weight_bdk: 100,
-            weight_lsh: 50
+            weight_lsh: 50,
+            weight_man: 30
         };
     }
 
@@ -106,7 +108,8 @@ export function getSupremeSlotWeights(): any {
             weight_bj: 100,
             weight_zft: 100,
             weight_bdk: 100,
-            weight_lsh: 25
+            weight_lsh: 25,
+            weight_man: 25
         };
     }
 

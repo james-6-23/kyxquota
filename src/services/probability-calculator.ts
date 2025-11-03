@@ -7,7 +7,7 @@ import { rewardConfigQueries, weightConfigQueries } from '../database';
 import logger from '../utils/logger';
 
 // 符号列表
-const SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
+const SYMBOLS = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh', 'man'];
 
 // 🔥 概率计算结果缓存（内存缓存）
 interface CacheKey {
@@ -125,7 +125,8 @@ function generateSymbolByWeight(weightConfig: WeightConfig): string {
         weightConfig.weight_bj,
         weightConfig.weight_zft,
         weightConfig.weight_bdk,
-        weightConfig.weight_lsh
+        weightConfig.weight_lsh,
+        weightConfig.weight_man || 25  // 兼容旧配置
     ];
 
     const totalWeight = weights.reduce((a, b) => a + b, 0);
@@ -269,20 +270,19 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
 }
 
 /**
- * 匹配规则（按优先级）
+ * 匹配规则（按优先级）- 与reward-calculator保持一致
  */
 function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean = false): {
     ruleName: string;
     multiplier: number;
     punishmentCount?: number;
 } {
-    // 1. 先检查律师函惩罚
+    // 🔥 1. 先检查律师函惩罚（最高优先级）
     const lshCount = symbols.filter(s => s === 'lsh').length;
     if (lshCount > 0) {
         const punishments = rewardConfigQueries.getPunishmentsByScheme.all(schemeId);
         const punishment = punishments.find(p => p.lsh_count === lshCount && p.is_active);
         if (punishment) {
-            // 🔥 禁用律师函日志（已在快速估算中统一输出）
             return {
                 ruleName: `律师函×${lshCount}`,
                 multiplier: -punishment.deduct_multiplier,
@@ -291,27 +291,121 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         }
     }
 
-    // 2. 按优先级检查奖励规则
+    // 🔥 2. 检查man符号并计算组合倍率
+    const manCount = symbols.filter(s => s === 'man').length;
+    let manMultiplier = 1.0;
+    
+    if (manCount > 0) {
+        const manConsecutive = getMaxConsecutiveSymbol(symbols, 'man');
+        
+        if (manCount === 4 || manConsecutive === 4) {
+            return {
+                ruleName: 'man×4',
+                multiplier: 25
+            };
+        } else if (manCount === 3 || manConsecutive === 3) {
+            manMultiplier = 10;
+        } else if (manConsecutive === 2) {
+            manMultiplier = 5;
+        } else if (manCount === 1) {
+            manMultiplier = 2.5;
+        }
+    }
+
+    // 🔥 3. 检查对称规则ABBA
+    if (hasABBAPatternProb(symbols)) {
+        const hasManPair = hasManConsecutivePairProb(symbols);
+        const finalMultiplier = hasManPair ? 10 * manMultiplier : 10;
+        return {
+            ruleName: hasManPair ? '对称ABBA+man严格2连' : '对称ABBA',
+            multiplier: finalMultiplier
+        };
+    }
+
+    // 🔥 4. 按优先级检查奖励规则
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
 
     for (const rule of activeRules) {
         if (checkRuleMatch(symbols, rule, debug)) {
+            let finalMultiplier = rule.win_multiplier;
+            let ruleName = rule.rule_name;
+            
+            // 应用man加成
+            if (manMultiplier > 1.0) {
+                if (rule.match_pattern === 'consecutive' || 
+                    rule.match_pattern === '2-consecutive' || 
+                    rule.match_pattern === '3-consecutive' ||
+                    rule.match_pattern === '4-consecutive') {
+                    finalMultiplier = rule.win_multiplier * manMultiplier;
+                    ruleName = `${rule.rule_name}+man×${manMultiplier}`;
+                } else if (rule.match_pattern === 'double_pair') {
+                    if (hasManConsecutivePairProb(symbols)) {
+                        finalMultiplier = rule.win_multiplier * 10;
+                        ruleName = `${rule.rule_name}+man严格2连`;
+                    }
+                }
+            }
+            
             return {
-                ruleName: rule.rule_name,
-                multiplier: rule.win_multiplier
+                ruleName: ruleName,
+                multiplier: finalMultiplier
             };
         }
     }
 
-    // 3. 未中奖
-    if (debug) {
-        console.log(`  ❌ 未中奖`);
+    // 🔥 5. 如果只有man没有其他规则匹配
+    if (manMultiplier > 1.0) {
+        return {
+            ruleName: `man×${manMultiplier}`,
+            multiplier: manMultiplier
+        };
     }
+
+    // 6. 未中奖
     return {
         ruleName: '未中奖',
         multiplier: 0
     };
+}
+
+/**
+ * 检查是否有ABBA对称模式
+ */
+function hasABBAPatternProb(symbols: string[]): boolean {
+    if (symbols.length !== 4) return false;
+    return symbols[0] === symbols[3] && symbols[1] === symbols[2] && symbols[0] !== symbols[1];
+}
+
+/**
+ * 检查是否有man的严格连续2连
+ */
+function hasManConsecutivePairProb(symbols: string[]): boolean {
+    for (let i = 0; i < symbols.length - 1; i++) {
+        if (symbols[i] === 'man' && symbols[i + 1] === 'man') {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * 获取指定符号的最大连续数
+ */
+function getMaxConsecutiveSymbol(symbols: string[], target: string): number {
+    let maxConsecutive = 0;
+    let currentConsecutive = 0;
+    
+    for (const symbol of symbols) {
+        if (symbol === target) {
+            currentConsecutive++;
+            maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+        } else {
+            currentConsecutive = 0;
+        }
+    }
+    
+    return maxConsecutive;
 }
 
 /**
@@ -666,6 +760,80 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
     } catch (error: any) {
         logger.error('概率预计算', `失败: ${error.message}`);
         throw error;
+    }
+}
+
+/**
+ * 🔥 启动时预热所有场次的概率缓存
+ * 在应用启动时调用，避免重启后缓存丢失
+ */
+export async function warmupAllProbabilityCache(): Promise<void> {
+    logger.info('缓存预热', '🔥 开始预热所有场次的概率缓存...');
+
+    try {
+        const { slotQueries, advancedSlotQueries, supremeSlotQueries, rewardConfigQueries } = await import('../database');
+
+        // 获取所有场次的配置
+        const normalConfig = slotQueries.getConfig.get();
+        const advancedConfig = advancedSlotQueries.getAdvancedConfig.get();
+        const supremeConfig = supremeSlotQueries.getConfig.get();
+
+        // 收集所有需要计算的 (weightConfigId, schemeId) 组合
+        const combinations = new Set<string>();
+
+        if (normalConfig) {
+            const key = `${normalConfig.weight_config_id || 1}-${normalConfig.reward_scheme_id || 1}`;
+            combinations.add(key);
+            logger.debug('缓存预热', `初级场: 权重${normalConfig.weight_config_id || 1}, 方案${normalConfig.reward_scheme_id || 1}`);
+        }
+
+        if (advancedConfig) {
+            const key = `${advancedConfig.weight_config_id || 1}-${advancedConfig.reward_scheme_id || 1}`;
+            combinations.add(key);
+            logger.debug('缓存预热', `高级场: 权重${advancedConfig.weight_config_id || 1}, 方案${advancedConfig.reward_scheme_id || 1}`);
+        }
+
+        if (supremeConfig) {
+            const key = `${supremeConfig.weight_config_id || 1}-${supremeConfig.reward_scheme_id || 1}`;
+            combinations.add(key);
+            logger.debug('缓存预热', `至尊场: 权重${supremeConfig.weight_config_id || 1}, 方案${supremeConfig.reward_scheme_id || 1}`);
+        }
+
+        // 如果没有任何配置，使用默认值
+        if (combinations.size === 0) {
+            combinations.add('1-1');
+            logger.debug('缓存预热', '使用默认配置: 权重1, 方案1');
+        }
+
+        // 计算每个组合的概率
+        let successCount = 0;
+        let totalCount = 0;
+
+        for (const key of combinations) {
+            const [weightConfigId, schemeId] = key.split('-').map(Number);
+            totalCount++;
+
+            try {
+                // 检查方案是否存在
+                const scheme = rewardConfigQueries.getSchemeById.get(schemeId);
+                if (!scheme) {
+                    logger.warn('缓存预热', `⚠️ 方案${schemeId}不存在，跳过`);
+                    continue;
+                }
+
+                // 计算并缓存
+                const result = calculateProbabilityFast(weightConfigId, schemeId);
+                logger.info('缓存预热', `✅ 权重${weightConfigId} + 方案${schemeId} → RTP:${result.rtp.toFixed(2)}%`);
+                successCount++;
+            } catch (error: any) {
+                logger.error('缓存预热', `❌ 权重${weightConfigId} + 方案${schemeId} 失败: ${error.message}`);
+            }
+        }
+
+        logger.info('缓存预热', `🎉 完成 ${successCount}/${totalCount} 个场次的概率缓存预热`);
+    } catch (error: any) {
+        logger.error('缓存预热', `预热失败: ${error.message}`);
+        // 不抛出异常，避免影响应用启动
     }
 }
 

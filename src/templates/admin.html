@@ -1212,6 +1212,10 @@
                   <div class="text-red-700">律师函(lsh)</div>
                   <div id="adv_preview_weight_lsh" class="font-bold text-red-700">--</div>
                 </div>
+                <div class="text-center p-2 bg-green-100 rounded border border-green-300">
+                  <div class="text-green-700">man</div>
+                  <div id="adv_preview_weight_man" class="font-bold text-green-700">--</div>
+                </div>
               </div>
             </div>
           </div>
@@ -1574,6 +1578,10 @@
                 <div class="text-center p-2 bg-red-50 rounded border border-red-200">
                   <div class="text-red-600">律师函(lsh)</div>
                   <div id="preview_weight_lsh" class="font-bold text-red-600">--</div>
+                </div>
+                <div class="text-center p-2 bg-green-50 rounded border border-green-200">
+                  <div class="text-green-600">man</div>
+                  <div id="preview_weight_man" class="font-bold text-green-600">--</div>
                 </div>
               </div>
             </div>
@@ -3589,6 +3597,10 @@
                   <div class="text-red-700">律师函(lsh)</div>
                   <div id="sup_preview_weight_lsh" class="font-bold text-red-700">--</div>
                 </div>
+                <div class="text-center p-2 bg-green-100 rounded border border-green-300">
+                  <div class="text-green-700">man</div>
+                  <div id="sup_preview_weight_man" class="font-bold text-green-700">--</div>
+                </div>
               </div>
             </div>
           </div>
@@ -5325,6 +5337,7 @@
             document.getElementById('preview_weight_zft').textContent = config.weight_zft;
             document.getElementById('preview_weight_bdk').textContent = config.weight_bdk;
             document.getElementById('preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('preview_weight_man').textContent = config.weight_man || 25;
             document.getElementById('normalWeightPreview').classList.remove('hidden');
           }
         }
@@ -7187,6 +7200,7 @@
             document.getElementById('adv_preview_weight_zft').textContent = config.weight_zft;
             document.getElementById('adv_preview_weight_bdk').textContent = config.weight_bdk;
             document.getElementById('adv_preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('adv_preview_weight_man').textContent = config.weight_man || 30;
             document.getElementById('advancedWeightPreview').classList.remove('hidden');
           }
         }
@@ -10551,6 +10565,7 @@
             document.getElementById('sup_preview_weight_zft').textContent = config.weight_zft;
             document.getElementById('sup_preview_weight_bdk').textContent = config.weight_bdk;
             document.getElementById('sup_preview_weight_lsh').textContent = config.weight_lsh;
+            document.getElementById('sup_preview_weight_man').textContent = config.weight_man || 25;
             document.getElementById('supremeWeightPreview').classList.remove('hidden');
           }
         }

@@ -482,6 +482,7 @@ export function generateSupremeSymbols(): string[] {
     symbolPool.push(...Array(weights.weight_zft || 0).fill('zft'));
     symbolPool.push(...Array(weights.weight_bdk || 0).fill('bdk'));
     symbolPool.push(...Array(weights.weight_lsh || 0).fill('lsh'));
+    symbolPool.push(...Array(weights.weight_man || 25).fill('man'));  // 🔥 添加man符号
 
     const symbols: string[] = [];
     for (let i = 0; i < 4; i++) {

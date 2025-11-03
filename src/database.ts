@@ -324,8 +324,8 @@ export function initDatabase() {
 
     // 插入默认符号权重配置
     db.exec(`
-    INSERT OR IGNORE INTO slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, updated_at)
-    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, ${Date.now()})
+    INSERT OR IGNORE INTO slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, updated_at)
+    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, ${Date.now()})
   `);
 
     // 奖励倍数配置表
@@ -1059,6 +1059,32 @@ export function initDatabase() {
 
     console.log('✅ 数据库表结构创建完成（含权重/奖励方案、至尊场和成就系统）');
 
+    // 🔥 添加man符号字段（兼容旧数据库）
+    try {
+        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 25');
+        console.log('✅ 已添加 weight_man 字段到 slot_symbol_weights');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE advanced_slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 30');
+        console.log('✅ 已添加 weight_man 字段到 advanced_slot_symbol_weights');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE symbol_weight_configs ADD COLUMN weight_man INTEGER DEFAULT 25');
+        console.log('✅ 已添加 weight_man 字段到 symbol_weight_configs');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE user_symbol_collection ADD COLUMN symbol_man INTEGER DEFAULT 0');
+        console.log('✅ 已添加 symbol_man 字段到 user_symbol_collection');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 插入默认数据
     insertDefaultData();
 
@@ -1093,9 +1119,9 @@ function insertDefaultData() {
         db.exec(`
             INSERT OR IGNORE INTO advanced_slot_symbol_weights (
                 id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, 
-                weight_zft, weight_bdk, weight_lsh, updated_at
+                weight_zft, weight_bdk, weight_lsh, weight_man, updated_at
             )
-            VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, ${Date.now()})
+            VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 50, 30, ${Date.now()})
         `);
 
         // 插入默认坤呗配置
@@ -1135,11 +1161,11 @@ function insertDefaultData() {
         if (existingWeightConfigs.count === 0) {
             const now = Date.now();
             db.exec(`
-                INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, description, is_deleted, created_at, updated_at)
+                INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, is_deleted, created_at, updated_at)
                 VALUES 
-                    ('默认配置', 100, 100, 100, 100, 100, 100, 100, 100, 25, '平衡的符号分布，适合日常运营', 0, ${now}, ${now}),
-                    ('高风险模式', 50, 50, 50, 50, 80, 80, 100, 120, 150, '稀有符号出现概率提升，高风险高回报', 0, ${now}, ${now}),
-                    ('低风险模式', 150, 140, 130, 120, 30, 20, 10, 5, 2, '常见符号出现概率提升，降低游戏难度', 0, ${now}, ${now})
+                    ('默认配置', 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, '平衡的符号分布，适合日常运营', 0, ${now}, ${now}),
+                    ('高风险模式', 50, 50, 50, 50, 80, 80, 100, 120, 150, 30, '稀有符号出现概率提升，高风险高回报', 0, ${now}, ${now}),
+                    ('低风险模式', 150, 140, 130, 120, 30, 20, 10, 5, 2, 25, '常见符号出现概率提升，降低游戏难度', 0, ${now}, ${now})
             `);
             console.log('✅ 已插入默认权重配置方案');
         }

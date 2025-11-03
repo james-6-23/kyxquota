@@ -276,6 +276,7 @@ export interface SymbolWeightConfig {
     weight_zft: number;
     weight_bdk: number;
     weight_lsh: number;
+    weight_man: number;
     description?: string;
     is_deleted: number;
     created_at: number;
@@ -411,6 +412,7 @@ export interface SymbolWeightConfig {
     weight_zft: number;
     weight_bdk: number;
     weight_lsh: number;
+    weight_man: number;
     description?: string;
     is_deleted: number;
     created_at: number;

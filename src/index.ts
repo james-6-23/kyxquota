@@ -12,6 +12,16 @@ validateConfig();
 // 初始化数据库
 initDatabase();
 
+// 🔥 预热概率缓存（避免重启后缓存丢失）
+(async () => {
+    try {
+        const { warmupAllProbabilityCache } = await import('./services/probability-calculator');
+        await warmupAllProbabilityCache();
+    } catch (error) {
+        console.error('⚠️ 概率缓存预热失败（不影响应用启动）:', error);
+    }
+})();
+
 // 启动奖金自动发放服务
 startRewardProcessor();
 

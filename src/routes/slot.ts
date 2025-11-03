@@ -227,7 +227,7 @@ slot.get('/config', requireAuth, async (c) => {
             }
         });
     } catch (error) {
-        console.error('获取老虎机配置失败:', error);
+        logger.error('老虎机配置', '获取老虎机配置失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -250,7 +250,7 @@ slot.post('/spin', requireAuth, async (c) => {
             const { checkOverdueLoans } = await import('../services/kunbei');
             await checkOverdueLoans();
         } catch (err: any) {
-            console.warn('[Spin] 坤呗逾期检查失败:', err.message);
+            logger.warn('坤呗检查', '坤呗逾期检查失败', err.message);
         }
 
         // 检查是否被封禁
@@ -309,30 +309,30 @@ slot.post('/spin', requireAuth, async (c) => {
         }
 
         if (useFreeSpinn) {
-            console.log(`[免费次数] 开始处理 - 用户: ${user.username} (${session.linux_do_id})`);
+            logger.info('免费次数', `开始处理 - 用户: ${user.username} (${session.linux_do_id})`);
 
             // 直接尝试扣除免费次数（原子操作）
             const used = useUserFreeSpin(session.linux_do_id);
-            console.log(`[免费次数] 扣除免费次数结果: ${used}`);
+            logger.debug('免费次数', `扣除免费次数结果: ${used}`);
 
             if (!used) {
                 // 扣除失败，重新查询当前免费次数
                 const actualFreeSpins = getUserFreeSpins(session.linux_do_id);
-                console.error(`[免费次数] 扣除失败 - 用户: ${user.username}, 实际免费次数: ${actualFreeSpins}`);
+                logger.error('免费次数', `扣除失败 - 用户: ${user.username}, 实际免费次数: ${actualFreeSpins}`);
 
                 // 提供更详细的错误信息
                 const errorMsg = actualFreeSpins > 0
                     ? `扣除免费次数失败，请重试（当前有${actualFreeSpins}次）`
                     : '没有免费次数';
 
-                console.error(`[免费次数] 返回错误: ${errorMsg}`);
+                logger.error('免费次数', `返回错误: ${errorMsg}`);
                 return c.json({
                     success: false,
                     message: errorMsg
                 }, 400);
             }
 
-            console.log(`[免费次数] ✅ 用户 ${user.username} 成功使用1次免费机会`);
+            logger.info('免费次数', `✅ 用户 ${user.username} 成功使用1次免费机会`);
             isFreeSpin = true;
             betAmount = 0; // 免费游戏不扣费（用于记录）
             // calculationBetAmount 保持为 config.bet_amount（用于计算奖金）
@@ -364,7 +364,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const todaySpins = getUserTodaySpins(session.linux_do_id);
                 const totalAllowedSpins = config.max_daily_spins + boughtToday;
 
-                console.log(`[初级场检查] 用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
+                logger.debug('初级场检查', `用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
 
                 if (todaySpins >= totalAllowedSpins) {
                     return c.json({
@@ -434,7 +434,7 @@ slot.post('/spin', requireAuth, async (c) => {
             const advancedConfig = getAdvancedSlotConfig();
             rewardMultiplier = advancedConfig.reward_multiplier;
             penaltyMultiplier = advancedConfig.penalty_weight_factor;
-            console.log(`[高级场] 用户 ${user.username} 在高级场游戏 - 投注: $${(betAmount / 500000).toFixed(2)}, 奖励倍率×${rewardMultiplier}, 惩罚倍率×${penaltyMultiplier}`);
+            logger.info('高级场', `用户 ${user.username} 在高级场游戏 - 投注: $${(betAmount / 500000).toFixed(2)}, 奖励倍率×${rewardMultiplier}, 惩罚倍率×${penaltyMultiplier}`);
         }
 
         // 生成随机符号（高级场使用独立权重配置）
@@ -463,7 +463,7 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🔥 检查并应用坤呗buff
         const kunbeiBuff = getAndUseBuff(session.linux_do_id);
         if (kunbeiBuff > 1) {
-            console.log(`[坤呗Buff] 应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
+            logger.info('坤呗Buff', `应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
             result.multiplier = result.multiplier * kunbeiBuff;
         }
 
@@ -501,7 +501,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const quotaBeforeWin = currentKyxUser.user.quota;
                 const newQuotaAfterWin = quotaBeforeWin + winAmount;
 
-                console.log(`[老虎机] 准备添加额度 - 当前: ${quotaBeforeWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
+                logger.debug('老虎机', `准备添加额度 - 当前: ${quotaBeforeWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
 
                 const updateResult = await updateKyxUserQuota(
                     user.kyx_user_id,
@@ -514,7 +514,7 @@ slot.post('/spin', requireAuth, async (c) => {
 
                 // 【关键】检查更新结果
                 if (!updateResult || !updateResult.success) {
-                    console.error(`[老虎机] ❌ 添加额度失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+                    logger.error('老虎机', `❌ 添加额度失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
                     quotaUpdateFailed = true;
 
                     // 记录到待发放表，系统会自动重试
@@ -531,10 +531,10 @@ slot.post('/spin', requireAuth, async (c) => {
                             now,
                             now
                         );
-                        console.log(`[老虎机] 📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
+                        logger.info('老虎机', `📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
                         quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
                     } catch (dbError) {
-                        console.error(`[老虎机] ❌ 记录待发放失败:`, dbError);
+                        logger.error('老虎机', `❌ 记录待发放失败`, dbError);
                         quotaUpdateError = '额度添加失败，请联系管理员补发奖金';
                     }
                 } else {
@@ -542,11 +542,11 @@ slot.post('/spin', requireAuth, async (c) => {
                     const verifyUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
                     if (verifyUser.success && verifyUser.user) {
                         const actualQuota = verifyUser.user.quota;
-                        console.log(`[老虎机] ✅ 验证额度 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}`);
+                        logger.debug('老虎机', `✅ 验证额度 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}`);
 
                         // 允许小范围误差（可能有其他操作）
                         if (Math.abs(actualQuota - newQuotaAfterWin) > winAmount) {
-                            console.error(`[老虎机] ⚠️ 额度验证异常 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}, 差异过大`);
+                            logger.error('老虎机', `⚠️ 额度验证异常 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}, 差异过大`);
                             quotaUpdateFailed = true;
 
                             // 记录到待发放表，系统会自动重试
@@ -563,10 +563,10 @@ slot.post('/spin', requireAuth, async (c) => {
                                     now,
                                     now
                                 );
-                                console.log(`[老虎机] 📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
+                                logger.info('老虎机', `📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
                                 quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
                             } catch (dbError) {
-                                console.error(`[老虎机] ❌ 记录待发放失败:`, dbError);
+                                logger.error('老虎机', `❌ 记录待发放失败`, dbError);
                                 quotaUpdateError = '额度验证失败，请联系管理员';
                             }
                         }
@@ -580,7 +580,7 @@ slot.post('/spin', requireAuth, async (c) => {
             // 获取当前额度
             const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
             if (!currentKyxUser.success || !currentKyxUser.user) {
-                console.error(`[老虎机] ❌ 惩罚时获取用户信息失败 - 用户: ${user.username}`);
+                logger.error('老虎机', `❌ 惩罚时获取用户信息失败 - 用户: ${user.username}`);
                 // 惩罚失败不阻止游戏继续
             } else {
                 // 计算扣除后的额度，确保不会为负数
@@ -588,7 +588,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const actualDeduction = Math.min(punishmentAmount, currentQuota);  // 最多扣到0
                 const newQuotaAfterPunishment = currentQuota - actualDeduction;
 
-                console.log(`[老虎机] ⚡ 准备扣除惩罚 - 当前: ${currentQuota}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
+                logger.debug('老虎机', `⚡ 准备扣除惩罚 - 当前: ${currentQuota}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
 
                 const updateResult = await updateKyxUserQuota(
                     user.kyx_user_id,
@@ -601,20 +601,20 @@ slot.post('/spin', requireAuth, async (c) => {
 
                 // 检查惩罚扣除结果
                 if (!updateResult || !updateResult.success) {
-                    console.error(`[老虎机] ❌ 惩罚扣除失败 - 用户: ${user.username}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+                    logger.error('老虎机', `❌ 惩罚扣除失败 - 用户: ${user.username}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
                     // 惩罚失败，记录为0
                     winAmount = 0;
                 } else {
                     // winAmount 设为负数，用于记录
                     winAmount = -actualDeduction;
-                    console.log(`[老虎机] ⚡ 惩罚成功 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
+                    logger.info('老虎机', `⚡ 惩罚成功 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
                 }
             }
 
             // 如果是严重惩罚（3个及以上），禁止抽奖2.5天
             if (result.shouldBan) {
                 banUserFromSlot(session.linux_do_id, 60);  // 60小时 = 2.5天
-                console.log(`[老虎机] 🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖60小时（2.5天）`);
+                logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖60小时（2.5天）`);
             }
         }
 
@@ -705,7 +705,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 ticketDropped = true;
                 dropType = 'supreme_token' as any;
                 dropCount = 1;
-                console.log(`[至尊掉落] 💎 稀有掉落！用户 ${user.username} 获得1个至尊令牌`);
+                logger.info('至尊掉落', `💎 稀有掉落！用户 ${user.username} 获得1个至尊令牌`);
             }
             // 低概率掉落至尊碎片（四连/三连）
             else if ((result.winType === WinType.QUAD || result.winType === WinType.TRIPLE) &&
@@ -716,7 +716,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 ticketDropped = true;
                 dropType = 'supreme_fragment' as any;
                 dropCount = 1;
-                console.log(`[至尊掉落] 🧩 用户 ${user.username} 获得1个至尊碎片`);
+                logger.info('至尊掉落', `🧩 用户 ${user.username} 获得1个至尊碎片`);
             }
         }
 
@@ -927,7 +927,7 @@ slot.post('/spin', requireAuth, async (c) => {
 
         } catch (achievementError) {
             // 成就系统错误不应该影响游戏正常进行，只记录日志
-            console.error('[成就系统] 检查成就时出错:', achievementError);
+            logger.error('成就系统', '检查成就时出错', achievementError);
         }
         // ========== 成就系统检查结束 ==========
 
@@ -956,8 +956,10 @@ slot.post('/spin', requireAuth, async (c) => {
             warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 警告信息
         });
     } catch (error) {
-        console.error('旋转老虎机失败:', error);
-        console.error('错误堆栈:', error instanceof Error ? error.stack : '无堆栈信息');
+        logger.error('老虎机', '旋转老虎机失败', error);
+        if (error instanceof Error && error.stack) {
+            logger.error('老虎机', '错误堆栈', error.stack);
+        }
         const errorMessage = error instanceof Error ? error.message : '未知错误';
         return c.json({
             success: false,
@@ -998,7 +1000,7 @@ slot.get('/records', requireAuth, async (c) => {
             data: formattedRecords
         });
     } catch (error) {
-        console.error('获取游戏记录失败:', error);
+        logger.error('游戏记录', '获取游戏记录失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1018,7 +1020,7 @@ slot.get('/stats', requireAuth, async (c) => {
             data: stats
         });
     } catch (error) {
-        console.error('获取今日统计失败:', error);
+        logger.error('今日统计', '获取今日统计失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1068,7 +1070,7 @@ slot.get('/leaderboard', requireAuth, async (c) => {
             }
         });
     } catch (error) {
-        console.error('获取排行榜失败:', error);
+        logger.error('排行榜', '获取排行榜失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });

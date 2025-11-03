@@ -7,7 +7,8 @@ const SYMBOLS = {
     SPECIAL_GROUP_1: ['j', 'n', 't', 'm'],
     SPECIAL_GROUP_2: ['bj', 'zft', 'bdk', 'lq'],
     PUNISHMENT: 'lsh',
-    ALL: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh']
+    SPECIAL_PUNISHMENT: 'man',  // 特殊符号，优先级高于律师函
+    ALL: ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh', 'man']
 };
 
 // 默认符号权重配置（控制概率）
@@ -20,7 +21,8 @@ const DEFAULT_SYMBOL_WEIGHTS: Record<string, number> = {
     'bj': 100,
     'zft': 100,
     'bdk': 100,
-    'lsh': 25  // 中度概率，约2.94%每个位置，至少1个约11.3%
+    'lsh': 25,  // 中度概率，约2.94%每个位置，至少1个约11.3%
+    'man': 25   // man符号，与lsh相同概率
 };
 
 // 从数据库获取符号权重（兼容旧代码，新代码请使用 scheme-loader）
@@ -39,7 +41,8 @@ export function getSymbolWeights(isAdvancedMode: boolean = false): Record<string
                 'bj': weights.weight_bj,
                 'zft': weights.weight_zft,
                 'bdk': weights.weight_bdk,
-                'lsh': weights.weight_lsh
+                'lsh': weights.weight_lsh,
+                'man': weights.weight_man || 25  // 兼容旧配置
             };
         }
     } catch (error) {
