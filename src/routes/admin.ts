@@ -834,7 +834,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
 
         // 获取所有老虎机记录
         const allRecords = slotQueries.getAllRecords.all();
-        
+
         // 🔥 获取至尊场记录
         const { supremeSlotQueries } = await import('../database');
         const supremeRecords = supremeSlotQueries.getAllRecords.all();
@@ -867,11 +867,11 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
 
         records.forEach(r => {
             const winType = r.win_type || 'none';
-            
+
             if (!winTypes[winType]) {
                 winTypes[winType] = { count: 0, totalWin: 0, totalBet: 0, avgWin: 0, rtp: 0 };
             }
-            
+
             winTypes[winType].count++;
             winTypes[winType].totalWin += r.win_amount;
             winTypes[winType].totalBet += r.bet_amount;
@@ -883,7 +883,7 @@ app.get('/slot/analytics', requireAdmin, async (c) => {
             type.avgWin = type.count > 0 ? type.totalWin / type.count : 0;
             type.rtp = type.totalBet > 0 ? (type.totalWin / type.totalBet) * 100 : 0;
         });
-        
+
         // 🔥 按出现次数排序
         const sortedWinTypes = Object.entries(winTypes)
             .map(([name, stats]) => ({ name, ...stats }))
@@ -1724,15 +1724,15 @@ app.post('/grant-supreme-tokens', requireAdmin, async (c) => {
         }
 
         const { addSupremeToken, addSupremeFragment } = await import('../services/supreme-slot');
-        
+
         let messages = [];
-        
+
         // 发放至尊令牌
         if (tokens && typeof tokens === 'number' && tokens > 0) {
             if (tokens > 10) {
                 return c.json({ success: false, message: '令牌数量不能超过10' }, 400);
             }
-            
+
             const tokenResult = addSupremeToken(linux_do_id, tokens);
             if (tokenResult.success) {
                 messages.push(`发放${tokenResult.granted || tokens}个至尊令牌`);
@@ -1741,22 +1741,22 @@ app.post('/grant-supreme-tokens', requireAdmin, async (c) => {
                 return c.json({ success: false, message: tokenResult.message || '发放令牌失败' }, 400);
             }
         }
-        
+
         // 发放至尊碎片
         if (fragments && typeof fragments === 'number' && fragments > 0) {
             if (fragments > 100) {
                 return c.json({ success: false, message: '碎片数量不能超过100' }, 400);
             }
-            
+
             addSupremeFragment(linux_do_id, fragments);
             messages.push(`发放${fragments}个至尊碎片`);
             console.log(`[管理员] ✅ 发放至尊碎片 - 用户: ${user.username}, 数量: ${fragments}, 原因: ${reason || '管理员发放'}`);
         }
-        
+
         if (messages.length === 0) {
             return c.json({ success: false, message: '请至少输入令牌或碎片数量' }, 400);
         }
-        
+
         return c.json({
             success: true,
             message: `成功为用户 ${user.username} ${messages.join('，')}`,
@@ -2504,11 +2504,11 @@ app.post('/slot/advanced/weights', requireAdmin, async (c) => {
 app.get('/kunbei/config', requireAdmin, async (c) => {
     try {
         const config = kunbeiQueries.getConfig.get();
-        
+
         // 🔥 如果配置不存在，返回默认配置
         if (!config) {
             console.warn('[坤呗配置] 配置不存在，返回默认值');
-            
+
             // 尝试插入默认配置
             const now = Date.now();
             try {
@@ -2522,14 +2522,14 @@ app.get('/kunbei/config', requireAdmin, async (c) => {
                     VALUES (1, 1, 50000000, 5000000, 2.5, 72, 0.025, 60, 1, 1, 1, 2.5, ${now})
                 `);
                 console.log('[坤呗配置] ✅ 已插入默认配置');
-                
+
                 // 重新获取
                 const newConfig = kunbeiQueries.getConfig.get();
                 return c.json({ success: true, data: newConfig });
             } catch (insertError) {
                 console.error('[坤呗配置] 插入默认配置失败:', insertError);
             }
-            
+
             return c.json({
                 success: true,
                 data: {
@@ -2549,7 +2549,7 @@ app.get('/kunbei/config', requireAdmin, async (c) => {
                 }
             });
         }
-        
+
         return c.json({ success: true, data: config });
     } catch (error: any) {
         console.error('[坤呗配置] 获取失败:', error);
@@ -2671,13 +2671,13 @@ app.post('/kunbei/loans/:id/forgive', requireAdmin, async (c) => {
     try {
         const loanId = parseInt(c.req.param('id'));
         const { forgiveLoan, getLoanDetails } = await import('../services/kunbei');
-        
+
         // 🔥 检查是否是逾期记录，逾期记录不允许豁免
         const loan = getLoanDetails(loanId);
         if (!loan) {
             return c.json({ success: false, message: '借款记录不存在' }, 404);
         }
-        
+
         if (loan.status === 'overdue') {
             return c.json({ success: false, message: '逾期记录不允许豁免，请用户主动还款' }, 400);
         }
@@ -2795,7 +2795,7 @@ app.get('/weights', requireAdmin, async (c) => {
         const configsWithUsage = configs.map((config: any) => {
             const usageInfo = weightConfigQueries.getUsageInfo.get(config.id, config.id, config.id);
             let usageCount = usageInfo?.usage_count || 0;
-            
+
             // 🔥 修复：usage_count 可能会累加重复，取最大值为3（初级、高级、至尊）
             usageCount = Math.min(usageCount, 3);
 
@@ -2955,7 +2955,7 @@ app.get('/rewards/schemes', requireAdmin, async (c) => {
             const rules = rewardConfigQueries.getRulesByScheme.all(scheme.id);
             const punishments = rewardConfigQueries.getPunishmentsByScheme.all(scheme.id);
             const usageInfo = rewardConfigQueries.getSchemeUsageInfo.get(scheme.id, scheme.id, scheme.id);
-            
+
             // 🔥 修复：usage_count 可能累加重复，限制最大为3
             let usageCount = usageInfo?.usage_count || 0;
             usageCount = Math.min(usageCount, 3);
@@ -3395,10 +3395,10 @@ app.get('/drop-configs', requireAdmin, async (c) => {
     try {
         const mode = c.req.query('mode');  // 可选筛选场次
         const type = c.req.query('type');  // 可选筛选物品类型
-        
+
         const { dropConfigQueries } = await import('../database');
         let configs;
-        
+
         if (mode && type) {
             configs = dropConfigQueries.getByModeAndType.all(mode, type);
         } else if (mode) {
@@ -3406,7 +3406,7 @@ app.get('/drop-configs', requireAdmin, async (c) => {
         } else {
             configs = dropConfigQueries.getAll.all();
         }
-        
+
         return c.json({
             success: true,
             data: configs
@@ -3424,9 +3424,9 @@ app.post('/drop-configs', requireAdmin, async (c) => {
     try {
         const body = await c.req.json();
         const { createDropConfig } = await import('../services/drop-config');
-        
+
         const result = await createDropConfig(body);
-        
+
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
         console.error('[掉落配置] 创建失败:', error);
@@ -3442,9 +3442,9 @@ app.put('/drop-configs/:id', requireAdmin, async (c) => {
         const id = parseInt(c.req.param('id'));
         const body = await c.req.json();
         const { updateDropConfig } = await import('../services/drop-config');
-        
+
         const result = await updateDropConfig(id, body);
-        
+
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
         console.error('[掉落配置] 更新失败:', error);
@@ -3459,9 +3459,9 @@ app.delete('/drop-configs/:id', requireAdmin, async (c) => {
     try {
         const id = parseInt(c.req.param('id'));
         const { deleteDropConfig } = await import('../services/drop-config');
-        
+
         const result = await deleteDropConfig(id);
-        
+
         return c.json(result, result.success ? 200 : 400);
     } catch (error: any) {
         console.error('[掉落配置] 删除失败:', error);
@@ -3485,7 +3485,11 @@ app.post('/calculate-probability', requireAdmin, async (c) => {
             }, 400);
         }
 
-        const { calculateProbabilityMonteCarlo, calculateProbabilityFast } = await import('../services/probability-calculator');
+        const { calculateProbabilityMonteCarlo, calculateProbabilityFast, clearAllCache } = await import('../services/probability-calculator');
+
+        // 🔥 每次计算前清除所有缓存，确保使用最新的权重配置
+        clearAllCache();
+        console.log('[概率计算] 已清除所有缓存，将使用最新配置重新计算');
 
         let result;
         if (method === 'monte-carlo') {

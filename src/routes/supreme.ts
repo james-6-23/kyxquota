@@ -533,10 +533,11 @@ supreme.get('/rules', requireAuth, async (c) => {
             logger.warn('至尊场规则', `概率数据未缓存 (权重配置ID:${weightConfigId}, 奖励方案ID:${schemeId})，需要管理员在后台保存配置方案以自动计算并缓存（缓存为永久有效）`);
         }
 
-        // 计算权重总和
+        // 计算权重总和（包含所有10个符号）
         const totalWeight = weightConfig
             ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
-                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + weightConfig.weight_lsh)
+                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + 
+                weightConfig.weight_lsh + (weightConfig.weight_man || 0))
             : 825;
 
         // 计算律师函概率

@@ -93,6 +93,7 @@ interface WeightConfig {
     weight_zft: number;
     weight_bdk: number;
     weight_lsh: number;
+    weight_man?: number;  // 可选，兼容旧配置
 }
 
 /**
@@ -451,6 +452,9 @@ export function calculateProbabilityMonteCarlo(
         throw new Error('权重配置不存在');
     }
 
+    // 🔥 调试：检查权重配置
+    console.log(`[蒙特卡洛] 权重配置ID:${weightConfigId}, weight_man字段:`, weightConfig.weight_man);
+
     // 🔥 调试：检查规则数量
     const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
     const activeRules = allRules.filter(r => r.is_active);
@@ -580,6 +584,9 @@ export function calculateProbabilityFast(
         throw new Error('权重配置不存在');
     }
 
+    // 🔥 调试：输出权重配置
+    console.log(`[快速估算] 权重配置ID:${weightConfigId}, weight_man字段:`, weightConfig.weight_man);
+    
     const weights = [
         weightConfig.weight_m,
         weightConfig.weight_t,
@@ -592,6 +599,9 @@ export function calculateProbabilityFast(
         weightConfig.weight_lsh,
         weightConfig.weight_man || 25  // 🔥 添加man符号权重
     ];
+    
+    console.log(`[快速估算] 权重数组:`, weights);
+    console.log(`[快速估算] 总权重:`, weights.reduce((a, b) => a + b, 0));
 
     const totalWeight = weights.reduce((a, b) => a + b, 0);
 

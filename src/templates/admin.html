@@ -5482,12 +5482,10 @@
       const displayDiv = document.getElementById('normalProbabilityDisplay');
       const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
       
-      // 🔥 检查缓存
+      // 🔥 强制清除缓存（确保获取最新计算结果）
       if (probabilityCache.has(cacheKey)) {
-        console.log('[缓存命中] 使用缓存的概率数据');
-        const cachedResult = probabilityCache.get(cacheKey);
-        renderProbabilityDisplay('normalProbabilityDisplay', cachedResult);
-        return;
+        console.log('[强制刷新] 清除缓存，重新计算最新概率');
+        probabilityCache.delete(cacheKey);
       }
       
       // 🔄 显示计算中状态（带进度条）
@@ -6033,7 +6031,7 @@
     }
 
     function calculateProbabilities() {
-      const symbols = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh'];
+      const symbols = ['m', 't', 'n', 'j', 'lq', 'bj', 'zft', 'bdk', 'lsh', 'man'];
       const weights = {};
       let totalWeight = 0;
 
@@ -6051,13 +6049,19 @@
       symbols.forEach(symbol => {
         const weight = weights[symbol];
         const probability = totalWeight > 0 ? (weight / totalWeight * 100).toFixed(2) : '0.00';
-        document.getElementById('prob_' + symbol).textContent = `概率: ${probability}%`;
+        const probEl = document.getElementById('prob_' + symbol);
+        if (probEl) {
+          probEl.textContent = `概率: ${probability}%`;
+        }
         
         // 为律师函额外计算4个位置至少出现1次的概率
         if (symbol === 'lsh') {
           const singleProb = weight / totalWeight;
           const atLeastOnce = (1 - Math.pow(1 - singleProb, 4)) * 100;
-          document.getElementById('prob_lsh_appear').textContent = `4个位置至少出现1次: ${atLeastOnce.toFixed(2)}%`;
+          const lshProbEl = document.getElementById('prob_lsh_appear');
+          if (lshProbEl) {
+            lshProbEl.textContent = `4个位置至少出现1次: ${atLeastOnce.toFixed(2)}%`;
+          }
         }
       });
     }
@@ -7493,12 +7497,10 @@
       const displayDiv = document.getElementById('advancedProbabilityDisplay');
       const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
       
-      // 🔥 检查缓存
+      // 🔥 强制清除缓存（确保获取最新计算结果）
       if (probabilityCache.has(cacheKey)) {
-        console.log('[缓存命中] 使用缓存的概率数据');
-        const cachedResult = probabilityCache.get(cacheKey);
-        renderProbabilityDisplay('advancedProbabilityDisplay', cachedResult);
-        return;
+        console.log('[强制刷新] 清除缓存，重新计算最新概率');
+        probabilityCache.delete(cacheKey);
       }
       
       // 🔄 显示计算中状态（带进度条）
@@ -10784,12 +10786,10 @@
       const displayDiv = document.getElementById('supremeProbabilityDisplay');
       const cacheKey = getCacheKey(weightConfigId, rewardSchemeId, method);
       
-      // 🔥 检查缓存
+      // 🔥 强制清除缓存（确保获取最新计算结果）
       if (probabilityCache.has(cacheKey)) {
-        console.log('[缓存命中] 使用缓存的概率数据');
-        const cachedResult = probabilityCache.get(cacheKey);
-        renderProbabilityDisplay('supremeProbabilityDisplay', cachedResult);
-        return;
+        console.log('[强制刷新] 清除缓存，重新计算最新概率');
+        probabilityCache.delete(cacheKey);
       }
       
       // 🔄 显示计算中状态（带进度条）
@@ -11885,7 +11885,8 @@ RTP (Return to Player)：
         bj: parseInt(document.getElementById('advWeight_bj').value) || 100,
         zft: parseInt(document.getElementById('advWeight_zft').value) || 100,
         bdk: parseInt(document.getElementById('advWeight_bdk').value) || 100,
-        lsh: parseInt(document.getElementById('advWeight_lsh').value) || 50
+        lsh: parseInt(document.getElementById('advWeight_lsh').value) || 50,
+        man: parseInt(document.getElementById('advWeight_man').value) || 30
       };
       
       const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
