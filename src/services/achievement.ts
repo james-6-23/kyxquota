@@ -11,6 +11,9 @@ import type { Achievement, AchievementProgress, UserAchievement } from '../types
 // 🔥 递归保护：防止 updateUserAchievementStats 和 checkAndUnlockAchievement 之间无限递归
 const updatingStatsUsers = new Set<string>();
 
+// 🔥 递归保护：防止同一成就被重复解锁（用户ID:成就Key）
+const unlockingAchievements = new Set<string>();
+
 /**
  * 获取用户显示名称（优先使用 linux_do_username）
  */
@@ -38,6 +41,16 @@ export async function checkAndUnlockAchievement(
     achievementKey: string,
     eventData?: any
 ): Promise<{ unlocked: boolean; achievement?: Achievement }> {
+    // 🔥 递归保护：防止同一成就被重复解锁
+    const unlockKey = `${linuxDoId}:${achievementKey}`;
+    if (unlockingAchievements.has(unlockKey)) {
+        logger.debug('成就检查', `🚫 成就 [${achievementKey}] 正在解锁中，跳过递归调用 - 用户: ${getUserDisplayName(linuxDoId)}`);
+        return { unlocked: false };
+    }
+
+    // 标记正在解锁
+    unlockingAchievements.add(unlockKey);
+
     try {
         logger.debug('成就检查', `开始检查成就 [${achievementKey}] - 用户: ${getUserDisplayName(linuxDoId)}`);
 
@@ -75,8 +88,10 @@ export async function checkAndUnlockAchievement(
             null  // progress字段
         );
 
-        // 更新用户统计
-        await updateUserAchievementStats(linuxDoId);
+        // 🔥 异步更新用户统计（非阻塞，避免递归调用阻塞主流程）
+        Promise.resolve().then(() => updateUserAchievementStats(linuxDoId)).catch(err => {
+            logger.error('成就系统', `❌ 异步更新统计失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${err.message}`);
+        });
 
         logger.info('成就系统', `🏆 ${getUserDisplayName(linuxDoId)} 成功解锁成就: ${achievement.achievement_name} [${achievement.rarity}] 奖励+${achievement.reward_quota}`);
 
@@ -84,6 +99,9 @@ export async function checkAndUnlockAchievement(
     } catch (error: any) {
         logger.error('成就系统', `❌ 检查成就失败 [${achievementKey}] - 用户: ${getUserDisplayName(linuxDoId)}: ${error.message}`, error.stack);
         return { unlocked: false };
+    } finally {
+        // 🔥 清除解锁标记，允许下次解锁
+        unlockingAchievements.delete(unlockKey);
     }
 }
 
@@ -650,11 +668,17 @@ async function updateUserAchievementStats(linuxDoId: string): Promise<void> {
         logger.debug('统计更新', `✅ ${getUserDisplayName(linuxDoId)} 统计更新完成: ${unlockedAchievements}/${totalAchievements} (${completionRate.toFixed(1)}%), 已领奖励: ${claimedRewards}/${totalRewards}`);
 
         // 🏆 完美主义者成就（完成度达到80%）
-        // 🔥 先检查是否已解锁，避免无限递归导致堆栈溢出
+        // 🔥 多重保护：先检查是否已解锁，再检查是否正在解锁，避免无限递归导致堆栈溢出
         if (completionRate >= 80) {
             const existingAchievement = achievementQueries.getUserAchievement.get(linuxDoId, 'perfectionist');
-            if (!existingAchievement) {  // 仅在未解锁时检查
-                await checkAndUnlockAchievement(linuxDoId, 'perfectionist');
+            const unlockKey = `${linuxDoId}:perfectionist`;
+
+            // 仅在未解锁且未在解锁中时检查
+            if (!existingAchievement && !unlockingAchievements.has(unlockKey)) {
+                // 🔥 使用异步非阻塞调用，避免阻塞统计更新流程
+                Promise.resolve().then(() => checkAndUnlockAchievement(linuxDoId, 'perfectionist')).catch(err => {
+                    logger.error('成就系统', `❌ 检查完美主义者成就失败 - 用户: ${getUserDisplayName(linuxDoId)}: ${err.message}`);
+                });
             }
         }
     } catch (error: any) {
