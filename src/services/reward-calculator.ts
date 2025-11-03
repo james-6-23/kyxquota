@@ -89,13 +89,25 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
             } else if (typeof rule.required_symbols === 'string') {
                 // 过滤空字符串和无效字符串
                 const trimmed = rule.required_symbols.trim();
-                if (trimmed && trimmed !== '' && trimmed !== 'null' && trimmed !== 'undefined') {
+                if (trimmed && trimmed !== '' && trimmed !== 'null' && trimmed !== 'undefined' && trimmed !== '[]') {
                     // 如果是字符串，尝试解析
-                    requiredSymbols = JSON.parse(trimmed);
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            requiredSymbols = parsed;
+                        } else {
+                            console.warn(`[规则匹配] required_symbols 解析后不是有效数组: ${trimmed} (规则: ${rule.rule_name})`);
+                            requiredSymbols = null;
+                        }
+                    } catch (parseError) {
+                        console.error(`[规则匹配] ❌ JSON解析失败 - 规则: ${rule.rule_name || 'unknown'}, required_symbols: "${trimmed}"`);
+                        console.error(`[规则匹配] 解析错误:`, parseError);
+                        requiredSymbols = null;
+                    }
                 }
             }
         } catch (error) {
-            console.error('[规则匹配] JSON解析失败:', rule.required_symbols, error);
+            console.error(`[规则匹配] ❌ 处理 required_symbols 时发生未预期的错误 - 规则: ${rule.rule_name || 'unknown'}`, error);
             requiredSymbols = null;
         }
     }

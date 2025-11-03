@@ -1066,6 +1066,9 @@ export function initDatabase() {
 
     // 初始化预编译查询语句
     initQueries();
+
+    // 🔥 自动修复错误的奖励规则数据
+    fixRewardRulesData();
 }
 
 /**
@@ -2674,3 +2677,60 @@ function initQueries() {
     console.log('✅ 数据库查询语句已预编译（含高级场、至尊场、配置方案和掉落系统）');
 }
 
+/**
+ * 修复奖励规则中错误的 required_symbols 数据
+ * 这个函数在数据库初始化时自动执行，清理格式错误的JSON数据
+ */
+function fixRewardRulesData(): void {
+    try {
+        console.log('🔧 [数据修复] 开始检查并修复 reward_rules 数据...');
+
+        // 统计修复前的问题数据
+        const countBefore = db.query<{ count: number }, never>(`
+            SELECT COUNT(*) as count FROM reward_rules
+            WHERE required_symbols IS NOT NULL
+              AND (
+                required_symbols = ''
+                OR required_symbols = '[]'
+                OR required_symbols IN ('null', 'undefined', 'NULL', 'UNDEFINED')
+                OR TRIM(required_symbols) = ''
+              )
+        `).get();
+
+        if (countBefore && countBefore.count > 0) {
+            console.log(`📊 [数据修复] 发现 ${countBefore.count} 条需要修复的规则`);
+
+            // 1. 修复空字符串
+            db.exec(`UPDATE reward_rules SET required_symbols = NULL WHERE required_symbols = ''`);
+
+            // 2. 修复空数组
+            db.exec(`UPDATE reward_rules SET required_symbols = NULL WHERE required_symbols = '[]'`);
+
+            // 3. 修复 'null' 或 'undefined' 字符串
+            db.exec(`UPDATE reward_rules SET required_symbols = NULL WHERE required_symbols IN ('null', 'undefined', 'NULL', 'UNDEFINED')`);
+
+            // 4. 修复只包含空格的字符串
+            db.exec(`UPDATE reward_rules SET required_symbols = NULL WHERE TRIM(required_symbols) = ''`);
+
+            console.log(`✅ [数据修复] 已修复 ${countBefore.count} 条规则的 required_symbols 字段`);
+        } else {
+            console.log('✅ [数据修复] reward_rules 数据完整，无需修复');
+        }
+
+        // 统计修复后的数据情况
+        const statsAfter = db.query<{ null_count: number, valid_count: number }, never>(`
+            SELECT
+                SUM(CASE WHEN required_symbols IS NULL THEN 1 ELSE 0 END) as null_count,
+                SUM(CASE WHEN required_symbols IS NOT NULL THEN 1 ELSE 0 END) as valid_count
+            FROM reward_rules
+        `).get();
+
+        if (statsAfter) {
+            console.log(`📊 [数据修复] 统计: NULL=${statsAfter.null_count}, 有效JSON=${statsAfter.valid_count}`);
+        }
+
+    } catch (error: any) {
+        console.error('❌ [数据修复] 修复 reward_rules 数据时出错:', error);
+        // 不抛出错误，避免影响系统启动
+    }
+}

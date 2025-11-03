@@ -3102,9 +3102,28 @@ app.post('/rewards/rules', requireAdmin, async (c) => {
             console.log(`📝 描述: ${description}`);
         }
 
+        // 🔥 验证并规范化 required_symbols
+        let validatedSymbols = null;
+        if (required_symbols) {
+            const trimmed = String(required_symbols).trim();
+            if (trimmed && trimmed !== 'null' && trimmed !== 'undefined') {
+                try {
+                    // 尝试解析JSON以验证格式
+                    const parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        validatedSymbols = trimmed;
+                    } else {
+                        console.warn(`⚠️  required_symbols 格式无效（非数组或为空），将保存为 NULL`);
+                    }
+                } catch (e) {
+                    console.error(`❌ required_symbols JSON 格式错误: ${trimmed}，将保存为 NULL`);
+                }
+            }
+        }
+
         const now = Date.now();
         rewardConfigQueries.insertRule.run(
-            scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, 1, description || null, now, now
+            scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count || null, validatedSymbols, win_multiplier, grant_free_spin || 0, priority || 0, 1, description || null, now, now
         );
 
         console.log(`⏰ 添加时间: ${new Date(now).toLocaleString('zh-CN')}`);
@@ -3136,9 +3155,28 @@ app.put('/rewards/rules/:id', requireAdmin, async (c) => {
         const body = await c.req.json();
         const { rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description } = body;
 
+        // 🔥 验证并规范化 required_symbols
+        let validatedSymbols = null;
+        if (required_symbols) {
+            const trimmed = String(required_symbols).trim();
+            if (trimmed && trimmed !== 'null' && trimmed !== 'undefined') {
+                try {
+                    // 尝试解析JSON以验证格式
+                    const parsed = JSON.parse(trimmed);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        validatedSymbols = trimmed;
+                    } else {
+                        console.warn(`⚠️  required_symbols 格式无效（非数组或为空），将保存为 NULL`);
+                    }
+                } catch (e) {
+                    console.error(`❌ required_symbols JSON 格式错误: ${trimmed}，将保存为 NULL`);
+                }
+            }
+        }
+
         const now = Date.now();
         rewardConfigQueries.updateRule.run(
-            rule_name, rule_type, rule_category, match_pattern, match_count || null, required_symbols || null, win_multiplier, grant_free_spin || 0, priority || 0, is_active !== undefined ? is_active : 1, description || null, now, id
+            rule_name, rule_type, rule_category, match_pattern, match_count || null, validatedSymbols, win_multiplier, grant_free_spin || 0, priority || 0, is_active !== undefined ? is_active : 1, description || null, now, id
         );
 
         // 🔥 规则更新后，自动重新计算概率并缓存
