@@ -112,6 +112,62 @@
       }
     }
 
+    /* 🏆 成就Toast样式（左上角） */
+    .achievement-toast {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3), 0 0 20px rgba(251, 191, 36, 0.5);
+      animation: achievementSlideIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    /* 成就Toast进入动画（从左侧滑入） */
+    @keyframes achievementSlideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-100px) scale(0.8);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+    }
+
+    /* 成就Toast退出动画（向左侧滑出） */
+    @keyframes achievementSlideOut {
+      from {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translateX(-100px) scale(0.8);
+      }
+    }
+
+    /* 成就图标弹跳动画 */
+    @keyframes achievementBounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    /* 移动端适配 */
+    @media (max-width: 768px) {
+      .achievement-toast {
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        min-width: auto;
+        max-width: none;
+      }
+    }
+
     /* 老虎机样式 */
     .slot-reel-container {
       width: 180px;
@@ -2809,6 +2865,77 @@
       }, 3000);
     }
 
+    /**
+     * 🏆 显示成就解锁Toast（左上角）
+     * @param {Object} achievement - 成就对象
+     */
+    function showAchievementToast(achievement) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+
+      // 稀有度颜色映射
+      const rarityColors = {
+        'common': 'from-gray-500 to-gray-600',
+        'uncommon': 'from-green-500 to-emerald-600',
+        'rare': 'from-blue-500 to-indigo-600',
+        'epic': 'from-purple-500 to-violet-600',
+        'legendary': 'from-amber-500 to-orange-600'
+      };
+
+      const bgGradient = rarityColors[achievement.rarity] || rarityColors['common'];
+
+      toast.className = `achievement-toast px-8 py-6 rounded-2xl bg-gradient-to-r ${bgGradient} text-white shadow-2xl border-4 border-yellow-300 min-w-[350px] max-w-[450px]`;
+
+      // 格式化奖励额度
+      const rewardAmount = achievement.reward_quota ? (achievement.reward_quota / 500000).toFixed(2) : '0.00';
+
+      toast.innerHTML = `
+        <div class="flex items-start gap-4">
+          <!-- 图标 -->
+          <div class="flex-shrink-0 text-5xl" style="animation: achievementBounce 1s ease-in-out infinite;">
+            ${achievement.icon || '🏆'}
+          </div>
+
+          <!-- 内容 -->
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-sm font-bold uppercase tracking-wider opacity-90">
+                🎉 成就解锁
+              </span>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-white/20">
+                ${achievement.rarity_name || '普通'}
+              </span>
+            </div>
+            <div class="text-xl font-bold mb-1">
+              ${achievement.achievement_name || '未知成就'}
+            </div>
+            <div class="text-sm opacity-90 mb-2">
+              ${achievement.description || ''}
+            </div>
+            <div class="flex items-center gap-2 text-sm font-semibold">
+              <span>💰 奖励:</span>
+              <span class="text-yellow-200">+$${rewardAmount}</span>
+            </div>
+          </div>
+
+          <!-- 关闭按钮 -->
+          <button onclick="this.parentElement.parentElement.remove()" class="flex-shrink-0 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      `;
+
+      container.appendChild(toast);
+
+      // 5秒后自动消失
+      setTimeout(() => {
+        toast.style.animation = 'achievementSlideOut 0.3s ease-in forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 5000);
+    }
+
     function showThankYouToast() {
       const container = document.getElementById('toastContainer');
       const toast = document.createElement('div');
@@ -5356,6 +5483,19 @@
           setTimeout(() => {
             showToast(data.message, 'success');
           }, 500);
+        }
+
+        // 🏆 显示成就解锁Toast（左上角）
+        if (result.unlocked_achievements && result.unlocked_achievements.length > 0) {
+          // 延迟显示成就Toast，避免与中奖Toast冲突
+          // 如果有中奖Toast，延迟2秒；否则延迟1秒
+          const achievementDelay = result.win_amount > 0 ? 2000 : 1000;
+
+          result.unlocked_achievements.forEach((achievement, index) => {
+            setTimeout(() => {
+              showAchievementToast(achievement);
+            }, achievementDelay + (index * 1000));  // 每个成就间隔1秒
+          });
         }
 
       } catch (error) {

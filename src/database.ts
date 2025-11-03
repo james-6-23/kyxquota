@@ -318,9 +318,24 @@ export function initDatabase() {
       weight_zft INTEGER DEFAULT 100,
       weight_bdk INTEGER DEFAULT 100,
       weight_lsh INTEGER DEFAULT 25,
+      weight_man INTEGER DEFAULT 25,
       updated_at INTEGER NOT NULL
     )
   `);
+
+    // 🔥 数据库迁移：添加新符号列（如果不存在）
+    try {
+        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_lsh INTEGER DEFAULT 25');
+        console.log('✅ 已添加 slot_symbol_weights.weight_lsh 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 25');
+        console.log('✅ 已添加 slot_symbol_weights.weight_man 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 插入默认符号权重配置
     db.exec(`
@@ -544,9 +559,24 @@ export function initDatabase() {
       weight_zft INTEGER DEFAULT 100,
       weight_bdk INTEGER DEFAULT 100,
       weight_lsh INTEGER DEFAULT 50,
+      weight_man INTEGER DEFAULT 30,
       updated_at INTEGER NOT NULL
     )
   `);
+
+    // 🔥 数据库迁移：添加高级场新符号列（如果不存在）
+    try {
+        db.exec('ALTER TABLE advanced_slot_symbol_weights ADD COLUMN weight_lsh INTEGER DEFAULT 50');
+        console.log('✅ 已添加 advanced_slot_symbol_weights.weight_lsh 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE advanced_slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 30');
+        console.log('✅ 已添加 advanced_slot_symbol_weights.weight_man 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
 
     // 入场券掉落记录表
     // ========== 掉落配置表 (统一掉落系统) ==========
@@ -667,6 +697,7 @@ export function initDatabase() {
             weight_zft INTEGER DEFAULT 100,
             weight_bdk INTEGER DEFAULT 100,
             weight_lsh INTEGER DEFAULT 25,
+            weight_man INTEGER DEFAULT 25,
             description TEXT,
             is_deleted INTEGER DEFAULT 0,
             created_at INTEGER NOT NULL,
@@ -1040,6 +1071,7 @@ export function initDatabase() {
             symbol_zft INTEGER DEFAULT 0,
             symbol_bdk INTEGER DEFAULT 0,
             symbol_lsh INTEGER DEFAULT 0,
+            symbol_man INTEGER DEFAULT 0,
             updated_at INTEGER NOT NULL
         )
     `);
@@ -1058,32 +1090,6 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_profit_tracking_user ON user_profit_tracking(linux_do_id)');
 
     console.log('✅ 数据库表结构创建完成（含权重/奖励方案、至尊场和成就系统）');
-
-    // 🔥 添加man符号字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 25');
-        console.log('✅ 已添加 weight_man 字段到 slot_symbol_weights');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE advanced_slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 30');
-        console.log('✅ 已添加 weight_man 字段到 advanced_slot_symbol_weights');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE symbol_weight_configs ADD COLUMN weight_man INTEGER DEFAULT 25');
-        console.log('✅ 已添加 weight_man 字段到 symbol_weight_configs');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE user_symbol_collection ADD COLUMN symbol_man INTEGER DEFAULT 0');
-        console.log('✅ 已添加 symbol_man 字段到 user_symbol_collection');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
 
     // 插入默认数据
     insertDefaultData();

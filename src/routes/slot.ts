@@ -780,9 +780,15 @@ slot.post('/spin', requireAuth, async (c) => {
         const ticketsInfo = getUserTickets(session.linux_do_id);
 
         // ========== 成就系统检查 ==========
+        // 🏆 收集本次解锁的成就
+        const unlockedAchievements: any[] = [];
+
         try {
             // 1. 首次游戏成就
-            await checkAndUnlockAchievement(session.linux_do_id, 'first_game');
+            const result1 = await checkAndUnlockAchievement(session.linux_do_id, 'first_game');
+            if (result1.unlocked && result1.achievement) {
+                unlockedAchievements.push(result1.achievement);
+            }
 
             // 2. 游玩次数成就（每次游戏增加进度）
             await updateAchievementProgress(session.linux_do_id, 'play_10_games', 1);
@@ -793,7 +799,10 @@ slot.post('/spin', requireAuth, async (c) => {
             // 3. 中奖相关成就
             if (result.winType !== 'none' && result.winType !== WinType.PUNISHMENT && result.multiplier > 0) {
                 // 首次中奖
-                await checkAndUnlockAchievement(session.linux_do_id, 'first_win');
+                const result2 = await checkAndUnlockAchievement(session.linux_do_id, 'first_win');
+                if (result2.unlocked && result2.achievement) {
+                    unlockedAchievements.push(result2.achievement);
+                }
 
                 // 中奖次数成就
                 await updateAchievementProgress(session.linux_do_id, 'win_10_times', 1);
@@ -807,10 +816,16 @@ slot.post('/spin', requireAuth, async (c) => {
 
                 // 连续中奖成就
                 if (currentStreak >= 3) {
-                    await checkAndUnlockAchievement(session.linux_do_id, 'combo_3_wins');
+                    const result3 = await checkAndUnlockAchievement(session.linux_do_id, 'combo_3_wins');
+                    if (result3.unlocked && result3.achievement) {
+                        unlockedAchievements.push(result3.achievement);
+                    }
                 }
                 if (currentStreak >= 5) {
-                    await checkAndUnlockAchievement(session.linux_do_id, 'combo_5_wins');
+                    const result4 = await checkAndUnlockAchievement(session.linux_do_id, 'combo_5_wins');
+                    if (result4.unlocked && result4.achievement) {
+                        unlockedAchievements.push(result4.achievement);
+                    }
                 }
 
                 // 4. 中奖类型成就（双连、三连、四连等）
@@ -950,7 +965,9 @@ slot.post('/spin', requireAuth, async (c) => {
                 drop_type: dropType,
                 drop_count: dropCount,
                 tickets: ticketsInfo.tickets,
-                fragments: ticketsInfo.fragments
+                fragments: ticketsInfo.fragments,
+                // 🏆 本次解锁的成就列表
+                unlocked_achievements: unlockedAchievements
             },
             message,
             warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 警告信息
