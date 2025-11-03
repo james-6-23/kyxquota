@@ -269,6 +269,15 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
         case 'consecutive':
             // N个连续相同符号（严格相邻）
             const n = parseInt(pattern.split('-')[0]) || matchCount;
+            
+            // 🔥 如果指定了required_symbols，必须验证符号类型
+            if (requiredSymbols && requiredSymbols.length > 0) {
+                // 检查是否有指定符号的N连
+                const targetSymbol = requiredSymbols[0];
+                return hasConsecutiveOfType(symbols, n, targetSymbol);
+            }
+            
+            // 没有指定required_symbols，任意符号N连即可
             return hasConsecutive(symbols, n);
 
         case '3-any':
@@ -316,6 +325,26 @@ function hasConsecutive(symbols: string[], n: number): boolean {
     }
 
     return maxConsecutive >= n;
+}
+
+/**
+ * 检查是否有指定符号的N个连续
+ */
+function hasConsecutiveOfType(symbols: string[], n: number, targetSymbol: string): boolean {
+    let currentConsecutive = 0;
+
+    for (const symbol of symbols) {
+        if (symbol === targetSymbol) {
+            currentConsecutive++;
+            if (currentConsecutive >= n) {
+                return true;
+            }
+        } else {
+            currentConsecutive = 0;
+        }
+    }
+
+    return false;
 }
 
 /**

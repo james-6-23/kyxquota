@@ -537,8 +537,9 @@ supreme.get('/rules', requireAuth, async (c) => {
         const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
         // 🔥 用户查看时只读取缓存，不进行计算（节省资源）
+        // 使用蒙特卡洛缓存（与预热保持一致）
         const { getFromCache } = await import('../services/probability-calculator');
-        const probabilityData = getFromCache(weightConfigId, schemeId, 'fast');
+        const probabilityData = getFromCache(weightConfigId, schemeId, 'monte-carlo');
         
         // 如果缓存不存在，返回null（管理员需要先在后台计算）
         if (!probabilityData) {

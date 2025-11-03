@@ -235,17 +235,36 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
             break;
 
         case 'consecutive':  // 相邻连续
-            let maxConsecutive = 1;
-            let currentConsecutive = 1;
-            for (let i = 1; i < symbols.length; i++) {
-                if (symbols[i] === symbols[i - 1]) {
-                    currentConsecutive++;
-                    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-                } else {
-                    currentConsecutive = 1;
+            // 🔥 如果指定了required_symbols，必须验证符号类型
+            if (requiredArr && requiredArr.length > 0) {
+                // 检查是否有指定符号的N连
+                const targetSymbol = requiredArr[0];
+                let currentConsecutive = 0;
+                for (const symbol of symbols) {
+                    if (symbol === targetSymbol) {
+                        currentConsecutive++;
+                        if (currentConsecutive >= (match_count || 2)) {
+                            matched = true;
+                            break;
+                        }
+                    } else {
+                        currentConsecutive = 0;
+                    }
                 }
+            } else {
+                // 没有指定required_symbols，任意符号N连即可
+                let maxConsecutive = 1;
+                let currentConsecutive = 1;
+                for (let i = 1; i < symbols.length; i++) {
+                    if (symbols[i] === symbols[i - 1]) {
+                        currentConsecutive++;
+                        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+                    } else {
+                        currentConsecutive = 1;
+                    }
+                }
+                matched = maxConsecutive >= (match_count || 2);
             }
-            matched = maxConsecutive >= (match_count || 2);
             break;
 
         case 'any':  // 任意位置相同
