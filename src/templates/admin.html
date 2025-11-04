@@ -3364,7 +3364,7 @@
           <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div class="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 p-6 border-b border-purple-500">
               <div class="flex justify-between items-center">
-                <h3 class="text-2xl font-bold text-white">🎲 配置掉落规则</h3>
+                <h3 id="dropConfigModalTitle" class="text-2xl font-bold text-white">🎲 配置掉落规则</h3>
                 <button onclick="closeDropConfigModal()" class="text-white hover:text-gray-200 transition-colors">
                   <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -3372,8 +3372,10 @@
                 </button>
               </div>
             </div>
-            
+
             <div class="p-6 space-y-6">
+              <!-- 隐藏字段：存储编辑的配置ID -->
+              <input type="hidden" id="dropConfigEditId" value="">
               <!-- 选择游戏场次 -->
               <div>
                 <label class="block text-sm font-medium text-slate-700 mb-2">1️⃣ 选择游戏场次</label>
@@ -10889,12 +10891,32 @@
     }
     
     function openAddDropConfigModal() {
+      // 重置为新增模式
+      document.getElementById('dropConfigEditId').value = '';
+      document.getElementById('dropConfigModalTitle').textContent = '🎲 添加掉落规则';
+
+      // 重置表单
+      resetDropConfigForm();
+
+      // 显示模态框
       document.getElementById('dropConfigModal').classList.remove('hidden');
       updateDropRulesList();
     }
-    
+
+    function resetDropConfigForm() {
+      // 重置所有输入
+      document.querySelector('input[name="dropSlotMode"][value="normal"]').checked = true;
+      document.querySelector('input[name="dropItemType"][value="ticket"]').checked = true;
+      document.getElementById('dropProbability').value = 50;
+      document.getElementById('dropProbabilitySlider').value = 50;
+      document.getElementById('dropCount').value = 1;
+      document.getElementById('dropDescription').value = '';
+      updateDropProbabilityDisplay(50);
+    }
+
     function closeDropConfigModal() {
       document.getElementById('dropConfigModal').classList.add('hidden');
+      resetDropConfigForm();
     }
     
     async function updateDropRulesList() {
@@ -10939,40 +10961,54 @@
     }
     
     async function saveDropConfig() {
+      const editId = document.getElementById('dropConfigEditId').value;
       const mode = document.querySelector('input[name="dropSlotMode"]:checked').value;
       const ruleName = document.getElementById('dropTriggerRule').value;
       const itemType = document.querySelector('input[name="dropItemType"]:checked').value;
       const probability = parseFloat(document.getElementById('dropProbability').value) / 100;
       const count = parseInt(document.getElementById('dropCount').value);
       const description = document.getElementById('dropDescription').value;
-      
+
       if (!ruleName) {
         showToast('请选择中奖规则', 'error');
         return;
       }
-      
+
+      const requestData = {
+        slot_mode: mode,
+        trigger_rule_name: ruleName,
+        drop_item_type: itemType,
+        drop_probability: probability,
+        drop_count: count,
+        description: description
+      };
+
       try {
-        const res = await fetch('/api/admin/drop-configs', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            slot_mode: mode,
-            trigger_rule_name: ruleName,
-            drop_item_type: itemType,
-            drop_probability: probability,
-            drop_count: count,
-            description: description
-          })
-        });
-        
+        let res;
+        if (editId) {
+          // 更新模式
+          res = await fetch(`/api/admin/drop-configs/${editId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+          });
+        } else {
+          // 新增模式
+          res = await fetch('/api/admin/drop-configs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestData)
+          });
+        }
+
         const data = await res.json();
-        
+
         if (data.success) {
-          showToast('✅ 掉落配置已添加', 'success');
+          showToast(editId ? '✅ 掉落配置已更新' : '✅ 掉落配置已添加', 'success');
           closeDropConfigModal();
           loadDropConfigs();
         } else {
-          showToast(data.message || '添加失败', 'error');
+          showToast(data.message || '保存失败', 'error');
         }
       } catch (error) {
         console.error('保存失败:', error);
@@ -10980,9 +11016,50 @@
       }
     }
     
-    function editDropConfig(id) {
-      showToast('编辑功能开发中，请先删除后重新添加', 'info');
-      // TODO: 实现编辑功能
+    async function editDropConfig(id) {
+      try {
+        // 获取所有配置
+        const res = await fetch('/api/admin/drop-configs');
+        const data = await res.json();
+
+        if (!data.success) {
+          showToast('加载配置失败', 'error');
+          return;
+        }
+
+        // 查找对应的配置
+        const config = data.data.find(c => c.id === id);
+        if (!config) {
+          showToast('配置不存在', 'error');
+          return;
+        }
+
+        // 设置为编辑模式
+        document.getElementById('dropConfigEditId').value = id;
+        document.getElementById('dropConfigModalTitle').textContent = '✏️ 编辑掉落规则';
+
+        // 填充数据到表单
+        document.querySelector(`input[name="dropSlotMode"][value="${config.slot_mode}"]`).checked = true;
+        document.querySelector(`input[name="dropItemType"][value="${config.drop_item_type}"]`).checked = true;
+
+        const probability = (config.drop_probability * 100).toFixed(0);
+        document.getElementById('dropProbability').value = probability;
+        document.getElementById('dropProbabilitySlider').value = probability;
+        updateDropProbabilityDisplay(probability);
+
+        document.getElementById('dropCount').value = config.drop_count;
+        document.getElementById('dropDescription').value = config.description || '';
+
+        // 先加载规则列表，然后选中对应的规则
+        await updateDropRulesList();
+        document.getElementById('dropTriggerRule').value = config.trigger_rule_name;
+
+        // 显示模态框
+        document.getElementById('dropConfigModal').classList.remove('hidden');
+      } catch (error) {
+        console.error('加载编辑数据失败:', error);
+        showToast('加载失败', 'error');
+      }
     }
     
     async function deleteDropConfig(id) {
