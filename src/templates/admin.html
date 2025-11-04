@@ -3073,14 +3073,19 @@
               <!-- 搜索框 -->
               <div class="md:col-span-2">
                 <label class="block text-sm font-medium text-slate-700 mb-2">搜索用户</label>
-                <div class="relative">
-                  <input type="text" id="kunbeiRecordSearch" 
-                         placeholder="输入LinuxDo用户名或公益站用户名..." 
-                         class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-                         onkeyup="searchKunbeiRecords(event)">
-                  <svg class="absolute left-3 top-2.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                  </svg>
+                <div class="flex gap-2">
+                  <div class="relative flex-1">
+                    <input type="text" id="kunbeiRecordSearch"
+                           placeholder="输入LinuxDo用户名或公益站用户名..."
+                           class="w-full px-4 py-2 pl-10 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+                           onkeyup="searchKunbeiRecords(event)">
+                    <svg class="absolute left-3 top-2.5 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                  </div>
+                  <button onclick="triggerKunbeiSearch()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors font-medium whitespace-nowrap">
+                    🔍 查找
+                  </button>
                 </div>
               </div>
 
@@ -5794,185 +5799,34 @@
       // 直接重新加载，搜索参数会在 loadSlotRecords 中被使用
       loadSlotRecords(1);
     }
-        });
-      }
-      // 如果searchInput为空，不过滤，显示所有记录
-      
-      // 按中奖类型筛选（🔥 优先使用rule_name）
-      if (winTypeFilter && winTypeFilter !== 'all') {
-        filtered = filtered.filter(r => {
-          // 优先使用rule_name进行匹配
-          if (r.rule_name) {
-            return r.rule_name === winTypeFilter;
-          }
-          // 如果rule_name为空，回退到win_type匹配
-          return r.win_type === winTypeFilter;
-        });
-      }
-      
-      filteredAdminSlotRecords = filtered;
-      
-      // 调试：输出win_type分布
-      if (winTypeFilter && winTypeFilter !== 'all') {
-        console.log('[筛选调试] 筛选类型:', winTypeFilter);
-        console.log('[筛选调试] 符合条件的记录数:', filtered.length);
-        console.log('[筛选调试] 前5条记录:', filtered.slice(0, 5).map(r => ({
-          win_type: r.win_type,
-          username: r.linux_do_username || r.username
-        })));
-      }
-      
-      // 🔥 显示筛选结果提示（优化）
-      const hintEl = document.getElementById('adminFilterResultHint');
-      if (hintEl) {
-        let hintText = '';
-        if (searchInput || winTypeFilter !== 'all') {
-          hintText = `🔍 筛选到 ${filtered.length} 条记录（共 ${allAdminSlotRecords.length} 条）`;
-          if (searchInput) hintText += ` - 用户: "${document.getElementById('adminRecordSearchInput').value}"`;
-          if (winTypeFilter !== 'all') hintText += ` - 类型: ${winTypeFilter}`;
-        } else {
-          hintText = `📊 显示全部 ${allAdminSlotRecords.length} 条记录`;
-        }
-        hintEl.textContent = hintText;
-        hintEl.classList.remove('hidden');
-      }
-      
-      // 更新筛选结果数量显示
-      document.getElementById('slotFiltered').textContent = filtered.length;
-      
-      // 重新渲染当前页的数据
-      renderFilteredSlotRecords(1);
-    }
 
-    // 刷新记录（保留筛选条件）
+    // 🚀 优化：刷新记录（直接重新加载当前页）
     async function refreshAdminSlotRecords() {
       try {
-        // 🔥 找到刷新按钮并添加旋转动画
         const refreshBtn = event?.target?.closest('button');
         const refreshIcon = refreshBtn?.querySelector('svg');
         if (refreshIcon) {
           refreshIcon.classList.add('animate-spin');
         }
-        
-        // 🔥 重新加载所有初级场记录（修复：正确的API路径）
-        const recordsRes = await fetch('/api/admin/records/slot?page=1&pageSize=1000');
-        const recordsData = await recordsRes.json();
-        
-        // 🔥 停止动画
+
+        // 重新加载当前页（保留筛选条件）
+        await loadSlotRecords(slotCurrentPage);
+
         if (refreshIcon) {
           refreshIcon.classList.remove('animate-spin');
         }
-        
-        if (recordsData.success) {
-          allAdminSlotRecords = recordsData.data;
-          allRecordsLoaded = true;
-          
-          // 应用筛选条件
-          filterAdminSlotRecords();
-          
-          showToast('记录已刷新', 'success');
-        } else {
-          showToast('加载失败：' + (recordsData.message || '未知错误'), 'error');
-        }
+
+        showToast('记录已刷新', 'success');
       } catch (error) {
         console.error('刷新记录失败:', error);
         showToast('刷新失败：' + error.message, 'error');
       }
     }
 
-    // 渲染筛选后的记录
-    function renderFilteredSlotRecords(page = 1) {
-      const tbody = document.getElementById('slotTableBody');
-      const pageSize = slotPageSize;
-      const startIdx = (page - 1) * pageSize;
-      const endIdx = startIdx + pageSize;
-      const pageData = filteredAdminSlotRecords.slice(startIdx, endIdx);
-      
-      if (pageData.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="9" class="px-4 py-8 text-center text-slate-500">无符合条件的记录</td></tr>';
-        return;
-      }
-      
-      const winTypeLabels = {
-        'super_jackpot': '🏆 超级大奖',
-        'special_combo': '💎 特殊组合',
-        'quad': '🎰 四连',
-        'triple': '✨ 三连',
-        'double': '🎁 双连',
-        'man_only': '🎯 Man组合',
-        'man_quad': '🎰 Man×4',
-        'symmetric': '🔄 对称ABBA',
-        'consecutive': '⭐ 连续',
-        'combination': '🎁 组合',
-        'any': '🎲 任意',
-        'double_pair': '🎭 两对',
-        'punishment': '⚡ 惩罚',
-        'none': '❌ 未中奖'
-      };
-      
-      tbody.innerHTML = pageData.map(r => {
-        const symbols = JSON.parse(r.result_symbols);
-        const symbolsHTML = symbols.map(s => {
-          const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
-          return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-8 h-8 inline-block border border-slate-300 rounded mr-1">`;
-        }).join('');
-        
-        const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
-        const typeClass = r.is_free_spin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
-        const typeLabel = r.is_free_spin ? '免费' : '普通';
-        
-        const displayName = r.linux_do_username || r.username;
-        const hasLinuxDoUsername = r.linux_do_username && r.linux_do_username !== r.username;
-
-        return `
-          <tr class="border-b border-slate-100 hover:bg-slate-50">
-            <td class="px-4 py-3 text-sm">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</td>
-            <td class="px-4 py-3">
-              <div class="font-semibold text-indigo-600">@${displayName}</div>
-              ${hasLinuxDoUsername ? `<div class="text-xs text-slate-500">公益站: ${r.username}</div>` : ''}
-            </td>
-            <td class="px-4 py-3 font-mono text-xs text-slate-600">${r.linux_do_id}</td>
-            <td class="px-4 py-3 text-center">${symbolsHTML}</td>
-            <td class="px-4 py-3 text-center text-sm font-semibold">${winTypeLabels[r.win_type] || r.win_type}</td>
-            <td class="px-4 py-3 text-right font-bold ${winClass}">${r.win_multiplier}x</td>
-            <td class="px-4 py-3 text-right font-semibold">$${(r.bet_amount / 500000).toFixed(2)}</td>
-            <td class="px-4 py-3 text-right font-bold ${winClass}">$${(r.win_amount / 500000).toFixed(2)}</td>
-            <td class="px-4 py-3 text-center">
-              <span class="px-2 py-1 ${typeClass} rounded-full text-xs font-semibold">${typeLabel}</span>
-              ${r.free_spin_awarded ? '<span class="ml-1 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold">+1🎁</span>' : ''}
-            </td>
-          </tr>
-        `;
-      }).join('');
-      
-      // 更新分页信息
-      const totalPages = Math.ceil(filteredAdminSlotRecords.length / pageSize);
-      document.getElementById('slotCurrentPage').textContent = page;
-      document.getElementById('slotTotalPages').textContent = totalPages;
-      slotCurrentPage = page;
-      
-      // 更新按钮状态
-      document.getElementById('slotPrevBtn').disabled = page <= 1;
-      document.getElementById('slotNextBtn').disabled = page >= totalPages;
-    }
-
-    // 清除admin记录筛选
+    // 🚀 优化：清除筛选条件（重新加载第一页）
     function clearAdminRecordFilters() {
       document.getElementById('adminRecordSearchInput').value = '';
-      document.getElementById('adminWinTypeFilter').value = 'all';
-      
-      // 🔥 重新加载所有记录并显示
-      filteredAdminSlotRecords = allAdminSlotRecords;
-      document.getElementById('slotFiltered').textContent = filteredAdminSlotRecords.length;
-      
-      // 显示总记录数
-      const hintEl = document.getElementById('adminFilterResultHint');
-      if (hintEl) {
-        hintEl.textContent = `📊 已显示全部 ${allAdminSlotRecords.length} 条记录`;
-        hintEl.classList.remove('hidden');
-      }
-      
-      renderFilteredSlotRecords(1);
+      loadSlotRecords(1);
     }
 
     // 符号权重配置管理
@@ -8286,7 +8140,12 @@
         applyKunbeiFilters();
       }
     }
-    
+
+    // 🔍 手动触发查找按钮
+    function triggerKunbeiSearch() {
+      applyKunbeiFilters();
+    }
+
     function filterKunbeiRecords() {
       applyKunbeiFilters();
     }
