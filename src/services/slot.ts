@@ -88,15 +88,24 @@ export enum WinType {
     NONE = 'none'                         // 0x 未中奖
 }
 
-// 中奖类型中文名称
-export const WIN_TYPE_NAMES: Record<WinType, string> = {
+// 中奖类型中文名称（包含新旧所有类型）
+export const WIN_TYPE_NAMES: Record<string, string> = {
+    // 旧版类型（初级场）
     [WinType.SUPER_JACKPOT]: '🏆 超级大奖',
     [WinType.SPECIAL_COMBO]: '💎 特殊组合',
     [WinType.QUAD]: '🎰 四连中奖',
     [WinType.TRIPLE]: '✨ 三连中奖',
     [WinType.DOUBLE]: '🎁 双连中奖',
     [WinType.PUNISHMENT]: '⚡ 惩罚',
-    [WinType.NONE]: '❌ 未中奖'
+    [WinType.NONE]: '❌ 未中奖',
+    // 新版类型（高级场、至尊场）
+    'man_only': '🎯 Man组合',
+    'man_quad': '🎰 Man×4',
+    'symmetric': '🔄 对称ABBA',
+    'consecutive': '⭐ 连续',
+    'combination': '🎁 组合',
+    'any': '🎲 任意',
+    'double_pair': '🎭 两对'
 };
 
 /**

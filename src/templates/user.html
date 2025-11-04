@@ -1464,19 +1464,21 @@
 
         <!-- 🎰 初级场专属：控制按钮 -->
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 md:gap-6 w-full sm:w-auto px-4 sm:px-0">
-          <button id="spinButton" onclick="spinSlot(false)" 
-                  class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600 
-                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
-                         hover:scale-105 transform transition-all duration-200
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+          <button id="spinButton" onclick="spinSlot(false)"
+                  class="px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-green-500 to-emerald-600
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg
+                         transform hover:scale-105 transition-all duration-200
+                         active:scale-95
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100">
             <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
           </button>
           
-          <button id="freeSpinButton" onclick="spinSlot(true)" 
-                  class="hidden px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-purple-500 to-pink-600 
-                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg 
-                         hover:scale-105 transform transition-all duration-200
-                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+          <button id="freeSpinButton" onclick="spinSlot(true)"
+                  class="hidden px-8 sm:px-12 md:px-16 py-3 sm:py-4 md:py-5 bg-gradient-to-r from-purple-500 to-pink-600
+                         text-white text-xl sm:text-2xl md:text-3xl font-bold rounded-lg sm:rounded-xl shadow-lg
+                         transform hover:scale-105 transition-all duration-200
+                         active:scale-95
+                         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100">
             ✨ free spin
           </button>
         </div>
@@ -1534,11 +1536,12 @@
             </div>
             
             <!-- 投注按钮 -->
-            <button id="advancedSpinButton" onclick="spinSlot(false)" 
+            <button id="advancedSpinButton" onclick="spinSlot(false)"
                     class="w-full px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
-                           text-white text-xl font-bold rounded-lg shadow-lg 
+                           text-white text-xl font-bold rounded-lg shadow-lg
                            transform hover:scale-105 transition-all duration-200
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                           active:scale-95
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100">
               <span class="flex items-center justify-center gap-2">
                 <span>🎰</span>
                 <span>投注</span>
@@ -1615,11 +1618,12 @@
             </div>
             
             <!-- 投注按钮 -->
-            <button id="supremeSpinButton" onclick="spinSupremeSlot()" 
+            <button id="supremeSpinButton" onclick="spinSupremeSlot()"
                     class="w-full px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700
-                           text-white text-xl font-bold rounded-lg shadow-lg 
+                           text-white text-xl font-bold rounded-lg shadow-lg
                            transform hover:scale-105 transition-all duration-200
-                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100">
+                           active:scale-95
+                           disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100">
               <span class="flex items-center justify-center gap-2">
                 <span>🎰</span>
                 <span>投注</span>
@@ -2247,6 +2251,13 @@
               <option value="quad">🎰 四连</option>
               <option value="triple">✨ 三连</option>
               <option value="double">🎁 双连</option>
+              <option value="man_only">🎯 Man组合</option>
+              <option value="man_quad">🎰 Man×4</option>
+              <option value="symmetric">🔄 对称ABBA</option>
+              <option value="consecutive">⭐ 连续</option>
+              <option value="combination">🎁 组合</option>
+              <option value="any">🎲 任意</option>
+              <option value="double_pair">🎭 两对</option>
               <option value="punishment">⚡ 律师函</option>
               <option value="none">❌ 未中奖</option>
             </select>
@@ -4628,6 +4639,9 @@
                       slider.min = supremeBetMin;
                       slider.max = supremeBetMax;
                       slider.value = supremeBetMin;
+                      // 🔥 修复：设置合适的步长
+                      const range = supremeBetMax - supremeBetMin;
+                      slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
                       updateSupremeBetDisplay(supremeBetMin);
                     }
                     
@@ -5344,9 +5358,24 @@
       // 隐藏上次结果
       if (resultDiv) resultDiv.classList.add('hidden');
 
-      // 禁用所有按钮
-      if (spinButton) spinButton.disabled = true;
-      if (freeSpinButton) freeSpinButton.disabled = true;
+      // 禁用所有按钮并显示转动中状态
+      const originalSpinText = spinButton ? spinButton.innerHTML : '';
+      const originalFreeSpinText = freeSpinButton ? freeSpinButton.innerHTML : '';
+
+      if (spinButton) {
+        spinButton.disabled = true;
+        // 🔥 添加转动中状态显示
+        if (isInAdvancedMode) {
+          spinButton.innerHTML = '<span class="flex items-center justify-center gap-2"><span class="animate-spin">⚙️</span><span>转动中...</span></span>';
+        } else {
+          spinButton.innerHTML = '<span class="animate-spin">⚙️</span> 转动中...';
+        }
+      }
+      if (freeSpinButton) {
+        freeSpinButton.disabled = true;
+        // 🔥 添加转动中状态显示
+        freeSpinButton.innerHTML = '<span class="animate-spin">⚙️</span> 转动中...';
+      }
       isSpinning = true;
 
       try {
@@ -5377,6 +5406,10 @@
         if (!data.success) {
           showToast(data.message, 'error');
           isSpinning = false;
+
+          // 🔥 恢复按钮文本
+          if (spinButton) spinButton.innerHTML = originalSpinText;
+          if (freeSpinButton) freeSpinButton.innerHTML = originalFreeSpinText;
 
           // 任何错误都重新加载配置以同步最新数据
           try {
@@ -5507,9 +5540,17 @@
       } catch (error) {
         console.error('旋转失败:', error);
         showToast('旋转失败，请重试', 'error');
+
+        // 🔥 恢复按钮文本
+        if (spinButton) spinButton.innerHTML = originalSpinText;
+        if (freeSpinButton) freeSpinButton.innerHTML = originalFreeSpinText;
       } finally {
         isSpinning = false;
-        
+
+        // 🔥 恢复按钮文本
+        if (spinButton) spinButton.innerHTML = originalSpinText;
+        if (freeSpinButton) freeSpinButton.innerHTML = originalFreeSpinText;
+
         // 🔥 恢复按钮状态（区分高级场和初级场）
         if (isInAdvancedMode) {
           // 高级场：控制投注选择器内的按钮
@@ -5921,6 +5962,13 @@
             'quad': { name: '🎰 四连', count: 0, color: 'text-blue-600' },
             'triple': { name: '✨ 三连', count: 0, color: 'text-green-600' },
             'double': { name: '🎁 双连', count: 0, color: 'text-teal-600' },
+            'man_only': { name: '🎯 Man组合', count: 0, color: 'text-amber-600' },
+            'man_quad': { name: '🎰 Man×4', count: 0, color: 'text-orange-600' },
+            'symmetric': { name: '🔄 对称ABBA', count: 0, color: 'text-cyan-600' },
+            'consecutive': { name: '⭐ 连续', count: 0, color: 'text-blue-500' },
+            'combination': { name: '🎁 组合', count: 0, color: 'text-pink-600' },
+            'any': { name: '🎲 任意', count: 0, color: 'text-indigo-600' },
+            'double_pair': { name: '🎭 两对', count: 0, color: 'text-violet-600' },
             'punishment': { name: '⚡ 律师函', count: 0, color: 'text-red-600' },
             'none': { name: '❌ 未中奖', count: 0, color: 'text-slate-500' }
           };
@@ -6706,6 +6754,13 @@
           'quad': '(🎰 四连)',
           'triple': '(✨ 三连)',
           'double': '(🎁 双连)',
+          'man_only': '(🎯 Man组合)',
+          'man_quad': '(🎰 Man×4)',
+          'symmetric': '(🔄 对称ABBA)',
+          'consecutive': '(⭐ 连续)',
+          'combination': '(🎁 组合)',
+          'any': '(🎲 任意)',
+          'double_pair': '(🎭 两对)',
           'punishment': '(⚡ 惩罚)',
           'none': ''
         };
@@ -7332,6 +7387,9 @@
 
               slider.min = supremeBetMin;
               slider.max = supremeBetMax;
+              // 🔥 修复：设置合适的步长
+              const range = supremeBetMax - supremeBetMin;
+              slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
 
               // 🔥 如果当前值在新的范围内，保持不变；否则重置为最小值
               if (currentValue >= supremeBetMin && currentValue <= supremeBetMax) {
@@ -7465,12 +7523,15 @@
               
               if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
                 generateSupremeBetOptions(supremeBetMin, supremeBetMax);
-                
+
                 const slider = document.getElementById('supremeBetSlider');
                 if (slider) {
                   slider.min = supremeBetMin;
                   slider.max = supremeBetMax;
                   slider.value = supremeBetMin;
+                  // 🔥 修复：设置合适的步长
+                  const range = supremeBetMax - supremeBetMin;
+                  slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
                   updateSupremeBetDisplay(supremeBetMin);
                 }
               } else {
@@ -7970,8 +8031,10 @@
         slider.min = minBet;
         slider.max = maxBet;
         slider.value = supremeBetAmount || minBet;
-        slider.step = Math.max(100, Math.floor(range / 100));
-        console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value });
+        // 🔥 修复：使用类似高级场的步长计算，确保能覆盖整个范围
+        const range = maxBet - minBet;
+        slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
+        console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value, step: slider.step });
       } else {
         console.error('[至尊场] 找不到 supremeBetSlider 元素');
       }
