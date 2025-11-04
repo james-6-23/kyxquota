@@ -470,12 +470,13 @@ export function banUserFromSlot(linuxDoId: string, hours: number, slotMode: 'nor
         logger.error('惩罚', `异常时间戳不在合理范围内 (${minTimestamp} ~ ${maxTimestamp})`);
         // 使用默认60小时
         const safeBannedUntil = Date.now() + (60 * 3600000);
-        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, slotMode, now, safeBannedUntil, slotMode, now);
+        const safeHours = 60;
+        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, slotMode, safeHours, now, safeBannedUntil, slotMode, safeHours, now);
         logger.warn('惩罚', `已使用安全值 - 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(safeBannedUntil).toLocaleString('zh-CN')}`);
         return;
     }
     
-    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, slotMode, now, bannedUntil, slotMode, now);
+    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, slotMode, hours, now, bannedUntil, slotMode, hours, now);
     logger.info('惩罚', `用户 ${linuxDoId} 在【${slotMode === 'normal' ? '初级场' : slotMode === 'advanced' ? '高级场' : '至尊场'}】被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')} (${hours}小时后)`);
 }
 

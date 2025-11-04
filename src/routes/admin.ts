@@ -1320,7 +1320,8 @@ app.get('/users/banned', requireAdmin, async (c) => {
                     username: user?.username || fs.linux_do_id,
                     linux_do_username: user?.linux_do_username || null,
                     banned_until: fs.banned_until,
-                    ban_slot_mode: (fs as any).ban_slot_mode || 'normal'  // 🔥 添加场次类型
+                    ban_slot_mode: (fs as any).ban_slot_mode || 'normal',  // 🔥 添加场次类型
+                    ban_hours: (fs as any).ban_hours || 60  // 🔥 添加实际封禁小时数，默认60小时（兼容旧数据）
                 };
             });
 
