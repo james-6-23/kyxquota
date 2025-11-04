@@ -11527,7 +11527,7 @@
             linux_do_id: ban.linux_do_id,
             username: ban.username || ban.linux_do_id,
             linux_do_username: null,
-            banned_at: ban.banned_until - (60 * 60 * 1000),  // 推算封禁时间（60小时前）
+            banned_at: ban.banned_until - (60 * 3600 * 1000),  // 🔥 修复：推算封禁时间（60小时前 = 60 * 3600 * 1000）
             banned_until: ban.banned_until,
             banned_reason: '触发3个及以上律师函',
             type: 'temporary',
@@ -11556,9 +11556,16 @@
         allBans.sort((a, b) => (b.banned_at || 0) - (a.banned_at || 0));
         
         tbody.innerHTML = allBans.map(ban => {
-          const bannedTime = ban.banned_at ? new Date(ban.banned_at).toLocaleString('zh-CN') : '--';
-          const unbanTime = ban.banned_until ? new Date(ban.banned_until).toLocaleString('zh-CN') : '永久';
-          const isExpired = ban.banned_until && ban.banned_until < Date.now();
+          // 🔥 修复：更严格的时间验证，避免 Invalid Date
+          const bannedTime = (ban.banned_at && typeof ban.banned_at === 'number' && !isNaN(ban.banned_at))
+            ? new Date(ban.banned_at).toLocaleString('zh-CN', { hour12: false })
+            : '--';
+          const unbanTime = ban.banned_until
+            ? ((typeof ban.banned_until === 'number' && !isNaN(ban.banned_until))
+                ? new Date(ban.banned_until).toLocaleString('zh-CN', { hour12: false })
+                : '--')
+            : '永久';
+          const isExpired = ban.banned_until && typeof ban.banned_until === 'number' && ban.banned_until < Date.now();
           
           // 封禁类型
           const typeBadge = ban.type === 'permanent' 

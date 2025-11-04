@@ -1499,11 +1499,12 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             const verifyResult = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
             const actualBoughtToday = verifyResult?.total || 0;
 
-            logger.debug('购买次数', `验证插入 - 预期已购: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
+            logger.debug('购买次数', `验证插入 - 预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
 
-            // 如果实际购买数和预期不符，说明插入失败
-            if (actualBoughtToday !== totalBoughtToday + buyCount) {
-                throw new Error(`数据库插入验证失败，预期已购: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
+            // 🔥 修复并发问题：只要实际购买数大于等于预期值，就认为插入成功
+            // 如果actualBoughtToday > 预期值，说明有并发购买，但不影响本次购买的成功
+            if (actualBoughtToday < totalBoughtToday + buyCount) {
+                throw new Error(`数���库插入验证失败，预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
             }
 
             logger.info('购买次数', `购买成功 - 用户: ${user.username}, 数量: ${buyCount}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${actualBoughtToday}/${config.max_daily_buy_spins}`);
@@ -1539,12 +1540,16 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             }
         }
 
-        // 重新计算剩余次数（包含购买的次数）
+        // 🔥 重新计算剩余次数（使用实际的购买次数，避免并发问题）
         const todaySpins = getUserTodaySpins(session.linux_do_id);
-        const newBoughtToday = totalBoughtToday + buyCount;
-        const newRemainingSpins = Math.max(0, config.max_daily_spins + newBoughtToday - todaySpins);
 
-        logger.debug('购买次数', `计算剩余次数 - 用户: ${user.username}, 每日基础: ${config.max_daily_spins}, 今日已购: ${newBoughtToday}, 今日已玩: ${todaySpins}, 剩余: ${newRemainingSpins}`);
+        // 🔥 重新查询实际购买次数（因为可能有并发购买）
+        const finalBoughtResult = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+        const finalBoughtToday = finalBoughtResult?.total || 0;
+
+        const newRemainingSpins = Math.max(0, config.max_daily_spins + finalBoughtToday - todaySpins);
+
+        logger.debug('购买次数', `计算剩余次数 - 用户: ${user.username}, 每日基础: ${config.max_daily_spins}, 今日已购(实际): ${finalBoughtToday}, 今日已玩: ${todaySpins}, 剩余: ${newRemainingSpins}`);
 
         // 返回新的额度和购买信息
         return c.json({
@@ -1553,10 +1558,10 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             data: {
                 quota_after: newQuota,
                 remaining_spins: newRemainingSpins,
-                bought_today: newBoughtToday,
+                bought_today: finalBoughtToday,  // 🔥 使用实际购买次数
                 max_daily_buy: config.max_daily_buy_spins,
                 price: buyPrice,
-                buy_count: buyCount // 🔥 返回购买数量
+                buy_count: buyCount // 🔥 返回本次购买数量
             }
         });
 
