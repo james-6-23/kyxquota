@@ -458,8 +458,8 @@ export function isUserBanned(linuxDoId: string): { banned: boolean; bannedUntil:
  * @param slotMode 场次类型: 'normal' | 'advanced' | 'supreme'
  */
 export function banUserFromSlot(linuxDoId: string, hours: number, slotMode: 'normal' | 'advanced' | 'supreme' = 'normal') {
-    const now = Date.now();
-    const bannedUntil = now + (hours * 3600000); // 转换为毫秒
+    const now = Date.now();  // 🔥 封禁开始时间（触发惩罚的时刻）
+    const bannedUntil = now + (hours * 3600000); // 🔥 解封时间 = 开始时间 + 封禁小时数
     
     // 🔥 验证时间戳是否合理（2020-2100年之间）
     const minTimestamp = new Date('2020-01-01').getTime();
@@ -469,15 +469,17 @@ export function banUserFromSlot(linuxDoId: string, hours: number, slotMode: 'nor
         logger.error('惩罚', `封禁时间异常 - 用户: ${linuxDoId}, 计算值: ${bannedUntil}, now: ${now}, hours: ${hours}`);
         logger.error('惩罚', `异常时间戳不在合理范围内 (${minTimestamp} ~ ${maxTimestamp})`);
         // 使用默认60小时
-        const safeBannedUntil = Date.now() + (60 * 3600000);
+        const safeBannedAt = Date.now();
+        const safeBannedUntil = safeBannedAt + (60 * 3600000);
         const safeHours = 60;
-        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, slotMode, safeHours, now, safeBannedUntil, slotMode, safeHours, now);
+        slotQueries.setBannedUntil.run(linuxDoId, safeBannedAt, safeBannedUntil, slotMode, safeHours, now, safeBannedAt, safeBannedUntil, slotMode, safeHours, now);
         logger.warn('惩罚', `已使用安全值 - 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(safeBannedUntil).toLocaleString('zh-CN')}`);
         return;
     }
     
-    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, slotMode, hours, now, bannedUntil, slotMode, hours, now);
-    logger.info('惩罚', `用户 ${linuxDoId} 在【${slotMode === 'normal' ? '初级场' : slotMode === 'advanced' ? '高级场' : '至尊场'}】被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')} (${hours}小时后)`);
+    // 🔥 保存：封禁开始时间(now) + 解封时间(bannedUntil) + 场次类型 + 封禁小时数
+    slotQueries.setBannedUntil.run(linuxDoId, now, bannedUntil, slotMode, hours, now, now, bannedUntil, slotMode, hours, now);
+    logger.info('惩罚', `用户 ${linuxDoId} 在【${slotMode === 'normal' ? '初级场' : slotMode === 'advanced' ? '高级场' : '至尊场'}】于 ${new Date(now).toLocaleString('zh-CN')} 被封禁，将于 ${new Date(bannedUntil).toLocaleString('zh-CN')} 解封 (${hours}小时后)`);
 }
 
 /**

@@ -11464,21 +11464,27 @@
         
         // 老虎机免费次数表的封禁（临时封禁 - 律师函触发）
         freeSpinsBans.forEach(ban => {
-          // 🔥 修复：使用实际的封禁小时数来推算封禁开始时间
           const banHours = ban.ban_hours || 60;  // 默认60小时（兼容旧数据）
-          const bannedAt = ban.banned_until - (banHours * 3600 * 1000);
+          
+          // 🔥 修复：直接使用数据库中存储的封禁开始时间，而不是反推
+          let bannedAt = ban.banned_at;
+          
+          // 🔥 兼容旧数据：如果没有 banned_at，则反推（但会不准确）
+          if (!bannedAt || bannedAt === 0) {
+            bannedAt = ban.banned_until - (banHours * 3600 * 1000);
+          }
           
           allBans.push({
             linux_do_id: ban.linux_do_id,
             username: ban.username || ban.linux_do_id,
             linux_do_username: null,
-            banned_at: bannedAt,
+            banned_at: bannedAt,  // 🔥 使用实际的封禁开始时间
             banned_until: ban.banned_until,
             banned_reason: `触发3个及以上律师函（封禁${banHours}小时）`,
             type: 'temporary',
             is_active: ban.banned_until > Date.now(),
-            ban_slot_mode: ban.ban_slot_mode || 'normal',  // 🔥 添加场次类型
-            ban_hours: banHours  // 🔥 保存实际封禁小时数
+            ban_slot_mode: ban.ban_slot_mode || 'normal',
+            ban_hours: banHours
           });
         });
         

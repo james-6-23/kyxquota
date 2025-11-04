@@ -454,6 +454,14 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
+    // 添加 banned_at 字段（记录封禁开始时间的时间戳）
+    try {
+        db.exec('ALTER TABLE user_free_spins ADD COLUMN banned_at INTEGER DEFAULT 0');
+        console.log('✅ 已添加 banned_at 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 用户老虎机统计表（用于排行榜）
     db.exec(`
     CREATE TABLE IF NOT EXISTS user_slot_stats (
@@ -1695,7 +1703,7 @@ function initQueries() {
             'UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ? WHERE linux_do_id = ? AND free_spins > 0'
         ),
         setBannedUntil: db.query(
-            'INSERT INTO user_free_spins (linux_do_id, free_spins, banned_until, ban_slot_mode, ban_hours, updated_at) VALUES (?, 0, ?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET banned_until = ?, ban_slot_mode = ?, ban_hours = ?, updated_at = ?'
+            'INSERT INTO user_free_spins (linux_do_id, free_spins, banned_at, banned_until, ban_slot_mode, ban_hours, updated_at) VALUES (?, 0, ?, ?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET banned_at = ?, banned_until = ?, ban_slot_mode = ?, ban_hours = ?, updated_at = ?'
         ),
 
         // 用户统计
