@@ -4639,9 +4639,8 @@
                       slider.min = supremeBetMin;
                       slider.max = supremeBetMax;
                       slider.value = supremeBetMin;
-                      // 🔥 修复：设置合适的步长
-                      const range = supremeBetMax - supremeBetMin;
-                      slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
+                      // 🔥 动态计算步长，确保能精确到达最大值
+                      slider.step = calculateOptimalStep(supremeBetMin, supremeBetMax);
                       updateSupremeBetDisplay(supremeBetMin);
                     }
                     
@@ -7387,9 +7386,8 @@
 
               slider.min = supremeBetMin;
               slider.max = supremeBetMax;
-              // 🔥 修复：设置合适的步长
-              const range = supremeBetMax - supremeBetMin;
-              slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
+              // 🔥 动态计算步长，确保能精确到达最大值
+              slider.step = calculateOptimalStep(supremeBetMin, supremeBetMax);
 
               // 🔥 如果当前值在新的范围内，保持不变；否则重置为最小值
               if (currentValue >= supremeBetMin && currentValue <= supremeBetMax) {
@@ -7529,9 +7527,8 @@
                   slider.min = supremeBetMin;
                   slider.max = supremeBetMax;
                   slider.value = supremeBetMin;
-                  // 🔥 修复：设置合适的步长
-                  const range = supremeBetMax - supremeBetMin;
-                  slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
+                  // 🔥 动态计算步长，确保能精确到达最大值
+                  slider.step = calculateOptimalStep(supremeBetMin, supremeBetMax);
                   updateSupremeBetDisplay(supremeBetMin);
                 }
               } else {
@@ -7972,6 +7969,69 @@
       }
     }
     
+    // 💎 动态计算滑块步长（确保能精确到达最大值）
+    function calculateOptimalStep(minValue, maxValue) {
+      const range = maxValue - minValue;
+      
+      // 候选步长（从小到大的"好看"数字）
+      const candidates = [1, 2, 4, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000];
+      
+      // 优先找到能整除 range 的最大步长，档位数合理（20-200档最佳）
+      for (let i = candidates.length - 1; i >= 0; i--) {
+        const step = candidates[i];
+        if (range % step === 0) {
+          const levels = range / step;
+          if (levels >= 20 && levels <= 200) {
+            console.log(`[步长计算] 范围: ${range}, 步长: ${step}, 档位数: ${levels}`);
+            return step;
+          }
+        }
+      }
+      
+      // 放宽限制：10-1000档也可以接受
+      for (let i = candidates.length - 1; i >= 0; i--) {
+        const step = candidates[i];
+        if (range % step === 0) {
+          const levels = range / step;
+          if (levels >= 10 && levels <= 1000) {
+            console.log(`[步长计算] 范围: ${range}, 步长: ${step}, 档位数: ${levels} (放宽)`);
+            return step;
+          }
+        }
+      }
+      
+      // 如果候选列表中没有合适的，计算 range 的因数，从大到小尝试
+      const findDivisor = (target, minLevels, maxLevels) => {
+        for (let divisor = Math.floor(target / minLevels); divisor >= 1; divisor--) {
+          if (target % divisor === 0) {
+            const levels = target / divisor;
+            if (levels >= minLevels && levels <= maxLevels) {
+              return divisor;
+            }
+          }
+        }
+        return null;
+      };
+      
+      // 尝试找到产生 50-200 档位的因数
+      let step = findDivisor(range, 50, 200);
+      if (step) {
+        console.log(`[步长计算] 范围: ${range}, 计算步长: ${step}, 档位数: ${range/step}`);
+        return step;
+      }
+      
+      // 放宽到 20-500 档位
+      step = findDivisor(range, 20, 500);
+      if (step) {
+        console.log(`[步长计算] 范围: ${range}, 计算步长: ${step}, 档位数: ${range/step} (放宽)`);
+        return step;
+      }
+      
+      // 兜底：返回1（始终能整除，但档位可能很多）
+      console.log(`[步长计算] 范围: ${range}, 使用兜底步长: 1`);
+      return 1;
+    }
+    
     // 💎 生成至尊场投注选项按钮（紧凑版，类似高级场）
     function generateSupremeBetOptions(minBet, maxBet) {
       console.log('[generateSupremeBetOptions] 开始生成，参数:', { minBet, maxBet });
@@ -8031,9 +8091,8 @@
         slider.min = minBet;
         slider.max = maxBet;
         slider.value = supremeBetAmount || minBet;
-        // 🔥 修复：使用类似高级场的步长计算，确保能覆盖整个范围
-        const range = maxBet - minBet;
-        slider.step = range <= 100 ? 1 : (range <= 1000 ? 10 : (range <= 10000 ? 100 : 500));
+        // 🔥 动态计算步长，确保能精确到达最大值
+        slider.step = calculateOptimalStep(minBet, maxBet);
         console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value, step: slider.step });
       } else {
         console.error('[至尊场] 找不到 supremeBetSlider 元素');
