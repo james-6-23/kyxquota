@@ -141,8 +141,11 @@ slot.get('/config', requireAuth, async (c) => {
 
         const quota = kyxUserResult.user.quota;
 
+        // 🎯 关键修复：使用同一个日期变量进行所有查询
+        const today = getTodayDate();
+
         // 获取今日游玩次数
-        const todaySpins = getUserTodaySpins(session.linux_do_id);
+        const todaySpins = getUserTodaySpins(session.linux_do_id, today);  // 🎯 传入日期
 
         // 获取免费次数
         const freeSpins = getUserFreeSpins(session.linux_do_id);
@@ -179,9 +182,8 @@ slot.get('/config', requireAuth, async (c) => {
         // 获取奖励倍数配置
         const multipliers = getRewardMultipliers();
 
-        // 获取今日已购买次数（使用北京时间）
-        const today = getTodayDate();
-        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+        // 获取今日已购买次数（使用同一个 today 变量）
+        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);  // 🎯 使用同一个 today
         const boughtToday = todayBought?.total || 0;
 
         // 重新计算剩余次数（包含购买的次数）
@@ -339,9 +341,10 @@ slot.post('/spin', requireAuth, async (c) => {
         } else {
             // 🔥 初级场和高级场的限制检查
             if (inAdvancedMode) {
-                // 🔥 高级场：检查每日投注限额
+                // 🔥 高级场：检查每日投注限额（使用同一个 today 日期）
                 const advancedConfig = getAdvancedSlotConfig();
-                const todayBetTotal = getUserTodayBet(session.linux_do_id);
+                const today = getTodayDate();  // 🎯 获取今日日期
+                const todayBetTotal = getUserTodayBet(session.linux_do_id, today);  // 🎯 传入日期
                 const todayBetAmount = todayBetTotal / 500000;
                 const newTodayBet = todayBetTotal + betAmount;
                 const newTodayBetAmount = newTodayBet / 500000;
@@ -361,7 +364,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
                 const boughtToday = todayBought?.total || 0;
 
-                const todaySpins = getUserTodaySpins(session.linux_do_id);
+                const todaySpins = getUserTodaySpins(session.linux_do_id, today);  // 🎯 传入同一个 today
                 const totalAllowedSpins = config.max_daily_spins + boughtToday;
 
                 logger.debug('初级场检查', `用户: ${user.username}, 今日已玩: ${todaySpins}, 已购买: ${boughtToday}, 总允许: ${totalAllowedSpins}`);
@@ -721,12 +724,12 @@ slot.post('/spin', requireAuth, async (c) => {
         const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
         const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
 
-        // 🎯 关键修复：获取今日已购买次数（使用北京时间）
+        // 🎯 关键修复：获取今日已购买次数（使用北京时间，确保与抽奖检查时使用同一日期）
         const todayForSpinResult = getTodayDate();
         const todayBoughtAfter = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, todayForSpinResult);
         const boughtTodayAfter = todayBoughtAfter?.total || 0;
 
-        const todaySpinsAfter = getUserTodaySpins(session.linux_do_id);
+        const todaySpinsAfter = getUserTodaySpins(session.linux_do_id, todayForSpinResult);  // 🎯 传入同一个日期
         const freeSpinsAfter = getUserFreeSpins(session.linux_do_id);
 
         // 🎯 关键修复：计算剩余次数时必须包含购买次数！
@@ -1588,7 +1591,8 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         }
 
         // 🔥 重新计算剩余次数（使用实际的购买次数，避免并发问题）
-        const todaySpins = getUserTodaySpins(session.linux_do_id);
+        // 🎯 关键修复：确保使用同一个 today 日期变量
+        const todaySpins = getUserTodaySpins(session.linux_do_id, today);
 
         // 🔥 重新查询实际购买次数（因为可能有并发购买）
         const finalBoughtResult = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);

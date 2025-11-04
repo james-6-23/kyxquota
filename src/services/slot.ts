@@ -375,18 +375,22 @@ export function getSlotConfig() {
 
 /**
  * 获取用户今日游玩次数
+ * @param linuxDoId 用户ID
+ * @param date 可选的日期参数（YYYY-MM-DD格式），如果不传则使用当前北京时间日期
  */
-export function getUserTodaySpins(linuxDoId: string): number {
-    const today = getTodayDate();
+export function getUserTodaySpins(linuxDoId: string, date?: string): number {
+    const today = date || getTodayDate();
     const result = slotQueries.getTodaySpins.get(linuxDoId, today);
     return result?.count || 0;
 }
 
 /**
  * 获取用户今日总投注金额（用于高级场限额检查）
+ * @param linuxDoId 用户ID
+ * @param date 可选的日期参数（YYYY-MM-DD格式），如果不传则使用当前北京时间日期
  */
-export function getUserTodayBet(linuxDoId: string): number {
-    const today = getTodayDate();
+export function getUserTodayBet(linuxDoId: string, date?: string): number {
+    const today = date || getTodayDate();
     const result = slotQueries.getTodayStats.get(linuxDoId, today);
     return result?.total_bet || 0;
 }
