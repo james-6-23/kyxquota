@@ -453,8 +453,11 @@ export function isUserBanned(linuxDoId: string): { banned: boolean; bannedUntil:
 
 /**
  * 设置用户禁止抽奖
+ * @param linuxDoId 用户ID
+ * @param hours 封禁小时数
+ * @param slotMode 场次类型: 'normal' | 'advanced' | 'supreme'
  */
-export function banUserFromSlot(linuxDoId: string, hours: number) {
+export function banUserFromSlot(linuxDoId: string, hours: number, slotMode: 'normal' | 'advanced' | 'supreme' = 'normal') {
     const now = Date.now();
     const bannedUntil = now + (hours * 3600000); // 转换为毫秒
     
@@ -467,13 +470,13 @@ export function banUserFromSlot(linuxDoId: string, hours: number) {
         logger.error('惩罚', `异常时间戳不在合理范围内 (${minTimestamp} ~ ${maxTimestamp})`);
         // 使用默认60小时
         const safeBannedUntil = Date.now() + (60 * 3600000);
-        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, now, safeBannedUntil, now);
+        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, slotMode, now, safeBannedUntil, slotMode, now);
         logger.warn('惩罚', `已使用安全值 - 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(safeBannedUntil).toLocaleString('zh-CN')}`);
         return;
     }
     
-    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, now, bannedUntil, now);
-    logger.info('惩罚', `用户 ${linuxDoId} 被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')} (${hours}小时后)`);
+    slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, slotMode, now, bannedUntil, slotMode, now);
+    logger.info('惩罚', `用户 ${linuxDoId} 在【${slotMode === 'normal' ? '初级场' : slotMode === 'advanced' ? '高级场' : '至尊场'}】被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')} (${hours}小时后)`);
 }
 
 /**

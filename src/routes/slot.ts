@@ -473,9 +473,10 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🔥 检查是否需要封禁（3个及以上律师函）
         const shouldBan = result.punishmentCount && result.punishmentCount >= 3;
         if (shouldBan && result.banHours) {
-            // 🔥 修复：传递小时数而不是时间戳
-            banUserFromSlot(session.linux_do_id, result.banHours);
-            logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖${result.banHours}小时`);
+            // 🔥 修复：传递小时数而不是时间戳，并记录场次类型
+            const slotMode = inAdvancedMode ? 'advanced' : 'normal';
+            banUserFromSlot(session.linux_do_id, result.banHours, slotMode);
+            logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 在【${slotMode === 'normal' ? '初级场' : '高级场'}】禁止抽奖${result.banHours}小时`);
         }
 
         // 获取管理员配置（用于更新额度）

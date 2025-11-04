@@ -2727,12 +2727,20 @@
         <div id="bannedUsersSection" class="hidden">
           <div class="flex items-center justify-between mb-6">
             <h2 class="text-2xl font-bold text-slate-900">🚫 封禁记录管理</h2>
-            <button onclick="refreshBannedUsers()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              刷新
-            </button>
+            <div class="flex gap-3">
+              <button onclick="batchUnbanAllUsers()" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg transition-all shadow-sm font-semibold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path>
+                </svg>
+                🔓 一键解封全部
+              </button>
+              <button onclick="refreshBannedUsers()" class="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                刷新
+              </button>
+            </div>
           </div>
 
           <!-- 统计卡片 -->
@@ -2773,11 +2781,12 @@
               <div class="flex-1">
                 <h3 class="font-semibold text-amber-900 mb-2">关于封禁系统</h3>
                 <ul class="text-sm text-amber-800 space-y-1">
-                  <li>• <strong>临时封禁</strong>：触发3个及以上律师函自动封禁60小时（从最后一次触发算起）</li>
+                  <li>• <strong>临时封禁</strong>：触发律师函惩罚后自动封禁（时长由奖励配置方案中的惩罚配置决定）</li>
                   <li>• <strong>永久封禁</strong>：由管理员手动设置的永久封禁状态</li>
                   <li>• <strong>自动解封</strong>：临时封禁到期后系统会自动解封</li>
-                  <li>• <strong>手动解封</strong>：管理员可以提前解除任何封禁</li>
+                  <li>• <strong>手动解封</strong>：管理员可以提前解除任何封禁（包括使用批量解封）</li>
                   <li>• <strong>封禁影响</strong>：被封禁用户无法进行任何抽奖操作</li>
+                  <li>• <strong>场次标记</strong>：系统会记录封禁发生在哪个场次（初级场/高级场/至尊场）</li>
                 </ul>
               </div>
             </div>
@@ -2795,6 +2804,7 @@
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">封禁时间</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">解封时间</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">封禁原因</th>
+                    <th class="px-4 py-3 text-center font-semibold text-slate-700">触发场次</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">封禁类型</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
@@ -2802,7 +2812,7 @@
                 </thead>
                 <tbody id="bannedUsersTableBody">
                   <tr>
-                    <td colspan="9" class="text-center py-8 text-slate-500">加载中...</td>
+                    <td colspan="10" class="text-center py-8 text-slate-500">加载中...</td>
                   </tr>
                 </tbody>
               </table>
@@ -5659,42 +5669,31 @@
     let slotCurrentPage = 1;
     let slotPageSize = 50;
 
-    // 全局变量：存储所有记录用于筛选
-    let allAdminSlotRecords = [];
-    let filteredAdminSlotRecords = [];
-    let allRecordsLoaded = false;
-    
+    // 🚀 优化：移除前端大批量加载，使用服务端筛选
     async function loadSlotRecords(page = 1) {
       if (page < 1) return;
-      
-      // 第一次加载时，获取所有记录（用于筛选）
-      if (!allRecordsLoaded) {
-        try {
-          // 🔥 修复：使用正确的API路径加载所有记录
-          const recordsRes = await fetch('/api/admin/records/slot?page=1&pageSize=1000');
-          const recordsData = await recordsRes.json();
-          if (recordsData.success && recordsData.data) {
-            allAdminSlotRecords = recordsData.data;
-            filteredAdminSlotRecords = allAdminSlotRecords;
-            allRecordsLoaded = true;
-          }
-        } catch (e) {
-          console.error('获取所有记录失败，将使用分页模式:', e);
-        }
-      }
-      
+
       try {
-        const res = await fetch(`/api/admin/records/slot?page=${page}&pageSize=${slotPageSize}`);
+        // 🚀 优化：使用服务端筛选，将搜索参数传给后端
+        const searchInput = document.getElementById('adminRecordSearchInput')?.value.trim() || '';
+
+        // 构建请求 URL
+        let url = `/api/admin/records/slot?page=${page}&pageSize=${slotPageSize}`;
+        if (searchInput) {
+          url += `&username=${encodeURIComponent(searchInput)}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.success) {
           slotCurrentPage = data.pagination.page;
-          
+
           const tbody = document.getElementById('slotTableBody');
 
           // 更新统计信息
           document.getElementById('slotTotal').textContent = data.pagination.total;
-          document.getElementById('slotFiltered').textContent = filteredAdminSlotRecords.length;
+          document.getElementById('slotFiltered').textContent = data.pagination.total;
           document.getElementById('slotCurrentPage').textContent = data.pagination.page;
           document.getElementById('slotTotalPages').textContent = data.pagination.totalPages;
 
@@ -5713,12 +5712,12 @@
               const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
               return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-8 h-8 inline-block border border-slate-300 rounded mr-1">`;
             }).join('');
-            
+
             const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
             const typeClass = r.is_free_spin ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700';
             const typeLabel = r.is_free_spin ? '免费' : '普通';
 
-            // 🔥 优先显示rule_name，如果为空则使用winType映射
+            // 优先显示rule_name，如果为空则使用winType映射
             const displayWinType = r.rule_name || (() => {
               const winTypeLabels = {
                 'super_jackpot': '🏆 超级大奖',
@@ -5772,17 +5771,16 @@
     async function refreshSlotRecords() {
       const icon = document.getElementById('slotRefreshIcon');
       icon.classList.add('animate-spin');
-      
+
       try {
-        // 🔥 修复：重新加载所有数据
-        allRecordsLoaded = false;  // 强制重新加载
-        await loadSlotRecords(1);  // 从第一页开始
+        // 🚀 优化：直接重新加载第一页
+        await loadSlotRecords(1);
         showToast('记录已刷新', 'success');
       } catch (error) {
         console.error('刷新失败:', error);
         showToast('刷新失败', 'error');
       }
-      
+
       setTimeout(() => icon.classList.remove('animate-spin'), 500);
     }
 
@@ -5791,19 +5789,11 @@
       loadSlotRecords(1);
     }
 
-    // Admin记录筛选功能
+    // 🚀 优化：Admin记录筛选功能改为触发服务端筛选
     function filterAdminSlotRecords() {
-      const searchInput = document.getElementById('adminRecordSearchInput').value.trim().toLowerCase();
-      const winTypeFilter = document.getElementById('adminWinTypeFilter').value;
-      
-      let filtered = allAdminSlotRecords;
-      
-      // 🔥 按用户名筛选（留空则显示所有）
-      if (searchInput) {
-        filtered = filtered.filter(r => {
-          const linuxDoUsername = (r.linux_do_username || '').toLowerCase();
-          const kyxUsername = (r.username || '').toLowerCase();
-          return linuxDoUsername.includes(searchInput) || kyxUsername.includes(searchInput);
+      // 直接重新加载，搜索参数会在 loadSlotRecords 中被使用
+      loadSlotRecords(1);
+    }
         });
       }
       // 如果searchInput为空，不过滤，显示所有记录
@@ -11231,73 +11221,72 @@
       winType: 'all'
     };
     
-    async function loadSupremeRecords() {
+    // 🚀 优化：至尊场记录加载（使用服务端分页和筛选）
+    let supremeCurrentPage = 1;
+    let supremePageSize = 50;
+
+    async function loadSupremeRecords(page = 1) {
+      if (page < 1) return;
+
       try {
-        const res = await fetch('/api/admin/supreme/records');
+        // 🚀 优化：使用服务端筛选和分页
+        const username = supremeSlotFilters.username || '';
+        let url = `/api/admin/supreme/records?page=${page}&pageSize=${supremePageSize}`;
+        if (username) {
+          url += `&username=${encodeURIComponent(username)}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
-        
+
         if (!data.success) {
           showToast('加载记录失败', 'error');
           return;
         }
-        
-        let records = data.data || [];
-        
-        // 💎 存储所有记录（用于筛选）
-        supremeSlotAllRecords = [...records];
-        
-        // 💎 应用筛选
-        if (supremeSlotFilters.username) {
-          records = records.filter(r => 
-            (r.linux_do_username && r.linux_do_username.toLowerCase().includes(supremeSlotFilters.username.toLowerCase())) ||
-            (r.username && r.username.toLowerCase().includes(supremeSlotFilters.username.toLowerCase()))
-          );
-        }
-        
-        if (supremeSlotFilters.winType !== 'all') {
-          // 🔥 优先使用 rule_name 匹配，如果没有则回退到 win_type 匹配
-          records = records.filter(r => {
-            // 如果有 rule_name，直接匹配
-            if (r.rule_name) {
-              return r.rule_name === supremeSlotFilters.winType;
-            }
-            // 如果没有 rule_name，回退到 win_type 匹配
-            return r.win_type === supremeSlotFilters.winType;
-          });
-        }
-        
-        // 💎 计算统计数据
+
+        supremeCurrentPage = data.pagination?.page || 1;
+        const records = data.data || [];
+
+        // 💎 计算统计数据（基于当前筛选结果）
         const stats = {
-          count: supremeSlotAllRecords.length,
-          total_bet: supremeSlotAllRecords.reduce((sum, r) => sum + (r.bet_amount || 0), 0),
-          total_win: supremeSlotAllRecords.reduce((sum, r) => sum + (r.win_amount || 0), 0)
+          count: data.pagination?.total || records.length,
+          total_bet: records.reduce((sum, r) => sum + (r.bet_amount || 0), 0),
+          total_win: records.reduce((sum, r) => sum + (r.win_amount || 0), 0)
         };
-        
+
         // 💎 更新统计信息
         document.getElementById('supremeSlotTotal').textContent = stats.count;
         document.getElementById('supremeSlotTotalBet').textContent = `$${(stats.total_bet / 500000).toFixed(2)}`;
         document.getElementById('supremeSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
         const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
         document.getElementById('supremeSlotRTP').textContent = `${rtp}%`;
-        
+
+        // 💎 更新分页信息
+        if (data.pagination) {
+          document.getElementById('supremeCurrentPage').textContent = data.pagination.page;
+          document.getElementById('supremeTotalPages').textContent = data.pagination.totalPages;
+          document.getElementById('supremePrevBtn').disabled = data.pagination.page <= 1;
+          document.getElementById('supremeNextBtn').disabled = !data.pagination.hasMore;
+        }
+
         // 💎 显示筛选提示
         const hintEl = document.getElementById('supremeFilterResultHint');
         if (hintEl) {
-          if (records.length !== supremeSlotAllRecords.length) {
-            hintEl.textContent = `📊 筛选结果: ${records.length} / ${supremeSlotAllRecords.length} 条记录`;
+          if (username) {
+            hintEl.textContent = `📊 筛选结果: ${stats.count} 条记录`;
             hintEl.classList.remove('hidden');
           } else {
             hintEl.classList.add('hidden');
           }
         }
-        
+
         const tbody = document.getElementById('supremeRecordsTableBody');
-        
+
         if (records.length === 0) {
           tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-slate-500">暂无游戏记录</td></tr>';
           return;
         }
-        
+
         // 💎 中奖类型名称映射（fallback使用）
         const winTypeNames = {
           'super_jackpot': '🏆 超级大奖',
@@ -11390,42 +11379,42 @@
       }
     }
     
-    // 💎 至尊场记录筛选函数
+    // 💎 至尊场记录筛选函数（🚀 优化：回到第一页）
     function filterSupremeSlotRecords() {
       supremeSlotFilters.username = document.getElementById('supremeRecordSearchInput').value.trim();
       supremeSlotFilters.winType = document.getElementById('supremeWinTypeFilter').value;
-      
-      loadSupremeRecords();
+
+      loadSupremeRecords(1);  // 🚀 回到第一页
     }
-    
-    // 💎 刷新并保留筛选条件
+
+    // 💎 刷新并保留筛选条件（🚀 优化：刷新当前页）
     async function refreshSupremeRecordsKeepFilter() {
       const refreshBtn = event?.target?.closest('button');
       const refreshIcon = refreshBtn?.querySelector('svg');
       if (refreshIcon) {
         refreshIcon.classList.add('animate-spin');
       }
-      
-      await loadSupremeRecords();
-      
+
+      await loadSupremeRecords(supremeCurrentPage);  // 🚀 保持当前页
+
       if (refreshIcon) {
         refreshIcon.classList.remove('animate-spin');
       }
     }
-    
-    // 💎 清除至尊场筛选条件
+
+    // 💎 清除至尊场筛选条件（🚀 优化：回到第一页）
     function clearSupremeRecordFilters() {
       document.getElementById('supremeRecordSearchInput').value = '';
       document.getElementById('supremeWinTypeFilter').value = 'all';
-      
+
       supremeSlotFilters.username = '';
       supremeSlotFilters.winType = 'all';
-      
-      loadSupremeRecords();
-      
+
+      loadSupremeRecords(1);  // 🚀 回到第一页
+
       showToast('已重置筛选条件', 'success');
     }
-    
+
     // 💎 刷新至尊场记录（清除筛选）
     function refreshSupremeRecords() {
       clearSupremeRecordFilters();
@@ -11547,7 +11536,8 @@
             banned_until: ban.banned_until,
             banned_reason: '触发3个及以上律师函',
             type: 'temporary',
-            is_active: ban.banned_until > Date.now()
+            is_active: ban.banned_until > Date.now(),
+            ban_slot_mode: ban.ban_slot_mode || 'normal'  // 🔥 添加场次类型
           });
         });
         
@@ -11564,7 +11554,7 @@
         const tbody = document.getElementById('bannedUsersTableBody');
         
         if (allBans.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="9" class="text-center py-8 text-green-600 font-semibold">🎉 当前没有被封禁的用户</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="text-center py-8 text-green-600 font-semibold">🎉 当前没有被封禁的用户</td></tr>';
           return;
         }
         
@@ -11582,6 +11572,18 @@
                 : '--')
             : '永久';
           const isExpired = ban.banned_until && typeof ban.banned_until === 'number' && ban.banned_until < Date.now();
+          
+          // 场次类型标签
+          let slotModeBadge = '<span class="text-slate-400 text-xs">--</span>';
+          if (ban.type === 'temporary' && ban.ban_slot_mode) {
+            const modeConfig = {
+              'normal': { text: '初级场', color: 'bg-blue-100 text-blue-800', icon: '🎰' },
+              'advanced': { text: '高级场', color: 'bg-purple-100 text-purple-800', icon: '💎' },
+              'supreme': { text: '至尊场', color: 'bg-amber-100 text-amber-800', icon: '👑' }
+            };
+            const config = modeConfig[ban.ban_slot_mode] || modeConfig['normal'];
+            slotModeBadge = `<span class="px-2 py-1 ${config.color} rounded-full text-xs font-semibold">${config.icon} ${config.text}</span>`;
+          }
           
           // 封禁类型
           const typeBadge = ban.type === 'permanent' 
@@ -11612,6 +11614,7 @@
               <td class="px-4 py-3">
                 <div class="text-sm text-slate-700">${ban.banned_reason}</div>
               </td>
+              <td class="px-4 py-3 text-center">${slotModeBadge}</td>
               <td class="px-4 py-3 text-center">${typeBadge}</td>
               <td class="px-4 py-3 text-center">${statusBadge}</td>
               <td class="px-4 py-3 text-center">${actionButtons}</td>
@@ -11656,6 +11659,78 @@
         showToast('解封操作失败，请重试', 'error');
       }
     }
+    
+    // 批量解封所有用户
+    async function batchUnbanAllUsers() {
+      try {
+        // 先获取当前所有封禁用户
+        const res = await fetch('/api/admin/users/banned');
+        const data = await res.json();
+        
+        if (!data.success) {
+          showToast('获取封禁列表失败', 'error');
+          return;
+        }
+        
+        // 合并两种封禁记录
+        const bannedUsers = data.data.users || [];
+        const freeSpinsBans = data.data.freeSpinsBans || [];
+        
+        // 统计需要解封的用户数量
+        const activeBannedCount = bannedUsers.length + freeSpinsBans.filter(b => b.banned_until > Date.now()).length;
+        
+        if (activeBannedCount === 0) {
+          showToast('当前没有被封禁的用户', 'info');
+          return;
+        }
+        
+        if (!confirm(`确认要批量解封所有 ${activeBannedCount} 个被封禁的用户吗？\n\n此操作将解除：\n• ${bannedUsers.length} 个永久封禁用户\n• ${freeSpinsBans.filter(b => b.banned_until > Date.now()).length} 个临时封禁用户\n\n解封后所有用户都可以继续进行抽奖。`)) {
+          return;
+        }
+        
+        // 收集所有需要解封的用户ID（去重）
+        const userIds = new Set();
+        bannedUsers.forEach(u => userIds.add(u.linux_do_id));
+        freeSpinsBans.forEach(b => userIds.add(b.linux_do_id));
+        
+        // 批量解封
+        let successCount = 0;
+        let failCount = 0;
+        
+        showToast(`开始批量解封 ${userIds.size} 个用户...`, 'info');
+        
+        for (const userId of userIds) {
+          try {
+            const unbanRes = await fetch(`/api/admin/users/${userId}/unban`, {
+              method: 'POST'
+            });
+            const unbanData = await unbanRes.json();
+            
+            if (unbanData.success) {
+              successCount++;
+            } else {
+              failCount++;
+            }
+          } catch (err) {
+            failCount++;
+            console.error(`解封用户 ${userId} 失败:`, err);
+          }
+        }
+        
+        // 显示结果
+        if (failCount === 0) {
+          showToast(`🎉 批量解封完成！成功解封 ${successCount} 个用户`, 'success');
+        } else {
+          showToast(`批量解封完成：成功 ${successCount} 个，失败 ${failCount} 个`, failCount > successCount ? 'error' : 'warning');
+        }
+        
+        // 刷新列表
+        setTimeout(() => loadBannedUsers(), 500);
+      } catch (error) {
+        console.error('批量解封失败:', error);
+        showToast('批量解封操作失败，请重试', 'error');
+      }
+    }
 
     // 高级场游戏记录
     let advancedSlotCurrentPage = 1;
@@ -11666,49 +11741,31 @@
       winType: 'all'
     };
 
+    // 🚀 优化：高级场记录加载（使用服务端筛选）
     async function loadAdvancedSlotRecords(page = 1) {
       try {
         advancedSlotCurrentPage = page;
-        const res = await fetch(`/api/admin/slot/advanced/records?page=${page}&pageSize=${advancedSlotPageSize}`);
+
+        // 🚀 优化：使用服务端筛选
+        const username = advancedSlotFilters.username || '';
+        let url = `/api/admin/slot/advanced/records?page=${page}&pageSize=${advancedSlotPageSize}`;
+        if (username) {
+          url += `&username=${encodeURIComponent(username)}`;
+        }
+
+        const res = await fetch(url);
         const data = await res.json();
 
         if (data.success) {
-          let { records, total, stats } = data.data;
-          
-          // 🔥 存储所有记录
-          advancedSlotAllRecords = records;
-          
-          // 🔥 应用筛选
-          if (advancedSlotFilters.username) {
-            records = records.filter(r => 
-              (r.linux_do_username && r.linux_do_username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase())) ||
-              (r.username && r.username.toLowerCase().includes(advancedSlotFilters.username.toLowerCase()))
-            );
-          }
-          
-          if (advancedSlotFilters.winType !== 'all') {
-            // 🔥 优先使用 rule_name 匹配，如果没有则回退到 win_type 匹配
-            records = records.filter(r => {
-              // 如果有 rule_name，直接匹配
-              if (r.rule_name) {
-                return r.rule_name === advancedSlotFilters.winType;
-              }
-              // 如果没有 rule_name，回退到 win_type 匹配
-              return r.win_type === advancedSlotFilters.winType;
-            });
-          }
-          
-          // 更新总数（筛选后）
-          total = records.length;
-          
+          const { records, total, stats } = data.data;
+
           // 更新统计信息
           document.getElementById('advancedSlotTotal').textContent = stats.count;
           document.getElementById('advancedSlotTotalBet').textContent = `$${(stats.total_bet / 500000).toFixed(2)}`;
           document.getElementById('advancedSlotTotalWin').textContent = `$${(stats.total_win / 500000).toFixed(2)}`;
-          const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_bet) * 100).toFixed(2) : '0.00';
+          const rtp = stats.total_bet > 0 ? ((stats.total_win / stats.total_win) * 100).toFixed(2) : '0.00';
           document.getElementById('advancedSlotRTP').textContent = `${rtp}%`;
-          
-          
+
           // 渲染表格
           const tbody = document.getElementById('advancedSlotRecordsBody');
           if (records.length === 0) {
@@ -11717,7 +11774,7 @@
             tbody.innerHTML = records.map(r => {
               const symbols = JSON.parse(r.result_symbols);
 
-              // 🔥 优先显示rule_name，如果为空则使用winType映射
+              // 优先显示rule_name，如果为空则使用winType映射
               const displayWinType = r.rule_name || (() => {
                 const winTypeNames = {
                   'super_jackpot': '🏆 超级大奖',
@@ -11753,7 +11810,6 @@
                   <td class="px-4 py-3 text-sm">
                     <div class="flex gap-1">
                       ${symbols.map(s => {
-                        // 🔥 修复：lq, bj, bdk 使用 jpg，其他符号使用 png
                         const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
                         return `<img src="/slot-symbols/${s}.${ext}" class="w-8 h-8 object-contain" title="${s}">`;
                       }).join('')}
@@ -11766,13 +11822,13 @@
               `;
             }).join('');
           }
-          
+
           // 更新分页
           document.getElementById('advancedSlotRecordsTotal').textContent = total;
           document.getElementById('advancedSlotCurrentPage').textContent = page;
           document.getElementById('advancedSlotPrevBtn').disabled = page <= 1;
           document.getElementById('advancedSlotNextBtn').disabled = records.length < advancedSlotPageSize;
-          
+
           if (total > 0) {
             document.getElementById('advancedSlotRecordsPagination').classList.remove('hidden');
           }

@@ -468,16 +468,37 @@ app.get('/records/donate', requireAdmin, async (c) => {
 });
 
 /**
- * 获取老虎机记录（分页）
+ * 获取老虎机记录（分页，🚀 支持按用户筛选）
  */
 app.get('/records/slot', requireAdmin, async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const pageSize = parseInt(c.req.query('pageSize') || '50');
+    const username = c.req.query('username') || '';  // 🚀 新增：用户筛选参数
 
     const offset = (page - 1) * pageSize;
-    // 只获取初级场记录（slot_mode = 'normal' 或 NULL）
-    const records = slotQueries.getNormalRecordsPaginated.all(pageSize, offset);
-    const totalCount = slotQueries.countNormalRecords.get()!.count;
+    let records, totalCount;
+
+    if (username) {
+        // 🚀 按用户筛选（搜索 linux_do_id 或 username）
+        const searchPattern = `%${username}%`;
+        records = slotQueries.getNormalRecordsByUserPaginated.all(
+            username,           // 精确匹配 linux_do_id
+            searchPattern,      // 模糊匹配 linux_do_username
+            searchPattern,      // 模糊匹配 username
+            pageSize,
+            offset
+        );
+        totalCount = slotQueries.countNormalRecordsByUser.get(
+            username,
+            searchPattern,
+            searchPattern
+        )!.count;
+    } else {
+        // 获取全部初级场记录
+        records = slotQueries.getNormalRecordsPaginated.all(pageSize, offset);
+        totalCount = slotQueries.countNormalRecords.get()!.count;
+    }
+
     const totalPages = Math.ceil(totalCount / pageSize);
 
     return c.json({
@@ -1038,151 +1059,104 @@ app.get('/users', requireAdmin, async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const pageSize = parseInt(c.req.query('pageSize') || '20');
 
-    // 获取所有用户
-    const users = userQueries.getAll.all();
+    try {
+        // 🚀 优化：使用数据库 JOIN 聚合，一次查询获取所有统计
+        const offset = (page - 1) * pageSize;
+        const users = userQueries.getAllWithStats.all(pageSize, offset);
+        const totalCount = userQueries.count.get()!.count;
+        const totalPages = Math.ceil(totalCount / pageSize);
 
-    // 获取所有领取和投喂记录
-    const claimRecords = claimQueries.getAll.all();
-    const donateRecords = donateQueries.getAll.all();
-
-    // 统计每个用户的数据
-    const userStats = users.map((user) => {
-        const userClaims = claimRecords.filter(
-            (r) => r.linux_do_id === user.linux_do_id
-        );
-        const userDonates = donateRecords.filter(
-            (r) => r.linux_do_id === user.linux_do_id
-        );
-
-        const totalClaimCount = userClaims.length;
-        const totalClaimQuota = userClaims.reduce(
-            (sum, r) => sum + r.quota_added,
-            0
-        );
-        const totalDonateCount = userDonates.reduce(
-            (sum, r) => sum + r.keys_count,
-            0
-        );
-        const totalDonateQuota = userDonates.reduce(
-            (sum, r) => sum + r.total_quota_added,
-            0
-        );
-
-        return {
+        // 🚀 格式化返回数据（数据已由数据库聚合完成）
+        const userStats = users.map((user: any) => ({
             username: user.username,
             linux_do_id: user.linux_do_id,
+            linux_do_username: user.linux_do_username,
+            kyx_user_id: user.kyx_user_id,
             created_at: user.created_at,
             is_banned: user.is_banned || 0,
             banned_at: user.banned_at,
             banned_reason: user.banned_reason,
-            claim_count: totalClaimCount,
-            claim_quota: totalClaimQuota,
-            donate_count: totalDonateCount,
-            donate_quota: totalDonateQuota,
-            total_quota: totalClaimQuota + totalDonateQuota,
-        };
-    });
+            claim_count: user.claim_count,
+            claim_quota: user.total_claim_quota,
+            donate_count: user.donate_count,
+            donate_quota: user.total_donate_quota,
+            total_quota: user.total_claim_quota + user.total_donate_quota
+        }));
 
-    // 按总额度排序
-    userStats.sort((a, b) => b.total_quota - a.total_quota);
-
-    // 分页
-    const totalCount = userStats.length;
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const offset = (page - 1) * pageSize;
-    const paginatedData = userStats.slice(offset, offset + pageSize);
-
-    return c.json({
-        success: true,
-        data: paginatedData,
-        pagination: {
-            page,
-            pageSize,
-            total: totalCount,
-            totalPages,
-            hasMore: page < totalPages,
-        },
-    });
+        return c.json({
+            success: true,
+            data: userStats,
+            pagination: {
+                page,
+                pageSize,
+                total: totalCount,
+                totalPages,
+                hasMore: page < totalPages
+            }
+        });
+    } catch (error: any) {
+        console.error('[管理员] 获取用户列表失败:', error);
+        return c.json({ success: false, message: '获取用户列表失败' }, 500);
+    }
 });
 
 /**
- * 导出用户数据
+ * 导出用户数据（🚀 优化：使用数据库聚合，分批查询）
  */
 app.get('/export/users', requireAdmin, async (c) => {
     try {
-        // 获取所有用户
-        const users = userQueries.getAll.all();
+        // 🚀 优化：使用数据库聚合查询，分批加载避免内存溢出
+        const batchSize = 500;
+        let offset = 0;
+        let allUsers: any[] = [];
+        let hasMore = true;
 
-        // 获取所有领取和投喂记录
-        const claimRecords = claimQueries.getAll.all();
-        const donateRecords = donateQueries.getAll.all();
+        while (hasMore) {
+            const users = userQueries.getAllWithStats.all(batchSize, offset);
+            if (users.length === 0) {
+                hasMore = false;
+            } else {
+                allUsers = allUsers.concat(users);
+                offset += batchSize;
+                hasMore = users.length === batchSize;
+            }
+        }
 
         // 构建导出数据
         const exportData = {
             export_time: new Date().toISOString(),
-            total_users: users.length,
-            users: users
-                .map((user) => {
-                    const userClaims = claimRecords.filter(
-                        (r) => r.linux_do_id === user.linux_do_id
-                    );
-                    const userDonates = donateRecords.filter(
-                        (r) => r.linux_do_id === user.linux_do_id
-                    );
-
-                    const totalClaimCount = userClaims.length;
-                    const totalClaimQuota = userClaims.reduce(
-                        (sum, r) => sum + r.quota_added,
-                        0
-                    );
-                    const totalDonateCount = userDonates.reduce(
-                        (sum, r) => sum + r.keys_count,
-                        0
-                    );
-                    const totalDonateQuota = userDonates.reduce(
-                        (sum, r) => sum + r.total_quota_added,
-                        0
-                    );
-
-                    return {
-                        username: user.username,
-                        linux_do_id: user.linux_do_id,
-                        kyx_user_id: user.kyx_user_id,
-                        created_at: user.created_at,
-                        created_date: new Date(user.created_at).toLocaleString('zh-CN'),
-                        statistics: {
-                            claim_count: totalClaimCount,
-                            claim_quota: totalClaimQuota,
-                            claim_quota_cny: (totalClaimQuota / 500000).toFixed(2),
-                            donate_count: totalDonateCount,
-                            donate_quota: totalDonateQuota,
-                            donate_quota_cny: (totalDonateQuota / 500000).toFixed(2),
-                            total_quota: totalClaimQuota + totalDonateQuota,
-                            total_quota_cny: (
-                                (totalClaimQuota + totalDonateQuota) /
-                                500000
-                            ).toFixed(2),
-                        },
-                    };
-                })
+            total_users: allUsers.length,
+            users: allUsers
+                .map((user: any) => ({
+                    username: user.username,
+                    linux_do_id: user.linux_do_id,
+                    kyx_user_id: user.kyx_user_id,
+                    created_at: user.created_at,
+                    created_date: new Date(user.created_at).toLocaleString('zh-CN'),
+                    statistics: {
+                        claim_count: user.claim_count,
+                        claim_quota: user.total_claim_quota,
+                        claim_quota_cny: (user.total_claim_quota / 500000).toFixed(2),
+                        donate_count: user.donate_count,
+                        donate_quota: user.total_donate_quota,
+                        donate_quota_cny: (user.total_donate_quota / 500000).toFixed(2),
+                        total_quota: user.total_claim_quota + user.total_donate_quota,
+                        total_quota_cny: ((user.total_claim_quota + user.total_donate_quota) / 500000).toFixed(2),
+                    },
+                }))
                 .sort((a, b) => b.statistics.total_quota - a.statistics.total_quota),
         };
 
-        // 返回 JSON 文件
-        const filename = `users_export_${new Date().toISOString().split('T')[0]}.json`;
-
-        return c.json(exportData, 200, {
-            'Content-Disposition': `attachment; filename="${filename}"`,
-        });
-    } catch (e: any) {
-        console.error('导出用户数据失败:', e);
-        return c.json(
-            {
-                success: false,
-                message: '导出失败: ' + (e.message || '未知错误'),
-            },
-            500
+        c.header('Content-Type', 'application/json; charset=utf-8');
+        c.header(
+            'Content-Disposition',
+            `attachment; filename="users_export_${Date.now()}.json"`
         );
+
+        return c.json(exportData);
+    } catch (error: any) {
+        console.error('[管理员] 导出用户数据失败:', error);
+        return c.json({ success: false, message: '导出失败' }, 500);
     }
 });
 
@@ -1345,7 +1319,8 @@ app.get('/users/banned', requireAdmin, async (c) => {
                     linux_do_id: fs.linux_do_id,
                     username: user?.username || fs.linux_do_id,
                     linux_do_username: user?.linux_do_username || null,
-                    banned_until: fs.banned_until
+                    banned_until: fs.banned_until,
+                    ban_slot_mode: (fs as any).ban_slot_mode || 'normal'  // 🔥 添加场次类型
                 };
             });
 
@@ -2253,34 +2228,42 @@ app.post('/slot/advanced/config', requireAdmin, async (c) => {
 /**
  * 获取高级场游戏记录
  */
+/**
+ * 获取高级场记录（🚀 优化：支持分页和用户筛选）
+ */
 app.get('/slot/advanced/records', requireAdmin, async (c) => {
     try {
         const page = parseInt(c.req.query('page') || '1');
         const pageSize = parseInt(c.req.query('pageSize') || '50');
+        const username = c.req.query('username') || '';  // 🚀 新增：用户筛选参数
 
-        // 查询高级场记录（slot_mode = 'advanced'）
-        const records = db.query(`
-            SELECT * FROM slot_machine_records 
-            WHERE slot_mode = 'advanced'
-            ORDER BY timestamp DESC 
-            LIMIT ? OFFSET ?
-        `).all(pageSize, (page - 1) * pageSize);
+        const offset = (page - 1) * pageSize;
+        let records, total;
 
-        const totalResult = db.query(`
-            SELECT COUNT(*) as total FROM slot_machine_records WHERE slot_mode = 'advanced'
-        `).get() as { total: number };
+        if (username) {
+            // 🚀 按用户筛选
+            const searchPattern = `%${username}%`;
+            records = slotQueries.getAdvancedRecordsByUserPaginated.all(
+                username,
+                searchPattern,
+                searchPattern,
+                pageSize,
+                offset
+            );
+            total = slotQueries.countAdvancedRecordsByUser.get(
+                username,
+                searchPattern,
+                searchPattern
+            )!.count;
+        } else {
+            // 获取全部高级场记录
+            records = slotQueries.getAdvancedRecordsPaginated.all(pageSize, offset);
+            total = slotQueries.countAdvancedRecords.get()!.count;
+        }
 
-        const total = totalResult?.total || 0;
-
-        // 统计信息
-        const statsResult = db.query(`
-            SELECT 
-                COUNT(*) as count,
-                COALESCE(SUM(bet_amount), 0) as total_bet,
-                COALESCE(SUM(win_amount), 0) as total_win
-            FROM slot_machine_records 
-            WHERE slot_mode = 'advanced'
-        `).get() as { count: number, total_bet: number, total_win: number };
+        // 统计信息（基于筛选结果）
+        const totalBet = records.reduce((sum: number, r: any) => sum + r.bet_amount, 0);
+        const totalWin = records.reduce((sum: number, r: any) => sum + r.win_amount, 0);
 
         return c.json({
             success: true,
@@ -2289,7 +2272,11 @@ app.get('/slot/advanced/records', requireAdmin, async (c) => {
                 total,
                 page,
                 pageSize,
-                stats: statsResult
+                stats: {
+                    count: total,
+                    total_bet: totalBet,
+                    total_win: totalWin
+                }
             }
         });
     } catch (e: any) {
@@ -3368,14 +3355,52 @@ app.post('/supreme/config', requireAdmin, async (c) => {
 /**
  * 获取至尊场游戏记录
  */
+/**
+ * 获取至尊场记录（🚀 优化：支持分页和用户筛选）
+ */
 app.get('/supreme/records', requireAdmin, async (c) => {
     try {
         const { supremeSlotQueries } = await import('../database');
-        const records = supremeSlotQueries.getAllRecords.all();
+        const page = parseInt(c.req.query('page') || '1');
+        const pageSize = parseInt(c.req.query('pageSize') || '50');
+        const username = c.req.query('username') || '';  // 🚀 新增：用户筛选参数
+
+        const offset = (page - 1) * pageSize;
+        let records, total;
+
+        if (username) {
+            // 🚀 按用户筛选
+            const searchPattern = `%${username}%`;
+            records = supremeSlotQueries.getRecordsByUserPaginated.all(
+                username,
+                searchPattern,
+                searchPattern,
+                pageSize,
+                offset
+            );
+            total = supremeSlotQueries.countRecordsByUser.get(
+                username,
+                searchPattern,
+                searchPattern
+            )!.count;
+        } else {
+            // 获取全部至尊场记录
+            records = supremeSlotQueries.getAllRecordsPaginated.all(pageSize, offset);
+            total = supremeSlotQueries.countRecords.get()!.count;
+        }
+
+        const totalPages = Math.ceil(total / pageSize);
 
         return c.json({
             success: true,
-            data: records
+            data: records,
+            pagination: {
+                page,
+                pageSize,
+                total,
+                totalPages,
+                hasMore: page < totalPages
+            }
         });
     } catch (error: any) {
         console.error('[至尊场管理] 获取记录失败:', error);

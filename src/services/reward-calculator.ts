@@ -78,7 +78,7 @@ export function calculateWinByScheme(
         // 检查是否有man的严格2连
         const hasManPair = hasManConsecutivePair(symbols);
         const finalMultiplier = hasManPair ? 10 * manMultiplier : 10;
-        
+
         return {
             winType: 'symmetric',
             multiplier: finalMultiplier,
@@ -98,18 +98,18 @@ export function calculateWinByScheme(
         if (matched) {
             // 🔥 调试日志：输出匹配的规则信息
             console.log(`[规则匹配] 符号:${symbols}, 匹配规则:"${rule.rule_name}", pattern:${rule.match_pattern}, required:${rule.required_symbols}, 倍率:${rule.win_multiplier}, 优先级:${rule.priority}`);
-            
+
             let finalMultiplier = rule.win_multiplier;
             let ruleName = rule.rule_name;
-            
+
             // 如果有man符号，并且匹配的是严格连续规则，应用man加成
             if (manMultiplier > 1.0) {
                 // 🔥 检查是否是专门的Man规则（避免双重计算）
                 let isManSpecificRule = false;
                 try {
                     if (rule.required_symbols) {
-                        const requiredArr = Array.isArray(rule.required_symbols) 
-                            ? rule.required_symbols 
+                        const requiredArr = Array.isArray(rule.required_symbols)
+                            ? rule.required_symbols
                             : JSON.parse(rule.required_symbols);
                         // 如果required_symbols只包含"man"，说明是专门的man规则
                         isManSpecificRule = requiredArr.length === 1 && requiredArr[0] === 'man';
@@ -117,16 +117,19 @@ export function calculateWinByScheme(
                 } catch (e) {
                     // 解析失败，按非man专用规则处理
                 }
-                
+
                 // 只对非man专用规则应用man加成
                 if (!isManSpecificRule) {
-                    // 检查是否是严格连续规则
-                    if (rule.match_pattern === 'consecutive' || 
-                        rule.match_pattern === '2-consecutive' || 
+                    // 检查是否是严格连续规则或any规则
+                    if (rule.match_pattern === 'consecutive' ||
+                        rule.match_pattern === '2-consecutive' ||
                         rule.match_pattern === '3-consecutive' ||
-                        rule.match_pattern === '4-consecutive') {
-                        
-                        // 严格连续规则可以与man组合
+                        rule.match_pattern === '4-consecutive' ||
+                        rule.match_pattern === 'any' ||
+                        rule.match_pattern === '2-any' ||
+                        rule.match_pattern === '3-any') {
+
+                        // 严格连续规则或any规则可以与man组合
                         finalMultiplier = rule.win_multiplier * manMultiplier;
                         ruleName = `${rule.rule_name}+man×${manMultiplier}`;
                     } else if (rule.match_pattern === 'double_pair') {
@@ -138,7 +141,7 @@ export function calculateWinByScheme(
                     }
                 }
             }
-            
+
             return {
                 winType: rule.rule_type,
                 multiplier: finalMultiplier,
@@ -194,7 +197,7 @@ function hasManConsecutivePair(symbols: string[]): boolean {
 function getMaxConsecutive(symbols: string[], target: string): number {
     let maxConsecutive = 0;
     let currentConsecutive = 0;
-    
+
     for (const symbol of symbols) {
         if (symbol === target) {
             currentConsecutive++;
@@ -203,7 +206,7 @@ function getMaxConsecutive(symbols: string[], target: string): number {
             currentConsecutive = 0;
         }
     }
-    
+
     return maxConsecutive;
 }
 
@@ -272,14 +275,14 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
         case 'consecutive':
             // N个连续相同符号（严格相邻）
             const n = parseInt(pattern.split('-')[0]) || matchCount;
-            
+
             // 🔥 如果指定了required_symbols，必须验证符号类型
             if (requiredSymbols && requiredSymbols.length > 0) {
                 // 检查是否有指定符号的N连
                 const targetSymbol = requiredSymbols[0];
                 return hasConsecutiveOfType(symbols, n, targetSymbol);
             }
-            
+
             // 没有指定required_symbols，任意符号N连即可
             return hasConsecutive(symbols, n);
 

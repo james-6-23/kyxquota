@@ -56,6 +56,12 @@ export function initDatabase() {
     )
   `);
 
+    // 🚀 优化：为用户表添加索引
+    db.exec('CREATE INDEX IF NOT EXISTS idx_users_linux_do_username ON users(linux_do_username)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_users_is_banned ON users(is_banned)');
+
     // 添加封禁相关字段（兼容旧数据库）
     try {
         db.exec('ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0');
@@ -387,6 +393,16 @@ export function initDatabase() {
     db.exec(
         'CREATE INDEX IF NOT EXISTS idx_slot_timestamp ON slot_machine_records(timestamp)'
     );
+    // 🚀 优化：为用户筛选字段添加索引
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_slot_linux_do_username ON slot_machine_records(linux_do_username)'
+    );
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_slot_username ON slot_machine_records(username)'
+    );
+    db.exec(
+        'CREATE INDEX IF NOT EXISTS idx_slot_mode ON slot_machine_records(slot_mode)'
+    );
 
     // 添加 linux_do_username 字段（兼容旧数据库）
     try {
@@ -418,6 +434,14 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE user_free_spins ADD COLUMN banned_until INTEGER DEFAULT 0');
         console.log('✅ 已添加 banned_until 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 添加 ban_slot_mode 字段（记录封禁发生的场次类型）
+    try {
+        db.exec('ALTER TABLE user_free_spins ADD COLUMN ban_slot_mode TEXT DEFAULT NULL');
+        console.log('✅ 已添加 ban_slot_mode 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -955,6 +979,9 @@ export function initDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_linux_do_id ON supreme_slot_records(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_timestamp ON supreme_slot_records(timestamp)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_date ON supreme_slot_records(date)');
+    // 🚀 优化：为至尊场记录用户筛选字段添加索引
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_linux_do_username ON supreme_slot_records(linux_do_username)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_supreme_records_username ON supreme_slot_records(username)');
 
     // 添加 rule_name 字段到至尊场记录表（兼容旧数据库）
     try {
@@ -1413,6 +1440,34 @@ function initQueries() {
             'UPDATE users SET username = ?, linux_do_username = ?, kyx_user_id = ? WHERE linux_do_id = ?'
         ),
         getAll: db.query<User, never>('SELECT * FROM users'),
+        // 🚀 优化：使用 JOIN 聚合获取用户统计（替代内存中过滤）
+        getAllWithStats: db.query<any, [number, number]>(`
+            SELECT
+                u.*,
+                COALESCE(c.claim_count, 0) as claim_count,
+                COALESCE(c.total_claim_quota, 0) as total_claim_quota,
+                COALESCE(d.donate_count, 0) as donate_count,
+                COALESCE(d.total_donate_quota, 0) as total_donate_quota
+            FROM users u
+            LEFT JOIN (
+                SELECT linux_do_id,
+                       COUNT(*) as claim_count,
+                       SUM(quota_added) as total_claim_quota
+                FROM claim_records
+                GROUP BY linux_do_id
+            ) c ON u.linux_do_id = c.linux_do_id
+            LEFT JOIN (
+                SELECT linux_do_id,
+                       SUM(keys_count) as donate_count,
+                       SUM(total_quota_added) as total_donate_quota
+                FROM donate_records
+                GROUP BY linux_do_id
+            ) d ON u.linux_do_id = d.linux_do_id
+            ORDER BY u.created_at DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：获取用户总数（用于分页）
+        count: db.query<{ count: number }, never>('SELECT COUNT(*) as count FROM users'),
         getAllLinuxDoIds: db.query<{ linux_do_id: string }, never>('SELECT linux_do_id FROM users WHERE is_banned = 0'),
         getBannedUsers: db.query<User, never>('SELECT * FROM users WHERE is_banned = 1 ORDER BY banned_at DESC'),
         ban: db.query(
@@ -1566,12 +1621,48 @@ function initQueries() {
         getNormalRecordsPaginated: db.query<SlotMachineRecord, [number, number]>(
             'SELECT * FROM slot_machine_records WHERE slot_mode = "normal" OR slot_mode IS NULL ORDER BY timestamp DESC LIMIT ? OFFSET ?'
         ),
+        // 🚀 优化：按用户筛选初级场记录（支持分页）
+        getNormalRecordsByUserPaginated: db.query<SlotMachineRecord, [string, string, string, number, number]>(`
+            SELECT * FROM slot_machine_records
+            WHERE (slot_mode = "normal" OR slot_mode IS NULL)
+            AND (linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?)
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：按用户筛选初级场记录总数
+        countNormalRecordsByUser: db.query<{ count: number }, [string, string, string]>(`
+            SELECT COUNT(*) as count FROM slot_machine_records
+            WHERE (slot_mode = "normal" OR slot_mode IS NULL)
+            AND (linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?)
+        `),
         countRecords: db.query<{ count: number }, never>(
             'SELECT COUNT(*) as count FROM slot_machine_records'
         ),
         countNormalRecords: db.query<{ count: number }, never>(
             'SELECT COUNT(*) as count FROM slot_machine_records WHERE slot_mode = "normal" OR slot_mode IS NULL'
         ),
+        // 🚀 优化：高级场记录分页
+        getAdvancedRecordsPaginated: db.query<SlotMachineRecord, [number, number]>(
+            'SELECT * FROM slot_machine_records WHERE slot_mode = "advanced" ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+        ),
+        // 🚀 优化：按用户筛选高级场记录
+        getAdvancedRecordsByUserPaginated: db.query<SlotMachineRecord, [string, string, string, number, number]>(`
+            SELECT * FROM slot_machine_records
+            WHERE slot_mode = "advanced"
+            AND (linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?)
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：高级场记录总数
+        countAdvancedRecords: db.query<{ count: number }, never>(
+            'SELECT COUNT(*) as count FROM slot_machine_records WHERE slot_mode = "advanced"'
+        ),
+        // 🚀 优化：按用户筛选高级场记录总数
+        countAdvancedRecordsByUser: db.query<{ count: number }, [string, string, string]>(`
+            SELECT COUNT(*) as count FROM slot_machine_records
+            WHERE slot_mode = "advanced"
+            AND (linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?)
+        `),
         getTodaySpins: db.query<{ count: number }, [string, string]>(
             'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND is_free_spin = 0'
         ),
@@ -1596,7 +1687,7 @@ function initQueries() {
             'UPDATE user_free_spins SET free_spins = free_spins - 1, updated_at = ? WHERE linux_do_id = ? AND free_spins > 0'
         ),
         setBannedUntil: db.query(
-            'INSERT INTO user_free_spins (linux_do_id, free_spins, banned_until, updated_at) VALUES (?, 0, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET banned_until = ?, updated_at = ?'
+            'INSERT INTO user_free_spins (linux_do_id, free_spins, banned_until, ban_slot_mode, updated_at) VALUES (?, 0, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET banned_until = ?, ban_slot_mode = ?, updated_at = ?'
         ),
 
         // 用户统计
@@ -2079,6 +2170,26 @@ function initQueries() {
         getAllRecords: db.query<any, never>(
             'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT 200'
         ),
+        // 🚀 优化：至尊场记录分页
+        getAllRecordsPaginated: db.query<any, [number, number]>(
+            'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+        ),
+        // 🚀 优化：按用户筛选至尊场记录
+        getRecordsByUserPaginated: db.query<any, [string, string, string, number, number]>(`
+            SELECT * FROM supreme_slot_records
+            WHERE linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：至尊场记录总数
+        countRecords: db.query<{ count: number }, never>(
+            'SELECT COUNT(*) as count FROM supreme_slot_records'
+        ),
+        // 🚀 优化：按用户筛选至尊场记录总数
+        countRecordsByUser: db.query<{ count: number }, [string, string, string]>(`
+            SELECT COUNT(*) as count FROM supreme_slot_records
+            WHERE linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?
+        `),
 
         // 掉落记录
         insertDropRecord: db.query(
@@ -2530,6 +2641,26 @@ function initQueries() {
         getAllRecords: db.query<any, never>(
             'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT 200'
         ),
+        // 🚀 优化：至尊场记录分页
+        getAllRecordsPaginated: db.query<any, [number, number]>(
+            'SELECT * FROM supreme_slot_records ORDER BY timestamp DESC LIMIT ? OFFSET ?'
+        ),
+        // 🚀 优化：按用户筛选至尊场记录
+        getRecordsByUserPaginated: db.query<any, [string, string, string, number, number]>(`
+            SELECT * FROM supreme_slot_records
+            WHERE linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：至尊场记录总数
+        countRecords: db.query<{ count: number }, never>(
+            'SELECT COUNT(*) as count FROM supreme_slot_records'
+        ),
+        // 🚀 优化：按用户筛选至尊场记录总数
+        countRecordsByUser: db.query<{ count: number }, [string, string, string]>(`
+            SELECT COUNT(*) as count FROM supreme_slot_records
+            WHERE linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?
+        `),
 
         // 掉落记录
         insertDropRecord: db.query(

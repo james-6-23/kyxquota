@@ -391,8 +391,8 @@ supreme.post('/spin', requireAuth, async (c) => {
         // 🔥 处理律师函惩罚封禁（与初级场/高级场保持一致）
         if (winResult.punishmentCount && winResult.banHours && winResult.banHours > 0) {
             const { banUserFromSlot } = await import('../services/slot');
-            banUserFromSlot(session.linux_do_id!, winResult.banHours);
-            logger.info('至尊场', `🚫 严重惩罚 - 用户: ${user.username}, 律师函数量: ${winResult.punishmentCount}, 禁止抽奖${winResult.banHours}小时`);
+            banUserFromSlot(session.linux_do_id!, winResult.banHours, 'supreme');
+            logger.info('至尊场', `🚫 严重惩罚 - 用户: ${user.username}, 在【至尊场】律师函数量: ${winResult.punishmentCount}, 禁止抽奖${winResult.banHours}小时`);
         }
 
         // ========== 成就系统检查 ==========
