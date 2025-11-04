@@ -470,8 +470,9 @@ slot.post('/spin', requireAuth, async (c) => {
         // 🔥 检查是否需要封禁（3个及以上律师函）
         const shouldBan = result.punishmentCount && result.punishmentCount >= 3;
         if (shouldBan && result.banHours) {
-            const bannedUntil = Date.now() + (result.banHours * 3600000);
-            banUserFromSlot(session.linux_do_id, bannedUntil);
+            // 🔥 修复：传递小时数而不是时间戳
+            banUserFromSlot(session.linux_do_id, result.banHours);
+            logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖${result.banHours}小时`);
         }
 
         // 获取管理员配置（用于更新额度）
@@ -611,11 +612,7 @@ slot.post('/spin', requireAuth, async (c) => {
                 }
             }
 
-            // 如果是严重惩罚（3个及以上），禁止抽奖2.5天
-            if (result.shouldBan) {
-                banUserFromSlot(session.linux_do_id, 60);  // 60小时 = 2.5天
-                logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 禁止抽奖60小时（2.5天）`);
-            }
+            // 🔥 封禁逻辑已移至上方（第472-476行），使用配置的 banHours，此处删除硬编码的60小时
         }
 
         // 如果奖励免费次数
@@ -744,8 +741,10 @@ slot.post('/spin', requireAuth, async (c) => {
             // 惩罚消息
             const deductedAmount = Math.abs(winAmount);
             message = `⚡ 律师函警告！收到 ${result.punishmentCount} 份律师函，扣除 $${(deductedAmount / 500000).toFixed(2)} 额度`;
-            if (result.shouldBan) {
-                message += ' | 🚫 已被禁止抽奖60小时（2.5天）';
+            // 🔥 使用配置的封禁时长，不硬编码
+            if (result.banHours && result.banHours > 0) {
+                const days = (result.banHours / 24).toFixed(1);
+                message += ` | 🚫 已被禁止抽奖${result.banHours}小时（${days}天）`;
             }
         } else {
             // 正常中奖消息 - 使用规则名称而不是固定映射

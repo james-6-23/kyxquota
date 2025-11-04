@@ -337,11 +337,50 @@ supreme.post('/spin', requireAuth, async (c) => {
                     logger.info('至尊场', `✅ 添加奖金成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 新余额: ${quotaAfter}`);
                 }
             }
+        } else if (winAmount < 0) {
+            // 🔥 惩罚扣除（律师函）
+            const punishmentAmount = Math.abs(winAmount);
+
+            // 获取当前最新额度
+            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
+            if (!currentKyxUser.success || !currentKyxUser.user) {
+                logger.error('至尊场', `❌ 惩罚时获取用户信息失败 - 用户: ${getUserDisplayName(session.linux_do_id)}`);
+                // 惩罚失败不阻止游戏继续，但需要记录
+            } else {
+                const currentQuotaForPunishment = currentKyxUser.user.quota;
+                // 计算实际扣除金额，确保不会为负数
+                const actualDeduction = Math.min(punishmentAmount, currentQuotaForPunishment);
+                const newQuotaAfterPunishment = currentQuotaForPunishment - actualDeduction;
+
+                logger.info('至尊场', `准备扣除惩罚 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuotaForPunishment}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
+
+                const deductPunishmentResult = await updateKyxUserQuota(
+                    user.kyx_user_id,
+                    newQuotaAfterPunishment,
+                    adminConfig.session,
+                    adminConfig.new_api_user,
+                    user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
+                    kyxUserResult.user.group || 'default'
+                );
+
+                if (!deductPunishmentResult || !deductPunishmentResult.success) {
+                    logger.error('至尊场', `❌ 惩罚扣除失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${deductPunishmentResult?.message || '未知错误'}`);
+                    // 将 winAmount 设为0表示惩罚失败
+                    winAmount = 0;
+                } else {
+                    quotaAfter = newQuotaAfterPunishment;
+                    // winAmount 保持为负数，用于记录
+                    winAmount = -actualDeduction;
+                    logger.info('至尊场', `✅ 惩罚扣除成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 扣除: $${(actualDeduction / 500000).toFixed(2)}, 新余额: ${quotaAfter}`);
+                }
+            }
         }
 
-        // 处理律师函惩罚禁止
+        // 🔥 处理律师函惩罚封禁（与初级场/高级场保持一致）
         if (winResult.punishmentCount && winResult.banHours && winResult.banHours > 0) {
-            // TODO: 实现禁止抽奖逻辑（需要在 user_free_spins 表中设置）
+            const { banUserFromSlot } = await import('../services/slot');
+            banUserFromSlot(session.linux_do_id!, winResult.banHours);
+            logger.info('至尊场', `🚫 严重惩罚 - 用户: ${user.username}, 律师函数量: ${winResult.punishmentCount}, 禁止抽奖${winResult.banHours}小时`);
         }
 
         // ========== 成就系统检查 ==========
