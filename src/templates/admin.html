@@ -10375,22 +10375,22 @@
                 <!-- 规则名称 -->
                 <div>
                   <label class="block text-sm font-medium text-slate-700 mb-2">规则名称 *</label>
-                  <input type="text" id="editRuleName" value="${rule.rule_name}" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                  <input type="text" id="editRuleName" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                 </div>
                 
                 <!-- 中奖倍率、免费转和优先级 -->
                 <div class="grid grid-cols-3 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">中奖倍率 *</label>
-                    <input type="number" id="editWinMultiplier" value="${rule.win_multiplier}" step="0.1" min="0" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <input type="number" id="editWinMultiplier" step="0.1" min="0" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">赠送免费转</label>
-                    <input type="number" id="editGrantFreeSpin" value="${rule.grant_free_spin}" min="0" max="10" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
+                    <input type="number" id="editGrantFreeSpin" min="0" max="10" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200">
                   </div>
                   <div>
                     <label class="block text-sm font-medium text-slate-700 mb-2">优先级</label>
-                    <input type="number" id="editRulePriority" value="${rule.priority || 0}" min="0" max="100" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" title="数字越大优先级越高">
+                    <input type="number" id="editRulePriority" min="0" max="100" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" title="数字越大优先级越高">
                   </div>
                 </div>
                 
@@ -10406,7 +10406,7 @@
                 <!-- 规则描述 -->
                 <div>
                   <label class="block text-sm font-medium text-slate-700 mb-2">规则描述</label>
-                  <textarea id="editRuleDescription" rows="3" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="可选：添加规则说明...">${rule.description || ''}</textarea>
+                  <textarea id="editRuleDescription" rows="3" class="w-full px-4 py-2 border-2 border-slate-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-200" placeholder="可选：添加规则说明..."></textarea>
                 </div>
                 
                 <!-- 只读信息展示 -->
@@ -10432,7 +10432,7 @@
                     ${rule.required_symbols ? `
                     <div class="bg-white p-2 rounded border border-slate-200 col-span-2">
                       <span class="text-slate-500">必需符号：</span>
-                      <span class="font-semibold text-indigo-700">${rule.required_symbols}</span>
+                      <span class="font-semibold text-indigo-700">${typeof rule.required_symbols === 'string' ? rule.required_symbols : JSON.stringify(rule.required_symbols)}</span>
                     </div>
                     ` : ''}
                   </div>
@@ -10448,12 +10448,26 @@
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
         
-        // 🔥 安全设置隐藏字段的值（避免 HTML 注入和引号问题）
+        // 🔥 安全设置字段的值（避免 HTML 注入和引号问题）
+        // 可编辑字段 - 文本类型
+        document.getElementById('editRuleName').value = rule.rule_name || '';
+        document.getElementById('editRuleDescription').value = rule.description || '';
+        
+        // 可编辑字段 - 数值类型
+        document.getElementById('editWinMultiplier').value = rule.win_multiplier || 0;
+        document.getElementById('editGrantFreeSpin').value = rule.grant_free_spin || 0;
+        document.getElementById('editRulePriority').value = rule.priority || 0;
+        
+        // 隐藏字段（核心配置，只读）
         document.getElementById('editRuleType').value = rule.rule_type || '';
         document.getElementById('editRuleCategory').value = rule.rule_category || '';
         document.getElementById('editMatchPattern').value = rule.match_pattern || '';
         document.getElementById('editMatchCount').value = rule.match_count || '';
-        document.getElementById('editRequiredSymbols').value = rule.required_symbols || '';
+        // 🔒 保持 required_symbols 的原始格式（可能是 JSON 字符串或数组）
+        const requiredSymbolsValue = typeof rule.required_symbols === 'string' 
+          ? rule.required_symbols 
+          : (rule.required_symbols ? JSON.stringify(rule.required_symbols) : '');
+        document.getElementById('editRequiredSymbols').value = requiredSymbolsValue;
         
       } catch (error) {
         console.error('加载规则失败:', error);
@@ -10475,7 +10489,9 @@
       const ruleCategory = document.getElementById('editRuleCategory').value || null;
       const matchPattern = document.getElementById('editMatchPattern').value;
       const matchCount = document.getElementById('editMatchCount').value;
-      const requiredSymbols = document.getElementById('editRequiredSymbols').value || null;
+      // 🔥 确保 required_symbols 保持原始 JSON 格式
+      const requiredSymbolsValue = document.getElementById('editRequiredSymbols').value;
+      const requiredSymbols = requiredSymbolsValue.trim() ? requiredSymbolsValue : null;
       
       const data = {
         rule_name: ruleName,
