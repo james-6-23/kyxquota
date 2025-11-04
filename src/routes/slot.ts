@@ -1470,7 +1470,10 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         const linuxDoUsername = session.username || user.linux_do_username || null;
 
         try {
-            const insertResult = slotQueries.insertBuySpinsRecord.run(
+            logger.debug('购买次数', `准备插入记录 - linux_do_id: ${session.linux_do_id}, username: ${user.username}, linux_do_username: ${linuxDoUsername}, buyCount: ${buyCount}, buyPrice: ${buyPrice}, today: ${today}`);
+
+            // 🔥 执行插入
+            slotQueries.insertBuySpinsRecord.run(
                 session.linux_do_id,
                 user.username,
                 linuxDoUsername,
@@ -1480,15 +1483,21 @@ slot.post('/buy-spins', requireAuth, async (c) => {
                 today
             );
 
-            // 验证插入是否成功
-            if (!insertResult || (insertResult.changes !== undefined && insertResult.changes === 0)) {
-                throw new Error('数据库插入失败，changes = 0');
+            // 🔥 验证插入是否成功 - 查询今日已购次数
+            const verifyResult = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+            const actualBoughtToday = verifyResult?.total || 0;
+
+            logger.debug('购买次数', `验证插入 - 预期已购: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
+
+            // 如果实际购买数和预期不符，说明插入失败
+            if (actualBoughtToday !== totalBoughtToday + buyCount) {
+                throw new Error(`数据库插入验证失败，预期已购: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
             }
 
-            logger.info('购买次数', `购买成功 - 用户: ${user.username}, 数量: ${buyCount}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${totalBoughtToday + buyCount}/${config.max_daily_buy_spins}`);
+            logger.info('购买次数', `购买成功 - 用户: ${user.username}, 数量: ${buyCount}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${actualBoughtToday}/${config.max_daily_buy_spins}`);
 
         } catch (dbError: any) {
-            logger.error('购买次数', `数据库记录失败 - 用户: ${user.username}, 错误: ${dbError.message}`);
+            logger.error('购买次数', `数据库记录失败 - 用户: ${user.username}, 错误: ${dbError.message}, stack: ${dbError.stack || '无堆栈信息'}`);
 
             // 🔥 尝试回滚额度（将扣除的额度还回去）
             logger.warn('购买次数', `尝试回滚额度 - 用户: ${user.username}, 从 ${newQuota} 恢复到 ${currentQuota}`);
