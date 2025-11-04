@@ -3631,5 +3631,144 @@ app.post('/calculate-probability', requireAdmin, async (c) => {
     }
 });
 
+/**
+ * 批量发放成就给所有用户
+ */
+app.post('/grant-achievement-all', requireAdmin, async (c) => {
+    try {
+        const { achievement_key } = await c.req.json();
+
+        if (!achievement_key) {
+            return c.json({
+                success: false,
+                message: '缺少成就标识 (achievement_key)'
+            }, 400);
+        }
+
+        console.log(`[管理员] 开始批量发放成就: ${achievement_key}`);
+
+        // 动态导入成就系统模块
+        const { achievementQueries } = await import('../database');
+        const { addQuota } = await import('../services/kyx-api');
+
+        // 获取成就定义
+        const achievement = achievementQueries.getByKey.get(achievement_key);
+        if (!achievement) {
+            return c.json({
+                success: false,
+                message: `成就不存在: ${achievement_key}`
+            }, 404);
+        }
+
+        console.log(`[管理员] 成就信息: ${achievement.achievement_name} - 奖励: $${(achievement.reward_quota / 500000).toFixed(2)}`);
+
+        // 获取管理员配置（用于发放额度）
+        const adminConfig = adminQueries.get.get();
+        if (!adminConfig) {
+            return c.json({
+                success: false,
+                message: '未找到管理员配置，无法发放额度奖励'
+            }, 500);
+        }
+
+        // 获取所有用户
+        const allUsers = userQueries.getAll.all();
+        console.log(`[管理员] 共找到 ${allUsers.length} 个用户`);
+
+        let successCount = 0;
+        let alreadyHasCount = 0;
+        let errorCount = 0;
+        const errors: string[] = [];
+
+        for (const user of allUsers) {
+            try {
+                // 检查用户是否已拥有该成就
+                const existingAchievement = achievementQueries.getUserAchievement.get(
+                    user.linux_do_id,
+                    achievement_key
+                );
+
+                if (existingAchievement) {
+                    alreadyHasCount++;
+                    continue;
+                }
+
+                // 创建成就记录
+                const now = Date.now();
+                achievementQueries.insertUserAchievement.run(
+                    user.linux_do_id,
+                    achievement_key,
+                    now,
+                    null  // progress
+                );
+
+                console.log(`[管理员] ✅ 用户 ${user.linux_do_username || user.linux_do_id} 成就已解锁`);
+
+                // 发放额度奖励
+                if (user.kyx_user_id && achievement.reward_quota > 0) {
+                    try {
+                        const quotaResult = await addQuota(
+                            user.kyx_user_id,
+                            achievement.reward_quota,
+                            adminConfig.session,
+                            adminConfig.new_api_user,
+                            `成就奖励-${achievement.achievement_name}`,
+                            5  // 5次重试
+                        );
+
+                        if (quotaResult.success) {
+                            console.log(`[管理员]    💰 额度奖励已发放: $${(achievement.reward_quota / 500000).toFixed(2)}`);
+                            successCount++;
+                        } else {
+                            const errMsg = `用户 ${user.linux_do_username || user.linux_do_id} 额度发放失败: ${quotaResult.message}`;
+                            console.error(`[管理员]    ⚠️  ${errMsg}`);
+                            errors.push(errMsg);
+                            errorCount++;
+                        }
+                    } catch (quotaError: any) {
+                        const errMsg = `用户 ${user.linux_do_username || user.linux_do_id} 额度发放异常: ${quotaError.message}`;
+                        console.error(`[管理员]    ⚠️  ${errMsg}`);
+                        errors.push(errMsg);
+                        errorCount++;
+                    }
+                } else {
+                    successCount++;
+                }
+
+                // 等待一小段时间，避免API限流
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+            } catch (error: any) {
+                const errMsg = `处理用户 ${user.linux_do_username || user.linux_do_id} 失败: ${error.message}`;
+                console.error(`[管理员] ❌ ${errMsg}`);
+                errors.push(errMsg);
+                errorCount++;
+            }
+        }
+
+        console.log(`[管理员] 批量发放完成 - 成功: ${successCount}, 已拥有: ${alreadyHasCount}, 失败: ${errorCount}`);
+
+        return c.json({
+            success: true,
+            message: '批量发放完成',
+            data: {
+                achievement_name: achievement.achievement_name,
+                total_users: allUsers.length,
+                success_count: successCount,
+                already_has_count: alreadyHasCount,
+                error_count: errorCount,
+                errors: errors.slice(0, 10)  // 只返回前10条错误信息
+            }
+        });
+
+    } catch (error: any) {
+        console.error('[管理员] 批量发放成就失败:', error);
+        return c.json({
+            success: false,
+            message: '批量发放失败: ' + error.message
+        }, 500);
+    }
+});
+
 export default app;
 
