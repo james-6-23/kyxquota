@@ -5099,9 +5099,27 @@
       const advancedBannedUntilText = document.getElementById('advancedBannedUntilText');
       
       if (slotUserData.is_banned && slotUserData.banned_until > Date.now()) {
-        const bannedDate = new Date(slotUserData.banned_until);
-        const remainingHours = Math.ceil((slotUserData.banned_until - Date.now()) / 3600000);
+        // 🔥 验证 banned_until 是否为合理的时间戳（毫秒）
+        const bannedUntil = slotUserData.banned_until;
+        
+        // 验证时间戳范围（2020年到2100年之间）
+        const minTimestamp = new Date('2020-01-01').getTime();
+        const maxTimestamp = new Date('2100-01-01').getTime();
+        
+        if (bannedUntil < minTimestamp || bannedUntil > maxTimestamp) {
+          console.error('[封禁时间] 异常的时间戳:', bannedUntil, '(应该在', minTimestamp, '到', maxTimestamp, '之间)');
+          // 异常值，隐藏封禁提示并报错
+          if (bannedNotice) bannedNotice.classList.add('hidden');
+          if (advancedBannedNotice) advancedBannedNotice.classList.add('hidden');
+          showToast('封禁时间数据异常，请联系管理员', 'error');
+          return;
+        }
+        
+        const bannedDate = new Date(bannedUntil);
+        const remainingHours = Math.ceil((bannedUntil - Date.now()) / 3600000);
         const banText = `解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`;
+        
+        console.log('[封禁时间] 显示封禁提示 - 封禁至:', bannedDate.toLocaleString('zh-CN'), '剩余:', remainingHours, '小时');
         
         // 🔥 初级场封禁提示
         if (bannedNotice && bannedUntilText) {

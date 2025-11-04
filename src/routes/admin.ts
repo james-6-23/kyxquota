@@ -1487,12 +1487,17 @@ app.post('/grant-free-spins', requireAdmin, async (c) => {
         const currentSpins = currentFreeSpin?.free_spins || 0;
         const now = Date.now();
 
+        // 🔥 验证 banned_until 是否合理
+        const { isUserBanned } = await import('../services/slot');
+        const banStatus = isUserBanned(user.linux_do_id);
+        const safeBannedUntil = banStatus.bannedUntil; // 已经过验证的安全值
+
         // 增加免费次数
         const newSpins = currentSpins + spins;
         slotQueries.setFreeSpin.run(
             user.linux_do_id,
             newSpins,
-            currentFreeSpin?.banned_until || 0,
+            safeBannedUntil,
             now
         );
 
@@ -1600,12 +1605,17 @@ app.post('/grant-free-spins-batch', requireAdmin, async (c) => {
                         const currentFreeSpin = slotQueries.getFreeSpin.get(user.linux_do_id);
                         const currentSpins = currentFreeSpin?.free_spins || 0;
 
+                        // 🔥 验证 banned_until（避免传递异常值）
+                        const { isUserBanned } = await import('../services/slot');
+                        const banStatus = isUserBanned(user.linux_do_id);
+                        const safeBannedUntil = banStatus.bannedUntil;
+
                         // 增加免费次数
                         const newSpins = currentSpins + spins;
                         slotQueries.setFreeSpin.run(
                             user.linux_do_id,
                             newSpins,
-                            currentFreeSpin?.banned_until || 0,
+                            safeBannedUntil,
                             now
                         );
 
@@ -1814,10 +1824,15 @@ app.post('/grant-free-spins-all', requireAdmin, async (c) => {
                         const currentSpins = currentFreeSpin?.free_spins || 0;
                         const newSpins = currentSpins + spins;
 
+                        // 🔥 验证 banned_until（避免传递异常值）
+                        const { isUserBanned } = await import('../services/slot');
+                        const banStatus = isUserBanned(linux_do_id);
+                        const safeBannedUntil = banStatus.bannedUntil;
+
                         slotQueries.setFreeSpin.run(
                             linux_do_id,
                             newSpins,
-                            currentFreeSpin?.banned_until || 0,
+                            safeBannedUntil,
                             now
                         );
 

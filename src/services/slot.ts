@@ -400,12 +400,47 @@ export function getUserFreeSpins(linuxDoId: string): number {
 }
 
 /**
+ * 🔥 验证并清理 banned_until 时间戳
+ * 确保值在合理范围内（2020-2100年）
+ */
+function sanitizeBannedUntil(bannedUntil: number | null | undefined): number {
+    if (!bannedUntil || bannedUntil === 0) {
+        return 0;
+    }
+    
+    const minTimestamp = new Date('2020-01-01').getTime();
+    const maxTimestamp = new Date('2100-01-01').getTime();
+    
+    // 如果值不在合理范围内，返回0（表示未封禁）
+    if (bannedUntil < minTimestamp || bannedUntil > maxTimestamp) {
+        logger.warn('封禁时间', `检测到异常的banned_until值: ${bannedUntil}, 已重置为0`);
+        return 0;
+    }
+    
+    return bannedUntil;
+}
+
+/**
  * 检查用户是否被禁止抽奖
  */
 export function isUserBanned(linuxDoId: string): { banned: boolean; bannedUntil: number } {
     const result = slotQueries.getFreeSpin.get(linuxDoId);
     const now = Date.now();
-    const bannedUntil = result?.banned_until || 0;
+    const rawBannedUntil = result?.banned_until || 0;
+    
+    // 🔥 清理异常值
+    const bannedUntil = sanitizeBannedUntil(rawBannedUntil);
+    
+    // 🔥 如果清理后的值和原始值不同，更新数据库
+    if (bannedUntil !== rawBannedUntil && result) {
+        logger.warn('封禁时间', `修复异常banned_until - 用户: ${linuxDoId}, 原值: ${rawBannedUntil}, 新值: ${bannedUntil}`);
+        try {
+            slotQueries.setFreeSpin.run(linuxDoId, result.free_spins, bannedUntil, now);
+        } catch (e: any) {
+            logger.error('封禁时间', `修复数据库失败: ${e.message}`);
+        }
+    }
+    
     return {
         banned: bannedUntil > now,
         bannedUntil: bannedUntil
@@ -418,8 +453,23 @@ export function isUserBanned(linuxDoId: string): { banned: boolean; bannedUntil:
 export function banUserFromSlot(linuxDoId: string, hours: number) {
     const now = Date.now();
     const bannedUntil = now + (hours * 3600000); // 转换为毫秒
+    
+    // 🔥 验证时间戳是否合理（2020-2100年之间）
+    const minTimestamp = new Date('2020-01-01').getTime();
+    const maxTimestamp = new Date('2100-01-01').getTime();
+    
+    if (bannedUntil < minTimestamp || bannedUntil > maxTimestamp) {
+        logger.error('惩罚', `封禁时间异常 - 用户: ${linuxDoId}, 计算值: ${bannedUntil}, now: ${now}, hours: ${hours}`);
+        logger.error('惩罚', `异常时间戳不在合理范围内 (${minTimestamp} ~ ${maxTimestamp})`);
+        // 使用默认60小时
+        const safeBannedUntil = Date.now() + (60 * 3600000);
+        slotQueries.setBannedUntil.run(linuxDoId, safeBannedUntil, now, safeBannedUntil, now);
+        logger.warn('惩罚', `已使用安全值 - 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(safeBannedUntil).toLocaleString('zh-CN')}`);
+        return;
+    }
+    
     slotQueries.setBannedUntil.run(linuxDoId, bannedUntil, now, bannedUntil, now);
-    console.log(`[惩罚] 用户 ${linuxDoId} 被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')}`);
+    logger.info('惩罚', `用户 ${linuxDoId} 被禁止抽奖至 ${new Date(bannedUntil).toLocaleString('zh-CN')} (${hours}小时后)`);
 }
 
 /**

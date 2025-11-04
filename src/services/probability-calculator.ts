@@ -253,17 +253,17 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
                 }
             } else {
                 // 没有指定required_symbols，任意符号N连即可
-            let maxConsecutive = 1;
-            let currentConsecutive = 1;
-            for (let i = 1; i < symbols.length; i++) {
-                if (symbols[i] === symbols[i - 1]) {
-                    currentConsecutive++;
-                    maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
-                } else {
-                    currentConsecutive = 1;
+                let maxConsecutive = 1;
+                let currentConsecutive = 1;
+                for (let i = 1; i < symbols.length; i++) {
+                    if (symbols[i] === symbols[i - 1]) {
+                        currentConsecutive++;
+                        maxConsecutive = Math.max(maxConsecutive, currentConsecutive);
+                    } else {
+                        currentConsecutive = 1;
+                    }
                 }
-            }
-            matched = maxConsecutive >= (match_count || 2);
+                matched = maxConsecutive >= (match_count || 2);
             }
             break;
 
@@ -368,15 +368,15 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         if (checkRuleMatch(symbols, rule, debug)) {
             let finalMultiplier = rule.win_multiplier;
             let ruleName = rule.rule_name;
-            
+
             // 应用man加成
             if (manMultiplier > 1.0) {
                 // 🔥 检查是否是专门的Man规则（避免双重计算）
                 let isManSpecificRule = false;
                 try {
                     if (rule.required_symbols) {
-                        const requiredArr = Array.isArray(rule.required_symbols) 
-                            ? rule.required_symbols 
+                        const requiredArr = Array.isArray(rule.required_symbols)
+                            ? rule.required_symbols
                             : JSON.parse(rule.required_symbols);
                         // 如果required_symbols只包含"man"，说明是专门的man规则
                         isManSpecificRule = requiredArr.length === 1 && requiredArr[0] === 'man';
@@ -384,24 +384,24 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
                 } catch (e) {
                     // 解析失败，按非man专用规则处理
                 }
-                
+
                 // 只对非man专用规则应用man加成
                 if (!isManSpecificRule) {
-                if (rule.match_pattern === 'consecutive' || 
-                    rule.match_pattern === '2-consecutive' || 
-                    rule.match_pattern === '3-consecutive' ||
-                    rule.match_pattern === '4-consecutive') {
-                    finalMultiplier = rule.win_multiplier * manMultiplier;
-                    ruleName = `${rule.rule_name}+man×${manMultiplier}`;
-                } else if (rule.match_pattern === 'double_pair') {
-                    if (hasManConsecutivePairProb(symbols)) {
-                        finalMultiplier = rule.win_multiplier * 10;
-                        ruleName = `${rule.rule_name}+man严格2连`;
+                    if (rule.match_pattern === 'consecutive' ||
+                        rule.match_pattern === '2-consecutive' ||
+                        rule.match_pattern === '3-consecutive' ||
+                        rule.match_pattern === '4-consecutive') {
+                        finalMultiplier = rule.win_multiplier * manMultiplier;
+                        ruleName = `${rule.rule_name}+man×${manMultiplier}`;
+                    } else if (rule.match_pattern === 'double_pair') {
+                        if (hasManConsecutivePairProb(symbols)) {
+                            finalMultiplier = rule.win_multiplier * 10;
+                            ruleName = `${rule.rule_name}+man严格2连`;
                         }
                     }
                 }
             }
-            
+
             return {
                 ruleName: ruleName,
                 multiplier: finalMultiplier
@@ -450,7 +450,7 @@ function hasManConsecutivePairProb(symbols: string[]): boolean {
 function getMaxConsecutiveSymbol(symbols: string[], target: string): number {
     let maxConsecutive = 0;
     let currentConsecutive = 0;
-    
+
     for (const symbol of symbols) {
         if (symbol === target) {
             currentConsecutive++;
@@ -459,7 +459,7 @@ function getMaxConsecutiveSymbol(symbols: string[], target: string): number {
             currentConsecutive = 0;
         }
     }
-    
+
     return maxConsecutive;
 }
 
@@ -635,7 +635,7 @@ export function calculateProbabilityFast(
         weightConfig.weight_lsh,
         weightConfig.weight_man || 25  // 🔥 添加man符号权重
     ];
-    
+
     console.log(`[快速估算] 权重数组:`, weights);
     console.log(`[快速估算] 总权重:`, weights.reduce((a, b) => a + b, 0));
 
