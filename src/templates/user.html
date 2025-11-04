@@ -5352,7 +5352,10 @@
         if (data.success) {
           // 🎯 保存购买前的剩余次数，用于视觉对比
           const oldRemainingSpins = slotUserData.remaining_spins || 0;
-          
+
+          // 🔥 获取本次购买的数量（后端返回）
+          const buyCount = data.data.buy_count || 1;
+
           // 更新用户数据
           slotUserData.quota = data.data.quota_after;
           slotUserData.remaining_spins = data.data.remaining_spins;
@@ -5361,6 +5364,7 @@
           // console.log('[购买成功] API返回数据:', data.data);
           // console.log('[购买成功] 更新前剩余次数:', oldRemainingSpins);
           // console.log('[购买成功] 更新后剩余次数:', slotUserData.remaining_spins);
+          // console.log('[购买成功] 本次购买数量:', buyCount);
           // console.log('[购买成功] 更新后的 slotUserData:', {
           //   quota: slotUserData.quota,
           //   remaining_spins: slotUserData.remaining_spins,
@@ -5376,7 +5380,7 @@
 
           // 立即更新UI
           updateSlotUI();
-          
+
           // 🎯 添加视觉反馈：高亮显示剩余次数
           const spinsRemainingEl = document.getElementById('spinsRemaining');
           if (spinsRemainingEl) {
@@ -5386,11 +5390,10 @@
               spinsRemainingEl.style.animation = '';
             }, 1500);
           }
-          
-          // 🎯 显示详细的成功消息
-          const increase = slotUserData.remaining_spins - oldRemainingSpins;
+
+          // 🎯 显示详细的成功消息（使用后端返回的购买数量作为增量）
           setTimeout(() => {
-            showToast(`✅ ${data.message} 剩余次数：${oldRemainingSpins} → ${slotUserData.remaining_spins} (+${increase})`, 'success');
+            showToast(`✅ ${data.message} 剩余次数：${oldRemainingSpins} → ${slotUserData.remaining_spins} (+${buyCount})`, 'success');
           }, 500);
           
         } else {
