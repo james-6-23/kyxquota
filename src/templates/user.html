@@ -5841,9 +5841,18 @@
       if (slotDropdownMenu) slotDropdownMenu.classList.add('hidden');
       
       try {
-        // 根据当前模式获取对应的记录
-        const mode = isInAdvancedMode ? 'advanced' : 'normal';
-        const modeName = isInAdvancedMode ? '高级场' : '初级场';
+        // 🔥 根据当前模式获取对应的记录（支持至尊场）
+        let mode, modeName;
+        if (isInSupremeMode) {
+          mode = 'supreme';
+          modeName = '至尊场';
+        } else if (isInAdvancedMode) {
+          mode = 'advanced';
+          modeName = '高级场';
+        } else {
+          mode = 'normal';
+          modeName = '初级场';
+        }
         
         // 并行获取抽奖记录和待发放记录
         const [recordsRes, pendingRes] = await Promise.all([

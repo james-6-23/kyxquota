@@ -1648,7 +1648,7 @@ function initQueries() {
         ),
 
         // 购买次数记录
-        insertBuySpinsRecord: db.query(
+        insertBuySpinsRecord: db.query<void, [string, string, string | null, number, number, number, string]>(
             'INSERT INTO buy_spins_records (linux_do_id, username, linux_do_username, spins_count, price_paid, timestamp, date) VALUES (?, ?, ?, ?, ?, ?, ?)'
         ),
         getTodayBuySpinsCount: db.query<{ total: number }, [string, string]>(

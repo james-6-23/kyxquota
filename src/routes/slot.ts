@@ -1039,11 +1039,56 @@ slot.get('/records', requireAuth, async (c) => {
         const { mode } = c.req.query();
 
         let records;
-        if (mode === 'normal' || mode === 'advanced') {
+        if (mode === 'supreme') {
+            // 🔥 获取至尊场记录
+            const { supremeSlotQueries } = await import('../database');
+            records = supremeSlotQueries.getRecordsByUser.all(session.linux_do_id);
+            
+            // 解析符号 JSON 并格式化至尊场记录
+            const formattedRecords = records.map((r: any) => ({
+                ...r,
+                result_symbols: JSON.parse(r.result_symbols),
+                win_type_name: r.rule_name || WIN_TYPE_NAMES[r.win_type as WinType] || r.win_type,
+                slot_mode: 'supreme'  // 标记为至尊场
+            }));
+
+            return c.json({
+                success: true,
+                data: formattedRecords
+            });
+        } else if (mode === 'normal' || mode === 'advanced') {
             // 按场次获取记录
             records = getUserRecordsByMode(session.linux_do_id, mode);
+        } else if (mode === 'all') {
+            // 🔥 获取所有场次的记录（包括至尊场）
+            const normalAdvancedRecords = getUserRecords(session.linux_do_id);
+            const { supremeSlotQueries } = await import('../database');
+            const supremeRecords = supremeSlotQueries.getRecordsByUser.all(session.linux_do_id);
+            
+            // 合并记录并标记场次
+            const allRecords = [
+                ...normalAdvancedRecords.map((r: any) => ({
+                    ...r,
+                    result_symbols: JSON.parse(r.result_symbols),
+                    win_type_name: r.rule_name || WIN_TYPE_NAMES[r.win_type as WinType] || r.win_type
+                })),
+                ...supremeRecords.map((r: any) => ({
+                    ...r,
+                    result_symbols: JSON.parse(r.result_symbols),
+                    win_type_name: r.rule_name || WIN_TYPE_NAMES[r.win_type as WinType] || r.win_type,
+                    slot_mode: 'supreme'
+                }))
+            ];
+            
+            // 按时间戳降序排序
+            allRecords.sort((a, b) => b.timestamp - a.timestamp);
+            
+            return c.json({
+                success: true,
+                data: allRecords
+            });
         } else {
-            // 获取所有记录（兼容旧版）
+            // 获取所有记录（兼容旧版，只包含普通场和高级场）
             records = getUserRecords(session.linux_do_id);
         }
 
@@ -1051,7 +1096,7 @@ slot.get('/records', requireAuth, async (c) => {
         const formattedRecords = records.map(r => ({
             ...r,
             result_symbols: JSON.parse(r.result_symbols),
-            win_type_name: WIN_TYPE_NAMES[r.win_type as WinType] || r.win_type
+            win_type_name: r.rule_name || WIN_TYPE_NAMES[r.win_type as WinType] || r.win_type
         }));
 
         return c.json({
@@ -1485,7 +1530,7 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             logger.debug('购买次数', `准备插入记录 - linux_do_id: ${session.linux_do_id}, username: ${user.username}, linux_do_username: ${linuxDoUsername}, buyCount: ${buyCount}, buyPrice: ${buyPrice}, today: ${today}`);
 
             // 🔥 执行插入
-            slotQueries.insertBuySpinsRecord.run(
+            const insertResult = slotQueries.insertBuySpinsRecord.run(
                 session.linux_do_id,
                 user.username,
                 linuxDoUsername,
@@ -1495,16 +1540,18 @@ slot.post('/buy-spins', requireAuth, async (c) => {
                 today
             );
 
+            logger.debug('购买次数', `插入操作返回 - changes: ${insertResult?.changes}, lastInsertRowid: ${insertResult?.lastInsertRowid}`);
+
             // 🔥 验证插入是否成功 - 查询今日已购次数
             const verifyResult = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
             const actualBoughtToday = verifyResult?.total || 0;
 
-            logger.debug('购买次数', `验证插入 - 预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
+            logger.debug('购买次数', `验证插入 - 购买前: ${totalBoughtToday}, 本次购买: ${buyCount}, 预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}, 查询日期: ${today}, verifyResult: ${JSON.stringify(verifyResult)}`);
 
             // 🔥 修复并发问题：只要实际购买数大于等于预期值，就认为插入成功
             // 如果actualBoughtToday > 预期值，说明有并发购买，但不影响本次购买的成功
             if (actualBoughtToday < totalBoughtToday + buyCount) {
-                throw new Error(`数���库插入验证失败，预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
+                throw new Error(`数据库插入验证失败，预期至少: ${totalBoughtToday + buyCount}, 实际已购: ${actualBoughtToday}`);
             }
 
             logger.info('购买次数', `购买成功 - 用户: ${user.username}, 数量: ${buyCount}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${actualBoughtToday}/${config.max_daily_buy_spins}`);

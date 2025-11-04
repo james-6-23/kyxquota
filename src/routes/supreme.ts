@@ -18,6 +18,7 @@ import {
     recordSupremeGame,
     getTodaySupremeBet
 } from '../services/supreme-slot';
+import { updateUserTotalStats } from '../services/slot';
 import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
@@ -305,6 +306,17 @@ supreme.post('/spin', requireAuth, async (c) => {
             winResult.multiplier,
             winAmount,
             winResult.ruleName  // 🔥 记录规则名称
+        );
+
+        // 🔥 更新用户总统计（用于排行榜）- 修复至尊场盈利未计入排行榜的问题
+        const displayUsername = session.username || user.linux_do_username || user.username;
+        updateUserTotalStats(
+            session.linux_do_id!,
+            displayUsername,
+            session.avatar_url || '',
+            betAmount,
+            winAmount,
+            winResult.winType
         );
 
         let quotaAfter = newQuotaAfterBet;
