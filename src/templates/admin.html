@@ -10365,12 +10365,12 @@
                   </p>
                 </div>
                 
-                <!-- 隐藏字段，保存时需要 -->
-                <input type="hidden" id="editRuleType" value="${rule.rule_type}">
-                <input type="hidden" id="editRuleCategory" value="${rule.rule_category}">
-                <input type="hidden" id="editMatchPattern" value="${rule.match_pattern}">
-                <input type="hidden" id="editMatchCount" value="${rule.match_count || ''}">
-                <input type="hidden" id="editRequiredSymbols" value="${rule.required_symbols || ''}">
+                <!-- 隐藏字段，保存时需要（使用 JS 安全设置值） -->
+                <input type="hidden" id="editRuleType">
+                <input type="hidden" id="editRuleCategory">
+                <input type="hidden" id="editMatchPattern">
+                <input type="hidden" id="editMatchCount">
+                <input type="hidden" id="editRequiredSymbols">
                 
                 <!-- 规则名称 -->
                 <div>
@@ -10447,6 +10447,14 @@
           </div>
         `;
         document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        // 🔥 安全设置隐藏字段的值（避免 HTML 注入和引号问题）
+        document.getElementById('editRuleType').value = rule.rule_type || '';
+        document.getElementById('editRuleCategory').value = rule.rule_category || '';
+        document.getElementById('editMatchPattern').value = rule.match_pattern || '';
+        document.getElementById('editMatchCount').value = rule.match_count || '';
+        document.getElementById('editRequiredSymbols').value = rule.required_symbols || '';
+        
       } catch (error) {
         console.error('加载规则失败:', error);
         showToast('加载规则失败', 'error');
