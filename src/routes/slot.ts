@@ -1417,7 +1417,33 @@ slot.post('/buy-spins', requireAuth, async (c) => {
 
         // 🔥 支持批量购买：从请求体获取购买数量
         const body = await c.req.json().catch(() => ({}));
-        const buyCount = Math.max(1, Math.min(parseInt(body.count) || 1, 20)); // 最多一次购买20个
+        const requestedCount = parseInt(body.count) || 1;
+
+        logger.debug('购买次数', `用户请求购买 - 用户: ${user.username}, 请求数量: ${requestedCount}, 原始body.count: ${body.count}`);
+
+        // 🔥 检查今日已购买次数（提前检查，用于计算可购买数量）
+        const today = getTodayDate();
+        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
+        const totalBoughtToday = todayBought?.total || 0;
+
+        // 计算还可以购买的数量
+        const remainingCanBuy = config.max_daily_buy_spins - totalBoughtToday;
+
+        logger.debug('购买次数', `购买限制检查 - 今日已购: ${totalBoughtToday}, 每日上限: ${config.max_daily_buy_spins}, 剩余可购: ${remainingCanBuy}`);
+
+        // 🔥 购买数量不能超过剩余可购买数量
+        const buyCount = Math.max(1, Math.min(requestedCount, remainingCanBuy));
+
+        // 如果请求的数量超过了剩余可购买数量，返回提示
+        if (requestedCount > remainingCanBuy) {
+            logger.warn('购买次数', `购买数量超限 - 用户: ${user.username}, 请求: ${requestedCount}, 允许: ${remainingCanBuy}`);
+            return c.json({
+                success: false,
+                message: `购买失败！今日还可购买 ${remainingCanBuy} 次，您尝试购买 ${requestedCount} 次`
+            }, 400);
+        }
+
+        logger.info('购买次数', `购买数量确认 - 用户: ${user.username}, 请求: ${requestedCount}, 实际购买: ${buyCount}`);
 
         const buyPrice = config.buy_spins_price * buyCount; // 总价格
 
@@ -1426,19 +1452,6 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             return c.json({
                 success: false,
                 message: `额度不足，购买${buyCount}次需要 $${(buyPrice / 500000).toFixed(2)}，当前额度 $${(currentQuota / 500000).toFixed(2)}`
-            }, 400);
-        }
-
-        // 检查今日已购买次数（使用北京时间）
-        const today = getTodayDate();
-        const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
-        const totalBoughtToday = todayBought?.total || 0;
-
-        // 🔥 检查本次购买是否会超过每日限额
-        if (totalBoughtToday + buyCount > config.max_daily_buy_spins) {
-            return c.json({
-                success: false,
-                message: `购买失败！今日还可购买 ${config.max_daily_buy_spins - totalBoughtToday} 次，您尝试购买 ${buyCount} 次`
             }, 400);
         }
 

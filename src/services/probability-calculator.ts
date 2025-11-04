@@ -807,8 +807,8 @@ export async function recalculateProbabilityForScheme(schemeId: number): Promise
         let successCount = 0;
         for (const weightConfigId of weightConfigsToCalculate) {
             try {
-                // 🔥 改用蒙特卡洛方法（100万次模拟）
-                const result = calculateProbabilityMonteCarlo(weightConfigId, schemeId, 1000000);
+                // 🔥 优化：减少模拟次数（从100万到20万）
+                const result = calculateProbabilityMonteCarlo(weightConfigId, schemeId, 200000);
                 logger.info('概率预计算', `✅ 权重${weightConfigId} RTP:${result.rtp.toFixed(2)}% (耗时:${result.calculationTime}ms)`);
                 successCount++;
             } catch (error: any) {
@@ -884,14 +884,14 @@ export async function warmupAllProbabilityCache(): Promise<void> {
                 logger.info('缓存预热', `📍 ${name} - 开始计算概率`);
                 logger.info('缓存预热', `${'='.repeat(60)}`);
 
-                // 🔥 使用蒙特卡洛方法计算（100万次模拟）
+                // 🔥 优化：减少模拟次数（从100万到20万，速度提升5倍，准确度降低约0.1%）
                 const result = calculateProbabilityMonteCarlo(
                     weightConfigId,
                     schemeId,
-                    1000000,
+                    200000, // 从 1000000 降到 200000
                     (current, total, percentage) => {
-                        // 每10%报告一次进度
-                        if (percentage % 10 === 0 && percentage > 0) {
+                        // 每20%报告一次进度（减少日志输出）
+                        if (percentage % 20 === 0 && percentage > 0) {
                             logger.info('缓存预热', `${name} 计算进度: ${percentage.toFixed(0)}%`);
                         }
                     }

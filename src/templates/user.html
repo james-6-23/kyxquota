@@ -5283,6 +5283,8 @@
       const totalPrice = slotConfig.buy_spins_price * buyCount;
       const buyPriceUSD = (totalPrice / 500000).toFixed(2);
 
+      console.log('[购买次数] 显示确认弹窗 - 滑块值:', buySpinsSlider?.value, '购买数量:', buyCount, '总价:', buyPriceUSD);
+
       // 更新弹窗中的价格显示
       const confirmPriceEl = document.getElementById('confirmBuyPrice');
       if (confirmPriceEl) {
@@ -5310,16 +5312,21 @@
       const buySpinsSlider = document.getElementById('buySpinsSlider');
       const buyCount = buySpinsSlider ? parseInt(buySpinsSlider.value) : 1;
 
+      console.log('[购买次数] 前端发起购买 - 滑块值:', buySpinsSlider?.value, '解析后数量:', buyCount);
+
       // 禁用按钮
       button.disabled = true;
       const originalText = button.innerHTML;
       button.innerHTML = '⏳ 购买中...';
 
       try {
+        const requestBody = { count: buyCount };
+        console.log('[购买次数] 发送请求 - body:', JSON.stringify(requestBody));
+        
         const res = await fetch('/api/slot/buy-spins', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ count: buyCount }) // 🔥 传递购买数量
+          body: JSON.stringify(requestBody) // 🔥 传递购买数量
         });
 
         const data = await res.json();
