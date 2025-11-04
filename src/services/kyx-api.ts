@@ -399,7 +399,8 @@ export async function updateKyxUserQuota(
                     // 特殊处理 429 错误
                     if (response.status === 429) {
                         kyxApiLimiter.recordRateLimit();
-                        const waitTime = Math.min(2000 * attempt, 6000); // 2s, 4s, 6s（快速重试）
+                        // 优化重试策略：500ms, 1s, 1.5s（更快重试，限流器会自动调整间隔）
+                        const waitTime = Math.min(500 * attempt, 1500);
                         logger.warn('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - ⚠️ 触发限流，等待 ${waitTime}ms 后重试`);
 
                         if (attempt < maxRetries) {
@@ -603,44 +604,55 @@ export function getUserQuota(linuxDoId: string): number {
 }
 
 /**
- * 增加用户额度（辅助函数）
+ * 增加用户额度（辅助函数，带增强重试机制）
  */
 export async function addQuota(
     userId: number,
     amount: number,
     session: string,
     newApiUser: string = '1',
-    context: string = '增加额度'
+    context: string = '增加额度',
+    maxRetries: number = 5  // 增加到5次重试（针对贷款等关键操作）
 ): Promise<any> {
     try {
-        // 先获取用户当前信息
-        const userResult = await getKyxUserById(userId, session, newApiUser);
+        // 先获取用户当前信息（带重试）
+        const userResult = await getKyxUserById(userId, session, newApiUser, maxRetries);
         if (!userResult.success || !userResult.user) {
+            logger.error(context, `❌ 获取用户信息失败 - 用户ID: ${userId}`);
             return {
                 success: false,
-                message: '获取用户信息失败'
+                message: '获取用户信息失败，请稍后重试'
             };
         }
 
         const currentQuota = userResult.user.quota || 0;
         const newQuota = currentQuota + amount;
 
-        logger.info(context, `用户ID: ${userId}, 当前额度: ${currentQuota}, 增加: ${amount}, 新额度: ${newQuota}`);
+        logger.info(context, `💰 准备增加额度 - 用户ID: ${userId}, 当前: $${(currentQuota / 500000).toFixed(2)}, 增加: $${(amount / 500000).toFixed(2)}, 新额度: $${(newQuota / 500000).toFixed(2)}`);
 
-        // 更新额度
-        return await updateKyxUserQuota(
+        // 更新额度（带增强重试）
+        const updateResult = await updateKyxUserQuota(
             userId,
             newQuota,
             session,
             newApiUser,
             userResult.user.username,
-            userResult.user.group || 'default'
+            userResult.user.group || 'default',
+            maxRetries  // 使用增强的重试次数
         );
+
+        if (updateResult.success) {
+            logger.info(context, `✅ 额度增加成功 - 用户ID: ${userId}, 新额度: $${(newQuota / 500000).toFixed(2)}`);
+        } else {
+            logger.error(context, `❌ 额度增加失败 - 用户ID: ${userId}, 错误: ${updateResult.message}`);
+        }
+
+        return updateResult;
     } catch (error: any) {
-        logger.error(context, `增加额度失败: ${error}`);
+        logger.error(context, `❌ 增加额度异常 - 用户ID: ${userId}, 错误: ${error.message}`);
         return {
             success: false,
-            message: `增加额度失败: ${error.message}`
+            message: `增加额度失败: ${error.message || '未知错误'}`
         };
     }
 }

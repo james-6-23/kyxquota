@@ -8,20 +8,22 @@ class RateLimiter {
     private running = 0;
     private lastRequestTime = 0;
 
-    // 配置（稳定优先：平衡并发和间隔，确保稳定性）
+    // 配置（高并发优化：提高吞吐量，智能动态调整）
     // KYX API RPM=1000 约等于 16.7 QPS
-    // 采用保守策略：30并发 + 100ms间隔 = 理论 10 QPS（安全范围）
-    private readonly maxConcurrent = 30; // 最大并发请求数（采用保守值，避免瞬时压力）
-    private readonly minInterval = 100; // 最小请求间隔（100ms，平衡速度和稳定性）
-    private readonly maxQueueSize = 5000; // 最大队列长度（保持大容量应对峰值）
+    // 优化策略：100并发 + 50ms间隔 = 理论 20 QPS（接近API上限，动态调整保障稳定）
+    private readonly maxConcurrent = 100; // 最大并发请求数（大幅提高，应对高并发场景）
+    private readonly minInterval = 50; // 最小请求间隔（50ms，提高吞吐量）
+    private readonly maxQueueSize = 10000; // 最大队列长度（扩大队列，避免请求被拒绝）
+    private readonly maxInterval = 1000; // 最大间隔（1秒，限流时的上限）
 
     // 统计
     private totalRequests = 0;
     private failedRequests = 0;
     private rateLimitHits = 0;
+    private successCount = 0; // 连续成功次数（用于恢复速率）
 
     // 动态速率调整
-    private currentInterval = 100; // 当前实际间隔（从100ms起始）
+    private currentInterval = 50; // 当前实际间隔（从50ms起始）
     private adaptiveMode = true; // 启用自适应模式（触发429时才调整）
 
     /**
@@ -58,10 +60,17 @@ class RateLimiter {
                     this.lastRequestTime = Date.now();
                     const result = await fn();
 
-                    // 成功后缓慢恢复正常速率（优先稳定性）
+                    // 成功后逐步恢复正常速率（智能恢复）
                     if (this.adaptiveMode && this.currentInterval > this.minInterval) {
-                        // 每次减少 10ms，缓慢恢复到正常速率
-                        this.currentInterval = Math.max(this.minInterval, this.currentInterval - 10);
+                        this.successCount++;
+                        // 每5次成功减少20ms，更快恢复到正常速率
+                        if (this.successCount >= 5) {
+                            this.currentInterval = Math.max(this.minInterval, this.currentInterval - 20);
+                            this.successCount = 0;
+                            if (this.currentInterval === this.minInterval) {
+                                console.log(`[限流器] ✅ 已恢复到正常速率 (${this.minInterval}ms)`);
+                            }
+                        }
                     }
 
                     resolve(result);
@@ -97,20 +106,37 @@ class RateLimiter {
      */
     recordRateLimit() {
         this.rateLimitHits++;
+        this.successCount = 0; // 重置成功计数
 
         // 自适应调整：触发429时快速增加间隔
         if (this.adaptiveMode) {
             const oldInterval = this.currentInterval;
-            // 快速增加：每次增加 150ms，最多到 800ms（确保稳定性）
-            this.currentInterval = Math.min(this.currentInterval + 150, 800);
+            
+            // 智能增加策略：
+            // - 如果间隔较小（< 200ms），大幅增加（+200ms）
+            // - 如果间隔中等（200-500ms），中等增加（+150ms）
+            // - 如果间隔较大（> 500ms），小幅增加（+100ms）
+            let increment = 200;
+            if (this.currentInterval >= 200 && this.currentInterval < 500) {
+                increment = 150;
+            } else if (this.currentInterval >= 500) {
+                increment = 100;
+            }
+            
+            this.currentInterval = Math.min(this.currentInterval + increment, this.maxInterval);
 
             // 只在间隔变化时才输出日志（避免日志过多）
             if (oldInterval !== this.currentInterval) {
-                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms`);
+                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms (队列: ${this.queue.length})`);
+            } else {
+                // 已经到达最大间隔，仅每100次输出一次
+                if (this.rateLimitHits % 100 === 0) {
+                    console.warn(`[限流器] ⚠️ 持续限流 (第 ${this.rateLimitHits} 次) - 当前间隔: ${this.currentInterval}ms (已达上限)`);
+                }
             }
         } else {
-            // 每10次才输出一次（减少日志）
-            if (this.rateLimitHits % 10 === 0) {
+            // 每50次才输出一次（减少日志）
+            if (this.rateLimitHits % 50 === 0) {
                 console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次)`);
             }
         }
@@ -124,10 +150,15 @@ class RateLimiter {
             totalRequests: this.totalRequests,
             failedRequests: this.failedRequests,
             rateLimitHits: this.rateLimitHits,
+            successCount: this.successCount,
             queueSize: this.queue.length,
             running: this.running,
             currentInterval: this.currentInterval,
-            adaptiveMode: this.adaptiveMode
+            maxConcurrent: this.maxConcurrent,
+            minInterval: this.minInterval,
+            maxInterval: this.maxInterval,
+            adaptiveMode: this.adaptiveMode,
+            rateLimitRate: this.totalRequests > 0 ? (this.rateLimitHits / this.totalRequests * 100).toFixed(2) + '%' : '0%'
         };
     }
 

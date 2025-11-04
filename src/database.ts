@@ -1892,6 +1892,9 @@ function initQueries() {
             `UPDATE user_loans SET overdue_penalty_until = NULL, updated_at = ?
              WHERE id = ?`
         ),
+        deleteLoan: db.query(
+            'DELETE FROM user_loans WHERE id = ?'
+        ),
 
         // 用户统计管理
         getStats: db.query<UserKunbeiStats, string>(
@@ -2339,6 +2342,9 @@ function initQueries() {
         clearOverduePenalty: db.query(
             `UPDATE user_loans SET overdue_penalty_until = NULL, updated_at = ?
              WHERE id = ?`
+        ),
+        deleteLoan: db.query(
+            'DELETE FROM user_loans WHERE id = ?'
         ),
 
         // 用户统计管理

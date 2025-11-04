@@ -1366,7 +1366,7 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
 });
 
 /**
- * 购买抽奖次数
+ * 购买抽奖次数（支持批量购买）
  */
 slot.post('/buy-spins', requireAuth, async (c) => {
     try {
@@ -1414,13 +1414,18 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         }
 
         const currentQuota = kyxUserResult.user.quota;
-        const buyPrice = config.buy_spins_price;
+
+        // 🔥 支持批量购买：从请求体获取购买数量
+        const body = await c.req.json().catch(() => ({}));
+        const buyCount = Math.max(1, Math.min(parseInt(body.count) || 1, 20)); // 最多一次购买20个
+
+        const buyPrice = config.buy_spins_price * buyCount; // 总价格
 
         // 检查额度是否足够
         if (currentQuota < buyPrice) {
             return c.json({
                 success: false,
-                message: `额度不足，购买一次需要 $${(buyPrice / 500000).toFixed(2)}`
+                message: `额度不足，购买${buyCount}次需要 $${(buyPrice / 500000).toFixed(2)}，当前额度 $${(currentQuota / 500000).toFixed(2)}`
             }, 400);
         }
 
@@ -1429,16 +1434,17 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         const todayBought = slotQueries.getTodayBuySpinsCount.get(session.linux_do_id, today);
         const totalBoughtToday = todayBought?.total || 0;
 
-        if (totalBoughtToday >= config.max_daily_buy_spins) {
+        // 🔥 检查本次购买是否会超过每日限额
+        if (totalBoughtToday + buyCount > config.max_daily_buy_spins) {
             return c.json({
                 success: false,
-                message: `今日购买次数已达上限（${config.max_daily_buy_spins}次）`
+                message: `购买失败！今日还可购买 ${config.max_daily_buy_spins - totalBoughtToday} 次，您尝试购买 ${buyCount} 次`
             }, 400);
         }
 
         // 扣除购买费用
         const newQuota = currentQuota - buyPrice;
-        console.log(`[购买次数] 准备扣除费用 - 用户: ${user.username}, 当前: ${currentQuota}, 费用: ${buyPrice}, 目标: ${newQuota}`);
+        logger.info('购买次数', `准备扣除费用 - 用户: ${user.username}, 购买: ${buyCount}次, 当前: ${currentQuota}, 费用: ${buyPrice}, 目标: ${newQuota}`);
 
         const deductResult = await updateKyxUserQuota(
             user.kyx_user_id,
@@ -1450,53 +1456,91 @@ slot.post('/buy-spins', requireAuth, async (c) => {
         );
 
         if (!deductResult || !deductResult.success) {
-            console.error(`[购买次数] ❌ 扣除费用失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+            logger.error('购买次数', `扣除费用失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
             return c.json({
                 success: false,
                 message: `扣除费用失败: ${deductResult?.message || '未知错误'}，请稍后重试`
             }, 500);
         }
 
-        console.log(`[购买次数] ✅ 扣除费用成功 - 用户: ${user.username}, 剩余: ${newQuota}`);
+        logger.info('购买次数', `扣除费用成功 - 用户: ${user.username}, 数量: ${buyCount}, 剩余额度: ${newQuota}`);
 
-        // 记录购买（购买的是今日抽奖次数，不是免费次数）
+        // 🔥 记录购买（添加错误处理和回滚机制）
         const now = Date.now();
         const linuxDoUsername = session.username || user.linux_do_username || null;
 
-        slotQueries.insertBuySpinsRecord.run(
-            session.linux_do_id,
-            user.username,
-            linuxDoUsername,
-            1, // 购买1次
-            buyPrice,
-            now,
-            today
-        );
+        try {
+            const insertResult = slotQueries.insertBuySpinsRecord.run(
+                session.linux_do_id,
+                user.username,
+                linuxDoUsername,
+                buyCount, // 🔥 购买的数量
+                buyPrice,
+                now,
+                today
+            );
 
-        console.log(`[购买次数] 💰 购买成功 - 用户: ${user.username}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${totalBoughtToday + 1}/${config.max_daily_buy_spins}`);
+            // 验证插入是否成功
+            if (!insertResult || (insertResult.changes !== undefined && insertResult.changes === 0)) {
+                throw new Error('数据库插入失败，changes = 0');
+            }
+
+            logger.info('购买次数', `购买成功 - 用户: ${user.username}, 数量: ${buyCount}, 价格: $${(buyPrice / 500000).toFixed(2)}, 今日已购: ${totalBoughtToday + buyCount}/${config.max_daily_buy_spins}`);
+
+        } catch (dbError: any) {
+            logger.error('购买次数', `数据库记录失败 - 用户: ${user.username}, 错误: ${dbError.message}`);
+
+            // 🔥 尝试回滚额度（将扣除的额度还回去）
+            logger.warn('购买次数', `尝试回滚额度 - 用户: ${user.username}, 从 ${newQuota} 恢复到 ${currentQuota}`);
+            const rollbackResult = await updateKyxUserQuota(
+                user.kyx_user_id,
+                currentQuota, // 恢复到原始额度
+                adminConfig.session,
+                adminConfig.new_api_user,
+                user.username,
+                kyxUserResult.user.group || 'default'
+            );
+
+            if (rollbackResult && rollbackResult.success) {
+                logger.info('购买次数', `回滚成功 - 用户: ${user.username}, 额度已恢复到 ${currentQuota}`);
+                return c.json({
+                    success: false,
+                    message: '购买失败：数据库记录出错，额度已自动退回，请稍后重试'
+                }, 500);
+            } else {
+                logger.error('购买次数', `回滚失败 - 用户: ${user.username}, 损失额度: $${(buyPrice / 500000).toFixed(2)}, 需要人工处理`);
+
+                return c.json({
+                    success: false,
+                    message: '购买失败：系统错误，请联系管理员处理（错误代码：DB_ROLLBACK_FAILED）',
+                    error_details: `额度已扣除但记录失败，需要人工恢复 $${(buyPrice / 500000).toFixed(2)}`
+                }, 500);
+            }
+        }
 
         // 重新计算剩余次数（包含购买的次数）
         const todaySpins = getUserTodaySpins(session.linux_do_id);
-        const newBoughtToday = totalBoughtToday + 1;
+        const newBoughtToday = totalBoughtToday + buyCount;
         const newRemainingSpins = Math.max(0, config.max_daily_spins + newBoughtToday - todaySpins);
 
-        console.log(`[购买次数] 🔍 计算剩余次数 - max_daily_spins: ${config.max_daily_spins}, newBoughtToday: ${newBoughtToday}, todaySpins: ${todaySpins}, newRemainingSpins: ${newRemainingSpins}`);
+        logger.debug('购买次数', `计算剩余次数 - 用户: ${user.username}, 每日基础: ${config.max_daily_spins}, 今日已购: ${newBoughtToday}, 今日已玩: ${todaySpins}, 剩余: ${newRemainingSpins}`);
 
         // 返回新的额度和购买信息
         return c.json({
             success: true,
-            message: `购买成功！+1次抽奖机会，花费 $${(buyPrice / 500000).toFixed(2)}`,
+            message: `购买成功！+${buyCount}次抽奖机会，花费 $${(buyPrice / 500000).toFixed(2)}`,
             data: {
                 quota_after: newQuota,
                 remaining_spins: newRemainingSpins,
                 bought_today: newBoughtToday,
                 max_daily_buy: config.max_daily_buy_spins,
-                price: buyPrice
+                price: buyPrice,
+                buy_count: buyCount // 🔥 返回购买数量
             }
         });
 
     } catch (error) {
-        console.error('购买抽奖次数失败:', error);
+        logger.error('购买次数', `服务器错误: ${error instanceof Error ? error.message : '未知错误'}`);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1685,7 +1729,7 @@ slot.get('/rules', requireAuth, async (c) => {
         // 计算权重总和（包含所有10个符号）
         const totalWeight = weightConfig
             ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
-                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + 
+                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk +
                 weightConfig.weight_lsh + (weightConfig.weight_man || 0))
             : 825;
 

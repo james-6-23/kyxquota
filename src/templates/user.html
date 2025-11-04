@@ -1424,17 +1424,36 @@
           </p>
 
           <!-- 购买次数功能区 -->
-          <div id="buySpinsSection" class="hidden mt-3 p-3 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-lg border border-orange-400/30">
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <div class="text-white text-sm text-center sm:text-left">
-                <span>💰 购买抽奖次数：<span id="buySpinsPrice" class="text-orange-300 font-bold">$40</span>/次</span>
-                <span class="ml-2 text-white/70">今日已购：<span id="buySpinsToday" class="text-orange-300">0</span>/<span id="buySpinsMax" class="text-orange-300">5</span></span>
+          <div id="buySpinsSection" class="hidden mt-3 p-4 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 rounded-lg border border-orange-400/30">
+            <div class="flex flex-col gap-3">
+              <!-- 顶部信息 -->
+              <div class="flex flex-row items-center justify-between text-white text-sm">
+                <span>💰 单价：<span id="buySpinsPrice" class="text-orange-300 font-bold">$40</span>/次</span>
+                <span class="text-white/70">今日已购：<span id="buySpinsToday" class="text-orange-300">0</span>/<span id="buySpinsMax" class="text-orange-300">5</span></span>
               </div>
+              
+              <!-- 滑块区域 -->
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <label class="text-white/80 text-sm">购买数量</label>
+                  <span class="text-orange-300 font-bold text-lg">×<span id="buySpinsCount">1</span></span>
+                </div>
+                <input type="range" id="buySpinsSlider" min="1" max="5" value="1" step="1"
+                       oninput="updateBuySpinsDisplay(this.value)"
+                       class="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer
+                              [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                              [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-orange-500
+                              [&::-webkit-slider-thumb]:cursor-pointer [&::-webkit-slider-thumb]:shadow-lg
+                              [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:rounded-full 
+                              [&::-moz-range-thumb]:bg-orange-500 [&::-moz-range-thumb]:cursor-pointer [&::-moz-range-thumb]:border-0">
+              </div>
+              
+              <!-- 购买按钮 -->
               <button id="buySpinsButton" onclick="buySpins()"
-                      class="px-4 py-2 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600
+                      class="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600
                              text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200
                              disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
-                🛒 购买1次 (+$<span id="buySpinsBtnPrice">40</span>)
+                🛒 购买 <span id="buySpinsBtnCount">1</span> 次 (总计 $<span id="buySpinsBtnPrice">40</span>)
               </button>
             </div>
           </div>
@@ -2399,11 +2418,10 @@
       </div>
       <div class="p-6">
         <div class="mb-6 text-center">
-          <p class="text-lg text-slate-900 mb-3">确认购买1次抽奖机会吗？</p>
+          <p class="text-lg text-slate-900 mb-3">确认购买抽奖机会吗？</p>
           <div class="bg-orange-50 rounded-lg p-4 border-2 border-orange-200">
             <p class="text-sm text-slate-700 mb-2">
-              <span class="font-semibold">价格：</span>
-              <span id="confirmBuyPrice" class="text-2xl font-bold text-orange-600">$40.00</span>
+              <span id="confirmBuyPrice" class="text-lg font-bold text-orange-600">购买 1 次抽奖机会，花费 $40.00</span>
             </p>
             <p class="text-xs text-slate-600 mt-2">
               ⚠️ 购买后今日剩余次数+1（仍需投注 $20）
@@ -5168,24 +5186,40 @@
         buySpinsSection.classList.remove('hidden');
 
         // 更新价格显示
-        const buyPriceUSD = (slotConfig.buy_spins_price / 500000).toFixed(2);
+        const buyPriceUSD = parseFloat((slotConfig.buy_spins_price / 500000).toFixed(2));
         const buySpinsPriceEl = document.getElementById('buySpinsPrice');
-        const buySpinsBtnPriceEl = document.getElementById('buySpinsBtnPrice');
         if (buySpinsPriceEl) buySpinsPriceEl.textContent = `$${buyPriceUSD}`;
-        if (buySpinsBtnPriceEl) buySpinsBtnPriceEl.textContent = buyPriceUSD;
 
-        // 更新已购次数
+        // 更新已购次数和滑块最大值
         const buySpinsTodayEl = document.getElementById('buySpinsToday');
         const buySpinsMaxEl = document.getElementById('buySpinsMax');
-        if (buySpinsTodayEl) buySpinsTodayEl.textContent = slotUserData.bought_today || 0;
+        const boughtToday = slotUserData.bought_today || 0;
+        if (buySpinsTodayEl) buySpinsTodayEl.textContent = boughtToday;
         if (buySpinsMaxEl) buySpinsMaxEl.textContent = slotConfig.max_daily_buy_spins;
 
+        // 🔥 更新滑块最大值（剩余可购买次数）
+        const buySpinsSlider = document.getElementById('buySpinsSlider');
+        const remainingBuyCount = Math.max(1, slotConfig.max_daily_buy_spins - boughtToday);
+        if (buySpinsSlider) {
+          buySpinsSlider.max = remainingBuyCount;
+          // 如果当前值超过最大值，重置为最大值
+          if (parseInt(buySpinsSlider.value) > remainingBuyCount) {
+            buySpinsSlider.value = remainingBuyCount;
+            updateBuySpinsDisplay(remainingBuyCount);
+          } else {
+            // 确保显示和滑块值一致
+            updateBuySpinsDisplay(buySpinsSlider.value);
+          }
+        }
+
         // 更新按钮状态
-        const boughtToday = slotUserData.bought_today || 0;
         if (buySpinsButton) {
+          const currentBuyCount = buySpinsSlider ? parseInt(buySpinsSlider.value) : 1;
+          const totalPrice = slotConfig.buy_spins_price * currentBuyCount;
+          
           if (boughtToday >= slotConfig.max_daily_buy_spins) {
             buySpinsButton.disabled = true;
-          } else if (slotUserData.quota < slotConfig.buy_spins_price) {
+          } else if (slotUserData.quota < totalPrice) {
             buySpinsButton.disabled = true;
           } else {
             buySpinsButton.disabled = false;
@@ -5194,6 +5228,38 @@
       } else if (buySpinsSection) {
         // 隐藏购买区域（高级场或其他原因）
         buySpinsSection.classList.add('hidden');
+      }
+    }
+    
+    // 🔥 更新购买次数显示
+    function updateBuySpinsDisplay(count) {
+      const buyCount = parseInt(count) || 1;
+      const buyCountEl = document.getElementById('buySpinsCount');
+      const buyBtnCountEl = document.getElementById('buySpinsBtnCount');
+      const buyBtnPriceEl = document.getElementById('buySpinsBtnPrice');
+      
+      if (buyCountEl) buyCountEl.textContent = buyCount;
+      if (buyBtnCountEl) buyBtnCountEl.textContent = buyCount;
+      
+      // 更新总价格
+      if (slotConfig && buyBtnPriceEl) {
+        const totalPrice = (slotConfig.buy_spins_price * buyCount / 500000).toFixed(2);
+        buyBtnPriceEl.textContent = totalPrice;
+      }
+      
+      // 更新按钮状态（检查额度是否足够）
+      const buySpinsButton = document.getElementById('buySpinsButton');
+      if (buySpinsButton && slotConfig && slotUserData) {
+        const totalPrice = slotConfig.buy_spins_price * buyCount;
+        const boughtToday = slotUserData.bought_today || 0;
+        
+        if (boughtToday >= slotConfig.max_daily_buy_spins) {
+          buySpinsButton.disabled = true;
+        } else if (slotUserData.quota < totalPrice) {
+          buySpinsButton.disabled = true;
+        } else {
+          buySpinsButton.disabled = false;
+        }
       }
     }
 
@@ -5211,11 +5277,16 @@
         return;
       }
 
+      // 🔥 获取购买数量
+      const buySpinsSlider = document.getElementById('buySpinsSlider');
+      const buyCount = buySpinsSlider ? parseInt(buySpinsSlider.value) : 1;
+      const totalPrice = slotConfig.buy_spins_price * buyCount;
+      const buyPriceUSD = (totalPrice / 500000).toFixed(2);
+
       // 更新弹窗中的价格显示
-      const buyPriceUSD = (slotConfig.buy_spins_price / 500000).toFixed(2);
       const confirmPriceEl = document.getElementById('confirmBuyPrice');
       if (confirmPriceEl) {
-        confirmPriceEl.textContent = `$${buyPriceUSD}`;
+        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 $${buyPriceUSD}`;
       }
 
       // 显示确认弹窗
@@ -5235,6 +5306,10 @@
       const button = document.getElementById('buySpinsButton');
       if (!button) return;
 
+      // 🔥 获取购买数量
+      const buySpinsSlider = document.getElementById('buySpinsSlider');
+      const buyCount = buySpinsSlider ? parseInt(buySpinsSlider.value) : 1;
+
       // 禁用按钮
       button.disabled = true;
       const originalText = button.innerHTML;
@@ -5243,7 +5318,8 @@
       try {
         const res = await fetch('/api/slot/buy-spins', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: buyCount }) // 🔥 传递购买数量
         });
 
         const data = await res.json();
@@ -5267,6 +5343,12 @@
           //   free_spins: slotUserData.free_spins
           // });
 
+          // 🔥 重置滑块到1
+          if (buySpinsSlider) {
+            buySpinsSlider.value = 1;
+            updateBuySpinsDisplay(1);
+          }
+          
           // 立即更新UI
           updateSlotUI();
           
@@ -5283,7 +5365,7 @@
           // 🎯 显示详细的成功消息
           const increase = slotUserData.remaining_spins - oldRemainingSpins;
           setTimeout(() => {
-            showToast(`✅ 购买成功！剩余次数：${oldRemainingSpins} → ${slotUserData.remaining_spins} (+${increase})`, 'success');
+            showToast(`✅ ${data.message} 剩余次数：${oldRemainingSpins} → ${slotUserData.remaining_spins} (+${increase})`, 'success');
           }, 500);
           
         } else {

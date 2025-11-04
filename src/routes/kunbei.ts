@@ -156,28 +156,116 @@ kunbei.post('/borrow', requireAuth, async (c) => {
             }, 500);
         }
 
-        // 调用借款服务
-        const result = await borrowLoan(session.linux_do_id!, session.username!, amount);
+        // 🔥 关键优化：先验证借款资格，但不创建记录
+        console.log('[坤呗] 步骤1：验证借款资格...');
+        const validationResult = await borrowLoan(session.linux_do_id!, session.username!, amount);
 
-        if (!result.success) {
-            return c.json(result, 400);
+        if (!validationResult.success) {
+            console.error('[坤呗] 借款资格验证失败:', validationResult.message);
+            return c.json(validationResult, 400);
         }
 
-        // 增加用户额度
+        // 🔥 步骤2：先增加用户额度（关键操作，使用增强重试）
+        console.log('[坤呗] 步骤2：增加用户额度...');
         const quotaResult = await addQuota(
             user.kyx_user_id,
             amount,
             adminConfig.session,
             adminConfig.new_api_user,
-            `坤呗借款-${session.username}`
+            `坤呗借款-${session.username}`,
+            5  // 使用5次重试，确保成功率
         );
 
+        // 🔥 如果额度增加失败，需要回滚借款记录
         if (!quotaResult.success) {
-            return c.json({
-                success: false,
-                message: `借款失败: ${quotaResult.message}`
-            }, 500);
+            console.error('[坤呗] 额度增加失败，准备回滚借款记录:', quotaResult.message);
+
+            // 查找刚刚创建的借款记录并删除
+            const activeLoan = kunbeiQueries.getActiveLoan.get(session.linux_do_id!);
+            if (activeLoan) {
+                console.log('[坤呗] 回滚：删除借款记录 ID =', activeLoan.id);
+                kunbeiQueries.deleteLoan.run(activeLoan.id);
+
+                // 回滚统计数据：减少借款次数和总借款金额
+                const stats = kunbeiQueries.getStats.get(session.linux_do_id!);
+                if (stats) {
+                    // 如果这是第一笔借款，重置所有统计
+                    if (stats.total_loans === 1) {
+                        kunbeiQueries.upsertStats.run(
+                            session.linux_do_id!,
+                            0, 0, 0, 0, 0,  // 重置所有计数
+                            stats.credit_score,
+                            0,
+                            null,  // 清除今日借款日期
+                            0,     // 清除buff
+                            2.5,
+                            0,
+                            Date.now(),
+                            // ON CONFLICT 部分：直接设置为0
+                            -stats.total_borrowed,  // 回滚到0
+                            0,
+                            -stats.total_loans,     // 回滚到0
+                            0,
+                            0,
+                            stats.credit_score,
+                            null,
+                            0,
+                            2.5,
+                            0,
+                            Date.now()
+                        );
+                    } else {
+                        // 否则只减少相应的计数
+                        kunbeiQueries.upsertStats.run(
+                            session.linux_do_id!,
+                            0, 0, 0, 0, 0,
+                            stats.credit_score,
+                            0,
+                            stats.last_borrow_date,  // 保持原有日期
+                            validationResult.is_first_today ? 0 : stats.has_daily_buff,  // 如果是首次借款才清除buff
+                            2.5,
+                            0,
+                            Date.now(),
+                            // ON CONFLICT 部分
+                            -amount,  // 减少借款金额
+                            0,
+                            -1,       // 减少借款次数
+                            0,
+                            0,
+                            stats.credit_score,
+                            stats.last_borrow_date,
+                            validationResult.is_first_today ? 0 : stats.has_daily_buff,
+                            2.5,
+                            0,
+                            Date.now()
+                        );
+                    }
+                }
+
+                console.log('[坤呗] ✅ 借款记录和统计数据已回滚');
+            }
+
+            // 返回更友好的错误信息
+            const errorMsg = quotaResult.message || '未知错误';
+            if (errorMsg.includes('429') || errorMsg.includes('繁忙')) {
+                return c.json({
+                    success: false,
+                    message: '系统繁忙，请稍后再试（建议30秒后重试）'
+                }, 503);
+            } else if (errorMsg.includes('超时')) {
+                return c.json({
+                    success: false,
+                    message: '网络超时，请检查网络连接后重试'
+                }, 504);
+            } else {
+                return c.json({
+                    success: false,
+                    message: `借款失败：${errorMsg}。如多次失败，请联系管理员。`
+                }, 500);
+            }
         }
+
+        console.log('[坤呗] ✅ 借款成功 - 用户:', session.username, '金额: $', (amount / 500000).toFixed(2));
 
         // 🏆 坤呗借款成就
         try {
@@ -186,9 +274,9 @@ kunbei.post('/borrow', requireAuth, async (c) => {
             console.error('[成就系统] 检查借款成就时出错:', achievementError);
         }
 
-        return c.json(result);
+        return c.json(validationResult);
     } catch (error: any) {
-        console.error('[坤呗] 借款失败:', error);
+        console.error('[坤呗] 借款异常:', error);
         return c.json({ success: false, message: '借款失败: ' + error.message }, 500);
     }
 });
