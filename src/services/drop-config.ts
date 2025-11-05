@@ -151,12 +151,7 @@ export async function createDropConfig(config: Omit<DropConfig, 'id' | 'created_
             now
         );
         
-        console.log('[掉落配置] 创建成功:', {
-            mode: config.slot_mode,
-            rule: config.trigger_rule_name,
-            item: config.drop_item_type,
-            probability: config.drop_probability
-        });
+        logger.info('掉落配置', `创建成功 - 场次:${config.slot_mode}, 规则:${config.trigger_rule_name}, 物品:${config.drop_item_type}, 概率:${config.drop_probability}`);
         
         return {
             success: true,
@@ -164,7 +159,7 @@ export async function createDropConfig(config: Omit<DropConfig, 'id' | 'created_
             id: result?.lastInsertRowid as number
         };
     } catch (error: any) {
-        console.error('[掉落配置] 创建失败:', error);
+        logger.error('掉落配置', `创建失败: ${error.message || error}`);
         
         // 检查是否是唯一约束冲突
         if (error.code === 'SQLITE_CONSTRAINT_UNIQUE' || error.message?.includes('UNIQUE constraint')) {
@@ -207,7 +202,7 @@ export async function updateDropConfig(id: number, config: Omit<DropConfig, 'id'
             message: '掉落配置已更新'
         };
     } catch (error: any) {
-        console.error('[掉落配置] 更新失败:', error);
+        logger.error('掉落配置', `更新失败: ${error.message || error}`);
         return {
             success: false,
             message: '更新失败: ' + error.message
@@ -229,7 +224,7 @@ export async function deleteDropConfig(id: number): Promise<{ success: boolean; 
             message: '掉落配置已删除'
         };
     } catch (error: any) {
-        console.error('[掉落配置] 删除失败:', error);
+        logger.error('掉落配置', `删除失败: ${error.message || error}`);
         return {
             success: false,
             message: '删除失败: ' + error.message

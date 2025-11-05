@@ -3,6 +3,8 @@
  * 防止触发 429 Too Many Requests 错误
  */
 
+import logger from '../utils/logger';
+
 class RateLimiter {
     private queue: Array<() => void> = [];
     private running = 0;
@@ -32,7 +34,7 @@ class RateLimiter {
     async execute<T>(fn: () => Promise<T>, priority: number = 0): Promise<T> {
         // 检查队列是否已满
         if (this.queue.length >= this.maxQueueSize) {
-            console.warn(`[限流器] ⚠️ 队列已满 (${this.maxQueueSize}/${this.maxQueueSize})，拒绝新请求`);
+            logger.warn('限流器', `⚠️ 队列已满 (${this.maxQueueSize}/${this.maxQueueSize})，拒绝新请求`);
             throw new Error('请求队列已满，请稍后再试');
         }
 
@@ -52,7 +54,7 @@ class RateLimiter {
                         const waitTime = effectiveInterval - timeSinceLastRequest;
                         // 只在等待时间较长时才记录日志（减少日志输出）
                         if (waitTime > 1000) {
-                            console.log(`[限流器] ⏱️ 等待 ${waitTime}ms（队列: ${this.queue.length}）`);
+                            logger.debug('限流器', `⏱️ 等待 ${waitTime}ms（队列: ${this.queue.length}）`);
                         }
                         await new Promise(r => setTimeout(r, waitTime));
                     }
@@ -68,7 +70,7 @@ class RateLimiter {
                             this.currentInterval = Math.max(this.minInterval, this.currentInterval - 20);
                             this.successCount = 0;
                             if (this.currentInterval === this.minInterval) {
-                                console.log(`[限流器] ✅ 已恢复到正常速率 (${this.minInterval}ms)`);
+                                logger.info('限流器', `✅ 已恢复到正常速率 (${this.minInterval}ms)`);
                             }
                         }
                     }
@@ -127,17 +129,17 @@ class RateLimiter {
 
             // 只在间隔变化时才输出日志（避免日志过多）
             if (oldInterval !== this.currentInterval) {
-                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms (队列: ${this.queue.length})`);
+                logger.warn('限流器', `⚠️ 触发限流 (第 ${this.rateLimitHits} 次) - 动态调整: ${oldInterval}ms → ${this.currentInterval}ms (队列: ${this.queue.length})`);
             } else {
                 // 已经到达最大间隔，仅每100次输出一次
                 if (this.rateLimitHits % 100 === 0) {
-                    console.warn(`[限流器] ⚠️ 持续限流 (第 ${this.rateLimitHits} 次) - 当前间隔: ${this.currentInterval}ms (已达上限)`);
+                    logger.warn('限流器', `⚠️ 持续限流 (第 ${this.rateLimitHits} 次) - 当前间隔: ${this.currentInterval}ms (已达上限)`);
                 }
             }
         } else {
             // 每50次才输出一次（减少日志）
             if (this.rateLimitHits % 50 === 0) {
-                console.warn(`[限流器] ⚠️ 触发限流 (第 ${this.rateLimitHits} 次)`);
+                logger.warn('限流器', `⚠️ 触发限流 (第 ${this.rateLimitHits} 次)`);
             }
         }
     }
@@ -167,7 +169,7 @@ class RateLimiter {
      */
     clear() {
         this.queue = [];
-        console.log('[限流器] 队列已清空');
+        logger.info('限流器', '队列已清空');
     }
 }
 

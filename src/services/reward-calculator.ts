@@ -97,7 +97,7 @@ export function calculateWinByScheme(
 
         if (matched) {
             // 🔥 调试日志：输出匹配的规则信息
-            console.log(`[规则匹配] 符号:${symbols}, 匹配规则:"${rule.rule_name}", pattern:${rule.match_pattern}, required:${rule.required_symbols}, 倍率:${rule.win_multiplier}, 优先级:${rule.priority}`);
+            logger.debug('规则匹配', `符号:${symbols}, 匹配规则:"${rule.rule_name}", pattern:${rule.match_pattern}, required:${rule.required_symbols}, 倍率:${rule.win_multiplier}, 优先级:${rule.priority}`);
 
             let finalMultiplier = rule.win_multiplier;
             let ruleName = rule.rule_name;
@@ -309,7 +309,7 @@ function checkRuleMatch(symbols: string[], rule: any, isStrictConsecutive: boole
             return hasSymmetric(symbols);
 
         default:
-            console.warn(`[规则匹配] 未知匹配模式: ${pattern}`);
+            logger.warn('规则匹配', `未知匹配模式: ${pattern}`);
             return false;
     }
 }

@@ -5,6 +5,7 @@
 
 import { pendingRewardQueries, adminQueries } from '../database';
 import { getKyxUserById, updateKyxUserQuota } from './kyx-api';
+import logger from '../utils/logger';
 
 // 配置
 const PROCESS_INTERVAL = 60000; // 每60秒处理一次
@@ -20,7 +21,7 @@ async function processPendingReward(reward: any): Promise<boolean> {
     const context = `[奖金发放] ID: ${reward.id}, 用户: ${reward.username}`;
 
     try {
-        console.log(`${context} - 开始处理 - 金额: $${(reward.reward_amount / 500000).toFixed(2)}, 重试次数: ${reward.retry_count}`);
+        logger.info('奖金发放', `${context} - 开始处理 - 金额: $${(reward.reward_amount / 500000).toFixed(2)}, 重试次数: ${reward.retry_count}`);
 
         // 标记为处理中
         const now = Date.now();
@@ -48,7 +49,7 @@ async function processPendingReward(reward: any): Promise<boolean> {
         const currentQuota = userResult.user.quota;
         const newQuota = currentQuota + reward.reward_amount;
 
-        console.log(`${context} - 当前额度: ${currentQuota}, 奖金: ${reward.reward_amount}, 目标额度: ${newQuota}`);
+        logger.debug('奖金发放', `${context} - 当前额度: ${currentQuota}, 奖金: ${reward.reward_amount}, 目标额度: ${newQuota}`);
 
         // 更新额度
         const updateResult = await updateKyxUserQuota(
@@ -75,7 +76,7 @@ async function processPendingReward(reward: any): Promise<boolean> {
 
         if (verifyResult.success && verifyResult.user) {
             const actualQuota = verifyResult.user.quota;
-            console.log(`${context} - 验证额度 - 期望: ${newQuota}, 实际: ${actualQuota}`);
+            logger.debug('奖金发放', `${context} - 验证额度 - 期望: ${newQuota}, 实际: ${actualQuota}`);
 
             // 允许小范围误差
             if (Math.abs(actualQuota - newQuota) > reward.reward_amount) {
@@ -85,18 +86,18 @@ async function processPendingReward(reward: any): Promise<boolean> {
 
         // 标记为成功
         pendingRewardQueries.markSuccess.run('success', now, now, reward.id);
-        console.log(`${context} - ✅ 发放成功`);
+        logger.info('奖金发放', `${context} - ✅ 发放成功`);
 
         return true;
     } catch (error: any) {
         const errorMsg = error.message || '未知错误';
-        console.error(`${context} - ❌ 处理失败: ${errorMsg}`);
+        logger.error('奖金发放', `${context} - ❌ 处理失败: ${errorMsg}`);
 
         const now = Date.now();
 
         // 检查是否达到最大重试次数
         if (reward.retry_count + 1 >= MAX_RETRY_COUNT) {
-            console.error(`${context} - 已达到最大重试次数 (${MAX_RETRY_COUNT})，标记为失败`);
+            logger.error('奖金发放', `${context} - 已达到最大重试次数 (${MAX_RETRY_COUNT})，标记为失败`);
             pendingRewardQueries.updateStatus.run('failed', now, `达到最大重试次数: ${errorMsg}`, reward.id);
         } else {
             // 增加重试次数
@@ -112,7 +113,7 @@ async function processPendingReward(reward: any): Promise<boolean> {
  */
 async function processPendingRewards() {
     if (isProcessing) {
-        console.log('[奖金发放] 上一批次仍在处理中，跳过本次');
+        logger.debug('奖金发放', '上一批次仍在处理中，跳过本次');
         return;
     }
 
@@ -127,7 +128,7 @@ async function processPendingRewards() {
             return;
         }
 
-        console.log(`[奖金发放] 🔄 发现 ${pendingRewards.length} 条待处理奖金记录`);
+        logger.info('奖金发放', `🔄 发现 ${pendingRewards.length} 条待处理奖金记录`);
 
         // 批量处理（限制每次处理数量）
         const batch = pendingRewards.slice(0, BATCH_SIZE);
@@ -146,9 +147,9 @@ async function processPendingRewards() {
             await new Promise(resolve => setTimeout(resolve, 500));
         }
 
-        console.log(`[奖金发放] ✅ 本批次处理完成 - 成功: ${successCount}, 失败: ${failedCount}`);
+        logger.info('奖金发放', `✅ 本批次处理完成 - 成功: ${successCount}, 失败: ${failedCount}`);
     } catch (error) {
-        console.error('[奖金发放] ❌ 处理过程出错:', error);
+        logger.error('奖金发放', `❌ 处理过程出错: ${error}`);
     } finally {
         isProcessing = false;
     }
@@ -158,7 +159,7 @@ async function processPendingRewards() {
  * 启动自动发放服务
  */
 export function startRewardProcessor() {
-    console.log(`[奖金发放] 🚀 启动自动发放服务 - 间隔: ${PROCESS_INTERVAL / 1000}秒`);
+    logger.info('奖金发放', `🚀 启动自动发放服务 - 间隔: ${PROCESS_INTERVAL / 1000}秒`);
 
     // 立即执行一次
     processPendingRewards();
@@ -181,7 +182,7 @@ export async function manualProcessRewards(): Promise<{ success: number; failed:
     }
 
     const total = pendingRewards.length;
-    console.log(`[一键发放] 🚀 开始异步处理 ${total} 条待发放记录`);
+    logger.info('一键发放', `🚀 开始异步处理 ${total} 条待发放记录`);
 
     // 立即返回，不等待处理完成
     // 后台异步处理
@@ -227,7 +228,7 @@ async function processRewardsAsync(rewards: any[]) {
         // 输出进度
         const processed = Math.min(i + CONCURRENT_LIMIT, rewards.length);
         const percentage = ((processed / rewards.length) * 100).toFixed(1);
-        console.log(`[一键发放] 📊 进度: ${processed}/${rewards.length} (${percentage}%) - 成功: ${successCount}, 失败: ${failedCount}`);
+        logger.info('一键发放', `📊 进度: ${processed}/${rewards.length} (${percentage}%) - 成功: ${successCount}, 失败: ${failedCount}`);
 
         // 批次之间稍微延迟，避免压力过大
         if (i + CONCURRENT_LIMIT < rewards.length) {
@@ -236,5 +237,5 @@ async function processRewardsAsync(rewards: any[]) {
     }
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`[一键发放] ✅ 全部处理完成 - 总数: ${rewards.length}, 成功: ${successCount}, 失败: ${failedCount}, 耗时: ${duration}秒`);
+    logger.info('一键发放', `✅ 全部处理完成 - 总数: ${rewards.length}, 成功: ${successCount}, 失败: ${failedCount}, 耗时: ${duration}秒`);
 }

@@ -46,7 +46,7 @@ export function getSymbolWeights(isAdvancedMode: boolean = false): Record<string
             };
         }
     } catch (error) {
-        console.error('获取符号权重失败，使用默认值:', error);
+        logger.error('符号权重', `获取符号权重失败，使用默认值: ${error}`);
     }
     return DEFAULT_SYMBOL_WEIGHTS;
 }
@@ -65,7 +65,7 @@ export function getRewardMultipliers() {
             };
         }
     } catch (error) {
-        console.error('获取奖励倍数失败，使用默认值:', error);
+        logger.error('奖励倍数', `获取奖励倍数失败，使用默认值: ${error}`);
     }
     // 返回默认值（已互换）
     return {
@@ -487,27 +487,27 @@ export function banUserFromSlot(linuxDoId: string, hours: number, slotMode: 'nor
  */
 export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
     try {
-        console.log(`[增加免费次数] ====== 开始增加 ======`);
-        console.log(`[增加免费次数] 用户ID: ${linuxDoId}`);
-        console.log(`[增加免费次数] 增加数量: ${count}`);
+        logger.debug('免费次数', `====== 开始增加 ======`);
+        logger.debug('免费次数', `用户ID: ${linuxDoId}`);
+        logger.debug('免费次数', `增加数量: ${count}`);
 
         // 查询增加前的状态
         const beforeRecord = slotQueries.getFreeSpin.get(linuxDoId);
-        console.log(`[增加免费次数] 增加前状态:`, JSON.stringify(beforeRecord, null, 2));
+        logger.debug('免费次数', `增加前状态: ${JSON.stringify(beforeRecord)}`);
 
         const now = Date.now();
         for (let i = 0; i < count; i++) {
             const result = slotQueries.incrementFreeSpin.run(linuxDoId, now, now);
-            console.log(`[增加免费次数] 第${i + 1}次增加结果:`, result || '(undefined)');
+            logger.debug('免费次数', `第${i + 1}次增加结果: ${result || '(undefined)'}`);
         }
 
         // 验证增加后的状态
         const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
-        console.log(`[增加免费次数] 增加后状态:`, JSON.stringify(afterRecord, null, 2));
-        console.log(`[增加免费次数] ✅ 成功！免费次数从 ${beforeRecord?.free_spins || 0} 增加到 ${afterRecord?.free_spins || 0}`);
+        logger.debug('免费次数', `增加后状态: ${JSON.stringify(afterRecord)}`);
+        logger.info('免费次数', `✅ 成功！免费次数从 ${beforeRecord?.free_spins || 0} 增加到 ${afterRecord?.free_spins || 0}`);
     } catch (error) {
-        console.error(`[增加免费次数] ⚠️ 异常:`, error);
-        console.error(`[增加免费次数] 错误堆栈:`, error instanceof Error ? error.stack : '无堆栈');
+        logger.error('免费次数', `⚠️ 异常: ${error}`);
+        logger.error('免费次数', `错误堆栈: ${error instanceof Error ? error.stack : '无堆栈'}`);
     }
 }
 
@@ -516,64 +516,64 @@ export function addUserFreeSpins(linuxDoId: string, count: number = 1) {
  */
 export function useUserFreeSpin(linuxDoId: string): boolean {
     try {
-        console.log(`[扣除免费次数] ====== 开始扣除 ======`);
-        console.log(`[扣除免费次数] 用户ID: ${linuxDoId}`);
+        logger.debug('免费次数', `====== 开始扣除 ======`);
+        logger.debug('免费次数', `用户ID: ${linuxDoId}`);
 
         const now = Date.now();
-        console.log(`[扣除免费次数] 时间戳: ${now}`);
+        logger.debug('免费次数', `时间戳: ${now}`);
 
         // 先检查当前免费次数
         const currentRecord = slotQueries.getFreeSpin.get(linuxDoId);
-        console.log(`[扣除免费次数] 数据库查询结果:`, JSON.stringify(currentRecord, null, 2));
+        logger.debug('免费次数', `数据库查询结果: ${JSON.stringify(currentRecord)}`);
 
         if (!currentRecord) {
-            console.error(`[扣除免费次数] ❌ 没有记录 - 用户从未获得过免费次数`);
+            logger.error('免费次数', `❌ 没有记录 - 用户从未获得过免费次数`);
             return false;
         }
 
         if (currentRecord.free_spins <= 0) {
-            console.error(`[扣除免费次数] ❌ 次数不足 - 当前: ${currentRecord.free_spins}`);
+            logger.error('免费次数', `❌ 次数不足 - 当前: ${currentRecord.free_spins}`);
             return false;
         }
 
-        console.log(`[扣除免费次数] ✓ 检查通过，当前有 ${currentRecord.free_spins} 次免费机会`);
+        logger.debug('免费次数', `✓ 检查通过，当前有 ${currentRecord.free_spins} 次免费机会`);
 
         const result = slotQueries.decrementFreeSpin.run(now, linuxDoId);
 
         // UPDATE 语句可能不返回结果对象（这是正常的）
         // 通过验证查询来确认是否扣除成功
         if (!result || typeof result.changes === 'undefined') {
-            console.log(`[扣除免费次数] ℹ️ UPDATE 执行完成，验证扣除结果...`);
+            logger.debug('免费次数', `ℹ️ UPDATE 执行完成，验证扣除结果...`);
 
             // 查询验证是否扣除成功
             const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
 
             if (afterRecord && afterRecord.free_spins === currentRecord.free_spins - 1) {
-                console.log(`[扣除免费次数] ✅ 验证成功！用户 ${linuxDoId} 剩余: ${afterRecord.free_spins}`);
+                logger.info('免费次数', `✅ 验证成功！用户 ${linuxDoId} 剩余: ${afterRecord.free_spins}`);
                 return true;
             }
-            console.error(`[扣除免费次数] ❌ 验证失败 - 期望剩余: ${currentRecord.free_spins - 1}, 实际: ${afterRecord?.free_spins ?? 'null'}`);
+            logger.error('免费次数', `❌ 验证失败 - 期望剩余: ${currentRecord.free_spins - 1}, 实际: ${afterRecord?.free_spins ?? 'null'}`);
             return false;
         }
 
         // 如果 result.changes 存在，直接使用
-        console.log(`[扣除免费次数] 受影响行数: ${result.changes}`);
+        logger.debug('免费次数', `受影响行数: ${result.changes}`);
 
         if (result.changes > 0) {
-            console.log(`[扣除免费次数] ✅ 成功！用户 ${linuxDoId} 剩余: ${currentRecord.free_spins - 1}`);
+            logger.info('免费次数', `✅ 成功！用户 ${linuxDoId} 剩余: ${currentRecord.free_spins - 1}`);
 
             // 验证扣除结果
             const afterRecord = slotQueries.getFreeSpin.get(linuxDoId);
-            console.log(`[扣除免费次数] 扣除后验证:`, JSON.stringify(afterRecord, null, 2));
+            logger.debug('免费次数', `扣除后验证: ${JSON.stringify(afterRecord)}`);
 
             return true;
         }
 
-        console.error(`[扣除免费次数] ❌ UPDATE 失败，changes=0 - 可能被其他请求抢先扣除了`);
+        logger.error('免费次数', `❌ UPDATE 失败，changes=0 - 可能被其他请求抢先扣除了`);
         return false;
     } catch (error) {
-        console.error(`[扣除免费次数] ⚠️ 异常发生:`, error);
-        console.error(`[扣除免费次数] 错误堆栈:`, error instanceof Error ? error.stack : '无堆栈');
+        logger.error('免费次数', `⚠️ 异常发生: ${error}`);
+        logger.error('免费次数', `错误堆栈: ${error instanceof Error ? error.stack : '无堆栈'}`);
         return false;
     }
 }

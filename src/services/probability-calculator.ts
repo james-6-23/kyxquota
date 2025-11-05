@@ -195,12 +195,12 @@ function checkRuleMatch(symbols: string[], rule: any, debug: boolean = false): b
                 }
             }
         } catch (e) {
-            console.error(`[规则匹配] "${rule_name}" 解析 required_symbols 失败:`, required_symbols, e);
+            logger.error('规则匹配', `"${rule_name}" 解析 required_symbols 失败: ${required_symbols}`, e);
             // 降级处理：尝试当作逗号分隔字符串
             if (typeof required_symbols === 'string') {
                 const fallback = required_symbols.split(',').map(s => s.trim()).filter(s => s);
                 if (fallback.length > 0) {
-                    console.log(`[规则匹配] "${rule_name}" 使用降级解析:`, fallback);
+                    logger.debug('规则匹配', `"${rule_name}" 使用降级解析: ${fallback.join(', ')}`);
                     requiredArr = fallback;
                 } else {
                     return false;
@@ -476,7 +476,7 @@ export function calculateProbabilityMonteCarlo(
     // 🔥 检查缓存
     const cached = getFromCache(weightConfigId, rewardSchemeId, 'monte-carlo');
     if (cached) {
-        console.log('[蒙特卡洛] 使用缓存结果');
+        logger.debug('蒙特卡洛', '使用缓存结果');
         return cached;
     }
 
@@ -489,14 +489,14 @@ export function calculateProbabilityMonteCarlo(
     }
 
     // 🔥 调试：检查权重配置
-    console.log(`[蒙特卡洛] 权重配置ID:${weightConfigId}, weight_man字段:`, weightConfig.weight_man);
+    logger.debug('蒙特卡洛', `权重配置ID:${weightConfigId}, weight_man字段: ${weightConfig.weight_man}`);
 
     // 🔥 调试：检查规则数量
     const allRules = rewardConfigQueries.getRulesByScheme.all(rewardSchemeId);
     const activeRules = allRules.filter(r => r.is_active);
-    console.log(`[蒙特卡洛] 开始计算 - 权重ID: ${weightConfigId}, 奖励ID: ${rewardSchemeId}`);
-    console.log(`[蒙特卡洛] 总规则: ${allRules.length}, 激活规则: ${activeRules.length}`);
-    console.log(`[蒙特卡洛] 规则详情:`, allRules.map(r => `${r.rule_name}(active:${r.is_active})`));
+    logger.info('蒙特卡洛', `开始计算 - 权重ID: ${weightConfigId}, 奖励ID: ${rewardSchemeId}`);
+    logger.info('蒙特卡洛', `总规则: ${allRules.length}, 激活规则: ${activeRules.length}`);
+    logger.debug('蒙特卡洛', `规则详情: ${allRules.map(r => `${r.rule_name}(active:${r.is_active})`).join(', ')}`);
 
     // 🔥 初始化统计（确保所有激活规则都会出现在结果中）
     const stats: Record<string, { count: number; multiplier: number }> = {};
@@ -621,7 +621,7 @@ export function calculateProbabilityFast(
     }
 
     // 🔥 调试：输出权重配置
-    console.log(`[快速估算] 权重配置ID:${weightConfigId}, weight_man字段:`, weightConfig.weight_man);
+    logger.debug('快速估算', `权重配置ID:${weightConfigId}, weight_man字段: ${weightConfig.weight_man}`);
 
     const weights = [
         weightConfig.weight_m,
@@ -636,10 +636,8 @@ export function calculateProbabilityFast(
         weightConfig.weight_man || 25  // 🔥 添加man符号权重
     ];
 
-    console.log(`[快速估算] 权重数组:`, weights);
-    console.log(`[快速估算] 总权重:`, weights.reduce((a, b) => a + b, 0));
-
     const totalWeight = weights.reduce((a, b) => a + b, 0);
+    logger.debug('快速估算', `权重数组: [${weights.join(', ')}], 总权重: ${totalWeight}`);
 
     // 计算单个符号概率
     const symbolProbs = SYMBOLS.map((_, i) => weights[i] / totalWeight);

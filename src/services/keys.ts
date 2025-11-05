@@ -74,7 +74,7 @@ export async function validateIFlowKey(apiKey: string): Promise<boolean> {
 
         return false;
     } catch (error) {
-        console.error('[iFlow验证] 验证异常:', error);
+        logger.error('iFlow验证', `验证异常: ${error}`);
         return false;
     }
 }
@@ -287,7 +287,7 @@ export async function validateAndDonateKeys(
         const kyxUser = searchResult.user;
         const newQuota = kyxUser.quota + totalQuotaAdded;
 
-        console.log(`[投喂Keys] 准备添加额度 - 用户: ${kyxUser.username}, 当前: ${kyxUser.quota}, 奖励: ${totalQuotaAdded}, 目标: ${newQuota}`);
+        logger.debug('投喂Keys', `准备添加额度 - 用户: ${kyxUser.username}, 当前: ${kyxUser.quota}, 奖励: ${totalQuotaAdded}, 目标: ${newQuota}`);
 
         const updateResult = await updateKyxUserQuota(
             kyxUser.id,
@@ -300,14 +300,14 @@ export async function validateAndDonateKeys(
 
         // 【关键】检查额度更新结果
         if (!updateResult || !updateResult.success) {
-            console.error(`[投喂Keys] ❌ 添加额度失败 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+            logger.error('投喂Keys', `❌ 添加额度失败 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
             // 注意：即使额度添加失败，仍然继续推送keys和保存记录
             // 这样管理员可以从记录中看到失败情况并补发
         } else {
-            console.log(`[投喂Keys] ✅ 添加额度成功 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}`);
+            logger.info('投喂Keys', `✅ 添加额度成功 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}`);
         }
     } else {
-        console.error(`[投喂Keys] ⚠️ 未找到用户或搜索失败，无法添加额度 - LinuxDo ID: ${linuxDoId}`);
+        logger.error('投喂Keys', `⚠️ 未找到用户或搜索失败，无法添加额度 - LinuxDo ID: ${linuxDoId}`);
     }
 
     // 推送 keys 到分组（根据 key_type 使用不同的 group_id）

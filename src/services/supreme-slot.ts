@@ -38,7 +38,7 @@ export function getSupremeTokens(linuxDoId: string): any {
 
         return result;
     } catch (error) {
-        console.error(`[至尊场] 查询令牌信息失败:`, error);
+        logger.error('至尊场', `查询令牌信息失败: ${error}`);
         return null;
     }
 }
@@ -380,7 +380,7 @@ export async function enterSupremeMode(linuxDoId: string): Promise<{ success: bo
             };
         }
     } catch (error) {
-        console.error(`[至尊场] 进入失败:`, error);
+        logger.error('至尊场', `进入失败: ${(error as Error).message}`);
         return {
             success: false,
             message: '进入至尊场失败: ' + (error as Error).message

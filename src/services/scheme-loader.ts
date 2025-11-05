@@ -4,6 +4,7 @@
  */
 
 import { slotQueries, advancedSlotQueries, supremeSlotQueries, weightConfigQueries, rewardConfigQueries } from '../database';
+import logger from '../utils/logger';
 
 /**
  * 获取初级场的权重配置
@@ -14,7 +15,7 @@ export function getNormalSlotWeights(): any {
     const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
     if (!weightConfig) {
-        console.warn('[初级场] 权重配置不存在，使用默认值');
+        logger.warn('初级场', '权重配置不存在，使用默认值');
         return {
             weight_m: 100,
             weight_t: 100,
@@ -56,7 +57,7 @@ export function getAdvancedSlotWeights(): any {
     const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
     if (!weightConfig) {
-        console.warn('[高级场] 权重配置不存在，使用默认值');
+        logger.warn('高级场', '权重配置不存在，使用默认值');
         return {
             weight_m: 100,
             weight_t: 100,
@@ -98,7 +99,7 @@ export function getSupremeSlotWeights(): any {
     const weightConfig = weightConfigQueries.getById.get(weightConfigId);
 
     if (!weightConfig) {
-        console.warn('[至尊场] 权重配置不存在，使用默认值');
+        logger.warn('至尊场', '权重配置不存在，使用默认值');
         return {
             weight_m: 100,
             weight_t: 100,
