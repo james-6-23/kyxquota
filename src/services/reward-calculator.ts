@@ -4,6 +4,7 @@
  */
 
 import { rewardConfigQueries } from '../database';
+import logger from '../utils/logger';
 
 /**
  * 根据奖励配置方案判定中奖

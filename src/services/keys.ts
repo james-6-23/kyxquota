@@ -2,6 +2,7 @@ import { CONFIG } from '../config';
 import { keyQueries, donateQueries } from '../database';
 import { searchAndFindExactUser, updateKyxUserQuota, pushKeysToGroup } from './kyx-api';
 import { cacheManager } from '../cache';
+import logger from '../utils/logger';
 
 /**
  * 验证 ModelScope API Key
