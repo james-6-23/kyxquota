@@ -642,7 +642,8 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             winAmount,
             result.freeSpinAwarded,
             isFreeSpin,
-            inAdvancedMode ? 'advanced' : 'normal'  // 🔥 传入场次模式
+            inAdvancedMode ? 'advanced' : 'normal',  // 🔥 传入场次模式
+            result.ruleName || result.winType  // 🔥 传入规则名称（用于显示）
         );
 
         // 更新用户总统计（用于排行榜）
