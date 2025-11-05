@@ -1502,6 +1502,13 @@
           </button>
         </div>
 
+        <!-- 🔥 坤呗buff提示 -->
+        <div id="kunbeiBuffTip" class="hidden mt-3 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+          <p class="text-yellow-300 text-sm sm:text-base font-bold text-center">
+            💰 坤呗buff加成 ×<span id="kunbeiBuffMultiplier">2.5</span>
+          </p>
+        </div>
+
         <!-- 🎰 初级场专属：规则说明按钮 -->
         <button onclick="showSlotRules()" class="mt-4 sm:mt-6 text-white/70 hover:text-white text-sm sm:text-base transition-colors">
           📖 查看游戏规则
@@ -1567,6 +1574,13 @@
                 <span id="advancedBetDisplay" class="text-yellow-300">$100</span>
               </span>
             </button>
+
+            <!-- 🔥 坤呗buff提示 -->
+            <div id="advancedKunbeiBuffTip" class="hidden mt-3 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+              <p class="text-yellow-300 text-sm sm:text-base font-bold text-center">
+                💰 坤呗buff加成 ×<span id="advancedKunbeiBuffMultiplier">2.5</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -1649,6 +1663,13 @@
                 <span id="supremeBetDisplay" class="text-yellow-300">$1000</span>
               </span>
             </button>
+
+            <!-- 🔥 坤呗buff提示 -->
+            <div id="supremeKunbeiBuffTip" class="hidden mt-3 px-4 py-2 bg-yellow-500/20 border border-yellow-500/50 rounded-lg">
+              <p class="text-yellow-300 text-sm sm:text-base font-bold text-center">
+                💰 坤呗buff加成 ×<span id="supremeKunbeiBuffMultiplier">2.5</span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -5247,6 +5268,9 @@
         // 隐藏购买区域（高级场或其他原因）
         buySpinsSection.classList.add('hidden');
       }
+
+      // 🔥 检查并显示坤呗buff提示
+      checkAndShowKunbeiBuff();
     }
     
     // 🔥 更新购买次数显示
@@ -5576,6 +5600,9 @@
         slotUserData.today_win += result.win_amount;
 
         updateSlotUI();
+
+        // 🔥 投注后隐藏坤呗buff提示（buff已使用）
+        hideAllKunbeiBuffTips();
 
         // 🔥 处理入场券/碎片掉落 & 💎 至尊令牌/碎片掉落
         if (result.ticket_dropped && result.drop_type) {
@@ -7780,6 +7807,9 @@
           
           // 🔥 更新老虎机界面余额显示
           updateSlotUI();
+
+          // 🔥 投注后隐藏坤呗buff提示（buff已使用）
+          hideAllKunbeiBuffTips();
           
           // 🔥 同步余额到主界面右上角（加油站页面的余额显示）
           const quotaValueEl = document.getElementById('quotaValue');
@@ -8408,6 +8438,62 @@
         console.error('加载坤呗状态失败:', error);
       }
     }
+
+    // 🔥 检查并显示坤呗buff提示
+    async function checkAndShowKunbeiBuff() {
+      try {
+        const res = await fetch('/api/kunbei/check-buff');
+        const data = await res.json();
+        
+        if (data.success && data.data.has_buff) {
+          const multiplier = data.data.buff_multiplier;
+          
+          // 根据当前场次显示对应的buff提示
+          if (isInSupremeMode) {
+            // 至尊场
+            const tip = document.getElementById('supremeKunbeiBuffTip');
+            const multiplierSpan = document.getElementById('supremeKunbeiBuffMultiplier');
+            if (tip && multiplierSpan) {
+              multiplierSpan.textContent = multiplier;
+              tip.classList.remove('hidden');
+            }
+          } else if (isInAdvancedMode) {
+            // 高级场
+            const tip = document.getElementById('advancedKunbeiBuffTip');
+            const multiplierSpan = document.getElementById('advancedKunbeiBuffMultiplier');
+            if (tip && multiplierSpan) {
+              multiplierSpan.textContent = multiplier;
+              tip.classList.remove('hidden');
+            }
+          } else {
+            // 初级场
+            const tip = document.getElementById('kunbeiBuffTip');
+            const multiplierSpan = document.getElementById('kunbeiBuffMultiplier');
+            if (tip && multiplierSpan) {
+              multiplierSpan.textContent = multiplier;
+              tip.classList.remove('hidden');
+            }
+          }
+        } else {
+          // 没有buff，隐藏所有提示
+          hideAllKunbeiBuffTips();
+        }
+      } catch (error) {
+        console.error('检查坤呗buff失败:', error);
+      }
+    }
+
+    // 🔥 隐藏所有坤呗buff提示
+    function hideAllKunbeiBuffTips() {
+      const tips = [
+        document.getElementById('kunbeiBuffTip'),
+        document.getElementById('advancedKunbeiBuffTip'),
+        document.getElementById('supremeKunbeiBuffTip')
+      ];
+      tips.forEach(tip => {
+        if (tip) tip.classList.add('hidden');
+      });
+    }
     
     // 打开坤呗模态框
     async function openKunbeiModal() {
@@ -8651,6 +8737,13 @@
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
             if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
+            
+            // 🔥 如果是首次借款，显示buff提示
+            if (data.is_first_today) {
+              setTimeout(() => {
+                checkAndShowKunbeiBuff();
+              }, 500);
+            }
           }
         } else {
           showToast(data.message, 'error');

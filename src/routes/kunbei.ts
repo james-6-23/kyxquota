@@ -3,7 +3,7 @@
  */
 
 import { Hono } from 'hono';
-import { getCookie, getSession } from '../utils';
+import { getCookie, getSession, logger } from '../utils';
 import type { SessionData } from '../types';
 import {
     getKunbeiConfig,
@@ -415,6 +415,29 @@ setInterval(() => {
         logger.error('定时任务', `❌ 坤呗逾期检查失败: ${error.message}`);
     }
 }, 21600000);  // 每6小时（从1小时延长，减少日志频率）
+
+/**
+ * 检查用户是否有buff
+ */
+kunbei.get('/check-buff', requireAuth, async (c) => {
+    try {
+        const session = c.get('session') as SessionData;
+        const stats = kunbeiQueries.checkBuff.get(session.linux_do_id!);
+        
+        const hasBuff = stats && stats.has_daily_buff === 1 && stats.buff_used === 0;
+        
+        return c.json({
+            success: true,
+            data: {
+                has_buff: hasBuff,
+                buff_multiplier: hasBuff ? stats.buff_multiplier : 1.0
+            }
+        });
+    } catch (error: any) {
+        console.error('[坤呗] 检查buff失败:', error);
+        return c.json({ success: false, message: '检查buff失败' }, 500);
+    }
+});
 
 export default kunbei;
 

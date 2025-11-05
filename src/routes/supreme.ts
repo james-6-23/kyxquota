@@ -70,11 +70,11 @@ supreme.get('/tokens', requireAuth, async (c) => {
         // 🔥 先获取原始数据，再检查过期（避免刚发放就被清除）
         const tokensBeforeCheck = getSupremeTokens(session.linux_do_id!);
         const config = getSupremeSlotConfig();
-        
+
         // 检查并清理过期
         checkTokenExpiry(session.linux_do_id!);
         checkSupremeModeExpiry(session.linux_do_id!);
-        
+
         // 🔥 重新获取（可能已被清理）
         const tokens = getSupremeTokens(session.linux_do_id!);
 
@@ -257,6 +257,14 @@ supreme.post('/spin', requireAuth, async (c) => {
         // 🔥 计算中奖（使用统一的配置方案系统）
         // 至尊场使用严格连续判定（与高级场一致）
         const winResult = calculateWinByScheme(symbols, config.reward_scheme_id, true);
+
+        // 🔥 检查并应用坤呗buff
+        const { getAndUseBuff } = await import('../services/kunbei');
+        const kunbeiBuff = getAndUseBuff(session.linux_do_id!);
+        if (kunbeiBuff > 1) {
+            logger.info('坤呗Buff', `应用buff×${kunbeiBuff}，原倍率: ${winResult.multiplier}，新倍率: ${winResult.multiplier * kunbeiBuff}`);
+            winResult.multiplier = winResult.multiplier * kunbeiBuff;
+        }
 
         // 计算赢得金额
         let winAmount = 0;
@@ -444,12 +452,12 @@ supreme.post('/spin', requireAuth, async (c) => {
                         unlockedAchievements.push(result.value.achievement);
                     }
                 });
-                
+
                 // 🔥 连击计数器（连续中奖）
                 const streakResult = userQueries.getWinStreak.get(session.linux_do_id!);
                 const currentStreak = (streakResult?.win_streak || 0) + 1;
                 userQueries.updateWinStreak.run(currentStreak, session.linux_do_id!);
-                
+
                 // 🔥 连续中奖成就（收集解锁信息）
                 if (currentStreak >= 3) {
                     const result3 = await checkAndUnlockAchievement(session.linux_do_id!, 'combo_3_wins');
@@ -599,7 +607,7 @@ supreme.get('/rules', requireAuth, async (c) => {
         // 使用蒙特卡洛缓存（与预热保持一致）
         const { getFromCache } = await import('../services/probability-calculator');
         const probabilityData = getFromCache(weightConfigId, schemeId, 'monte-carlo');
-        
+
         // 如果缓存不存在，返回null（管理员需要先在后台计算）
         if (!probabilityData) {
             logger.warn('至尊场规则', `概率数据未缓存 (权重配置ID:${weightConfigId}, 奖励方案ID:${schemeId})，需要管理员在后台保存配置方案以自动计算并缓存（缓存为永久有效）`);
@@ -608,7 +616,7 @@ supreme.get('/rules', requireAuth, async (c) => {
         // 计算权重总和（包含所有10个符号）
         const totalWeight = weightConfig
             ? (weightConfig.weight_m + weightConfig.weight_t + weightConfig.weight_n + weightConfig.weight_j +
-                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk + 
+                weightConfig.weight_lq + weightConfig.weight_bj + weightConfig.weight_zft + weightConfig.weight_bdk +
                 weightConfig.weight_lsh + (weightConfig.weight_man || 0))
             : 825;
 
