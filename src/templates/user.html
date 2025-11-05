@@ -5356,7 +5356,27 @@
           // 🔥 获取本次购买的数量（后端返回）
           const buyCount = data.data.buy_count || 1;
 
-          // 更新用户数据
+          // 🔥 获取后端返回的新剩余次数
+          const newRemainingSpins = data.data.remaining_spins;
+
+          // ✅ 验证购买是否真的成功：检查次数是否增加
+          const expectedMinSpins = oldRemainingSpins + buyCount;
+
+          console.log('[购买验证] 购买前次数:', oldRemainingSpins, '购买数量:', buyCount, '后端返回次数:', newRemainingSpins, '预期至少:', expectedMinSpins);
+          
+          // 🚨 如果购买后次数还是0，或者次数没有增加，则拒绝更新
+          if (newRemainingSpins === 0 || newRemainingSpins < expectedMinSpins) {
+            console.error('[购买验证失败] 次数未增加！购买前:', oldRemainingSpins, '购买后:', newRemainingSpins, '购买数量:', buyCount);
+
+            showToast(`⚠️ 购买验证失败！剩余次数未增加（当前: ${newRemainingSpins}），额度可能已扣除但次数未到账。请刷新页面检查，如问题持续请联系管理员`, 'error', 8000);
+
+            // 🔥 不更新本地状态，保持原状态
+            button.disabled = false;
+            button.innerHTML = originalText;
+            return; // 终止执行
+          }
+
+          // ✅ 验证通过，更新用户数据
           slotUserData.quota = data.data.quota_after;
           slotUserData.remaining_spins = data.data.remaining_spins;
           slotUserData.bought_today = data.data.bought_today;

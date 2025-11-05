@@ -1503,6 +1503,22 @@ slot.post('/buy-spins', requireAuth, async (c) => {
             }, 400);
         }
 
+        // 🚨 预验证：在扣费前检查购买后的次数是否会增加
+        const todaySpins = getUserTodaySpins(session.linux_do_id, today);
+        const expectedTotalSpins = config.max_daily_spins + totalBoughtToday + buyCount; // 免费次数 + 已购买 + 本次购买
+        const expectedRemainingSpins = expectedTotalSpins - todaySpins; // 购买后的剩余次数
+
+        logger.debug('购买次数', `预验证 - 用户: ${user.username}, 今日已玩: ${todaySpins}, 免费次数: ${config.max_daily_spins}, 已购买: ${totalBoughtToday}, 本次购买: ${buyCount}, 预期总次数: ${expectedTotalSpins}, 预期剩余: ${expectedRemainingSpins}`);
+
+        // 如果购买后剩余次数 <= 0，则拒绝购买（避免扣费后发现次数没增加）
+        if (expectedRemainingSpins <= 0) {
+            logger.warn('购买次数', `预验证失败 - 用户: ${user.username}, 购买后剩余次数为 ${expectedRemainingSpins}，拒绝扣费`);
+            return c.json({
+                success: false,
+                message: `购买失败：您今日已玩 ${todaySpins} 次，即使购买也无剩余次数。建议明天再来！`
+            }, 400);
+        }
+
         // 扣除购买费用
         const newQuota = currentQuota - buyPrice;
         logger.info('购买次数', `准备扣除费用 - 用户: ${user.username}, 购买: ${buyCount}次, 当前: ${currentQuota}, 费用: ${buyPrice}, 目标: ${newQuota}`);
