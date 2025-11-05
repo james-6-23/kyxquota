@@ -175,6 +175,28 @@ export function initDatabase() {
         'CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)'
     );
 
+    // 🛡️ 速率限制封禁记录表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS rate_limit_bans (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      ban_type TEXT NOT NULL,
+      trigger_count INTEGER NOT NULL,
+      ban_reason TEXT NOT NULL,
+      banned_at INTEGER NOT NULL,
+      banned_until INTEGER NOT NULL,
+      is_active INTEGER DEFAULT 1,
+      unbanned_at INTEGER,
+      unbanned_by TEXT,
+      unban_reason TEXT,
+      created_at INTEGER NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_linux_do_id ON rate_limit_bans(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_is_active ON rate_limit_bans(is_active)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_banned_until ON rate_limit_bans(banned_until)');
+
     // 管理员配置表
     db.exec(`
     CREATE TABLE IF NOT EXISTS admin_config (
@@ -1435,6 +1457,7 @@ export let rewardConfigQueries: any;  // 奖励配置查询
 export let supremeSlotQueries: any;  // 至尊场查询
 export let dropConfigQueries: any;  // 掉落配置查询
 export let achievementQueries: any;  // 成就系统查询
+export let rateLimitBanQueries: any;  // 速率限制封禁记录查询
 
 /**
  * 初始化预编译查询语句
@@ -2771,6 +2794,54 @@ function initQueries() {
     };
 
     // ========== 成就系统查询 ==========
+    // 🛡️ 速率限制封禁记录查询
+    rateLimitBanQueries = {
+        // 插入封禁记录
+        insert: db.query(`
+            INSERT INTO rate_limit_bans (
+                linux_do_id, username, ban_type, trigger_count, ban_reason,
+                banned_at, banned_until, is_active, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+        `),
+        // 获取用户当前活跃的封禁记录
+        getActiveBan: db.query<any, string>(`
+            SELECT * FROM rate_limit_bans
+            WHERE linux_do_id = ? AND is_active = 1 AND banned_until > ?
+            ORDER BY banned_until DESC LIMIT 1
+        `),
+        // 获取所有封禁记录（分页）
+        getAllPaginated: db.query<any, [number, number]>(`
+            SELECT * FROM rate_limit_bans
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 获取总记录数
+        getCount: db.query<{ total: number }, never>(`
+            SELECT COUNT(*) as total FROM rate_limit_bans
+        `),
+        // 按用户搜索
+        searchByUser: db.query<any, [string, number, number]>(`
+            SELECT * FROM rate_limit_bans
+            WHERE username LIKE ? OR linux_do_id LIKE ?
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 手动解封
+        unban: db.query(`
+            UPDATE rate_limit_bans
+            SET is_active = 0, unbanned_at = ?, unbanned_by = ?, unban_reason = ?
+            WHERE id = ?
+        `),
+        // 获取统计信息
+        getStats: db.query<any, never>(`
+            SELECT
+                COUNT(*) as total_bans,
+                SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active_bans,
+                COUNT(DISTINCT linux_do_id) as unique_users
+            FROM rate_limit_bans
+        `)
+    };
+
     achievementQueries = {
         // 成就定义
         getAll: db.query<Achievement, never>('SELECT * FROM achievements WHERE is_active = 1 ORDER BY display_order ASC, id ASC'),

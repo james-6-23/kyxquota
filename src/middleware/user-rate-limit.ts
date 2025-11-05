@@ -11,6 +11,8 @@ interface RateLimitRecord {
     count: number;
     resetTime: number;
     lastRequestTime: number;
+    violationCount?: number;  // 🛡️ 违规次数
+    firstViolationTime?: number;  // 🛡️ 首次违规时间
 }
 
 interface RateLimitConfig {
@@ -22,6 +24,10 @@ interface RateLimitConfig {
     minInterval?: number;
     /** 操作名称（用于日志） */
     operationName?: string;
+    /** 🛡️ 累计惩罚阈值（1分钟内触发多少次后封禁） */
+    penaltyThreshold?: number;
+    /** 🛡️ 累计惩罚时长（毫秒） */
+    penaltyDuration?: number;
 }
 
 // 存储用户请求记录 - 用户ID -> 操作类型 -> 记录
@@ -29,6 +35,9 @@ const userRecords = new Map<string, Map<string, RateLimitRecord>>();
 
 // 存储IP请求记录 - IP -> 操作类型 -> 记录
 const ipRecords = new Map<string, Map<string, RateLimitRecord>>();
+
+// 🛡️ 存储临时封禁记录 - 用户ID -> 封禁结束时间
+const tempBans = new Map<string, number>();
 
 /**
  * 获取客户端真实IP
@@ -77,7 +86,9 @@ function checkRateLimit(
         identifierRecords.set(operationType, {
             count: 0,
             resetTime: now + config.windowMs,
-            lastRequestTime: 0
+            lastRequestTime: 0,
+            violationCount: 0,
+            firstViolationTime: 0
         });
     }
 
@@ -89,11 +100,24 @@ function checkRateLimit(
         record.resetTime = now + config.windowMs;
     }
 
+    // 🛡️ 重置违规计数（1分钟后重置）
+    if (record.firstViolationTime && now - record.firstViolationTime > 60000) {
+        record.violationCount = 0;
+        record.firstViolationTime = 0;
+    }
+
     // 检查最小请求间隔
     if (config.minInterval && record.lastRequestTime > 0) {
         const timeSinceLastRequest = now - record.lastRequestTime;
         if (timeSinceLastRequest < config.minInterval) {
             const retryAfter = Math.ceil((config.minInterval - timeSinceLastRequest) / 1000);
+
+            // 🛡️ 记录违规
+            if (!record.firstViolationTime) {
+                record.firstViolationTime = now;
+            }
+            record.violationCount = (record.violationCount || 0) + 1;
+
             return {
                 allowed: false,
                 retryAfter,
@@ -105,6 +129,13 @@ function checkRateLimit(
     // 检查窗口内请求次数
     if (record.count >= config.maxRequests) {
         const retryAfter = Math.ceil((record.resetTime - now) / 1000);
+
+        // 🛡️ 记录违规
+        if (!record.firstViolationTime) {
+            record.firstViolationTime = now;
+        }
+        record.violationCount = (record.violationCount || 0) + 1;
+
         return {
             allowed: false,
             retryAfter,
@@ -128,6 +159,20 @@ export function createRateLimiter(config: RateLimitConfig) {
     return async (c: Context, next: Next) => {
         const session = c.get('session') as SessionData | undefined;
         const clientIP = getClientIP(c);
+        const now = Date.now();
+
+        // 🛡️ 检查是否在临时封禁中
+        if (session?.linux_do_id) {
+            const banUntil = tempBans.get(session.linux_do_id);
+            if (banUntil && now < banUntil) {
+                const remainingMinutes = Math.ceil((banUntil - now) / 60000);
+                logger.warn('速率限制', `用户 ${session.linux_do_id} 在临时封禁中，剩余 ${remainingMinutes} 分钟`);
+                return c.json({
+                    success: false,
+                    message: `⚠️ 检测到异常请求行为，已被临时限制。解除时间：${new Date(banUntil).toLocaleString('zh-CN')} (剩余${remainingMinutes}分钟)`
+                }, 403);
+            }
+        }
 
         // 如果没有session，至少基于IP限制
         if (!session?.linux_do_id) {
@@ -154,6 +199,56 @@ export function createRateLimiter(config: RateLimitConfig) {
                     '速率限制',
                     `用户 ${session.linux_do_id} 触发限制 [${operationType}]: ${userCheck.reason}`
                 );
+
+                // 🛡️ 检查是否需要触发累计惩罚
+                const identifierRecords = userRecords.get(session.linux_do_id);
+                const record = identifierRecords?.get(operationType);
+
+                if (config.penaltyThreshold && config.penaltyDuration && record) {
+                    const violationCount = record.violationCount || 0;
+
+                    if (violationCount >= config.penaltyThreshold) {
+                        // 触发累计惩罚封禁
+                        const banUntil = now + config.penaltyDuration;
+                        tempBans.set(session.linux_do_id, banUntil);
+
+                        // 🛡️ 记录到数据库
+                        try {
+                            const { rateLimitBanQueries, userQueries } = await import('../database');
+                            const user = userQueries.get.get(session.linux_do_id);
+                            const username = user?.linux_do_username || user?.username || session.linux_do_id;
+
+                            rateLimitBanQueries.insert.run(
+                                session.linux_do_id,
+                                username,
+                                'rate_limit_penalty',
+                                violationCount,
+                                `${operationType}操作触发速率限制${violationCount}次，自动临时封禁`,
+                                now,
+                                banUntil,
+                                now
+                            );
+                        } catch (err) {
+                            logger.error('速率限制', `记录封禁失败: ${err}`);
+                        }
+
+                        const banMinutes = Math.ceil(config.penaltyDuration / 60000);
+                        logger.error(
+                            '速率限制',
+                            `⚠️ 用户 ${session.linux_do_id} 触发累计惩罚！违规${violationCount}次，封禁${banMinutes}分钟`
+                        );
+
+                        // 重置违规计数
+                        record.violationCount = 0;
+                        record.firstViolationTime = 0;
+
+                        return c.json({
+                            success: false,
+                            message: `⚠️ 检测到异常请求行为，已被临时限制${banMinutes}分钟。请勿使用脚本或自动化工具。`
+                        }, 403);
+                    }
+                }
+
                 return c.json({
                     success: false,
                     message: userCheck.reason || '请求过于频繁',
@@ -195,7 +290,9 @@ export const RateLimits = {
         windowMs: 60 * 1000,        // 1分钟
         maxRequests: 30,             // 最多30次（每2秒1次）
         minInterval: 1500,           // 最小间隔1.5秒
-        operationName: '抽奖'
+        operationName: '抽奖',
+        penaltyThreshold: 10,        // 🛡️ 1分钟内触发10次限制
+        penaltyDuration: 10 * 60 * 1000  // 🛡️ 封禁10分钟
     },
 
     /** 至尊场抽奖 - 更严格限制（金额更大） */
@@ -203,7 +300,9 @@ export const RateLimits = {
         windowMs: 60 * 1000,        // 1分钟
         maxRequests: 20,             // 最多20次（每3秒1次）
         minInterval: 2000,           // 最小间隔2秒
-        operationName: '至尊场抽奖'
+        operationName: '至尊场抽奖',
+        penaltyThreshold: 8,         // 🛡️ 1分钟内触发8次限制
+        penaltyDuration: 15 * 60 * 1000  // 🛡️ 封禁15分钟
     },
 
     /** 进入/退出场次 */
@@ -211,7 +310,9 @@ export const RateLimits = {
         windowMs: 60 * 1000,        // 1分钟
         maxRequests: 10,             // 最多10次
         minInterval: 1000,           // 最小间隔1秒
-        operationName: '场次切换'
+        operationName: '场次切换',
+        penaltyThreshold: 15,        // 🛡️ 1分钟内触发15次限制
+        penaltyDuration: 5 * 60 * 1000   // 🛡️ 封禁5分钟
     },
 
     /** 购买次数/合成 */
@@ -219,14 +320,18 @@ export const RateLimits = {
         windowMs: 60 * 1000,        // 1分钟
         maxRequests: 20,             // 最多20次
         minInterval: 500,            // 最小间隔0.5秒
-        operationName: '购买操作'
+        operationName: '购买操作',
+        penaltyThreshold: 30,        // 🛡️ 1分钟内触发30次限制
+        penaltyDuration: 10 * 60 * 1000  // 🛡️ 封禁10分钟
     },
 
     /** 一般查询操作 */
     QUERY: {
         windowMs: 10 * 1000,        // 10秒
         maxRequests: 50,             // 最多50次
-        operationName: '查询'
+        operationName: '查询',
+        penaltyThreshold: 100,       // 🛡️ 1分钟内触发100次限制
+        penaltyDuration: 5 * 60 * 1000   // 🛡️ 封禁5分钟
     }
 };
 
