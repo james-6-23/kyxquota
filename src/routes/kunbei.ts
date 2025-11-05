@@ -3,7 +3,8 @@
  */
 
 import { Hono } from 'hono';
-import { getCookie, getSession, logger } from '../utils';
+import { getCookie, getSession } from '../utils';
+import logger from '../utils/logger';
 import type { SessionData } from '../types';
 import {
     getKunbeiConfig,

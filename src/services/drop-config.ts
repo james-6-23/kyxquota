@@ -5,7 +5,7 @@
 
 import { addTicket, addFragment } from './advanced-slot';
 import { addSupremeToken, addSupremeFragment } from './supreme-slot';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 
 /**
  * 掉落配置接口
