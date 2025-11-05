@@ -3,6 +3,7 @@ import { userQueries, slotQueries, adminQueries, pendingRewardQueries, advancedS
 import type { SessionData } from '../types';
 import { getCookie, getSession } from '../utils';
 import logger from '../utils/logger';
+import { createRateLimiter, RateLimits } from '../middleware/user-rate-limit';
 import {
     getSlotConfig,
     getUserTodaySpins,
@@ -235,7 +236,7 @@ slot.get('/config', requireAuth, async (c) => {
 });
 
 // 旋转老虎机
-slot.post('/spin', requireAuth, async (c) => {
+slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -1416,7 +1417,7 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
 /**
  * 购买抽奖次数（支持批量购买）
  */
-slot.post('/buy-spins', requireAuth, async (c) => {
+slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), async (c) => {
     try {
         const session = c.get('session') as SessionData;
         if (!session?.linux_do_id) {
@@ -1696,7 +1697,7 @@ slot.get('/tickets', requireAuth, async (c) => {
 /**
  * 合成入场券
  */
-slot.post('/tickets/synthesize', requireAuth, async (c) => {
+slot.post('/tickets/synthesize', requireAuth, createRateLimiter(RateLimits.PURCHASE), async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
@@ -1715,7 +1716,7 @@ slot.post('/tickets/synthesize', requireAuth, async (c) => {
 /**
  * 进入高级场
  */
-slot.post('/advanced/enter', requireAuth, async (c) => {
+slot.post('/advanced/enter', requireAuth, createRateLimiter(RateLimits.MODE_SWITCH), async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
@@ -1734,7 +1735,7 @@ slot.post('/advanced/enter', requireAuth, async (c) => {
 /**
  * 退出高级场
  */
-slot.post('/advanced/exit', requireAuth, async (c) => {
+slot.post('/advanced/exit', requireAuth, createRateLimiter(RateLimits.MODE_SWITCH), async (c) => {
     try {
         const session = c.get('session') as SessionData;
 

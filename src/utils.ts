@@ -17,7 +17,7 @@ export function getCookie(headers: Headers, name: string): string | null {
 export function setCookie(
     name: string,
     value: string,
-    maxAge: number = 86400
+    maxAge: number = 604800  // 7天 = 7 * 24 * 60 * 60 秒
 ): string {
     // 添加 Secure 标志以支持 HTTPS
     // SameSite=None 允许跨站重定向时设置 Cookie（需要 Secure）
@@ -40,7 +40,7 @@ export async function getSession(sessionId: string): Promise<SessionData | null>
 export async function saveSession(
     sessionId: string,
     data: SessionData,
-    ttl: number = 86400000
+    ttl: number = 604800000  // 7天 = 7 * 24 * 60 * 60 * 1000 毫秒
 ): Promise<void> {
     const expiresAt = Date.now() + ttl;
     sessionQueries.set.run(sessionId, JSON.stringify(data), expiresAt);

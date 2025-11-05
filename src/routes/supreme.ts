@@ -5,6 +5,7 @@
 import { Hono } from 'hono';
 import { getCookie, getSession } from '../utils';
 import type { SessionData } from '../types';
+import { createRateLimiter, RateLimits } from '../middleware/user-rate-limit';
 import {
     getSupremeTokens,
     getSupremeSlotConfig,
@@ -124,7 +125,7 @@ supreme.get('/tokens', requireAuth, async (c) => {
 /**
  * 合成至尊令牌
  */
-supreme.post('/tokens/synthesize', requireAuth, async (c) => {
+supreme.post('/tokens/synthesize', requireAuth, createRateLimiter(RateLimits.PURCHASE), async (c) => {
     try {
         const session = c.get('session') as SessionData;
         const result = await synthesizeSupremeToken(session.linux_do_id!);
@@ -139,7 +140,7 @@ supreme.post('/tokens/synthesize', requireAuth, async (c) => {
 /**
  * 进入至尊场
  */
-supreme.post('/enter', requireAuth, async (c) => {
+supreme.post('/enter', requireAuth, createRateLimiter(RateLimits.MODE_SWITCH), async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
@@ -157,7 +158,7 @@ supreme.post('/enter', requireAuth, async (c) => {
 /**
  * 退出至尊场
  */
-supreme.post('/exit', requireAuth, async (c) => {
+supreme.post('/exit', requireAuth, createRateLimiter(RateLimits.MODE_SWITCH), async (c) => {
     try {
         const session = c.get('session') as SessionData;
 
@@ -176,7 +177,7 @@ supreme.post('/exit', requireAuth, async (c) => {
 /**
  * 至尊场旋转
  */
-supreme.post('/spin', requireAuth, async (c) => {
+supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), async (c) => {
     try {
         const session = c.get('session') as SessionData;
         const { betAmount } = await c.req.json();

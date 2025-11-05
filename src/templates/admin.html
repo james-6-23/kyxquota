@@ -11507,7 +11507,7 @@
           allBans.push({
             linux_do_id: ban.linux_do_id,
             username: ban.username || ban.linux_do_id,
-            linux_do_username: null,
+            linux_do_username: ban.linux_do_username || null,  // 🔥 使用后端返回的 linux_do_username
             banned_at: bannedAt,  // 🔥 使用实际的封禁开始时间
             banned_until: ban.banned_until,
             banned_reason: `触发3个及以上律师函（封禁${banHours}小时）`,

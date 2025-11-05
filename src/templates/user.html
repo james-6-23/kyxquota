@@ -2697,6 +2697,14 @@
       LINUX_DO_REDIRECT_URI: window.location.origin + '/oauth/callback',
     };
 
+    // 开发模式标志 - 设置为 false 以关闭详细调试日志
+    const DEBUG_MODE = false;
+
+    // 封装日志函数
+    const debugLog = (...args) => {
+      if (DEBUG_MODE) console.log(...args);
+    };
+
     let currentUser = null;
     let currentMode = 'refuel'; // 'refuel' or 'entertain'
 
@@ -4629,13 +4637,13 @@
             
             // 🔥 最终检查：再次调用 resetAllModeUI 确保UI完全正确
             setTimeout(() => {
-              console.log('[初始化] 最终UI检查，当前状态:', {
+              debugLog('[初始化] 最终UI检查，当前状态:', {
                 isInSupremeMode,
                 isInAdvancedMode,
                 hasSupremeConfig: !!supremeTokensData?.config,
                 hasAdvancedConfig: !!advancedTicketsData?.config
               });
-              
+
               // 🔥 最终确保容器显示正确
               if (isInSupremeMode) {
                 switchToModeContainer('supreme');
@@ -4644,11 +4652,11 @@
               } else {
                 switchToModeContainer('normal');
               }
-              
+
               // 🔥 如果在至尊场，确保快捷按钮已生成和按钮文本正确
               if (isInSupremeMode && supremeTokensData?.config) {
                 const config = supremeTokensData.config;
-                console.log('[初始化] 至尊场最终检查，配置:', {
+                debugLog('[初始化] 至尊场最终检查，配置:', {
                   min_bet_amount: config.min_bet_amount,
                   max_bet_amount: config.max_bet_amount,
                   in_supreme_mode: supremeTokensData.in_supreme_mode
@@ -4658,20 +4666,20 @@
                 if (config.min_bet_amount && config.max_bet_amount) {
                   supremeBetMin = config.min_bet_amount / 500000;
                   supremeBetMax = config.max_bet_amount / 500000;
-                  
-                  console.log('[初始化] 强制生成快捷按钮，范围:', supremeBetMin, '~', supremeBetMax);
-                  
+
+                  debugLog('[初始化] 强制生成快捷按钮，范围:', supremeBetMin, '~', supremeBetMax);
+
                   if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
                     // 先清空容器
                     const container = document.getElementById('supremeBetOptions');
                     if (container) {
                       container.innerHTML = '';
-                      console.log('[初始化] 已清空快捷按钮容器');
+                      debugLog('[初始化] 已清空快捷按钮容器');
                     }
-                    
+
                     // 重新生成
                     generateSupremeBetOptions(supremeBetMin, supremeBetMax);
-                    
+
                     // 更新滑块
                     const slider = document.getElementById('supremeBetSlider');
                     if (slider) {
@@ -4682,11 +4690,11 @@
                       slider.step = calculateOptimalStep(supremeBetMin, supremeBetMax);
                       updateSupremeBetDisplay(supremeBetMin);
                     }
-                    
+
                     // 验证生成结果
                     setTimeout(() => {
                       const container = document.getElementById('supremeBetOptions');
-                      console.log('[初始化] 快捷按钮生成后，容器子元素数量:', container?.children.length);
+                      debugLog('[初始化] 快捷按钮生成后，容器子元素数量:', container?.children.length);
                     }, 50);
                   } else {
                     console.error('[初始化] 投注范围计算无效:', { supremeBetMin, supremeBetMax });
@@ -4703,9 +4711,9 @@
                   // 然后再次确认按钮状态
                   const enterBtn = document.getElementById('enterSupremeButton');
                   if (enterBtn) {
-                    console.log('[初始化] 按钮当前文本:', enterBtn.textContent);
+                    debugLog('[初始化] 按钮当前文本:', enterBtn.textContent);
                     if (isInSupremeMode && supremeTokensData?.in_supreme_mode) {
-                      console.log('[初始化] 最终确认按钮文本为：退出至尊场');
+                      debugLog('[初始化] 最终确认按钮文本为：退出至尊场');
                       enterBtn.textContent = '💎 退出至尊场';
                       enterBtn.onclick = exitSupremeMode;
                       enterBtn.disabled = false;
@@ -5743,9 +5751,8 @@
         console.error('[playSpinAnimation] 找不到滚轮容器:', reelsContainerId);
         return;
       }
-      
+
       const reels = reelsContainer.querySelectorAll('.slot-reel');
-      console.log('[playSpinAnimation] 使用滚轮容器:', reelsContainerId, '滚轮数量:', reels.length);
       
       // 🎯 优化：所有滚轮同时启动，制造同步感
       const startTime = Date.now();
@@ -5763,24 +5770,39 @@
     function animateReel(reel, finalSymbol, reelIndex, startTime) {
       return new Promise((resolve) => {
         const symbolsContainer = reel.querySelector('.slot-symbols');
-        
+
         // 🎯 优化：响应式符号高度（根据屏幕大小自适应）
         const isMobile = window.innerWidth <= 768;
         const symbolHeight = isMobile ? 70 : (window.innerWidth <= 1024 ? 100 : 180);
-        
+
         // 清空现有符号
         symbolsContainer.innerHTML = '';
         symbolsContainer.style.transform = '';
         symbolsContainer.style.filter = '';
 
-        // 🎯 新优化：所有滚轮同时开始，但持续时间递增（依次停止）
-        // 第1个滚轮最快停止，第4个最慢，制造悬念
-        const baseDuration = 2000; // 基础时长2秒
-        const durationIncrement = 600; // 每个滚轮增加600ms
-        const duration = baseDuration + (reelIndex * durationIncrement); // 2s, 2.6s, 3.2s, 3.8s
-        
+        // 🎯 至尊场专属优化：更快节奏，黄金悬念感（3秒总时长）
+        // 🎯 初级场/高级场：保持原有节奏（3.8秒总时长）
+        let baseDuration, durationIncrement, baseSymbolCount, blurIntensity;
+
+        if (isInSupremeMode) {
+          // 💎 至尊场配置 - 方案2「黄金悬念」
+          baseDuration = 1500;        // 基础1.5秒 (快25%)
+          durationIncrement = 500;    // 每个滚轮增加500ms
+          baseSymbolCount = 20;       // 起始符号数 (减少20%)
+          blurIntensity = reelIndex === 3 ? 7 : 6;  // 模糊稍强
+          // 总时长: 1.5s, 2.0s, 2.5s, 3.0s
+        } else {
+          // 🎰 初级场/高级场配置 - 保持原有体验
+          baseDuration = 2000;        // 基础2秒
+          durationIncrement = 600;    // 每个滚轮增加600ms
+          baseSymbolCount = 25;       // 起始符号数
+          blurIntensity = reelIndex === 3 ? 6 : 5;  // 标准模糊
+          // 总时长: 2s, 2.6s, 3.2s, 3.8s
+        }
+
+        const duration = baseDuration + (reelIndex * durationIncrement);
+
         // 🎯 优化：最后一个滚轮旋转更多符号，增加悬念感
-        const baseSymbolCount = 25;
         const symbolCount = Math.floor(baseSymbolCount + (reelIndex * 8)); // 递增符号数量
         
         // 生成符号序列（随机符号 + 最终符号）
@@ -5802,8 +5824,7 @@
         ];
         const easing = easingFunctions[reelIndex] || easingFunctions[3];
 
-        // 🎯 优化：更丝滑的模糊效果和关键帧
-        const blurIntensity = reelIndex === 3 ? 6 : 5; // 最后一个滚轮模糊更强
+        // 🎯 优化：更丝滑的模糊效果和关键帧 (blurIntensity已在上方根据场次配置)
         const animation = symbolsContainer.animate([
           { 
             transform: 'translateY(0px)',
@@ -6251,38 +6272,121 @@
           const displayRecords = records.slice(0, 10);
           
           container.innerHTML = statsHtml + displayRecords.map((r, idx) => {
-            const winClass = r.win_amount > 0 ? 'text-green-600' : 'text-slate-500';
-            const bgClass = r.win_amount > 0 ? 'bg-green-50 border-green-200' : 'bg-slate-50 border-slate-200';
+            const isWin = r.win_amount > 0;
+            const isLoss = r.win_amount < 0;
+            const netAmount = r.win_amount - r.bet_amount;
+            
+            // 🎨 根据结果类型设置不同的样式
+            let cardClass, headerClass, amountClass, badgeClass, iconEmoji;
+            if (isWin) {
+              cardClass = 'bg-gradient-to-br from-green-50 via-emerald-50 to-green-50 border-green-300 hover:shadow-green-200';
+              headerClass = 'bg-gradient-to-r from-green-500 to-emerald-600';
+              amountClass = 'text-green-600';
+              badgeClass = 'bg-green-100 text-green-700 border-green-300';
+              iconEmoji = '🎉';
+            } else if (isLoss) {
+              cardClass = 'bg-gradient-to-br from-red-50 via-rose-50 to-red-50 border-red-300 hover:shadow-red-200';
+              headerClass = 'bg-gradient-to-r from-red-500 to-rose-600';
+              amountClass = 'text-red-600';
+              badgeClass = 'bg-red-100 text-red-700 border-red-300';
+              iconEmoji = '⚡';
+            } else {
+              cardClass = 'bg-gradient-to-br from-slate-50 via-gray-50 to-slate-50 border-slate-300 hover:shadow-slate-200';
+              headerClass = 'bg-gradient-to-r from-slate-500 to-gray-600';
+              amountClass = 'text-slate-600';
+              badgeClass = 'bg-slate-100 text-slate-700 border-slate-300';
+              iconEmoji = '➖';
+            }
+
             const symbolsHTML = r.result_symbols.map(s => {
               const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
-              return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-12 h-12 object-contain border border-slate-300 rounded">`;
+              return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-14 h-14 sm:w-16 sm:h-16 object-contain border-2 border-white shadow-lg rounded-lg hover:scale-110 transition-transform duration-200">`;
             }).join('');
 
             // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
             const displayName = r.linux_do_username || r.username;
+            
+            // 格式化时间
+            const recordDate = new Date(r.timestamp);
+            const dateStr = recordDate.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
+            const timeStr = recordDate.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
             return `
-              <div class="border ${bgClass} rounded-lg p-4 mb-3">
-                <div class="flex items-center justify-between mb-3">
-                  <div class="flex items-center gap-2">
-                    <span class="text-sm text-slate-600">#${displayRecords.length - idx}</span>
-                    <span class="text-xs font-medium text-indigo-600">@${displayName}</span>
-                    <span class="text-xs text-slate-500">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</span>
-                    ${r.is_free_spin ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-semibold">免费</span>' : ''}
-                  </div>
-                  <span class="font-semibold ${winClass}">
-                    ${r.win_type_name} ${r.win_multiplier}x
-                  </span>
-                </div>
-                <div class="flex items-center justify-between">
-                  <div class="flex gap-2">
-                    ${symbolsHTML}
+              <div class="border-2 ${cardClass} rounded-xl overflow-hidden mb-4 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                <!-- 🎯 头部信息栏 -->
+                <div class="${headerClass} px-4 py-3 flex items-center justify-between text-white shadow-lg">
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl">${iconEmoji}</span>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="font-bold text-base">@${displayName}</span>
+                        ${r.is_free_spin ? '<span class="px-2 py-0.5 bg-white/30 backdrop-blur-sm text-white rounded-full text-xs font-bold border border-white/50">✨ 免费</span>' : ''}
+                      </div>
+                      <div class="flex items-center gap-2 text-xs text-white/90 mt-0.5">
+                        <span>📅 ${dateStr}</span>
+                        <span>🕐 ${timeStr}</span>
+                        <span class="px-2 py-0.5 bg-white/20 rounded-full">#${displayRecords.length - idx}</span>
+                      </div>
+                    </div>
                   </div>
                   <div class="text-right">
-                    <p class="text-sm text-slate-600">投注: <span class="font-semibold">$${(r.bet_amount / 500000).toFixed(2)}</span></p>
-                    <p class="text-sm ${winClass}">赢得: <span class="font-bold text-lg">$${(r.win_amount / 500000).toFixed(2)}</span></p>
-                    ${r.free_spin_awarded ? '<p class="text-xs text-purple-600 font-semibold">🎁 获得免费次数</p>' : ''}
+                    <div class="text-sm font-semibold text-white/90">中奖倍率</div>
+                    <div class="text-2xl font-bold">${r.win_multiplier}×</div>
                   </div>
+                </div>
+
+                <!-- 📊 主体内容 -->
+                <div class="p-5">
+                  <!-- 符号展示 -->
+                  <div class="mb-4">
+                    <div class="flex items-center justify-center gap-2 sm:gap-3 mb-3 p-3 bg-white/70 backdrop-blur-sm rounded-xl shadow-inner border border-white">
+                      ${symbolsHTML}
+                    </div>
+                    <div class="text-center">
+                      <span class="inline-flex items-center gap-2 px-4 py-2 ${badgeClass} rounded-full text-sm font-bold border-2 shadow-sm">
+                        <span>🎯</span>
+                        <span>${r.win_type_name}</span>
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- 💰 金额信息 -->
+                  <div class="grid grid-cols-3 gap-3 mt-4">
+                    <!-- 投注金额 -->
+                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
+                      <div class="text-xs text-slate-600 mb-1 font-semibold">投注</div>
+                      <div class="text-lg font-bold text-slate-700">$${(r.bet_amount / 500000).toFixed(2)}</div>
+                      <div class="text-xs text-slate-500 mt-1">💵</div>
+                    </div>
+
+                    <!-- 赢得金额 -->
+                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
+                      <div class="text-xs text-slate-600 mb-1 font-semibold">赢得</div>
+                      <div class="text-lg font-bold ${amountClass}">$${(r.win_amount / 500000).toFixed(2)}</div>
+                      <div class="text-xs ${amountClass} mt-1">${isWin ? '📈' : isLoss ? '📉' : '➖'}</div>
+                    </div>
+
+                    <!-- 净盈亏 -->
+                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
+                      <div class="text-xs text-slate-600 mb-1 font-semibold">盈亏</div>
+                      <div class="text-lg font-bold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
+                        ${netAmount >= 0 ? '+' : ''}$${(netAmount / 500000).toFixed(2)}
+                      </div>
+                      <div class="text-xs ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'} mt-1">
+                        ${netAmount >= 0 ? '💰' : '💸'}
+                      </div>
+                    </div>
+                  </div>
+
+                  ${r.free_spin_awarded ? `
+                    <div class="mt-4 p-3 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl border-2 border-purple-300 shadow-sm">
+                      <p class="text-center text-purple-700 font-bold text-sm flex items-center justify-center gap-2">
+                        <span class="text-lg">🎁</span>
+                        <span>恭喜获得免费抽奖次数！</span>
+                        <span class="text-lg">✨</span>
+                      </p>
+                    </div>
+                  ` : ''}
                 </div>
               </div>
             `;
@@ -7353,12 +7457,12 @@
 
         if (data.success) {
           supremeTokensData = data.data;
-          console.log('[loadSupremeTokens] 令牌数据加载成功，skipUIUpdate:', skipUIUpdate);
+          debugLog('[loadSupremeTokens] 令牌数据加载成功，skipUIUpdate:', skipUIUpdate);
 
           // 🔥 同步今日投注金额到 slotUserData，用于进度条显示
           if (slotUserData && data.data.today_bet_amount !== undefined) {
             slotUserData.today_supreme_bet = data.data.today_bet_amount;
-            console.log('[loadSupremeTokens] 同步今日投注金额:', data.data.today_bet_amount / 500000, 'USD');
+            debugLog('[loadSupremeTokens] 同步今日投注金额:', data.data.today_bet_amount / 500000, 'USD');
           }
 
           // 🔥 可选：跳过UI更新（避免覆盖手动设置的状态）
@@ -7471,16 +7575,12 @@
       // 更新进入至尊场按钮状态
       const enterBtn = document.getElementById('enterSupremeButton');
       if (enterBtn) {
-        console.log('[updateSupremeTokensUI] 更新按钮状态，in_supreme_mode:', in_supreme_mode);
-        
         if (in_supreme_mode) {
-          console.log('[updateSupremeTokensUI] 设置按钮为：退出至尊场');
           enterBtn.textContent = '💎 退出至尊场';
           enterBtn.onclick = exitSupremeMode;
           enterBtn.disabled = false;
           enterBtn.classList.remove('animate-pulse');
         } else {
-          console.log('[updateSupremeTokensUI] 设置按钮为：进入至尊场');
           enterBtn.textContent = '💎 进入至尊场';
           enterBtn.onclick = enterSupremeMode;
           enterBtn.disabled = tokens < 1 || (today_entry_count >= config?.daily_entry_limit);
@@ -7525,23 +7625,14 @@
         if (normalModeSpinsDisplay) normalModeSpinsDisplay.classList.add('hidden');
         if (spinButton) spinButton.classList.add('hidden');
         if (freeSpinButton) freeSpinButton.classList.add('hidden');
-        
+
         // 🔥 更新投注范围并生成选项
-        console.log('[updateSupremeTokensUI] 检查配置数据:', {
-          hasConfig: !!config,
-          min_bet_amount: config?.min_bet_amount,
-          max_bet_amount: config?.max_bet_amount
-        });
-        
         if (config && config.min_bet_amount && config.max_bet_amount) {
           supremeBetMin = config.min_bet_amount / 500000;
           supremeBetMax = config.max_bet_amount / 500000;
-          
-          console.log('[updateSupremeTokensUI] 计算的投注范围:', { supremeBetMin, supremeBetMax });
-          
+
           // 🔥 检查计算后的值是否有效
           if (!isNaN(supremeBetMin) && !isNaN(supremeBetMax) && supremeBetMin > 0 && supremeBetMax > 0) {
-            console.log('[updateSupremeTokensUI] 调用 generateSupremeBetOptions');
             generateSupremeBetOptions(supremeBetMin, supremeBetMax);
 
             // 更新滑块范围
@@ -7559,11 +7650,9 @@
               if (currentValue >= supremeBetMin && currentValue <= supremeBetMax) {
                 slider.value = currentValue;
                 updateSupremeBetDisplay(currentValue);
-                console.log('[updateSupremeTokensUI] 保持用户选择的投注额度:', currentValue);
               } else {
                 slider.value = supremeBetMin;
                 updateSupremeBetDisplay(supremeBetMin);
-                console.log('[updateSupremeTokensUI] 重置投注额度为最小值:', supremeBetMin);
               }
             }
           } else {
@@ -7781,14 +7870,16 @@
         
         if (data.success) {
           const { symbols, win_type: winType, multiplier, win_amount: winAmount, quota_after: quotaAfter } = data.data;
-          
+
+          // 🎵 播放转动音效
+          soundManager.playSpin();
+
           // 🔥 播放转动动画（使用统一的动画函数）
           await playSpinAnimation(symbols);
           
           // 🔥 更新用户额度并同步到UI
           if (slotUserData) {
             slotUserData.quota = quotaAfter;
-            console.log('[至尊场] 已更新 slotUserData.quota:', quotaAfter);
           } else {
             console.warn('[至尊场] slotUserData 不存在，尝试初始化');
             // 如果 slotUserData 不存在，创建一个基本对象
@@ -8151,7 +8242,6 @@
         if (range % step === 0) {
           const levels = range / step;
           if (levels >= 20 && levels <= 200) {
-            console.log(`[步长计算] 范围: ${range}, 步长: ${step}, 档位数: ${levels}`);
             return step;
           }
         }
@@ -8163,7 +8253,6 @@
         if (range % step === 0) {
           const levels = range / step;
           if (levels >= 10 && levels <= 1000) {
-            console.log(`[步长计算] 范围: ${range}, 步长: ${step}, 档位数: ${levels} (放宽)`);
             return step;
           }
         }
@@ -8185,43 +8274,35 @@
       // 尝试找到产生 50-200 档位的因数
       let step = findDivisor(range, 50, 200);
       if (step) {
-        console.log(`[步长计算] 范围: ${range}, 计算步长: ${step}, 档位数: ${range/step}`);
         return step;
       }
       
       // 放宽到 20-500 档位
       step = findDivisor(range, 20, 500);
       if (step) {
-        console.log(`[步长计算] 范围: ${range}, 计算步长: ${step}, 档位数: ${range/step} (放宽)`);
         return step;
       }
-      
+
       // 兜底：返回1（始终能整除，但档位可能很多）
-      console.log(`[步长计算] 范围: ${range}, 使用兜底步长: 1`);
       return 1;
     }
     
     // 💎 生成至尊场投注选项按钮（紧凑版，类似高级场）
     function generateSupremeBetOptions(minBet, maxBet) {
-      console.log('[generateSupremeBetOptions] 开始生成，参数:', { minBet, maxBet });
-      
       const container = document.getElementById('supremeBetOptions');
       if (!container) {
         console.error('[generateSupremeBetOptions] supremeBetOptions 容器不存在！');
         return;
       }
-      
-      console.log('[generateSupremeBetOptions] 容器找到，当前子元素数量:', container.children.length);
-      
+
       // 🔥 检查参数是否有效
       if (isNaN(minBet) || isNaN(maxBet) || minBet <= 0 || maxBet <= 0 || minBet > maxBet) {
         console.error('[至尊场] 无效的投注范围:', { minBet, maxBet });
         container.innerHTML = '<p class="text-white/70 text-sm text-center">配置加载中...</p>';
         return;
       }
-      
+
       container.innerHTML = '';
-      console.log('[generateSupremeBetOptions] 容器已清空');
       
       const range = maxBet - minBet;
       const options = [];
@@ -8238,9 +8319,7 @@
       }
       
       const uniqueOptions = [...new Set(options)].sort((a, b) => a - b);
-      
-      console.log('[至尊场] 计算的快捷选项:', uniqueOptions);
-      
+
       uniqueOptions.forEach((amount, index) => {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -8248,12 +8327,8 @@
         btn.textContent = `$${amount}`;
         btn.onclick = () => selectSupremeBet(amount);
         container.appendChild(btn);
-        console.log(`[至尊场] 按钮 ${index + 1} 已添加: $${amount}`);
       });
-      
-      console.log('[至尊场] ✅ 快捷按钮生成完成，容器子元素数量:', container.children.length);
-      console.log('[至尊场] 容器HTML预览:', container.innerHTML.substring(0, 200));
-      
+
       // 更新滑块范围
       const slider = document.getElementById('supremeBetSlider');
       if (slider) {
@@ -8262,7 +8337,6 @@
         slider.value = supremeBetAmount || minBet;
         // 🔥 动态计算步长，确保能精确到达最大值
         slider.step = calculateOptimalStep(minBet, maxBet);
-        console.log('[至尊场] 滑块范围已更新:', { min: slider.min, max: slider.max, value: slider.value, step: slider.step });
       } else {
         console.error('[至尊场] 找不到 supremeBetSlider 元素');
       }
