@@ -2261,78 +2261,7 @@
         </button>
       </div>
       
-      <!-- 搜索和筛选栏 -->
-      <div class="p-4 border-b border-slate-200 bg-slate-50">
-        <div class="flex flex-col sm:flex-row gap-3">
-          <!-- 搜索框 -->
-          <div class="flex-1">
-            <div class="relative">
-              <input 
-                type="text" 
-                id="recordSearchInput" 
-                placeholder="搜索用户名..." 
-                class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-              <svg class="w-5 h-5 text-slate-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-              </svg>
-            </div>
-          </div>
-          
-          <!-- 中奖类型筛选 -->
-          <div class="sm:w-64">
-            <select 
-              id="winTypeFilter" 
-              class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            >
-              <option value="all">全部类型</option>
-              <option value="super_jackpot">🏆 超级大奖</option>
-              <option value="special_combo">💎 特殊组合</option>
-              <option value="quad">🎰 四连</option>
-              <option value="triple">✨ 三连</option>
-              <option value="double">🎁 双连</option>
-              <option value="man_only">🎯 Man组合</option>
-              <option value="man_quad">🎰 Man×4</option>
-              <option value="symmetric">🔄 对称ABBA</option>
-              <option value="consecutive">⭐ 连续</option>
-              <option value="combination">🎁 组合</option>
-              <option value="any">🎲 任意</option>
-              <option value="double_pair">🎭 两对</option>
-              <option value="punishment">⚡ 律师函</option>
-              <option value="none">❌ 未中奖</option>
-            </select>
-          </div>
-          
-          <!-- 操作按钮组 -->
-          <div class="flex gap-2">
-            <button 
-              onclick="filterSlotRecords()" 
-              class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg transition-all whitespace-nowrap font-semibold shadow-md"
-            >
-              🔍 查询
-            </button>
-            <button 
-              onclick="refreshSlotRecordsKeepFilter()" 
-              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors whitespace-nowrap flex items-center gap-1"
-              title="刷新数据（保留筛选条件）"
-            >
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
-              刷新
-            </button>
-            <button 
-              onclick="clearRecordFilters()" 
-              class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg transition-colors whitespace-nowrap"
-            >
-              🔄 重置
-            </button>
-          </div>
-        </div>
-        
-        <!-- 筛选结果提示 -->
-        <div id="filterResultHint" class="mt-2 text-sm text-slate-600 hidden"></div>
-      </div>
+      <!-- 搜索筛选栏已移除，使用极简模式 -->
       
       <!-- 记录内容 -->
       <div class="overflow-y-auto flex-1">
@@ -6248,99 +6177,68 @@
           const totalWin = allRecords.reduce((sum, r) => sum + r.win_amount, 0);
           const netProfit = totalWin - totalBet;
           
-          // 构建统计卡片
+          // 构建精简统计卡片
           const statsHtml = `
-            <div class="mb-6 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-xl p-6 border-2 border-purple-200 shadow-lg">
-              <div class="flex items-center justify-between mb-5">
-                <h3 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-indigo-600 flex items-center gap-2">
+            <div class="mb-4 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 rounded-lg p-4 border border-purple-200">
+              <div class="flex items-center justify-between mb-3">
+                <h3 class="text-base font-bold text-purple-700 flex items-center gap-2">
                   <span>📊</span>
-                  <span>中奖概率统计</span>
+                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}</span>
                 </h3>
-                <span class="px-3 py-1 bg-white rounded-full text-sm font-semibold text-purple-600 shadow-sm">
-                  共 ${totalCount} 次
-                </span>
               </div>
               
-              <!-- 核心数据卡片 -->
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+              <!-- 核心数据卡片 - 精简版 -->
+              <div class="grid grid-cols-4 gap-2 mb-3">
                 <!-- 中奖率 -->
-                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-purple-100">
-                  <div class="flex justify-center mb-2">
-                    <div class="w-12 h-12 rounded-full bg-gradient-to-r from-green-400 to-emerald-500 flex items-center justify-center text-white text-xl font-bold shadow-lg">
-                      ${winRate}%
-                    </div>
-                  </div>
-                  <p class="text-xs text-slate-600 mb-1">中奖率</p>
-                  <p class="text-sm font-semibold text-slate-700">${winCount}/${totalCount} 次</p>
+                <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-purple-100">
+                  <div class="text-xl font-bold text-green-600">${winRate}%</div>
+                  <p class="text-xs text-slate-600">中奖率</p>
                 </div>
                 
                 <!-- 总投注 -->
-                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-red-100">
-                  <div class="text-2xl font-bold text-red-600 mb-1">
-                    $${(totalBet / 500000).toFixed(2)}
-                  </div>
-                  <p class="text-xs text-slate-600 mb-1">总投注</p>
-                  <p class="text-sm font-semibold text-slate-700">${totalCount} 次</p>
+                <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-red-100">
+                  <div class="text-xl font-bold text-red-600">$${(totalBet / 500000).toFixed(2)}</div>
+                  <p class="text-xs text-slate-600">总投注</p>
                 </div>
                 
                 <!-- 总赢得 -->
-                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow border border-green-100">
-                  <div class="text-2xl font-bold text-green-600 mb-1">
-                    $${(totalWin / 500000).toFixed(2)}
-                  </div>
-                  <p class="text-xs text-slate-600 mb-1">总赢得</p>
-                  <p class="text-sm font-semibold text-slate-700">${winCount} 次</p>
+                <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-green-100">
+                  <div class="text-xl font-bold text-green-600">$${(totalWin / 500000).toFixed(2)}</div>
+                  <p class="text-xs text-slate-600">总赢得</p>
                 </div>
                 
                 <!-- 盈亏 -->
-                <div class="bg-white rounded-xl p-4 text-center shadow-md hover:shadow-xl transition-shadow ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
-                  <div class="text-2xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'} mb-1">
+                <div class="bg-white rounded-lg p-2 text-center shadow-sm ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
+                  <div class="text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
                     ${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}
                   </div>
-                  <p class="text-xs text-slate-600 mb-1">净盈亏</p>
-                  <p class="text-sm font-semibold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
-                    ${netProfit >= 0 ? '📈 盈利' : '📉 亏损'}
-                  </p>
+                  <p class="text-xs text-slate-600">净盈亏</p>
                 </div>
               </div>
               
-              <!-- 奖项分布 -->
-              <div class="bg-white rounded-xl p-5 shadow-md border border-slate-200">
-                <div class="flex items-center justify-between mb-4">
-                  <p class="text-sm font-bold text-slate-700">🎁 奖项分布</p>
-                  <p class="text-xs text-slate-500">各奖项获得次数及概率</p>
-                </div>
-                <div class="space-y-2">
+              <!-- 奖项分布 - 标签式 -->
+              <div class="bg-white rounded-lg p-3 shadow-sm border border-slate-200">
+                <p class="text-xs font-bold text-slate-700 mb-2">🎁 奖项分布</p>
+                <div class="flex flex-wrap gap-1.5">
                   ${Object.entries(winTypes)
+                    .filter(([key, data]) => data.count > 0)
                     .sort((a, b) => b[1].count - a[1].count)
                     .map(([key, data]) => {
                       const percentage = totalCount > 0 ? ((data.count / totalCount) * 100).toFixed(1) : '0.0';
-                      const barWidth = totalCount > 0 ? (data.count / totalCount) * 100 : 0;
                       return `
-                        <div class="relative">
-                          <div class="flex items-center justify-between text-xs mb-1">
-                            <span class="font-medium ${data.color}">${data.name}</span>
-                            <div>
-                              <span class="font-bold text-slate-900">${data.count}</span>
-                              <span class="text-slate-500 ml-1">(${percentage}%)</span>
-                            </div>
-                          </div>
-                          <div class="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full transition-all duration-500" 
-                                 style="width: ${barWidth}%"></div>
-                          </div>
-                        </div>
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-md text-xs font-medium ${data.color}">
+                          <span>${data.name.split(' ')[0]}</span>
+                          <span class="font-bold">${data.count}</span>
+                          <span class="text-slate-500">(${percentage}%)</span>
+                        </span>
                       `;
                     }).join('')}
                 </div>
               </div>
               
               ${totalCount > 10 ? `
-                <div class="mt-5 text-center">
-                  <div class="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm border border-purple-200">
-                    <span class="text-purple-600">👇</span>
-                    <span class="text-sm font-medium text-purple-700">以下显示最近 10 条记录</span>
-                  </div>
+                <div class="mt-3 text-center">
+                  <span class="text-xs font-medium text-purple-600">👇 以下显示最近 10 条记录</span>
                 </div>
               ` : ''}
             </div>
@@ -6378,93 +6276,55 @@
 
             const symbolsHTML = r.result_symbols.map(s => {
               const ext = ['lq', 'bj', 'bdk'].includes(s) ? 'jpg' : 'png';
-              return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-14 h-14 sm:w-16 sm:h-16 object-contain border-2 border-white shadow-lg rounded-lg hover:scale-110 transition-transform duration-200">`;
+              return `<img src="/slot-symbols/${s}.${ext}" alt="${s}" class="w-10 h-10 object-contain border border-white shadow-md rounded-md">`;
             }).join('');
 
             // 优先显示 LinuxDo 用户名，如果没有则显示公益站用户名
             const displayName = r.linux_do_username || r.username;
-            
-            // 格式化时间
-            const recordDate = new Date(r.timestamp);
-            const dateStr = recordDate.toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' });
-            const timeStr = recordDate.toLocaleTimeString('zh-CN', { hour12: false, hour: '2-digit', minute: '2-digit' });
 
             return `
-              <div class="border-2 ${cardClass} rounded-xl overflow-hidden mb-4 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                <!-- 🎯 头部信息栏 -->
-                <div class="${headerClass} px-4 py-3 flex items-center justify-between text-white shadow-lg">
-                  <div class="flex items-center gap-3">
-                    <span class="text-2xl">${iconEmoji}</span>
-                    <div>
-                      <div class="flex items-center gap-2">
-                        <span class="font-bold text-base">@${displayName}</span>
-                        ${r.is_free_spin ? '<span class="px-2 py-0.5 bg-white/30 backdrop-blur-sm text-white rounded-full text-xs font-bold border border-white/50">✨ 免费</span>' : ''}
-                      </div>
-                      <div class="flex items-center gap-2 text-xs text-white/90 mt-0.5">
-                        <span>📅 ${dateStr}</span>
-                        <span>🕐 ${timeStr}</span>
-                        <span class="px-2 py-0.5 bg-white/20 rounded-full">#${displayRecords.length - idx}</span>
-                      </div>
-                    </div>
+              <div class="border ${cardClass} rounded-lg overflow-hidden mb-3 shadow-sm hover:shadow-md transition-all duration-200">
+                <!-- 🎯 精简头部 -->
+                <div class="${headerClass} px-3 py-2 flex items-center justify-between text-white">
+                  <div class="flex items-center gap-2">
+                    <span class="text-lg">${iconEmoji}</span>
+                    <span class="font-semibold text-sm">@${displayName}</span>
+                    ${r.is_free_spin ? '<span class="px-1.5 py-0.5 bg-white/30 text-white rounded text-xs font-bold">✨</span>' : ''}
+                    <span class="text-xs opacity-80">×${r.win_multiplier}</span>
                   </div>
-                  <div class="text-right">
-                    <div class="text-sm font-semibold text-white/90">中奖倍率</div>
-                    <div class="text-2xl font-bold">${r.win_multiplier}×</div>
-                  </div>
+                  <span class="text-xs opacity-80">#${displayRecords.length - idx}</span>
                 </div>
 
-                <!-- 📊 主体内容 -->
-                <div class="p-5">
-                  <!-- 符号展示 -->
-                  <div class="mb-4">
-                    <div class="flex items-center justify-center gap-2 sm:gap-3 mb-3 p-3 bg-white/70 backdrop-blur-sm rounded-xl shadow-inner border border-white">
-                      ${symbolsHTML}
-                    </div>
-                    <div class="text-center">
-                      <span class="inline-flex items-center gap-2 px-4 py-2 ${badgeClass} rounded-full text-sm font-bold border-2 shadow-sm">
+                <!-- 📊 紧凑内容 -->
+                <div class="p-3 flex items-center gap-3">
+                  <!-- 符号横向排列 -->
+                  <div class="flex gap-1 flex-shrink-0">
+                    ${symbolsHTML}
+                  </div>
+                  
+                  <!-- 信息区域 -->
+                  <div class="flex-1 min-w-0">
+                    <div class="mb-1.5">
+                      <span class="inline-flex items-center gap-1 px-2 py-0.5 ${badgeClass} rounded text-xs font-bold">
                         <span>🎯</span>
                         <span>${r.win_type_name}</span>
                       </span>
                     </div>
-                  </div>
-
-                  <!-- 💰 金额信息 -->
-                  <div class="grid grid-cols-3 gap-3 mt-4">
-                    <!-- 投注金额 -->
-                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
-                      <div class="text-xs text-slate-600 mb-1 font-semibold">投注</div>
-                      <div class="text-lg font-bold text-slate-700">$${(r.bet_amount / 500000).toFixed(2)}</div>
-                      <div class="text-xs text-slate-500 mt-1">💵</div>
-                    </div>
-
-                    <!-- 赢得金额 -->
-                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
-                      <div class="text-xs text-slate-600 mb-1 font-semibold">赢得</div>
-                      <div class="text-lg font-bold ${amountClass}">$${(r.win_amount / 500000).toFixed(2)}</div>
-                      <div class="text-xs ${amountClass} mt-1">${isWin ? '📈' : isLoss ? '📉' : '➖'}</div>
-                    </div>
-
-                    <!-- 净盈亏 -->
-                    <div class="bg-white/70 backdrop-blur-sm rounded-xl p-3 text-center border border-slate-200 shadow-sm">
-                      <div class="text-xs text-slate-600 mb-1 font-semibold">盈亏</div>
-                      <div class="text-lg font-bold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
+                    <div class="text-xs text-slate-600 leading-relaxed">
+                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">$${(r.bet_amount / 500000).toFixed(2)}</span>
+                      <span class="mx-1">·</span>
+                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">$${(r.win_amount / 500000).toFixed(2)}</span>
+                      <span class="mx-1">·</span>
+                      <span class="font-semibold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
                         ${netAmount >= 0 ? '+' : ''}$${(netAmount / 500000).toFixed(2)}
-                      </div>
-                      <div class="text-xs ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'} mt-1">
-                        ${netAmount >= 0 ? '💰' : '💸'}
-                      </div>
+                      </span>
                     </div>
+                    ${r.free_spin_awarded ? `
+                      <div class="mt-1.5 text-xs text-purple-700 font-semibold">
+                        🎁 获得免费抽奖次数！
+                      </div>
+                    ` : ''}
                   </div>
-
-                  ${r.free_spin_awarded ? `
-                    <div class="mt-4 p-3 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl border-2 border-purple-300 shadow-sm">
-                      <p class="text-center text-purple-700 font-bold text-sm flex items-center justify-center gap-2">
-                        <span class="text-lg">🎁</span>
-                        <span>恭喜获得免费抽奖次数！</span>
-                        <span class="text-lg">✨</span>
-                      </p>
-                    </div>
-                  ` : ''}
                 </div>
               </div>
             `;
@@ -6472,50 +6332,15 @@
     }
 
     // 筛选老虎机记录
+    // 筛选功能已简化（极简模式：直接显示所有记录）
     function filterSlotRecords() {
-      const searchInput = document.getElementById('recordSearchInput').value.toLowerCase();
-      const winTypeFilter = document.getElementById('winTypeFilter').value;
-      
-      let filteredRecords = allSlotRecords;
-      
-      // 按用户名筛选
-      if (searchInput) {
-        filteredRecords = filteredRecords.filter(r => {
-          const username = (r.linux_do_username || r.username || '').toLowerCase();
-          return username.includes(searchInput);
-        });
-      }
-      
-      // 按中奖类型筛选（修复：空字符串也要过滤）
-      if (winTypeFilter && winTypeFilter !== 'all') {
-        filteredRecords = filteredRecords.filter(r => {
-          // 确保比较的是相同类型
-          const recordWinType = r.win_type || '';
-          return recordWinType === winTypeFilter;
-        });
-      }
-      
-      // 显示筛选结果提示
-      const hintEl = document.getElementById('filterResultHint');
-      if (searchInput || winTypeFilter !== 'all') {
-        hintEl.textContent = `🔍 找到 ${filteredRecords.length} 条记录（总记录数: ${allSlotRecords.length}）`;
-        hintEl.classList.remove('hidden');
-      } else {
-        hintEl.textContent = `📊 总记录数: ${allSlotRecords.length}`;
-        hintEl.classList.remove('hidden');
-      }
-      
-      // 渲染筛选后的记录
-      renderSlotRecords(filteredRecords);
+      // 直接显示所有记录
+      renderSlotRecords(allSlotRecords);
     }
 
-    // 刷新记录（保留筛选条件）
+    // 刷新记录（极简模式）
     async function refreshSlotRecordsKeepFilter() {
       try {
-        // 保存当前筛选条件
-        const searchInput = document.getElementById('recordSearchInput').value;
-        const winTypeFilter = document.getElementById('winTypeFilter').value;
-        
         // 根据当前模式重新获取数据
         const mode = isInAdvancedMode ? 'advanced' : 'normal';
         const recordsRes = await fetch(`/api/slot/records?mode=${mode}`);
@@ -6529,8 +6354,8 @@
         // 更新全局记录
         allSlotRecords = recordsData.data;
         
-        // 应用筛选条件
-        filterSlotRecords();
+        // 显示所有记录
+        renderSlotRecords(allSlotRecords);
         
         showToast('记录已刷新', 'success');
       } catch (error) {
@@ -6539,17 +6364,9 @@
       }
     }
 
-    // 清除筛选
+    // 清除筛选（极简模式：直接显示所有记录）
     function clearRecordFilters() {
-      document.getElementById('recordSearchInput').value = '';
-      document.getElementById('winTypeFilter').value = 'all';
-      
-      // 显示总记录数
-      const hintEl = document.getElementById('filterResultHint');
-      hintEl.textContent = `📊 总记录数: ${allSlotRecords.length}`;
-      hintEl.classList.remove('hidden');
-      
-      // 渲染所有记录
+      // 显示所有记录
       renderSlotRecords(allSlotRecords);
     }
 
