@@ -1053,17 +1053,28 @@ app.post('/keys/delete', requireAdmin, async (c) => {
 });
 
 /**
- * 获取用户列表（支持分页）
+ * 获取用户列表（支持分页和搜索）
  */
 app.get('/users', requireAdmin, async (c) => {
     const page = parseInt(c.req.query('page') || '1');
     const pageSize = parseInt(c.req.query('pageSize') || '20');
+    const search = c.req.query('search') || '';
 
     try {
-        // 🚀 优化：使用数据库 JOIN 聚合，一次查询获取所有统计
         const offset = (page - 1) * pageSize;
-        const users = userQueries.getAllWithStats.all(pageSize, offset);
-        const totalCount = userQueries.count.get()!.count;
+        let users;
+        let totalCount;
+
+        // 🚀 优化：支持后端搜索
+        if (search) {
+            const searchPattern = `%${search}%`;
+            users = userQueries.searchWithStats.all(searchPattern, searchPattern, pageSize, offset);
+            totalCount = userQueries.countSearch.get(searchPattern, searchPattern)!.count;
+        } else {
+            users = userQueries.getAllWithStats.all(pageSize, offset);
+            totalCount = userQueries.count.get()!.count;
+        }
+
         const totalPages = Math.ceil(totalCount / pageSize);
 
         // 🚀 格式化返回数据（数据已由数据库聚合完成）
@@ -1076,6 +1087,7 @@ app.get('/users', requireAdmin, async (c) => {
             is_banned: user.is_banned || 0,
             banned_at: user.banned_at,
             banned_reason: user.banned_reason,
+            ban_hours: user.ban_hours,
             claim_count: user.claim_count,
             claim_quota: user.total_claim_quota,
             donate_count: user.donate_count,

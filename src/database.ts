@@ -1482,6 +1482,38 @@ function initQueries() {
             ORDER BY u.created_at DESC
             LIMIT ? OFFSET ?
         `),
+        // 🚀 优化：搜索用户（支持用户名和LinuxDo用户名）
+        searchWithStats: db.query<any, [string, string, number, number]>(`
+            SELECT
+                u.*,
+                COALESCE(c.claim_count, 0) as claim_count,
+                COALESCE(c.total_claim_quota, 0) as total_claim_quota,
+                COALESCE(d.donate_count, 0) as donate_count,
+                COALESCE(d.total_donate_quota, 0) as total_donate_quota
+            FROM users u
+            LEFT JOIN (
+                SELECT linux_do_id,
+                       COUNT(*) as claim_count,
+                       SUM(quota_added) as total_claim_quota
+                FROM claim_records
+                GROUP BY linux_do_id
+            ) c ON u.linux_do_id = c.linux_do_id
+            LEFT JOIN (
+                SELECT linux_do_id,
+                       SUM(keys_count) as donate_count,
+                       SUM(total_quota_added) as total_donate_quota
+                FROM donate_records
+                GROUP BY linux_do_id
+            ) d ON u.linux_do_id = d.linux_do_id
+            WHERE u.username LIKE ? OR u.linux_do_username LIKE ?
+            ORDER BY u.created_at DESC
+            LIMIT ? OFFSET ?
+        `),
+        // 🚀 优化：统计搜索结果数量
+        countSearch: db.query<{ count: number }, [string, string]>(`
+            SELECT COUNT(*) as count FROM users
+            WHERE username LIKE ? OR linux_do_username LIKE ?
+        `),
         // 🚀 优化：获取用户总数（用于分页）
         count: db.query<{ count: number }, never>('SELECT COUNT(*) as count FROM users'),
         getAllLinuxDoIds: db.query<{ linux_do_id: string }, never>('SELECT linux_do_id FROM users WHERE is_banned = 0'),
