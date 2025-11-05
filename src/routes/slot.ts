@@ -1203,7 +1203,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
 
         // 验证记录真实性：确保是该用户的记录
         if (reward.linux_do_id !== session.linux_do_id) {
-            console.error(`[申请补发] ❌ 用户尝试申请他人记录 - 用户: ${session.linux_do_id}, 记录所属: ${reward.linux_do_id}`);
+            logger.error('申请补发', `❌ 用户尝试申请他人记录 - 用户: ${session.linux_do_id}, 记录所属: ${reward.linux_do_id}`);
             return c.json({ success: false, message: '无权操作此记录' }, 403);
         }
 
@@ -1216,7 +1216,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
             return c.json({ success: false, message: '该记录正在处理中，请稍后刷新查看结果' }, 400);
         }
 
-        console.log(`[申请补发] 🎁 用户申请补发 - 用户: ${session.username || session.linux_do_id}, 记录ID: ${rewardId}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
+        logger.info('申请补发', `🎁 用户申请补发 - 用户: ${session.username || session.linux_do_id}, 记录ID: ${rewardId}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
 
         // 标记为处理中
         const now = Date.now();
@@ -1246,7 +1246,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
             if (!userResult.success || !userResult.user) {
                 const errorMsg = `获取用户信息失败: ${userResult.message || '未知错误'}`;
                 pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
-                console.error(`[申请补发] ❌ ${errorMsg}`);
+                logger.error('申请补发', `❌ ${errorMsg}`);
                 return c.json({
                     success: false,
                     message: '系统繁忙，请联系管理员',
@@ -1257,7 +1257,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
             const currentQuota = userResult.user.quota;
             const newQuota = currentQuota + reward.reward_amount;
 
-            console.log(`[申请补发] 当前额度: ${currentQuota}, 奖金: ${reward.reward_amount}, 目标额度: ${newQuota}`);
+            logger.debug('申请补发', `当前额度: ${currentQuota}, 奖金: ${reward.reward_amount}, 目标额度: ${newQuota}`);
 
             // 更新额度
             const updateResult = await updateKyxUserQuota(
@@ -1283,7 +1283,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
                     pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
                 }
 
-                console.error(`[申请补发] ❌ ${errorMsg}, HTTP状态: ${httpStatus}`);
+                logger.error('申请补发', `❌ ${errorMsg}, HTTP状态: ${httpStatus}`);
                 return c.json({
                     success: false,
                     message: userFriendlyMsg,
@@ -1303,13 +1303,13 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
 
             if (verifyResult.success && verifyResult.user) {
                 const actualQuota = verifyResult.user.quota;
-                console.log(`[申请补发] 验证额度 - 期望: ${newQuota}, 实际: ${actualQuota}`);
+                logger.debug('申请补发', `验证额度 - 期望: ${newQuota}, 实际: ${actualQuota}`);
 
                 // 允许小范围误差
                 if (Math.abs(actualQuota - newQuota) > reward.reward_amount) {
                     const errorMsg = `额度验证失败 - 期望: ${newQuota}, 实际: ${actualQuota}`;
                     pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
-                    console.error(`[申请补发] ⚠️ ${errorMsg}`);
+                    logger.error('申请补发', `⚠️ ${errorMsg}`);
                     return c.json({
                         success: false,
                         message: '系统繁忙，请联系管理员',
@@ -1320,7 +1320,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
 
             // 标记为成功
             pendingRewardQueries.markSuccess.run('success', now, now, rewardId);
-            console.log(`[申请补发] ✅ 发放成功 - 用户: ${reward.username}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
+            logger.info('申请补发', `✅ 发放成功 - 用户: ${reward.username}, 金额: $${(reward.reward_amount / 500000).toFixed(2)}`);
 
             return c.json({
                 success: true,
@@ -1334,7 +1334,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
 
         } catch (error: any) {
             const errorMsg = error.message || '未知错误';
-            console.error(`[申请补发] ❌ 处理失败:`, error);
+            logger.error('申请补发', `❌ 处理失败`, error);
             pendingRewardQueries.incrementRetry.run('failed', errorMsg, now, rewardId);
 
             return c.json({
@@ -1345,7 +1345,7 @@ slot.post('/pending-rewards/:id/retry', requireAuth, async (c) => {
         }
 
     } catch (error: any) {
-        console.error('[申请补发] ❌ 服务器错误:', error);
+        logger.error('申请补发', `❌ 服务器错误`, error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1408,7 +1408,7 @@ slot.get('/pending-rewards', requireAuth, async (c) => {
             }
         });
     } catch (error) {
-        console.error('获取待发放奖金失败:', error);
+        logger.error('待发放奖金', '获取待发放奖金失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1688,7 +1688,7 @@ slot.get('/tickets', requireAuth, async (c) => {
             }
         });
     } catch (error) {
-        console.error('获取入场券信息失败:', error);
+        logger.error('入场券', '获取入场券信息失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1707,7 +1707,7 @@ slot.post('/tickets/synthesize', requireAuth, async (c) => {
 
         return c.json(result, result.success ? 200 : 400);
     } catch (error) {
-        console.error('合成入场券失败:', error);
+        logger.error('入场券', '合成入场券失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1726,7 +1726,7 @@ slot.post('/advanced/enter', requireAuth, async (c) => {
         const result = await enterAdvancedMode(session.linux_do_id);
         return c.json(result, result.success ? 200 : 400);
     } catch (error) {
-        console.error('进入高级场失败:', error);
+        logger.error('高级场', '进入高级场失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1745,7 +1745,7 @@ slot.post('/advanced/exit', requireAuth, async (c) => {
             message: '已退出高级场'
         });
     } catch (error) {
-        console.error('退出高级场失败:', error);
+        logger.error('高级场', '退出高级场失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1781,7 +1781,7 @@ slot.get('/advanced/status', requireAuth, async (c) => {
             }
         });
     } catch (error) {
-        console.error('获取高级场状态失败:', error);
+        logger.error('高级场', '获取高级场状态失败', error);
         return c.json({ success: false, message: '服务器错误' }, 500);
     }
 });
@@ -1893,7 +1893,7 @@ slot.get('/rules', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        console.error('[游戏规则] 获取失败:', error);
+        logger.error('游戏规则', '获取失败', error);
         return c.json({ success: false, message: '获取规则失败' }, 500);
     }
 });
