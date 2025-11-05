@@ -5785,12 +5785,13 @@
         let baseDuration, durationIncrement, baseSymbolCount, blurIntensity;
 
         if (isInSupremeMode) {
-          // 💎 至尊场配置 - 方案2「黄金悬念」
-          baseDuration = 1500;        // 基础1.5秒 (快25%)
-          durationIncrement = 500;    // 每个滚轮增加500ms
-          baseSymbolCount = 20;       // 起始符号数 (减少20%)
+          // 💎 至尊场配置 - 方案2「黄金假动作」
+          baseDuration = 1800;        // 基础1.8秒
+          durationIncrement = 600;    // 每个滚轮增加600ms
+          baseSymbolCount = 22;       // 起始符号数
           blurIntensity = reelIndex === 3 ? 7 : 6;  // 模糊稍强
-          // 总时长: 1.5s, 2.0s, 2.5s, 3.0s
+          // 总时长: 1.8s, 2.4s, 3.0s, 3.6s
+          // 第4个滚轮会特殊处理，延长到4.2秒并添加假停效果
         } else {
           // 🎰 初级场/高级场配置 - 保持原有体验
           baseDuration = 2000;        // 基础2秒
@@ -5800,7 +5801,12 @@
           // 总时长: 2s, 2.6s, 3.2s, 3.8s
         }
 
-        const duration = baseDuration + (reelIndex * durationIncrement);
+        let duration = baseDuration + (reelIndex * durationIncrement);
+
+        // 🎯 至尊场第4个滚轮特殊处理：延长时间以容纳假停效果
+        if (isInSupremeMode && reelIndex === 3) {
+          duration = 4200;  // 4.2秒，包含假停顿
+        }
 
         // 🎯 优化：最后一个滚轮旋转更多符号，增加悬念感
         const symbolCount = Math.floor(baseSymbolCount + (reelIndex * 8)); // 递增符号数量
@@ -5825,37 +5831,89 @@
         const easing = easingFunctions[reelIndex] || easingFunctions[3];
 
         // 🎯 优化：更丝滑的模糊效果和关键帧 (blurIntensity已在上方根据场次配置)
-        const animation = symbolsContainer.animate([
-          { 
-            transform: 'translateY(0px)',
-            filter: 'blur(0px)',
-            offset: 0
-          },
-          { 
-            transform: 'translateY(-80px)',
-            filter: `blur(${blurIntensity}px)`,
-            offset: 0.1  // 快速加速
-          },
-          { 
-            transform: `translateY(-${(symbolCount - 10) * symbolHeight}px)`,
-            filter: `blur(${blurIntensity}px)`,
-            offset: 0.7  // 保持高速
-          },
-          { 
-            transform: `translateY(-${(symbolCount - 3) * symbolHeight}px)`,
-            filter: 'blur(2px)',
-            offset: 0.92  // 开始减速并减少模糊
-          },
-          { 
-            transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
-            filter: 'blur(0px)',
-            offset: 1  // 完全停止，清晰显示
-          }
-        ], {
-          duration: duration,
-          easing: easing,
-          fill: 'forwards'
-        });
+
+        // 🎯 至尊场第4个滚轮：特殊"假停顿"动画，制造"差一点"的刺激感
+        let animation;
+        if (isInSupremeMode && reelIndex === 3) {
+          animation = symbolsContainer.animate([
+            {
+              transform: 'translateY(0px)',
+              filter: 'blur(0px)',
+              offset: 0
+            },
+            {
+              transform: 'translateY(-80px)',
+              filter: `blur(${blurIntensity}px)`,
+              offset: 0.1  // 快速加速
+            },
+            {
+              transform: `translateY(-${(symbolCount - 10) * symbolHeight}px)`,
+              filter: `blur(${blurIntensity}px)`,
+              offset: 0.75  // 保持高速旋转
+            },
+            // 🎯 关键：假停顿位置（让用户看到前一个符号，以为要停了）
+            {
+              transform: `translateY(-${(symbolCount - 2.5) * symbolHeight}px)`,
+              filter: 'blur(1px)',
+              offset: 0.82  // 82%时减速到假停位置
+            },
+            // 🎯 假停顿：清晰显示，让用户看清楚"哇是man！"或其他符号
+            {
+              transform: `translateY(-${(symbolCount - 2.5) * symbolHeight}px)`,
+              filter: 'blur(0px)',
+              offset: 0.86  // 停顿0.4秒（82%→86%）
+            },
+            // 🎯 慢慢滑动中...
+            {
+              transform: `translateY(-${(symbolCount - 1.3) * symbolHeight}px)`,
+              filter: 'blur(0px)',
+              offset: 0.91
+            },
+            // 🎯 最终停止位置
+            {
+              transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
+              filter: 'blur(0px)',
+              offset: 1
+            }
+          ], {
+            duration: duration,  // 4200ms
+            easing: 'cubic-bezier(0.25, 0.1, 0.25, 1)',  // 带轻微回弹的缓动
+            fill: 'forwards'
+          });
+        } else {
+          // 🎰 普通动画（初级场/高级场，以及至尊场前3个滚轮）
+          animation = symbolsContainer.animate([
+            {
+              transform: 'translateY(0px)',
+              filter: 'blur(0px)',
+              offset: 0
+            },
+            {
+              transform: 'translateY(-80px)',
+              filter: `blur(${blurIntensity}px)`,
+              offset: 0.1  // 快速加速
+            },
+            {
+              transform: `translateY(-${(symbolCount - 10) * symbolHeight}px)`,
+              filter: `blur(${blurIntensity}px)`,
+              offset: 0.7  // 保持高速
+            },
+            {
+              transform: `translateY(-${(symbolCount - 3) * symbolHeight}px)`,
+              filter: 'blur(2px)',
+              offset: 0.92  // 开始减速并减少模糊
+            },
+            {
+              transform: `translateY(-${(symbolCount - 1) * symbolHeight}px)`,
+              filter: 'blur(0px)',
+              offset: 1  // 完全停止，清晰显示
+            }
+          ], {
+            duration: duration,
+            easing: easing,
+            fill: 'forwards'
+          });
+        }
 
         // 🎯 优化：添加超时保护，防止动画卡死
         const timeoutId = setTimeout(() => {
