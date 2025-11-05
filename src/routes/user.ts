@@ -8,7 +8,7 @@ import {
     getKyxUserById,
 } from '../services/kyx-api';
 import { validateAndDonateKeys } from '../services/keys';
-import { addUserFreeSpins, getUserFreeSpins } from '../services/slot';
+import { addUserFreeSpins, getUserFreeSpins, getTodayDate } from '../services/slot';
 import { CONFIG } from '../config';
 import type { User } from '../types';
 import { checkAndUnlockAchievement, updateAchievementProgress } from '../services/achievement';
@@ -197,7 +197,7 @@ app.post('/auth/bind', requireAuth, async (c) => {
         }
 
         // 保存绑定奖励记录到领取记录表
-        const today = new Date().toISOString().split('T')[0];
+        const today = getTodayDate();  // 🔥 使用北京时间
         const timestamp = Date.now();
         claimQueries.insert.run(
             session.linux_do_id,
@@ -301,8 +301,8 @@ app.get('/user/quota', requireAuth, async (c) => {
 
     const kyxUser = kyxUserResult.user!;
 
-    // 检查今日是否已领取
-    const today = new Date().toISOString().split('T')[0];
+    // 检查今日是否已领取（使用北京时间）
+    const today = getTodayDate();  // 🔥 使用北京时间
     const claimToday = await cacheManager.getOrLoad(
         `claim:${user.linux_do_id}:${today}`,
         async () => {
@@ -311,8 +311,21 @@ app.get('/user/quota', requireAuth, async (c) => {
         3600000 // 1小时
     );
 
-    // 检查今日投喂情况（按类型分别统计）
-    const todayStart = new Date(today || '').getTime();
+    // 检查今日投喂情况（按类型分别统计，使用北京时间的0点）
+    const beijingDate = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    // 构建北京时间今天0点的时间戳
+    const [datePart] = beijingDate.split(' ');
+    const [year, month, day] = datePart.split('/');
+    const todayStart = new Date(`${year}-${month}-${day}T00:00:00+08:00`).getTime();
     const todayEnd = todayStart + 86400000;
     const allDonates = donateQueries.getByUser.all(user.linux_do_id);
     const todayDonates = allDonates.filter(
@@ -386,9 +399,23 @@ app.post('/claim/daily', requireAuth, async (c) => {
         return c.json({ success: false, message: '未绑定账号' }, 400);
     }
 
-    // 检查今日领取次数
-    const today = new Date().toISOString().split('T')[0] || '';
-    const todayStart = new Date(today).getTime();
+    // 检查今日领取次数（使用北京时间）
+    const today = getTodayDate();  // 🔥 使用北京时间
+    
+    // 🔥 构建北京时间今天0点的时间戳
+    const beijingDate = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    const [datePart] = beijingDate.split(' ');
+    const [year, month, day] = datePart.split('/');
+    const todayStart = new Date(`${year}-${month}-${day}T00:00:00+08:00`).getTime();
     const todayEnd = todayStart + 86400000;
 
     // 查询今日领取记录数（排除绑定奖励）

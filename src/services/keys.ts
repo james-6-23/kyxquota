@@ -116,8 +116,20 @@ export async function markKeyUsed(
  * 获取今日投喂数量
  */
 export async function getTodayDonateCount(linuxDoId: string, keyType?: 'modelscope' | 'iflow'): Promise<number> {
-    const today = new Date().toISOString().split('T')[0] || '';
-    const todayStart = new Date(today).getTime();
+    // 🔥 使用北京时间计算今日0点
+    const beijingDate = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+    });
+    const [datePart] = beijingDate.split(' ');
+    const [year, month, day] = datePart.split('/');
+    const todayStart = new Date(`${year}-${month}-${day}T00:00:00+08:00`).getTime();
     const todayEnd = todayStart + 86400000; // 24 小时后
 
     if (keyType) {
