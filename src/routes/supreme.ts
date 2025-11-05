@@ -19,7 +19,7 @@ import {
     recordSupremeGame,
     getTodaySupremeBet
 } from '../services/supreme-slot';
-import { updateUserTotalStats } from '../services/slot';
+import { updateUserTotalStats, isUserBanned } from '../services/slot';
 import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
@@ -211,6 +211,17 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
                 success: false,
                 message: '您不在至尊场中，请先进入至尊场'
             }, 400);
+        }
+
+        // 检查是否被禁止使用至尊场（律师函惩罚）
+        const banStatus = isUserBanned(session.linux_do_id!);
+        if (banStatus.banned) {
+            const remainingTime = banStatus.bannedUntil - Date.now();
+            const remainingHours = Math.ceil(remainingTime / 3600000);
+            return c.json({
+                success: false,
+                message: `⚡ 您因收到过多律师函，已被禁止使用至尊场。解禁时间：${new Date(banStatus.bannedUntil).toLocaleString('zh-CN')}（剩余约${remainingHours}小时）。您可以继续使用初级场。`
+            }, 403);
         }
 
         // 检查每日投注限额

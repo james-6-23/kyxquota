@@ -266,17 +266,6 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             }, 403);
         }
 
-        // 检查是否被禁止抽奖（律师函惩罚）
-        const banStatus = isUserBanned(session.linux_do_id);
-        if (banStatus.banned) {
-            const remainingTime = banStatus.bannedUntil - Date.now();
-            const remainingHours = Math.ceil(remainingTime / 3600000);
-            return c.json({
-                success: false,
-                message: `⚡ 您因收到过多律师函，已被禁止抽奖。解禁时间：${new Date(banStatus.bannedUntil).toLocaleString('zh-CN')}（剩余约${remainingHours}小时）`
-            }, 403);
-        }
-
         const config = getSlotConfig();
         if (!config || !config.enabled) {
             return c.json({ success: false, message: '老虎机功能已关闭' }, 403);
@@ -289,6 +278,19 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
 
         // 🔥 检查是否在高级场
         const inAdvancedMode = isInAdvancedMode(session.linux_do_id);
+
+        // 🔥 高级场需要检查律师函禁止状态
+        if (inAdvancedMode) {
+            const banStatus = isUserBanned(session.linux_do_id);
+            if (banStatus.banned) {
+                const remainingTime = banStatus.bannedUntil - Date.now();
+                const remainingHours = Math.ceil(remainingTime / 3600000);
+                return c.json({
+                    success: false,
+                    message: `⚡ 您因收到过多律师函，已被禁止使用高级场。解禁时间：${new Date(banStatus.bannedUntil).toLocaleString('zh-CN')}（剩余约${remainingHours}小时）。您可以继续使用初级场。`
+                }, 403);
+            }
+        }
 
         let isFreeSpin = false;
         let betAmount = config.bet_amount;

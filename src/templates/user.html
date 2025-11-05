@@ -5050,11 +5050,13 @@
       // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
       updateBetLimitProgressBar();
 
-      // 显示禁止状态（初级场和高级场都显示）
+      // 🔥 显示禁止状态（律师函只禁止高级场和至尊场，初级场不受影响）
       const bannedNotice = document.getElementById('bannedNotice');
       const bannedUntilText = document.getElementById('bannedUntilText');
       const advancedBannedNotice = document.getElementById('advancedBannedNotice');
       const advancedBannedUntilText = document.getElementById('advancedBannedUntilText');
+      const supremeBannedNotice = document.getElementById('supremeBannedNotice');
+      const supremeBannedUntilText = document.getElementById('supremeBannedUntilText');
       
       if (slotUserData.is_banned && slotUserData.banned_until > Date.now()) {
         // 🔥 验证 banned_until 是否为合理的时间戳（毫秒）
@@ -5069,6 +5071,7 @@
           // 异常值，隐藏封禁提示并报错
           if (bannedNotice) bannedNotice.classList.add('hidden');
           if (advancedBannedNotice) advancedBannedNotice.classList.add('hidden');
+          if (supremeBannedNotice) supremeBannedNotice.classList.add('hidden');
           showToast('封禁时间数据异常，请联系管理员', 'error');
           return;
         }
@@ -5077,12 +5080,11 @@
         const remainingHours = Math.ceil((bannedUntil - Date.now()) / 3600000);
         const banText = `解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)`;
         
-        console.log('[封禁时间] 显示封禁提示 - 封禁至:', bannedDate.toLocaleString('zh-CN'), '剩余:', remainingHours, '小时');
+        console.log('[封禁时间] 显示高级场和至尊场封禁提示 - 封禁至:', bannedDate.toLocaleString('zh-CN'), '剩余:', remainingHours, '小时');
         
-        // 🔥 初级场封禁提示
-        if (bannedNotice && bannedUntilText) {
-          bannedNotice.classList.remove('hidden');
-          bannedUntilText.textContent = banText;
+        // 🔥 初级场不受律师函惩罚影响，始终可用
+        if (bannedNotice) {
+          bannedNotice.classList.add('hidden');
         }
         
         // 🔥 高级场封禁提示
@@ -5090,10 +5092,17 @@
           advancedBannedNotice.classList.remove('hidden');
           advancedBannedUntilText.textContent = banText;
         }
+        
+        // 🔥 至尊场封禁提示
+        if (supremeBannedNotice && supremeBannedUntilText) {
+          supremeBannedNotice.classList.remove('hidden');
+          supremeBannedUntilText.textContent = banText;
+        }
       } else {
         // 隐藏所有封禁提示
         if (bannedNotice) bannedNotice.classList.add('hidden');
         if (advancedBannedNotice) advancedBannedNotice.classList.add('hidden');
+        if (supremeBannedNotice) supremeBannedNotice.classList.add('hidden');
       }
 
       // 更新投注金额显示（根据管理员配置或高级场选择）
@@ -7818,6 +7827,14 @@
     async function spinSupremeSlot() {
       if (!isInSupremeMode) {
         showToast('您还未进入至尊场', 'error');
+        return;
+      }
+      
+      // 🔥 检查是否被禁止使用至尊场（律师函惩罚）
+      if (slotUserData && slotUserData.is_banned && slotUserData.banned_until > Date.now()) {
+        const bannedDate = new Date(slotUserData.banned_until);
+        const remainingHours = Math.ceil((slotUserData.banned_until - Date.now()) / 3600000);
+        showToast(`⚡ 您因收到过多律师函，已被禁止使用至尊场。解禁时间：${bannedDate.toLocaleString('zh-CN', { hour12: false })} (剩余约${remainingHours}小时)。您可以继续使用初级场。`, 'error', 5000);
         return;
       }
       
