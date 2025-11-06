@@ -350,17 +350,7 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         }
     }
 
-    // 🔥 3. 检查对称规则ABBA
-    if (hasABBAPatternProb(symbols)) {
-        const hasManPair = hasManConsecutivePairProb(symbols);
-        const finalMultiplier = hasManPair ? 10 * manMultiplier : 10;
-        return {
-            ruleName: hasManPair ? '对称ABBA+man严格2连' : '对称ABBA',
-            multiplier: finalMultiplier
-        };
-    }
-
-    // 🔥 4. 按优先级检查奖励规则
+    // 🔥 3. 按优先级检查奖励规则（对称规则现在通过配置方案控制）
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter(r => r.is_active).sort((a, b) => b.priority - a.priority);
 
@@ -409,7 +399,7 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         }
     }
 
-    // 🔥 5. 如果只有man没有其他规则匹配
+    // 🔥 4. 如果只有man没有其他规则匹配
     if (manMultiplier > 1.0) {
         return {
             ruleName: `man×${manMultiplier}`,
@@ -417,7 +407,7 @@ function matchRuleByPriority(symbols: string[], schemeId: number, debug: boolean
         };
     }
 
-    // 6. 未中奖
+    // 5. 未中奖
     return {
         ruleName: '未中奖',
         multiplier: 0

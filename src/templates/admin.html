@@ -3398,13 +3398,14 @@
                     <th class="px-4 py-3 text-right font-semibold text-slate-700">自动扣款</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">借款时间</th>
                     <th class="px-4 py-3 text-left font-semibold text-slate-700">到期时间</th>
+                    <th class="px-4 py-3 text-left font-semibold text-slate-700">还款时间</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">状态</th>
                     <th class="px-4 py-3 text-center font-semibold text-slate-700">操作</th>
                   </tr>
                 </thead>
                 <tbody id="kunbeiRecordsTableBody">
                   <tr>
-                    <td colspan="11" class="text-center py-8 text-slate-500">加载中...</td>
+                    <td colspan="12" class="text-center py-8 text-slate-500">加载中...</td>
                   </tr>
                 </tbody>
               </table>
@@ -8471,7 +8472,7 @@
       document.getElementById('nextPageBtn').disabled = kunbeiRecordsCurrentPage >= totalPages;
       
       if (pageRecords.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="11" class="text-center py-8 text-slate-500">暂无记录</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="12" class="text-center py-8 text-slate-500">暂无记录</td></tr>';
         return;
       }
       
@@ -8561,6 +8562,7 @@
             <td class="px-4 py-3 text-right">${autoDeductDisplay}</td>
             <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.borrowed_at).toLocaleString('zh-CN', { hour12: false })}</td>
             <td class="px-4 py-3 text-xs text-slate-600">${new Date(record.due_at).toLocaleString('zh-CN', { hour12: false })}</td>
+            <td class="px-4 py-3 text-xs text-slate-600">${record.repaid_at ? new Date(record.repaid_at).toLocaleString('zh-CN', { hour12: false }) : '<span class="text-slate-400">-</span>'}</td>
             <td class="px-4 py-3 text-center">
               <div>${statusBadge}</div>
               ${extraInfo}
@@ -8727,7 +8729,7 @@
       }
       
       // 准备CSV数据
-      const headers = ['ID', 'LinuxDo用户', '公益站用户', '借款金额($)', '应还金额($)', '借款时间', '到期时间', '状态'];
+      const headers = ['ID', 'LinuxDo用户', '公益站用户', '借款金额($)', '应还金额($)', '借款时间', '到期时间', '还款时间', '状态'];
       const rows = kunbeiRecordsFiltered.map(record => {
         const isForgiven = record.status === 'repaid' && record.actual_repay_amount === 0;
         const status = record.status === 'active' ? '借款中' 
@@ -8743,6 +8745,7 @@
           (record.repay_amount / 500000).toFixed(2),
           new Date(record.borrowed_at).toLocaleString('zh-CN', { hour12: false }),
           new Date(record.due_at).toLocaleString('zh-CN', { hour12: false }),
+          record.repaid_at ? new Date(record.repaid_at).toLocaleString('zh-CN', { hour12: false }) : '-',
           status
         ];
       });

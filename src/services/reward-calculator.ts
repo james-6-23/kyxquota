@@ -74,25 +74,11 @@ export function calculateWinByScheme(
         }
     }
 
-    // 🔥 3. 检查对称规则ABBA（优先级高于严格2连）
-    if (hasABBAPattern(symbols)) {
-        // 检查是否有man的严格2连
-        const hasManPair = hasManConsecutivePair(symbols);
-        const finalMultiplier = hasManPair ? 10 * manMultiplier : 10;
-
-        return {
-            winType: 'symmetric',
-            multiplier: finalMultiplier,
-            ruleName: hasManPair ? '对称ABBA+man严格2连' : '对称ABBA',
-            grantFreeSpin: false
-        };
-    }
-
-    // 🔥 4. 获取奖励规则并按优先级排序
+    // 🔥 3. 获取奖励规则并按优先级排序（对称规则现在通过配置方案控制）
     const rules = rewardConfigQueries.getRulesByScheme.all(schemeId);
     const activeRules = rules.filter((r: any) => r.is_active).sort((a: any, b: any) => b.priority - a.priority);
 
-    // 🔥 5. 检查规则匹配并应用man倍率加成
+    // 🔥 4. 检查规则匹配并应用man倍率加成
     for (const rule of activeRules) {
         const matched = checkRuleMatch(symbols, rule, isStrictConsecutive);
 
@@ -152,7 +138,7 @@ export function calculateWinByScheme(
         }
     }
 
-    // 🔥 6. 如果只有man没有其他规则匹配
+    // 🔥 5. 如果只有man没有其他规则匹配
     if (manMultiplier > 1.0) {
         return {
             winType: 'man_only',
@@ -162,7 +148,7 @@ export function calculateWinByScheme(
         };
     }
 
-    // 7. 未匹配任何规则
+    // 6. 未匹配任何规则
     return {
         winType: 'none',
         multiplier: 0,

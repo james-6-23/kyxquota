@@ -8969,7 +8969,8 @@
       container.innerHTML = loans.map(loan => {
         const borrowTime = new Date(loan.borrowed_at).toLocaleString('zh-CN', { hour12: false });
         const dueTime = new Date(loan.due_at).toLocaleString('zh-CN', { hour12: false });
-        
+        const repaidTime = loan.repaid_at ? new Date(loan.repaid_at).toLocaleString('zh-CN', { hour12: false }) : null;
+
         return `
           <div class="border border-slate-200 rounded-lg p-3 mb-2">
             <div class="flex justify-between items-start mb-2">
@@ -8978,7 +8979,7 @@
                   借 $${loan.loan_amount_usd} → 还 $${loan.repay_amount_usd}
                 </div>
                 <div class="text-xs text-slate-500 mt-1">
-                  借款: ${borrowTime}<br>到期: ${dueTime}
+                  借款: ${borrowTime}<br>到期: ${dueTime}${repaidTime ? `<br>还款: ${repaidTime}` : ''}
                 </div>
               </div>
               <div>${getStatusLabel(loan)}</div>
