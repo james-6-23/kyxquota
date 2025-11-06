@@ -270,10 +270,10 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
         // 至尊场使用严格连续判定（与高级场一致）
         const winResult = calculateWinByScheme(symbols, config.reward_scheme_id, true);
 
-        // 🔥 检查并应用坤呗buff
+        // 🔥 检查并应用坤呗buff（只对正向中奖生效，不放大惩罚）
         const { getAndUseBuff } = await import('../services/kunbei');
         const kunbeiBuff = getAndUseBuff(session.linux_do_id!);
-        if (kunbeiBuff > 1) {
+        if (kunbeiBuff > 1 && winResult.multiplier > 0) {
             logger.info('坤呗Buff', `应用buff×${kunbeiBuff}，原倍率: ${winResult.multiplier}，新倍率: ${winResult.multiplier * kunbeiBuff}`);
             winResult.multiplier = winResult.multiplier * kunbeiBuff;
         }

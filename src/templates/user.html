@@ -1227,13 +1227,28 @@
               <span class="text-xl">🏆</span>
             </button>
             
-            <div class="text-white text-right hidden sm:block">
-              <p class="text-xs opacity-75">剩余额度</p>
-              <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
-            </div>
-            <!-- 移动端简化显示 -->
-            <div class="text-white text-right sm:hidden">
-              <p id="slotQuotaMobile" class="text-sm font-bold text-yellow-400">$0.00</p>
+            <div class="flex items-center gap-2">
+              <!-- 桌面端额度显示 -->
+              <div class="text-white text-right hidden sm:block">
+                <p class="text-xs opacity-75">剩余额度</p>
+                <p id="slotQuota" class="text-lg font-bold text-yellow-400">$0.00</p>
+              </div>
+              <!-- 移动端简化显示 -->
+              <div class="text-white text-right sm:hidden">
+                <p id="slotQuotaMobile" class="text-sm font-bold text-yellow-400">$0.00</p>
+              </div>
+              
+              <!-- 🔄 刷新按钮 -->
+              <button 
+                id="refreshQuotaBtn"
+                onclick="refreshQuota()" 
+                class="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all" 
+                title="刷新额度"
+              >
+                <svg id="refreshQuotaIcon" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+              </button>
             </div>
             
             <div class="relative">
@@ -1789,6 +1804,22 @@
       </div>
 
     </div>
+
+    <!-- 🎵 背景音乐控制按钮（左下角）-->
+    <button 
+      id="bgMusicToggleBtn" 
+      onclick="toggleBgMusic()"
+      class="fixed bottom-4 left-6 w-16 h-16 bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 rounded-2xl shadow-2xl hover:scale-110 transition-all duration-300 flex flex-col items-center justify-center z-40"
+      title="背景音乐">
+      <div id="bgMusicIcon" class="text-3xl mb-1">🎵</div>
+      <div class="text-xs font-bold text-white">音乐</div>
+    </button>
+
+    <!-- 🎵 背景音乐audio元素 -->
+    <audio id="bgMusicPlayer" loop preload="auto">
+      <source src="/sounds/Deadman.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放
+    </audio>
 
     <!-- 🐔 坤呗悬浮按钮（右下角）-->
     <button 
@@ -2609,6 +2640,127 @@
     
     // 创建全局音效管理器
     const soundManager = new SoundManager();
+
+    // ========== 🎵 背景音乐管理器 ==========
+    
+    class BackgroundMusicManager {
+      constructor() {
+        this.player = null;
+        this.isPlaying = false;
+        this.volume = parseFloat(localStorage.getItem('bgMusicVolume') || '0.3');
+        this.muted = localStorage.getItem('bgMusicMuted') === 'true';
+      }
+
+      // 初始化音乐播放器
+      init() {
+        if (this.player) return;
+        
+        this.player = document.getElementById('bgMusicPlayer');
+        if (!this.player) {
+          console.error('❌ 背景音乐播放器未找到');
+          return;
+        }
+        
+        // 设置音量
+        this.player.volume = this.volume;
+        
+        // 如果之前没有静音，尝试自动播放
+        if (!this.muted) {
+          this.play();
+        }
+        
+        // 更新按钮状态
+        this.updateButton();
+      }
+
+      // 播放音乐
+      play() {
+        if (!this.player) this.init();
+        if (!this.player || this.muted) return;
+        
+        this.player.play().then(() => {
+          this.isPlaying = true;
+          this.updateButton();
+          console.log('🎵 背景音乐开始播放');
+        }).catch(err => {
+          console.warn('背景音乐播放失败（可能需要用户交互）:', err.message);
+          // 浏览器策略：需要用户交互后才能播放
+        });
+      }
+
+      // 暂停音乐
+      pause() {
+        if (!this.player) return;
+        
+        this.player.pause();
+        this.isPlaying = false;
+        this.updateButton();
+        console.log('🎵 背景音乐已暂停');
+      }
+
+      // 切换播放/暂停
+      toggle() {
+        if (!this.player) this.init();
+        
+        if (this.muted || !this.isPlaying) {
+          // 取消静音并播放
+          this.muted = false;
+          localStorage.setItem('bgMusicMuted', 'false');
+          this.play();
+        } else {
+          // 暂停并静音
+          this.muted = true;
+          localStorage.setItem('bgMusicMuted', 'true');
+          this.pause();
+        }
+        
+        this.updateButton();
+      }
+
+      // 设置音量
+      setVolume(vol) {
+        this.volume = Math.max(0, Math.min(1, vol));
+        localStorage.setItem('bgMusicVolume', this.volume.toString());
+        
+        if (this.player) {
+          this.player.volume = this.volume;
+        }
+      }
+
+      // 更新按钮显示
+      updateButton() {
+        const icon = document.getElementById('bgMusicIcon');
+        const btn = document.getElementById('bgMusicToggleBtn');
+        
+        if (!icon || !btn) return;
+        
+        if (this.muted || !this.isPlaying) {
+          icon.textContent = '🔇';
+          btn.classList.remove('animate-pulse');
+          btn.title = '背景音乐：已关闭';
+        } else {
+          icon.textContent = '🎵';
+          btn.classList.add('animate-pulse');
+          btn.title = '背景音乐：播放中';
+        }
+      }
+    }
+
+    // 创建全局背景音乐管理器实例
+    const bgMusicManager = new BackgroundMusicManager();
+
+    // 切换背景音乐
+    function toggleBgMusic() {
+      bgMusicManager.toggle();
+    }
+
+    // 页面加载完成后初始化背景音乐
+    document.addEventListener('DOMContentLoaded', () => {
+      // 延迟初始化，避免阻塞页面加载
+      setTimeout(() => {
+        bgMusicManager.init();
+      }, 1000);
+    });
     
     // 音效控制函数
     function toggleSound() {
@@ -3079,6 +3231,48 @@
         }
       } catch (e) {
         showMessage('绑定失败', 'error', 'bind');
+      }
+    }
+
+    // 🔄 刷新额度（带旋转动画）
+    async function refreshQuota() {
+      const refreshBtn = document.getElementById('refreshQuotaBtn');
+      const refreshIcon = document.getElementById('refreshQuotaIcon');
+      
+      if (!refreshBtn || !refreshIcon) return;
+      
+      // 禁用按钮并添加旋转动画
+      refreshBtn.disabled = true;
+      refreshIcon.classList.add('animate-spin');
+      
+      try {
+        // 调用loadQuota刷新数据
+        await loadQuota();
+        
+        // 同时刷新老虎机配置和用户数据
+        if (currentMode === 'entertain') {
+          try {
+            const configRes = await fetch('/api/slot/config');
+            const configData = await configRes.json();
+            if (configData.success) {
+              slotUserData = configData.data.user;
+              updateSlotUI();
+            }
+          } catch (err) {
+            console.error('刷新老虎机数据失败:', err);
+          }
+        }
+        
+        showToast('额度已刷新', 'success');
+      } catch (error) {
+        console.error('刷新额度失败:', error);
+        showToast('刷新失败', 'error');
+      } finally {
+        // 移除旋转动画并启用按钮
+        setTimeout(() => {
+          refreshIcon.classList.remove('animate-spin');
+          refreshBtn.disabled = false;
+        }, 500);
       }
     }
 

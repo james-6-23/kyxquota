@@ -466,9 +466,9 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
         //     }
         // }
 
-        // 🔥 检查并应用坤呗buff
+        // 🔥 检查并应用坤呗buff（只对正向中奖生效，不放大惩罚）
         const kunbeiBuff = getAndUseBuff(session.linux_do_id);
-        if (kunbeiBuff > 1) {
+        if (kunbeiBuff > 1 && result.multiplier > 0) {
             logger.info('坤呗Buff', `应用buff×${kunbeiBuff}，原倍率: ${result.multiplier}，新倍率: ${result.multiplier * kunbeiBuff}`);
             result.multiplier = result.multiplier * kunbeiBuff;
         }
