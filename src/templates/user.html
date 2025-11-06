@@ -2664,8 +2664,8 @@
         // 设置音量
         this.player.volume = this.volume;
         
-        // 如果之前没有静音，尝试自动播放
-        if (!this.muted) {
+        // 🎵 只在娱乐站模式且未静音时播放
+        if (!this.muted && currentMode === 'entertain') {
           this.play();
         }
         
@@ -2698,15 +2698,42 @@
         console.log('🎵 背景音乐已暂停');
       }
 
-      // 切换播放/暂停
+      // 暂停但保持进度（切换界面时使用）
+      pauseKeepProgress() {
+        if (!this.player || this.muted) return;
+        
+        this.player.pause();
+        this.isPlaying = false;
+        // 注意：不调用updateButton()，保持按钮显示为播放状态
+        console.log('🎵 背景音乐已暂停（保持进度）');
+      }
+
+      // 从当前进度恢复播放（切回娱乐站时使用）
+      resumeFromProgress() {
+        if (!this.player || this.muted) return;
+        
+        // 从当前位置继续播放
+        this.player.play().then(() => {
+          this.isPlaying = true;
+          console.log('🎵 背景音乐恢复播放（从进度继续）');
+        }).catch(err => {
+          console.warn('恢复播放失败:', err.message);
+        });
+      }
+
+      // 切换播放/暂停（用户手动点击按钮）
       toggle() {
         if (!this.player) this.init();
         
         if (this.muted || !this.isPlaying) {
-          // 取消静音并播放
+          // 取消静音
           this.muted = false;
           localStorage.setItem('bgMusicMuted', 'false');
-          this.play();
+          
+          // 🎵 只在娱乐站时播放，其他界面只取消静音状态
+          if (currentMode === 'entertain') {
+            this.play();
+          }
         } else {
           // 暂停并静音
           this.muted = true;
@@ -2734,14 +2761,22 @@
         
         if (!icon || !btn) return;
         
-        if (this.muted || !this.isPlaying) {
+        // 🎵 根据静音状态和当前界面显示
+        if (this.muted) {
+          // 用户手动静音
           icon.textContent = '🔇';
           btn.classList.remove('animate-pulse');
           btn.title = '背景音乐：已关闭';
-        } else {
+        } else if (currentMode === 'entertain' && this.isPlaying) {
+          // 娱乐站播放中
           icon.textContent = '🎵';
           btn.classList.add('animate-pulse');
           btn.title = '背景音乐：播放中';
+        } else {
+          // 其他界面（已暂停但未静音）
+          icon.textContent = '🎵';
+          btn.classList.remove('animate-pulse');
+          btn.title = '背景音乐：已暂停（切换到娱乐站自动播放）';
         }
       }
     }
@@ -2819,6 +2854,11 @@
 
       saveCurrentMode('refuel');
 
+      // 🎵 暂停背景音乐（保持进度）
+      if (bgMusicManager) {
+        bgMusicManager.pauseKeepProgress();
+      }
+
       // 更新主界面的切换按钮
       updateSwitchButtons('refuel');
 
@@ -2870,6 +2910,11 @@
 
       saveCurrentMode('entertain');
 
+      // 🎵 恢复背景音乐播放（从进度继续）
+      if (bgMusicManager && !bgMusicManager.muted) {
+        bgMusicManager.resumeFromProgress();
+      }
+
       // 更新主界面的切换按钮
       updateSwitchButtons('entertain');
 
@@ -2894,6 +2939,11 @@
       if (currentMode === 'achievement') return;
 
       saveCurrentMode('achievement');
+
+      // 🎵 暂停背景音乐（保持进度）
+      if (bgMusicManager) {
+        bgMusicManager.pauseKeepProgress();
+      }
 
       // 更新主界面的切换按钮
       updateSwitchButtons('achievement');
