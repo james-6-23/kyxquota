@@ -47,6 +47,7 @@ export function getGameStatsByDate(date: string) {
         const normalAdvancedStats = normalAdvancedQuery.all(date) as any[];
 
         // 查询至尊场统计
+        // 🔥 兼容两种日期格式：YYYY-MM-DD 和 YYYY-M-D
         const supremeQuery = db.query(`
             SELECT 
                 COUNT(*) as spins,
@@ -55,10 +56,17 @@ export function getGameStatsByDate(date: string) {
                 COALESCE(SUM(win_amount), 0) as total_win,
                 COALESCE(SUM(bet_amount) - SUM(win_amount), 0) as profit
             FROM supreme_slot_records
-            WHERE date = ?
+            WHERE date = ? 
+               OR date = ?
         `);
         
-        const supremeStats = supremeQuery.get(date) as any;
+        // 生成两种日期格式
+        const dateWithZero = date; // 2025-11-08
+        const dateWithoutZero = date.replace(/-0(\d)(?=-|$)/g, '-$1'); // 2025-11-8
+        
+        const supremeStats = supremeQuery.get(dateWithZero, dateWithoutZero) as any;
+        
+        console.log('至尊场查询日期:', { 标准格式: dateWithZero, 兼容格式: dateWithoutZero });
 
         // 整理数据 - 统一使用snake_case（与数据库返回一致）
         const normal = normalAdvancedStats.find((s: any) => s.slot_mode === 'normal') || createEmptyStats();

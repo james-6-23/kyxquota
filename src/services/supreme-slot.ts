@@ -515,7 +515,9 @@ export function recordSupremeGame(
     ruleName: string | null = null  // 🔥 新增：规则名称
 ): void {
     const now = Date.now();
-    const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' }).replace(/\//g, '-');
+    // 🔥 修复：使用统一的getTodayDate函数，确保日期格式一致（YYYY-MM-DD，带前导0）
+    const { getTodayDate } = require('./slot');
+    const today = getTodayDate();
 
     supremeSlotQueries.insertRecord.run(
         linuxDoId,

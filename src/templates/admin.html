@@ -5677,7 +5677,7 @@
       event.target.classList.add('bg-indigo-100', 'text-indigo-700', 'font-semibold', 'active');
       event.target.classList.remove('text-slate-700');
 
-      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'rateLimitBans', 'kunbeiManagement', 'kunbeiRecords', 'weightConfigs', 'rewardConfigs', 'supremeConfig', 'supremeRecords', 'dropConfigs', 'achievementManagement', 'achievementLeaderboard'].forEach(s => {
+      ['dashboard', 'config', 'keys', 'claims', 'donates', 'slotRecords', 'advancedSlotRecords', 'slotConfig', 'advancedSlotConfig', 'ticketDropRecords', 'slotAnalytics', 'profitLeaderboard', 'lossLeaderboard', 'users', 'grantFreeSpins', 'pendingRewards', 'bannedUsers', 'rateLimitBans', 'kunbeiManagement', 'kunbeiRecords', 'weightConfigs', 'rewardConfigs', 'supremeConfig', 'supremeRecords', 'dropConfigs', 'achievementManagement', 'achievementLeaderboard', 'gameAnalytics'].forEach(s => {
         document.getElementById(s + 'Section').classList.add('hidden');
       });
       document.getElementById(section + 'Section').classList.remove('hidden');
@@ -5709,6 +5709,14 @@
       if (section === 'supremeConfig') loadSupremeConfig();
       if (section === 'supremeRecords') loadSupremeRecords();
       if (section === 'dropConfigs') loadDropConfigs();
+      if (section === 'gameAnalytics') {
+        // 延迟加载游戏数据分析，确保DOM渲染完成
+        setTimeout(() => {
+          if (!analyticsData) {
+            loadAnalytics('today');
+          }
+        }, 100);
+      }
     }
 
     // 老虎机配置管理
@@ -13462,22 +13470,6 @@ RTP (Return to Player)：
       }
     }
 
-    // 页面切换时自动加载数据（使用事件委托）
-    window.addEventListener('load', function() {
-      // 监听所有导航按钮点击
-      document.querySelectorAll('.nav-link').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const section = this.getAttribute('onclick');
-          if (section && section.includes('gameAnalytics')) {
-            setTimeout(() => {
-              if (!analyticsData) {
-                loadAnalytics('today');
-              }
-            }, 200);
-          }
-        });
-      });
-    });
 
   </script>
 </body>
