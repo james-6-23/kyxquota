@@ -2337,17 +2337,19 @@
         </button>
       </div>
       
-      <!-- 时间范围切换 -->
-      <div class="flex gap-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200">
-        <button id="dailyRangeBtn" onclick="switchLeaderboardRange('daily')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md">
-          📅 日榜
-        </button>
-        <button id="weeklyRangeBtn" onclick="switchLeaderboardRange('weekly')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
-          📊 周榜
-        </button>
-        <button id="totalRangeBtn" onclick="switchLeaderboardRange('total')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
-          🏆 总榜
-        </button>
+      <!-- 时间范围切换 - 下拉框 -->
+      <div class="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200">
+        <label for="leaderboardRangeSelect" class="text-sm font-semibold text-slate-700 whitespace-nowrap">
+          📊 排行榜类型：
+        </label>
+        <select 
+          id="leaderboardRangeSelect" 
+          onchange="switchLeaderboardRange(this.value)"
+          class="flex-1 px-4 py-2.5 text-sm font-semibold rounded-lg border-2 border-blue-300 bg-white text-slate-700 shadow-sm hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer">
+          <option value="daily">📅 日榜（今日数据）</option>
+          <option value="weekly">📊 周榜（本周数据）</option>
+          <option value="total">🏆 总榜（历史累计）</option>
+        </select>
       </div>
 
       <!-- 标签页切换 -->
@@ -7292,11 +7294,21 @@
     }
     
     // 显示排行榜
-    // 当前选择的时间范围（默认日榜）
-    let currentLeaderboardRange = 'daily';
+    // 当前选择的时间范围（从localStorage读取，默认日榜）
+    let currentLeaderboardRange = localStorage.getItem('leaderboardRange') || 'daily';
 
-    async function showLeaderboard(range = 'daily') {
+    async function showLeaderboard(range) {
+      // 如果没有传入range，使用当前保存的选择
+      if (!range) {
+        range = currentLeaderboardRange;
+      }
       currentLeaderboardRange = range;
+      
+      // 更新下拉框的选中值
+      const select = document.getElementById('leaderboardRangeSelect');
+      if (select) {
+        select.value = range;
+      }
       
       try {
         const res = await fetch(`/api/slot/leaderboard?limit=100&type=${range}`);
@@ -7499,32 +7511,16 @@
 
     // 切换排行榜时间范围
     function switchLeaderboardRange(range) {
-      // 更新按钮样式
-      const dailyBtn = document.getElementById('dailyRangeBtn');
-      const weeklyBtn = document.getElementById('weeklyRangeBtn');
-      const totalBtn = document.getElementById('totalRangeBtn');
-
-      // 重置所有按钮样式
-      [dailyBtn, weeklyBtn, totalBtn].forEach(btn => {
-        btn.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-500', 'text-white', 'shadow-md');
-        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      });
-
-      // 激活选中的按钮
-      let activeBtn;
-      if (range === 'daily') {
-        activeBtn = dailyBtn;
-      } else if (range === 'weekly') {
-        activeBtn = weeklyBtn;
-      } else {
-        activeBtn = totalBtn;
-      }
+      // 保存用户选择到localStorage
+      localStorage.setItem('leaderboardRange', range);
       
-      activeBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
-      activeBtn.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-500', 'text-white', 'shadow-md');
-
+      // 更新当前范围
+      currentLeaderboardRange = range;
+      
       // 重新加载排行榜数据
       showLeaderboard(range);
+      
+      console.log(`📊 排行榜类型已切换: ${range === 'daily' ? '日榜' : range === 'weekly' ? '周榜' : '总榜'}`);
     }
 
     // 切换排行榜标签页
