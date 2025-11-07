@@ -13,8 +13,8 @@ export const CONFIG = {
 
     // API 端点
     LINUX_DO_AUTH_URL: 'https://connect.linux.do/oauth2/authorize',
-    LINUX_DO_TOKEN_URL: 'https://connect.linux.do/oauth2/token',
-    LINUX_DO_USER_INFO_URL: 'https://connect.linux.do/api/user',
+    LINUX_DO_TOKEN_URL: 'https://connect.linuxdo.org/oauth2/token',
+    LINUX_DO_USER_INFO_URL: 'https://connect.linuxdo.org/api/user',
     KYX_API_BASE: 'https://api.kkyyxx.xyz',
     MODELSCOPE_API_BASE: 'https://api-inference.modelscope.cn/v1',
     IFLOW_API_BASE: 'https://apis.iflow.cn/v1',
