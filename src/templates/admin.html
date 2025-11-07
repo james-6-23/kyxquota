@@ -3308,6 +3308,9 @@
               <span class="text-sm text-slate-500">已选择 <span id="selectedCount">0</span> 条记录</span>
               
               <div class="ml-auto flex gap-2">
+                <button onclick="batchUnbanLoans()" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50" disabled id="batchUnbanBtn">
+                  🔓 一键解封
+                </button>
                 <button onclick="batchForgiveLoans()" class="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors text-sm font-medium disabled:opacity-50" disabled id="batchForgiveBtn">
                   🤝 批量免除
                 </button>
@@ -8626,6 +8629,7 @@
     function updateSelectedCount() {
       document.getElementById('selectedCount').textContent = selectedRecords.size;
       const hasSeletion = selectedRecords.size > 0;
+      document.getElementById('batchUnbanBtn').disabled = !hasSeletion;
       document.getElementById('batchForgiveBtn').disabled = !hasSeletion;
       document.getElementById('batchReminderBtn').disabled = !hasSeletion;
     }
@@ -8658,6 +8662,60 @@
       }
       
       showToast(`批量免除完成：成功 ${successCount} 条，失败 ${failCount} 条`, 'success');
+      selectedRecords.clear();
+      updateSelectedCount();
+      refreshKunbeiRecords();
+    }
+    
+    // 🔓 批量解封（解除逾期惩罚）
+    async function batchUnbanLoans() {
+      if (selectedRecords.size === 0) return;
+      
+      // 统计需要解封的记录数
+      const now = Date.now();
+      let needUnbanCount = 0;
+      const recordsToUnban = [];
+      
+      for (const loanId of selectedRecords) {
+        const record = kunbeiRecordsData.find(r => r.id === loanId);
+        if (record && record.overdue_penalty_until && record.overdue_penalty_until > now) {
+          needUnbanCount++;
+          recordsToUnban.push({ id: loanId, username: record.username });
+        }
+      }
+      
+      if (needUnbanCount === 0) {
+        showToast('选中的记录中没有需要解封的（无有效的逾期惩罚）', 'info');
+        return;
+      }
+      
+      if (!confirm(`确定要解封选中的 ${needUnbanCount} 条记录吗？\n\n解封后这些用户可以正常进入高级场和至尊场。\n\n注意：借款仍需还清，只是解除禁入惩罚。`)) {
+        return;
+      }
+      
+      let successCount = 0;
+      let failCount = 0;
+      
+      for (const { id: loanId, username } of recordsToUnban) {
+        try {
+          const res = await fetch(`/api/admin/kunbei/loans/${loanId}/clear-penalty`, {
+            method: 'POST'
+          });
+          
+          const data = await res.json();
+          if (data.success) {
+            successCount++;
+          } else {
+            failCount++;
+            console.error(`解封失败 - 用户: ${username}, 原因: ${data.message}`);
+          }
+        } catch (error) {
+          failCount++;
+          console.error(`解封失败 - 用户: ${username}, 错误:`, error);
+        }
+      }
+      
+      showToast(`批量解封完成：成功 ${successCount} 条，失败 ${failCount} 条`, successCount > 0 ? 'success' : 'error');
       selectedRecords.clear();
       updateSelectedCount();
       refreshKunbeiRecords();
