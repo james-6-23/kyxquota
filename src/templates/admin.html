@@ -6,6 +6,8 @@
   <title>管理后台 - KYX API Refueling Station</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>⚙️</text></svg>">
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for data visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -362,6 +364,21 @@
               </button>
               <button onclick="showSection('achievementLeaderboard')" data-search="成就排行榜 achievement leaderboard 排行" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
                 <span>🏅</span> <span>成就排行榜</span>
+              </button>
+            </div>
+          </details>
+
+          <!-- 📊 数据分析 -->
+          <details class="mb-4 group">
+            <summary class="px-3 py-2 text-xs font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:text-slate-700 flex items-center gap-2">
+              <svg class="w-3 h-3 transform transition-transform group-open:rotate-90" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+              </svg>
+              <span>📊 数据分析</span>
+            </summary>
+            <div class="mt-1">
+              <button onclick="showSection('gameAnalytics')" data-search="游戏数据分析 analytics 统计 收益" class="nav-link w-full text-left px-4 py-2.5 rounded-lg mb-1 hover:bg-slate-100 text-slate-700 flex items-center gap-2 transition-all">
+                <span>📊</span> <span>游戏数据分析</span>
               </button>
             </div>
           </details>
@@ -2762,6 +2779,191 @@
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📊 游戏数据分析 Section -->
+        <div id="gameAnalyticsSection" class="hidden">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-slate-900">📊 游戏数据分析</h2>
+            <div class="flex gap-2">
+              <button onclick="loadAnalytics('today')" id="todayBtn" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm font-semibold">今日</button>
+              <button onclick="loadAnalytics('7days')" id="7daysBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">近7天</button>
+              <button onclick="loadAnalytics('30days')" id="30daysBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold">近30天</button>
+              <button onclick="refreshAnalytics()" class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-semibold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                刷新
+              </button>
+            </div>
+          </div>
+
+          <!-- 概览卡片 -->
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+            <!-- 游玩次数 -->
+            <div class="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>🎮</span>
+                <span>今日游玩</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="totalSpins">-</div>
+              <div class="text-xs opacity-75" id="spinsChange">-</div>
+            </div>
+            
+            <!-- 活跃用户 -->
+            <div class="bg-gradient-to-br from-purple-500 to-pink-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>👥</span>
+                <span>活跃用户</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="activeUsers">-</div>
+              <div class="text-xs opacity-75" id="usersChange">-</div>
+            </div>
+            
+            <!-- 系统收益 -->
+            <div class="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>💰</span>
+                <span>系统收益</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="systemProfit">-</div>
+              <div class="text-xs opacity-75" id="profitChange">-</div>
+            </div>
+            
+            <!-- 总投注 -->
+            <div class="bg-gradient-to-br from-orange-500 to-red-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>💵</span>
+                <span>总投注</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="totalBet">-</div>
+              <div class="text-xs opacity-75" id="betChange">-</div>
+            </div>
+            
+            <!-- 总奖金 -->
+            <div class="bg-gradient-to-br from-yellow-500 to-amber-600 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>🎁</span>
+                <span>总奖金</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="totalWin">-</div>
+              <div class="text-xs opacity-75" id="winChange">-</div>
+            </div>
+            
+            <!-- RTP -->
+            <div class="bg-gradient-to-br from-slate-600 to-slate-800 rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-all">
+              <div class="text-sm opacity-90 mb-1 flex items-center gap-1">
+                <span>📈</span>
+                <span>RTP</span>
+              </div>
+              <div class="text-3xl font-bold mb-1" id="systemRTP">-</div>
+              <div class="text-xs opacity-75">玩家回报率</div>
+            </div>
+          </div>
+
+          <!-- 场次标签页 -->
+          <div class="flex gap-2 mb-6 border-b border-slate-200">
+            <button onclick="switchModeTab('all')" id="allModeTab" class="px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 transition-all">
+              📊 全部场次
+            </button>
+            <button onclick="switchModeTab('normal')" id="normalModeTab" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
+              🎮 初级场
+            </button>
+            <button onclick="switchModeTab('advanced')" id="advancedModeTab" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
+              💎 高级场
+            </button>
+            <button onclick="switchModeTab('supreme')" id="supremeModeTab" class="px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all">
+              👑 至尊场
+            </button>
+          </div>
+
+          <!-- 场次详细数据 -->
+          <div id="modeDetailContent" class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- 左侧：统计卡片 -->
+            <div class="space-y-4">
+              <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span>📊</span>
+                  <span>活跃度数据</span>
+                </h3>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">游玩次数</span>
+                    <span class="text-2xl font-bold text-blue-600" id="modeSpins">-</span>
+                  </div>
+                  <div class="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">活跃用户</span>
+                    <span class="text-2xl font-bold text-purple-600" id="modeUsers">-</span>
+                  </div>
+                  <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">人均游玩</span>
+                    <span class="text-2xl font-bold text-indigo-600" id="modeAvgSpins">-</span>
+                  </div>
+                </div>
+              </div>
+              
+              <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span>💰</span>
+                  <span>收益数据</span>
+                </h3>
+                <div class="space-y-3">
+                  <div class="flex justify-between items-center p-3 bg-orange-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">总投注</span>
+                    <span class="text-2xl font-bold text-orange-600" id="modeTotalBet">-</span>
+                  </div>
+                  <div class="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">总奖金</span>
+                    <span class="text-2xl font-bold text-yellow-600" id="modeTotalWin">-</span>
+                  </div>
+                  <div class="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">系统收益</span>
+                    <span class="text-2xl font-bold text-green-600" id="modeProfit">-</span>
+                  </div>
+                  <div class="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                    <span class="text-slate-700 font-medium">RTP</span>
+                    <span class="text-2xl font-bold text-slate-700" id="modeRTP">-</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- 右侧：饼图 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span>📊</span>
+                <span>场次占比分析</span>
+              </h3>
+              <div class="relative" style="height: 400px;">
+                <canvas id="modeDistributionChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- 趋势图表 -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- 游玩次数趋势 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span>📈</span>
+                <span>游玩次数趋势</span>
+              </h3>
+              <div class="relative" style="height: 300px;">
+                <canvas id="spinsTrendChart"></canvas>
+              </div>
+            </div>
+            
+            <!-- 收益趋势 -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                <span>💰</span>
+                <span>系统收益趋势</span>
+              </h3>
+              <div class="relative" style="height: 300px;">
+                <canvas id="profitTrendChart"></canvas>
+              </div>
             </div>
           </div>
         </div>
@@ -12828,6 +13030,435 @@ RTP (Return to Player)：
         `;
       }).join('');
     }
+
+    // ========== 游戏数据分析功能 ==========
+    
+    let currentTimeRange = 'today';
+    let currentModeTab = 'all';
+    let analyticsData = null;
+    let chartInstances = {};
+
+    // 加载数据分析
+    async function loadAnalytics(range = 'today') {
+      currentTimeRange = range;
+      
+      try {
+        // 更新按钮状态
+        ['todayBtn', '7daysBtn', '30daysBtn'].forEach(id => {
+          const btn = document.getElementById(id);
+          if (id === range + 'Btn' || (range === 'today' && id === 'todayBtn')) {
+            btn.className = 'px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm font-semibold';
+          } else {
+            btn.className = 'px-4 py-2 bg-slate-200 text-slate-700 rounded-lg hover:bg-slate-300 transition-colors font-semibold';
+          }
+        });
+        
+        // 加载今日统计
+        const todayRes = await fetch('/api/admin/analytics/today');
+        const todayData = await todayRes.json();
+        
+        if (todayData.success) {
+          analyticsData = todayData.data;
+          updateOverviewCards(todayData.data);
+          updateModeDetails(currentModeTab);
+          updateModeDistributionChart(todayData.data);
+        } else {
+          showToast(todayData.message || '加载数据失败', 'error');
+          return;
+        }
+        
+        // 加载趋势数据
+        if (range !== 'today') {
+          const days = range === '7days' ? 7 : 30;
+          const trendRes = await fetch(`/api/admin/analytics/trend?days=${days}`);
+          const trendData = await trendRes.json();
+          
+          if (trendData.success) {
+            updateTrendCharts(trendData.data);
+          }
+        } else {
+          // 今日模式下清空趋势图
+          updateTrendCharts(null);
+        }
+        
+      } catch (error) {
+        console.error('加载数据分析失败:', error);
+        showToast('加载数据失败', 'error');
+      }
+    }
+
+    // 刷新数据分析
+    function refreshAnalytics() {
+      loadAnalytics(currentTimeRange);
+      showToast('数据已刷新', 'success');
+    }
+
+    // 更新概览卡片
+    function updateOverviewCards(data) {
+      // 游玩次数
+      document.getElementById('totalSpins').textContent = data.total.spins.toLocaleString();
+      document.getElementById('spinsChange').innerHTML = formatChange(data.comparison.spins);
+      
+      // 活跃用户
+      document.getElementById('activeUsers').textContent = data.total.activeUsers.toLocaleString();
+      document.getElementById('usersChange').innerHTML = formatChange(data.comparison.activeUsers);
+      
+      // 系统收益
+      const profitValue = data.total.profit / 500000;
+      const profitColor = profitValue >= 0 ? 'text-green-400' : 'text-red-400';
+      document.getElementById('systemProfit').textContent = `${profitValue >= 0 ? '+' : ''}$${profitValue.toFixed(2)}`;
+      document.getElementById('profitChange').innerHTML = formatChange(data.comparison.profit);
+      
+      // 总投注
+      document.getElementById('totalBet').textContent = `$${(data.total.totalBet / 500000).toFixed(2)}`;
+      document.getElementById('betChange').innerHTML = formatChange(data.comparison.totalBet);
+      
+      // 总奖金
+      document.getElementById('totalWin').textContent = `$${(data.total.totalWin / 500000).toFixed(2)}`;
+      document.getElementById('winChange').innerHTML = formatChange(data.comparison.totalWin);
+      
+      // RTP
+      document.getElementById('systemRTP').textContent = `${data.total.rtp.toFixed(1)}%`;
+    }
+
+    // 格式化变化百分比
+    function formatChange(change) {
+      if (!change) return '-';
+      
+      const icon = change.trend === 'up' ? '↑' : change.trend === 'down' ? '↓' : '→';
+      const color = change.trend === 'up' ? 'text-green-400' : 
+                    change.trend === 'down' ? 'text-red-400' : 'text-slate-400';
+      return `<span class="${color}">${icon} ${change.change.toFixed(1)}%</span>`;
+    }
+
+    // 切换场次标签
+    function switchModeTab(mode) {
+      currentModeTab = mode;
+      
+      // 更新标签样式
+      ['allModeTab', 'normalModeTab', 'advancedModeTab', 'supremeModeTab'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (id.startsWith(mode) || (mode === 'all' && id === 'allModeTab')) {
+          btn.className = 'px-6 py-3 font-semibold border-b-2 border-blue-600 text-blue-600 transition-all';
+        } else {
+          btn.className = 'px-6 py-3 font-semibold border-b-2 border-transparent text-slate-600 hover:text-slate-900 transition-all';
+        }
+      });
+      
+      // 更新详情数据
+      updateModeDetails(mode);
+    }
+
+    // 更新场次详情
+    function updateModeDetails(mode) {
+      if (!analyticsData) return;
+      
+      let data;
+      if (mode === 'all') {
+        data = analyticsData.total;
+      } else {
+        data = analyticsData[mode];
+      }
+      
+      // 游玩次数
+      document.getElementById('modeSpins').textContent = data.spins ? data.spins.toLocaleString() + ' 次' : '-';
+      
+      // 活跃用户
+      const users = data.activeUsers || data.active_users || 0;
+      document.getElementById('modeUsers').textContent = users.toLocaleString() + ' 人';
+      
+      // 人均游玩
+      const avgSpins = users > 0 ? (data.spins / users).toFixed(2) : '0';
+      document.getElementById('modeAvgSpins').textContent = avgSpins + ' 次';
+      
+      // 总投注
+      const totalBet = data.totalBet || data.total_bet || 0;
+      document.getElementById('modeTotalBet').textContent = `$${(totalBet / 500000).toFixed(2)}`;
+      
+      // 总奖金
+      const totalWin = data.totalWin || data.total_win || 0;
+      document.getElementById('modeTotalWin').textContent = `$${(totalWin / 500000).toFixed(2)}`;
+      
+      // 系统收益
+      const profit = data.profit || 0;
+      document.getElementById('modeProfit').textContent = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+      
+      // RTP
+      const rtp = data.rtp || 0;
+      document.getElementById('modeRTP').textContent = `${rtp.toFixed(1)}%`;
+    }
+
+    // 更新场次占比饼图
+    function updateModeDistributionChart(data) {
+      const ctx = document.getElementById('modeDistributionChart');
+      if (!ctx) return;
+      
+      // 销毁旧图表
+      if (chartInstances.distribution) {
+        chartInstances.distribution.destroy();
+      }
+      
+      chartInstances.distribution = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['🎮 初级场', '💎 高级场', '👑 至尊场'],
+          datasets: [{
+            data: [
+              data.normal.spins || 0,
+              data.advanced.spins || 0,
+              data.supreme.spins || 0
+            ],
+            backgroundColor: [
+              '#3b82f6',  // 蓝色
+              '#8b5cf6',  // 紫色
+              '#f59e0b'   // 金色
+            ],
+            borderWidth: 3,
+            borderColor: '#fff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                usePointStyle: true,
+                padding: 20,
+                font: {
+                  size: 14,
+                  weight: 'bold'
+                }
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.raw;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = total > 0 ? ((value / total) * 100).toFixed(1) : '0.0';
+                  return `${context.label}: ${value.toLocaleString()}次 (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 更新趋势图表
+    function updateTrendCharts(data) {
+      if (!data) {
+        // 清空图表
+        const ctx1 = document.getElementById('spinsTrendChart');
+        const ctx2 = document.getElementById('profitTrendChart');
+        
+        if (chartInstances.spinsTrend) {
+          chartInstances.spinsTrend.destroy();
+          chartInstances.spinsTrend = null;
+        }
+        if (chartInstances.profitTrend) {
+          chartInstances.profitTrend.destroy();
+          chartInstances.profitTrend = null;
+        }
+        
+        // 显示提示文本
+        if (ctx1) {
+          const parent1 = ctx1.parentElement;
+          parent1.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400">选择"近7天"或"近30天"查看趋势</div>';
+        }
+        if (ctx2) {
+          const parent2 = ctx2.parentElement;
+          parent2.innerHTML = '<div class="flex items-center justify-center h-full text-slate-400">选择"近7天"或"近30天"查看趋势</div>';
+        }
+        return;
+      }
+      
+      // 确保canvas元素存在
+      const parent1 = document.querySelector('#spinsTrendChart')?.parentElement;
+      const parent2 = document.querySelector('#profitTrendChart')?.parentElement;
+      
+      if (parent1 && !document.getElementById('spinsTrendChart')) {
+        parent1.innerHTML = '<canvas id="spinsTrendChart"></canvas>';
+      }
+      if (parent2 && !document.getElementById('profitTrendChart')) {
+        parent2.innerHTML = '<canvas id="profitTrendChart"></canvas>';
+      }
+      
+      // 游玩次数趋势图
+      const ctx1 = document.getElementById('spinsTrendChart');
+      if (ctx1) {
+        if (chartInstances.spinsTrend) {
+          chartInstances.spinsTrend.destroy();
+        }
+        
+        chartInstances.spinsTrend = new Chart(ctx1, {
+          type: 'line',
+          data: {
+            labels: data.dates,
+            datasets: [
+              {
+                label: '初级场',
+                data: data.normal.spins,
+                borderColor: '#3b82f6',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2
+              },
+              {
+                label: '高级场',
+                data: data.advanced.spins,
+                borderColor: '#8b5cf6',
+                backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2
+              },
+              {
+                label: '至尊场',
+                data: data.supreme.spins,
+                borderColor: '#f59e0b',
+                backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                tension: 0.4,
+                fill: true,
+                borderWidth: 2
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  padding: 15,
+                  font: {
+                    size: 12,
+                    weight: 'bold'
+                  }
+                }
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: ${context.parsed.y} 次`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return value.toLocaleString() + ' 次';
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+      
+      // 系统收益趋势图
+      const ctx2 = document.getElementById('profitTrendChart');
+      if (ctx2) {
+        if (chartInstances.profitTrend) {
+          chartInstances.profitTrend.destroy();
+        }
+        
+        chartInstances.profitTrend = new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: data.dates,
+            datasets: [
+              {
+                label: '初级场',
+                data: data.normal.profit.map(p => (p / 500000).toFixed(2)),
+                backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                borderColor: '#3b82f6',
+                borderWidth: 1
+              },
+              {
+                label: '高级场',
+                data: data.advanced.profit.map(p => (p / 500000).toFixed(2)),
+                backgroundColor: 'rgba(139, 92, 246, 0.8)',
+                borderColor: '#8b5cf6',
+                borderWidth: 1
+              },
+              {
+                label: '至尊场',
+                data: data.supreme.profit.map(p => (p / 500000).toFixed(2)),
+                backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                borderColor: '#f59e0b',
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'top',
+                labels: {
+                  usePointStyle: true,
+                  padding: 15,
+                  font: {
+                    size: 12,
+                    weight: 'bold'
+                  }
+                }
+              },
+              tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                  label: function(context) {
+                    return `${context.dataset.label}: $${parseFloat(context.parsed.y).toFixed(2)}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                stacked: true
+              },
+              y: {
+                stacked: true,
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return '$' + value.toFixed(0);
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // 自动加载数据分析（当切换到该页面时）
+    const originalShowSection = showSection;
+    showSection = function(sectionName) {
+      originalShowSection(sectionName);
+      
+      if (sectionName === 'gameAnalytics') {
+        // 延迟加载，确保DOM渲染完成
+        setTimeout(() => {
+          if (!analyticsData) {
+            loadAnalytics('today');
+          }
+        }, 100);
+      }
+    };
 
   </script>
 </body>

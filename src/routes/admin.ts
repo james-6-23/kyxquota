@@ -3956,6 +3956,76 @@ app.get('/rate-limit-bans/stats', requireAdmin, async (c) => {
     }
 });
 
+// ========== 游戏数据分析接口 ==========
+
+/**
+ * 获取今日游戏统计
+ */
+app.get('/analytics/today', requireAdmin, async (c) => {
+    try {
+        const { getTodayGameStats, getYesterdayComparison } = await import('../services/analytics');
+
+        const todayStats = getTodayGameStats();
+        const comparison = getYesterdayComparison();
+
+        return c.json({
+            success: true,
+            data: {
+                ...todayStats,
+                comparison
+            }
+        });
+    } catch (error: any) {
+        logger.error('数据分析', '获取今日统计失败', error);
+        return c.json({ success: false, message: '获取统计失败: ' + error.message }, 500);
+    }
+});
+
+/**
+ * 获取历史趋势数据
+ */
+app.get('/analytics/trend', requireAdmin, async (c) => {
+    try {
+        const days = parseInt(c.req.query('days') || '7');
+        const { getGameTrendStats } = await import('../services/analytics');
+
+        const trendData = getGameTrendStats(days);
+
+        return c.json({
+            success: true,
+            data: trendData
+        });
+    } catch (error: any) {
+        logger.error('数据分析', '获取趋势数据失败', error);
+        return c.json({ success: false, message: '获取趋势失败: ' + error.message }, 500);
+    }
+});
+
+/**
+ * 获取场次详情
+ */
+app.get('/analytics/mode/:mode', requireAdmin, async (c) => {
+    try {
+        const mode = c.req.param('mode') as 'normal' | 'advanced' | 'supreme';
+        const date = c.req.query('date');
+        const { getModeDetails, getTodayDate } = await import('../services/analytics');
+
+        const details = getModeDetails(mode, date);
+
+        return c.json({
+            success: true,
+            data: {
+                mode,
+                date: date || getTodayDate(),
+                stats: details
+            }
+        });
+    } catch (error: any) {
+        logger.error('数据分析', '获取场次详情失败', error);
+        return c.json({ success: false, message: '获取详情失败: ' + error.message }, 500);
+    }
+});
+
 export default app;
 
 
