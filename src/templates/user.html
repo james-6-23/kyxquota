@@ -1730,6 +1730,17 @@
               </button>
             </div>
           </div>
+          <!-- 榜单类型选择 -->
+          <div class="mb-2">
+            <select 
+              id="lossBoardRangeSelect" 
+              onchange="switchSidebarLeaderboardRange(this.value)"
+              class="w-full px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all cursor-pointer">
+              <option value="daily">📅 日榜</option>
+              <option value="weekly">📊 周榜</option>
+              <option value="total">🏆 总榜</option>
+            </select>
+          </div>
           <p class="text-xs text-white/70 text-center">最亏损用户top20</p>
           <p id="profitBoardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
         </div>
@@ -1776,6 +1787,17 @@
                 </svg>
               </button>
             </div>
+          </div>
+          <!-- 榜单类型选择 -->
+          <div class="mb-2">
+            <select 
+              id="sidebarLeaderboardRangeSelect" 
+              onchange="switchSidebarLeaderboardRange(this.value)"
+              class="w-full px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/10 text-white border border-white/20 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-green-400 transition-all cursor-pointer">
+              <option value="daily">📅 日榜</option>
+              <option value="weekly">📊 周榜</option>
+              <option value="total">🏆 总榜</option>
+            </select>
           </div>
           <p class="text-xs text-white/70 text-center">按总盈亏排名（总赢得 - 总投注）</p>
           <p id="leaderboardLastUpdate" class="text-xs text-white/50 text-center mt-1">--</p>
@@ -5081,9 +5103,24 @@
     let userDataCache = {};
 
     // 加载侧边栏排行榜
-    async function loadSidebarLeaderboard(forceRefresh = false) {
+    // 侧边栏排行榜当前类型（从localStorage读取，默认日榜）
+    let currentSidebarLeaderboardRange = localStorage.getItem('sidebarLeaderboardRange') || 'daily';
+
+    async function loadSidebarLeaderboard(forceRefresh = false, range) {
+      // 如果没有传入range，使用当前保存的选择
+      if (!range) {
+        range = currentSidebarLeaderboardRange;
+      }
+      currentSidebarLeaderboardRange = range;
+      
+      // 更新两个下拉框的选中值
+      const rightSelect = document.getElementById('sidebarLeaderboardRangeSelect');
+      const leftSelect = document.getElementById('lossBoardRangeSelect');
+      if (rightSelect) rightSelect.value = range;
+      if (leftSelect) leftSelect.value = range;
+      
       try {
-        const res = await fetch('/api/slot/leaderboard?limit=10');
+        const res = await fetch(`/api/slot/leaderboard?limit=10&type=${range}`);
         const data = await res.json();
 
         if (!data.success) {
@@ -5281,6 +5318,26 @@
         content.style.display = 'none';
         icon.style.transform = 'rotate(180deg)';
       }
+    }
+
+    // 切换侧边栏排行榜类型
+    function switchSidebarLeaderboardRange(range) {
+      // 保存用户选择到localStorage
+      localStorage.setItem('sidebarLeaderboardRange', range);
+      
+      // 更新当前范围
+      currentSidebarLeaderboardRange = range;
+      
+      // 同步更新两个下拉框的选中值
+      const rightSelect = document.getElementById('sidebarLeaderboardRangeSelect');
+      const leftSelect = document.getElementById('lossBoardRangeSelect');
+      if (rightSelect) rightSelect.value = range;
+      if (leftSelect) leftSelect.value = range;
+      
+      // 重新加载排行榜数据
+      loadSidebarLeaderboard(false, range);
+      
+      console.log(`📊 侧边栏排行榜类型已切换: ${range === 'daily' ? '日榜' : range === 'weekly' ? '周榜' : '总榜'}`);
     }
 
     // 收起/展开盈利榜
