@@ -60,14 +60,14 @@ export function getGameStatsByDate(date: string) {
         
         const supremeStats = supremeQuery.get(date) as any;
 
-        // 整理数据
+        // 整理数据 - 统一使用snake_case（与数据库返回一致）
         const normal = normalAdvancedStats.find((s: any) => s.slot_mode === 'normal') || createEmptyStats();
         const advanced = normalAdvancedStats.find((s: any) => s.slot_mode === 'advanced') || createEmptyStats();
         const supreme = supremeStats ? {
             spins: supremeStats.spins || 0,
-            activeUsers: supremeStats.active_users || 0,
-            totalBet: supremeStats.total_bet || 0,
-            totalWin: supremeStats.total_win || 0,
+            active_users: supremeStats.active_users || 0,
+            total_bet: supremeStats.total_bet || 0,
+            total_win: supremeStats.total_win || 0,
             profit: supremeStats.profit || 0,
             rtp: 0
         } : createEmptyStats();
@@ -75,9 +75,10 @@ export function getGameStatsByDate(date: string) {
         // 计算RTP
         normal.rtp = normal.total_bet > 0 ? (normal.total_win / normal.total_bet) * 100 : 0;
         advanced.rtp = advanced.total_bet > 0 ? (advanced.total_win / advanced.total_bet) * 100 : 0;
-        supreme.rtp = supreme.totalBet > 0 ? (supreme.totalWin / supreme.totalBet) * 100 : 0;
+        supreme.rtp = supreme.total_bet > 0 ? (supreme.total_win / supreme.total_bet) * 100 : 0;
         
-        console.log('至尊场统计:', supreme);
+        console.log('至尊场原始数据:', supremeStats);
+        console.log('至尊场整理后:', supreme);
 
         // 计算占比
         const totalSpins = normal.spins + advanced.spins + supreme.spins;
@@ -101,8 +102,8 @@ export function getGameStatsByDate(date: string) {
         const total = {
             spins: totalSpins,
             activeUsers: uniqueUsers?.count || 0,
-            totalBet: (normal.total_bet || 0) + (advanced.total_bet || 0) + (supreme.totalBet || 0),
-            totalWin: (normal.total_win || 0) + (advanced.total_win || 0) + (supreme.totalWin || 0),
+            totalBet: (normal.total_bet || 0) + (advanced.total_bet || 0) + (supreme.total_bet || 0),
+            totalWin: (normal.total_win || 0) + (advanced.total_win || 0) + (supreme.total_win || 0),
             profit: (normal.profit || 0) + (advanced.profit || 0) + (supreme.profit || 0),
             rtp: 0,
             avgBetPerSpin: 0,
@@ -117,7 +118,9 @@ export function getGameStatsByDate(date: string) {
             总游玩: totalSpins,
             初级场: normal.spins,
             高级场: advanced.spins,
-            至尊场: supreme.spins
+            至尊场: supreme.spins,
+            至尊场投注: supreme.total_bet,
+            至尊场奖金: supreme.total_win
         });
 
         return {

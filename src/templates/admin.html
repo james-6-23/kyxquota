@@ -13028,12 +13028,21 @@ RTP (Return to Player)：
 
     // 加载数据分析
     async function loadAnalytics(range = 'today') {
+      console.log('开始加载数据分析:', range);
       currentTimeRange = range;
+      
+      // 检查是否在数据分析页面
+      const analyticsSection = document.getElementById('gameAnalyticsSection');
+      if (!analyticsSection || analyticsSection.classList.contains('hidden')) {
+        console.warn('游戏数据分析页面未显示，跳过加载');
+        return;
+      }
       
       try {
         // 更新按钮状态
         ['todayBtn', '7daysBtn', '30daysBtn'].forEach(id => {
           const btn = document.getElementById(id);
+          if (!btn) return;
           if (id === range + 'Btn' || (range === 'today' && id === 'todayBtn')) {
             btn.className = 'px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-sm font-semibold';
           } else {
@@ -13042,8 +13051,10 @@ RTP (Return to Player)：
         });
         
         // 加载今日统计
+        console.log('请求API: /api/admin/analytics/today');
         const todayRes = await fetch('/api/admin/analytics/today');
         const todayData = await todayRes.json();
+        console.log('API响应:', todayData);
         
         if (todayData.success) {
           analyticsData = todayData.data;
@@ -13083,6 +13094,8 @@ RTP (Return to Player)：
 
     // 更新概览卡片
     function updateOverviewCards(data) {
+      console.log('更新概览卡片 - 数据:', data);
+      
       // 游玩次数
       document.getElementById('totalSpins').textContent = data.total.spins.toLocaleString();
       document.getElementById('spinsChange').innerHTML = formatChange(data.comparison.spins);
@@ -13107,6 +13120,8 @@ RTP (Return to Player)：
       
       // RTP
       document.getElementById('systemRTP').textContent = `${data.total.rtp.toFixed(1)}%`;
+      
+      console.log('至尊场数据:', data.supreme);
     }
 
     // 格式化变化百分比
@@ -13121,6 +13136,7 @@ RTP (Return to Player)：
 
     // 切换场次标签
     function switchModeTab(mode) {
+      console.log('切换场次标签:', mode);
       currentModeTab = mode;
       
       // 更新标签样式
@@ -13139,7 +13155,10 @@ RTP (Return to Player)：
 
     // 更新场次详情
     function updateModeDetails(mode) {
-      if (!analyticsData) return;
+      if (!analyticsData) {
+        console.warn('analyticsData 未加载');
+        return;
+      }
       
       let data;
       if (mode === 'all') {
@@ -13148,15 +13167,23 @@ RTP (Return to Player)：
         data = analyticsData[mode];
       }
       
+      console.log(`更新${mode}场次详情:`, data);
+      
+      if (!data) {
+        console.error(`${mode} 场次数据不存在`);
+        return;
+      }
+      
       // 游玩次数
-      document.getElementById('modeSpins').textContent = data.spins ? data.spins.toLocaleString() + ' 次' : '-';
+      const spins = data.spins || 0;
+      document.getElementById('modeSpins').textContent = spins ? spins.toLocaleString() + ' 次' : '-';
       
       // 活跃用户
       const users = data.activeUsers || data.active_users || 0;
       document.getElementById('modeUsers').textContent = users.toLocaleString() + ' 人';
       
       // 人均游玩
-      const avgSpins = users > 0 ? (data.spins / users).toFixed(2) : '0';
+      const avgSpins = users > 0 ? (spins / users).toFixed(2) : '0';
       document.getElementById('modeAvgSpins').textContent = avgSpins + ' 次';
       
       // 总投注
@@ -13174,6 +13201,8 @@ RTP (Return to Player)：
       // RTP
       const rtp = data.rtp || 0;
       document.getElementById('modeRTP').textContent = `${rtp.toFixed(1)}%`;
+      
+      console.log(`${mode}场次更新完成 - 游玩:${spins}, 用户:${users}, RTP:${rtp.toFixed(1)}%`);
     }
 
     // 更新场次占比饼图
@@ -13433,24 +13462,21 @@ RTP (Return to Player)：
       }
     }
 
-    // 页面切换时的钩子（不覆盖原函数）
-    document.addEventListener('DOMContentLoaded', function() {
-      const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-          if (mutation.target.id === 'gameAnalyticsSection' && 
-              !mutation.target.classList.contains('hidden')) {
-            // 游戏数据分析页面被显示
-            if (!analyticsData) {
-              setTimeout(() => loadAnalytics('today'), 100);
-            }
+    // 页面切换时自动加载数据（使用事件委托）
+    window.addEventListener('load', function() {
+      // 监听所有导航按钮点击
+      document.querySelectorAll('.nav-link').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const section = this.getAttribute('onclick');
+          if (section && section.includes('gameAnalytics')) {
+            setTimeout(() => {
+              if (!analyticsData) {
+                loadAnalytics('today');
+              }
+            }, 200);
           }
         });
       });
-      
-      const gameAnalyticsSection = document.getElementById('gameAnalyticsSection');
-      if (gameAnalyticsSection) {
-        observer.observe(gameAnalyticsSection, { attributes: true, attributeFilter: ['class'] });
-      }
     });
 
   </script>
