@@ -63,12 +63,21 @@ export function getGameStatsByDate(date: string) {
         // 整理数据
         const normal = normalAdvancedStats.find((s: any) => s.slot_mode === 'normal') || createEmptyStats();
         const advanced = normalAdvancedStats.find((s: any) => s.slot_mode === 'advanced') || createEmptyStats();
-        const supreme = supremeStats || createEmptyStats();
+        const supreme = supremeStats ? {
+            spins: supremeStats.spins || 0,
+            activeUsers: supremeStats.active_users || 0,
+            totalBet: supremeStats.total_bet || 0,
+            totalWin: supremeStats.total_win || 0,
+            profit: supremeStats.profit || 0,
+            rtp: 0
+        } : createEmptyStats();
 
         // 计算RTP
         normal.rtp = normal.total_bet > 0 ? (normal.total_win / normal.total_bet) * 100 : 0;
         advanced.rtp = advanced.total_bet > 0 ? (advanced.total_win / advanced.total_bet) * 100 : 0;
-        supreme.rtp = supreme.total_bet > 0 ? (supreme.total_win / supreme.total_bet) * 100 : 0;
+        supreme.rtp = supreme.totalBet > 0 ? (supreme.totalWin / supreme.totalBet) * 100 : 0;
+        
+        console.log('至尊场统计:', supreme);
 
         // 计算占比
         const totalSpins = normal.spins + advanced.spins + supreme.spins;
@@ -92,9 +101,9 @@ export function getGameStatsByDate(date: string) {
         const total = {
             spins: totalSpins,
             activeUsers: uniqueUsers?.count || 0,
-            totalBet: normal.total_bet + advanced.total_bet + supreme.total_bet,
-            totalWin: normal.total_win + advanced.total_win + supreme.total_win,
-            profit: normal.profit + advanced.profit + supreme.profit,
+            totalBet: (normal.total_bet || 0) + (advanced.total_bet || 0) + (supreme.totalBet || 0),
+            totalWin: (normal.total_win || 0) + (advanced.total_win || 0) + (supreme.totalWin || 0),
+            profit: (normal.profit || 0) + (advanced.profit || 0) + (supreme.profit || 0),
             rtp: 0,
             avgBetPerSpin: 0,
             avgBetPerUser: 0
@@ -103,6 +112,13 @@ export function getGameStatsByDate(date: string) {
         total.rtp = total.totalBet > 0 ? (total.totalWin / total.totalBet) * 100 : 0;
         total.avgBetPerSpin = total.spins > 0 ? total.totalBet / total.spins : 0;
         total.avgBetPerUser = total.activeUsers > 0 ? total.totalBet / total.activeUsers : 0;
+
+        console.log('统计汇总:', {
+            总游玩: totalSpins,
+            初级场: normal.spins,
+            高级场: advanced.spins,
+            至尊场: supreme.spins
+        });
 
         return {
             date,
