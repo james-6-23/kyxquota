@@ -19,7 +19,7 @@ import {
     recordSupremeGame,
     getTodaySupremeBet
 } from '../services/supreme-slot';
-import { updateUserTotalStats, isUserBanned } from '../services/slot';
+import { updateUserTotalStats, updateUserDailyStats, updateUserWeeklyStats, isUserBanned } from '../services/slot';
 import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
@@ -331,6 +331,26 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
         // 🔥 更新用户总统计（用于排行榜）- 修复至尊场盈利未计入排行榜的问题
         const displayUsername = session.username || user.linux_do_username || user.username;
         updateUserTotalStats(
+            session.linux_do_id!,
+            displayUsername,
+            session.avatar_url || '',
+            betAmount,
+            winAmount,
+            winResult.winType
+        );
+
+        // 更新用户日榜统计
+        updateUserDailyStats(
+            session.linux_do_id!,
+            displayUsername,
+            session.avatar_url || '',
+            betAmount,
+            winAmount,
+            winResult.winType
+        );
+
+        // 更新用户周榜统计
+        updateUserWeeklyStats(
             session.linux_do_id!,
             displayUsername,
             session.avatar_url || '',
