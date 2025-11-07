@@ -391,7 +391,7 @@ export function getUserTodaySpins(linuxDoId: string, date?: string): number {
  */
 export function getUserTodayBet(linuxDoId: string, date?: string): number {
     const today = date || getTodayDate();
-    const result = slotQueries.getTodayStats.get(linuxDoId, today);
+    const result = slotQueries.getAdvancedTodayBet.get(linuxDoId, today);
     return result?.total_bet || 0;
 }
 
@@ -734,5 +734,246 @@ export function getUserLossRank(linuxDoId: string): number {
  */
 export function getUserTotalStats(linuxDoId: string) {
     return slotQueries.getUserStats.get(linuxDoId);
+}
+
+/**
+ * 获取当周起始日期（周一，北京时间）
+ */
+export function getWeekStart(): string {
+    // 使用北京时间（UTC+8）
+    const now = new Date();
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const beijingTime = new Date(utcTime + 8 * 3600000);
+    
+    // 获取当前是星期几（0=周日, 1=周一, ..., 6=周六）
+    const day = beijingTime.getDay();
+    // 计算与周一的差距
+    const diff = day === 0 ? -6 : 1 - day; // 周日则往回推6天，其他往回推到周一
+    
+    // 设置为本周周一的日期
+    beijingTime.setDate(beijingTime.getDate() + diff);
+    
+    // 返回 YYYY-MM-DD 格式
+    return beijingTime.toISOString().split('T')[0];
+}
+
+/**
+ * 更新用户日榜统计
+ */
+export function updateUserDailyStats(
+    linuxDoId: string,
+    username: string,
+    avatarUrl: string,
+    betAmount: number,
+    winAmount: number,
+    winType: WinType
+) {
+    const now = Date.now();
+    const today = getTodayDate();
+
+    // 获取当日现有统计
+    const currentStats = slotQueries.getUserDailyStats.get(linuxDoId, today);
+
+    if (currentStats) {
+        // 更新统计
+        const newTotalSpins = currentStats.total_spins + 1;
+        const newTotalBet = currentStats.total_bet + betAmount;
+        const newTotalWin = currentStats.total_win + winAmount;
+        const newBiggestWin = Math.max(currentStats.biggest_win || 0, winAmount);
+        const newBiggestWinType = winAmount > (currentStats.biggest_win || 0) ? winType : currentStats.biggest_win_type;
+
+        slotQueries.updateDailyStats.run(
+            linuxDoId,
+            username,
+            avatarUrl,
+            today,
+            newTotalSpins,
+            newTotalBet,
+            newTotalWin,
+            newBiggestWin,
+            newBiggestWinType,
+            now
+        );
+    } else {
+        // 创建新统计
+        slotQueries.updateDailyStats.run(
+            linuxDoId,
+            username,
+            avatarUrl,
+            today,
+            1, // total_spins
+            betAmount,
+            winAmount,
+            winAmount, // biggest_win
+            winType,
+            now
+        );
+    }
+}
+
+/**
+ * 更新用户周榜统计
+ */
+export function updateUserWeeklyStats(
+    linuxDoId: string,
+    username: string,
+    avatarUrl: string,
+    betAmount: number,
+    winAmount: number,
+    winType: WinType
+) {
+    const now = Date.now();
+    const weekStart = getWeekStart();
+
+    // 获取本周现有统计
+    const currentStats = slotQueries.getUserWeeklyStats.get(linuxDoId, weekStart);
+
+    if (currentStats) {
+        // 更新统计
+        const newTotalSpins = currentStats.total_spins + 1;
+        const newTotalBet = currentStats.total_bet + betAmount;
+        const newTotalWin = currentStats.total_win + winAmount;
+        const newBiggestWin = Math.max(currentStats.biggest_win || 0, winAmount);
+        const newBiggestWinType = winAmount > (currentStats.biggest_win || 0) ? winType : currentStats.biggest_win_type;
+
+        slotQueries.updateWeeklyStats.run(
+            linuxDoId,
+            username,
+            avatarUrl,
+            weekStart,
+            newTotalSpins,
+            newTotalBet,
+            newTotalWin,
+            newBiggestWin,
+            newBiggestWinType,
+            now
+        );
+    } else {
+        // 创建新统计
+        slotQueries.updateWeeklyStats.run(
+            linuxDoId,
+            username,
+            avatarUrl,
+            weekStart,
+            1, // total_spins
+            betAmount,
+            winAmount,
+            winAmount, // biggest_win
+            winType,
+            now
+        );
+    }
+}
+
+/**
+ * 获取日榜（按盈亏降序）
+ */
+export function getDailyLeaderboard(limit: number = 100) {
+    const today = getTodayDate();
+    return slotQueries.getDailyLeaderboard.all(today, limit);
+}
+
+/**
+ * 获取日榜亏损榜（按盈亏升序，最亏的排第一）
+ */
+export function getDailyLossLeaderboard(limit: number = 10) {
+    const today = getTodayDate();
+    return slotQueries.getDailyLossLeaderboard.all(today, limit);
+}
+
+/**
+ * 获取用户日榜排名（盈利榜）
+ */
+export function getUserDailyRank(linuxDoId: string): number {
+    const today = getTodayDate();
+    const result = slotQueries.getUserDailyRank.get(today, linuxDoId, today);
+    return result?.rank || 0;
+}
+
+/**
+ * 获取用户日榜亏损排名
+ */
+export function getUserDailyLossRank(linuxDoId: string): number {
+    const today = getTodayDate();
+    const result = slotQueries.getUserDailyLossRank.get(today, linuxDoId, today);
+    return result?.rank || 0;
+}
+
+/**
+ * 获取用户日榜统计
+ */
+export function getUserDailyStats(linuxDoId: string) {
+    const today = getTodayDate();
+    return slotQueries.getUserDailyStats.get(linuxDoId, today);
+}
+
+/**
+ * 获取周榜（按盈亏降序）
+ */
+export function getWeeklyLeaderboard(limit: number = 100) {
+    const weekStart = getWeekStart();
+    return slotQueries.getWeeklyLeaderboard.all(weekStart, limit);
+}
+
+/**
+ * 获取周榜亏损榜（按盈亏升序，最亏的排第一）
+ */
+export function getWeeklyLossLeaderboard(limit: number = 10) {
+    const weekStart = getWeekStart();
+    return slotQueries.getWeeklyLossLeaderboard.all(weekStart, limit);
+}
+
+/**
+ * 获取用户周榜排名（盈利榜）
+ */
+export function getUserWeeklyRank(linuxDoId: string): number {
+    const weekStart = getWeekStart();
+    const result = slotQueries.getUserWeeklyRank.get(weekStart, linuxDoId, weekStart);
+    return result?.rank || 0;
+}
+
+/**
+ * 获取用户周榜亏损排名
+ */
+export function getUserWeeklyLossRank(linuxDoId: string): number {
+    const weekStart = getWeekStart();
+    const result = slotQueries.getUserWeeklyLossRank.get(weekStart, linuxDoId, weekStart);
+    return result?.rank || 0;
+}
+
+/**
+ * 获取用户周榜统计
+ */
+export function getUserWeeklyStats(linuxDoId: string) {
+    const weekStart = getWeekStart();
+    return slotQueries.getUserWeeklyStats.get(linuxDoId, weekStart);
+}
+
+/**
+ * 清理过期的日榜数据（保留最近7天）
+ */
+export function cleanOldDailyStats() {
+    const now = new Date();
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const beijingTime = new Date(utcTime + 8 * 3600000);
+    beijingTime.setDate(beijingTime.getDate() - 7);
+    const cutoffDate = beijingTime.toISOString().split('T')[0];
+    
+    slotQueries.cleanOldDailyStats.run(cutoffDate);
+    logger.info('数据清理', `已清理 ${cutoffDate} 之前的日榜数据`);
+}
+
+/**
+ * 清理过期的周榜数据（保留最近4周）
+ */
+export function cleanOldWeeklyStats() {
+    const now = new Date();
+    const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+    const beijingTime = new Date(utcTime + 8 * 3600000);
+    beijingTime.setDate(beijingTime.getDate() - 28); // 4周
+    const cutoffDate = beijingTime.toISOString().split('T')[0];
+    
+    slotQueries.cleanOldWeeklyStats.run(cutoffDate);
+    logger.info('数据清理', `已清理 ${cutoffDate} 之前的周榜数据`);
 }
 

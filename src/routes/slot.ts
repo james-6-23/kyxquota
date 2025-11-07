@@ -23,6 +23,18 @@ import {
     getUserRank,
     getUserLossRank,
     getUserTotalStats,
+    getDailyLeaderboard,
+    getDailyLossLeaderboard,
+    getUserDailyRank,
+    getUserDailyLossRank,
+    getUserDailyStats,
+    getWeeklyLeaderboard,
+    getWeeklyLossLeaderboard,
+    getUserWeeklyRank,
+    getUserWeeklyLossRank,
+    getUserWeeklyStats,
+    updateUserDailyStats,
+    updateUserWeeklyStats,
     isUserBanned,
     banUserFromSlot,
     getRewardMultipliers,
@@ -660,6 +672,26 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             result.winType
         );
 
+        // 更新用户日榜统计
+        updateUserDailyStats(
+            session.linux_do_id,
+            displayUsername,
+            session.avatar_url || '',
+            betAmount,
+            winAmount,
+            result.winType
+        );
+
+        // 更新用户周榜统计
+        updateUserWeeklyStats(
+            session.linux_do_id,
+            displayUsername,
+            session.avatar_url || '',
+            betAmount,
+            winAmount,
+            result.winType
+        );
+
         // 🏆 排名成就检查（每次游戏后检查）
         try {
             await checkAndUnlockAchievement(session.linux_do_id, 'rank_top10');
@@ -1146,27 +1178,48 @@ slot.get('/leaderboard', requireAuth, async (c) => {
         }
 
         const limit = parseInt(c.req.query('limit') || '100');
-        const leaderboard = getLeaderboard(20); // 盈利榜也取20名（侧边栏）
-        const lossLeaderboard = getLossLeaderboard(20); // 亏损榜取20名
+        const type = c.req.query('type') || 'daily'; // 默认显示日榜：daily, weekly, total
+        
+        let leaderboard: any[];
+        let lossLeaderboard: any[];
+        let userStats: any;
+        let userRank: number;
+        let userLossRank: number;
+
+        // 根据类型获取不同的排行榜数据
+        if (type === 'daily') {
+            // 日榜
+            leaderboard = getDailyLeaderboard(20);
+            lossLeaderboard = getDailyLossLeaderboard(20);
+            userStats = getUserDailyStats(session.linux_do_id);
+            userRank = getUserDailyRank(session.linux_do_id);
+            userLossRank = getUserDailyLossRank(session.linux_do_id);
+        } else if (type === 'weekly') {
+            // 周榜
+            leaderboard = getWeeklyLeaderboard(20);
+            lossLeaderboard = getWeeklyLossLeaderboard(20);
+            userStats = getUserWeeklyStats(session.linux_do_id);
+            userRank = getUserWeeklyRank(session.linux_do_id);
+            userLossRank = getUserWeeklyLossRank(session.linux_do_id);
+        } else {
+            // 总榜
+            leaderboard = getLeaderboard(20);
+            lossLeaderboard = getLossLeaderboard(20);
+            userStats = getUserTotalStats(session.linux_do_id);
+            userRank = getUserRank(session.linux_do_id);
+            userLossRank = getUserLossRank(session.linux_do_id);
+        }
 
         // 调试：检查排行榜数据（DEBUG级别，默认不显示）
-        logger.debug('盈利榜', `前3名数据: ${JSON.stringify(leaderboard.slice(0, 3).map(u => ({
+        logger.debug(`${type}榜`, `前3名数据: ${JSON.stringify(leaderboard.slice(0, 3).map(u => ({
             username: u.username,
             profit: (u.total_win - u.total_bet) / 500000
         })))}`);
-        logger.debug('亏损榜', `前3名数据: ${JSON.stringify(lossLeaderboard.slice(0, 3).map(u => ({
-            username: u.username,
-            profit: (u.total_win - u.total_bet) / 500000
-        })))}`);
-
-        // 获取用户自己的排名和统计
-        const userStats = getUserTotalStats(session.linux_do_id);
-        const userRank = getUserRank(session.linux_do_id);
-        const userLossRank = getUserLossRank(session.linux_do_id);
 
         return c.json({
             success: true,
             data: {
+                type,
                 leaderboard,
                 lossLeaderboard,
                 userStats: userStats || {

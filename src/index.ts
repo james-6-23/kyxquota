@@ -28,6 +28,41 @@ startRewardProcessor();
 // 启动排行榜成就检查服务
 startRankAchievementChecker();
 
+// 启动排行榜数据清理服务
+(async () => {
+    const { cleanOldDailyStats, cleanOldWeeklyStats } = await import('./services/slot');
+    
+    // 立即执行一次清理
+    try {
+        cleanOldDailyStats();
+        cleanOldWeeklyStats();
+    } catch (error) {
+        console.error('⚠️ 排行榜数据清理失败:', error);
+    }
+    
+    // 每天凌晨3点执行清理（使用北京时间）
+    setInterval(() => {
+        const now = new Date();
+        const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+        const beijingTime = new Date(utcTime + 8 * 3600000);
+        const hour = beijingTime.getHours();
+        const minute = beijingTime.getMinutes();
+        
+        // 在凌晨3点到3点5分之间执行（避免多次执行）
+        if (hour === 3 && minute < 5) {
+            try {
+                cleanOldDailyStats();
+                cleanOldWeeklyStats();
+                console.log('✅ 排行榜过期数据清理完成');
+            } catch (error) {
+                console.error('❌ 排行榜数据清理失败:', error);
+            }
+        }
+    }, 5 * 60 * 1000); // 每5分钟检查一次
+    
+    console.log('✅ 排行榜数据清理服务已启动（每天凌晨3点执行）');
+})();
+
 // 创建应用
 const app = new Hono();
 

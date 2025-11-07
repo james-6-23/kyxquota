@@ -507,6 +507,48 @@ export function initDatabase() {
     }
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
 
+    // 日榜统计表
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_slot_daily_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      avatar_url TEXT,
+      date TEXT NOT NULL,
+      total_spins INTEGER DEFAULT 0,
+      total_bet INTEGER DEFAULT 0,
+      total_win INTEGER DEFAULT 0,
+      biggest_win INTEGER DEFAULT 0,
+      biggest_win_type TEXT,
+      updated_at INTEGER NOT NULL,
+      UNIQUE(linux_do_id, date)
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON user_slot_daily_stats(date)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_linux_do_id ON user_slot_daily_stats(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_profit ON user_slot_daily_stats((total_win - total_bet) DESC)');
+
+    // 周榜统计表（周起始日期，例如：2025-01-06 代表该周的周一）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_slot_weekly_stats (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      username TEXT NOT NULL,
+      avatar_url TEXT,
+      week_start TEXT NOT NULL,
+      total_spins INTEGER DEFAULT 0,
+      total_bet INTEGER DEFAULT 0,
+      total_win INTEGER DEFAULT 0,
+      biggest_win INTEGER DEFAULT 0,
+      biggest_win_type TEXT,
+      updated_at INTEGER NOT NULL,
+      UNIQUE(linux_do_id, week_start)
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_week ON user_slot_weekly_stats(week_start)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_linux_do_id ON user_slot_weekly_stats(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_profit ON user_slot_weekly_stats((total_win - total_bet) DESC)');
+
     // 购买抽奖次数记录表
     db.exec(`
     CREATE TABLE IF NOT EXISTS buy_spins_records (
@@ -1735,10 +1777,14 @@ function initQueries() {
             AND (linux_do_id = ? OR linux_do_username LIKE ? OR username LIKE ?)
         `),
         getTodaySpins: db.query<{ count: number }, [string, string]>(
-            'SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND is_free_spin = 0'
+            "SELECT COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND is_free_spin = 0 AND (slot_mode = 'normal' OR slot_mode IS NULL)"
         ),
         getTodayStats: db.query<{ total_bet: number; total_win: number; count: number }, [string, string]>(
-            'SELECT COALESCE(SUM(bet_amount), 0) as total_bet, COALESCE(SUM(win_amount), 0) as total_win, COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ?'
+            "SELECT COALESCE(SUM(bet_amount), 0) as total_bet, COALESCE(SUM(win_amount), 0) as total_win, COUNT(*) as count FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND (slot_mode = 'normal' OR slot_mode IS NULL)"
+        ),
+        // 获取今日高级场投注总额
+        getAdvancedTodayBet: db.query<{ total_bet: number }, [string, string]>(
+            "SELECT COALESCE(SUM(bet_amount), 0) as total_bet FROM slot_machine_records WHERE linux_do_id = ? AND date = ? AND slot_mode = 'advanced'"
         ),
 
         // 免费次数
@@ -1807,6 +1853,128 @@ function initQueries() {
         ),
         getUserLossRank: db.query<{ rank: number }, string>(
             'SELECT COUNT(*) + 1 as rank FROM user_slot_stats WHERE (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_stats WHERE linux_do_id = ?)'
+        ),
+
+        // 日榜相关
+        updateDailyStats: db.query(
+            `INSERT INTO user_slot_daily_stats (linux_do_id, username, avatar_url, date, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, date) DO UPDATE SET
+                username = excluded.username,
+                avatar_url = excluded.avatar_url,
+                total_spins = excluded.total_spins,
+                total_bet = excluded.total_bet,
+                total_win = excluded.total_win,
+                biggest_win = excluded.biggest_win,
+                biggest_win_type = excluded.biggest_win_type,
+                updated_at = excluded.updated_at`
+        ),
+        getDailyLeaderboard: db.query<any, [string, number]>(
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
+            FROM user_slot_daily_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE s.date = ? AND (s.total_win - s.total_bet) >= 0
+            ORDER BY (s.total_win - s.total_bet) DESC 
+            LIMIT ?`
+        ),
+        getDailyLossLeaderboard: db.query<any, [string, number]>(
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
+            FROM user_slot_daily_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE s.date = ? AND (s.total_win - s.total_bet) < 0
+            ORDER BY (s.total_win - s.total_bet) ASC 
+            LIMIT ?`
+        ),
+        getUserDailyRank: db.query<{ rank: number }, [string, string]>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_daily_stats WHERE date = ? AND (total_win - total_bet) > (SELECT (total_win - total_bet) FROM user_slot_daily_stats WHERE linux_do_id = ? AND date = ?)'
+        ),
+        getUserDailyLossRank: db.query<{ rank: number }, [string, string]>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_daily_stats WHERE date = ? AND (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_daily_stats WHERE linux_do_id = ? AND date = ?)'
+        ),
+        getUserDailyStats: db.query<any, [string, string]>(
+            'SELECT * FROM user_slot_daily_stats WHERE linux_do_id = ? AND date = ?'
+        ),
+        cleanOldDailyStats: db.query<void, string>(
+            'DELETE FROM user_slot_daily_stats WHERE date < ?'
+        ),
+
+        // 周榜相关
+        updateWeeklyStats: db.query(
+            `INSERT INTO user_slot_weekly_stats (linux_do_id, username, avatar_url, week_start, total_spins, total_bet, total_win, biggest_win, biggest_win_type, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON CONFLICT(linux_do_id, week_start) DO UPDATE SET
+                username = excluded.username,
+                avatar_url = excluded.avatar_url,
+                total_spins = excluded.total_spins,
+                total_bet = excluded.total_bet,
+                total_win = excluded.total_win,
+                biggest_win = excluded.biggest_win,
+                biggest_win_type = excluded.biggest_win_type,
+                updated_at = excluded.updated_at`
+        ),
+        getWeeklyLeaderboard: db.query<any, [string, number]>(
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
+            FROM user_slot_weekly_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE s.week_start = ? AND (s.total_win - s.total_bet) >= 0
+            ORDER BY (s.total_win - s.total_bet) DESC 
+            LIMIT ?`
+        ),
+        getWeeklyLossLeaderboard: db.query<any, [string, number]>(
+            `SELECT 
+                s.linux_do_id, 
+                COALESCE(u.linux_do_username, s.username, u.username) as username,
+                s.avatar_url, 
+                s.total_spins, 
+                s.total_bet, 
+                s.total_win, 
+                s.biggest_win, 
+                s.biggest_win_type,
+                (s.total_win - s.total_bet) as profit
+            FROM user_slot_weekly_stats s
+            LEFT JOIN users u ON s.linux_do_id = u.linux_do_id
+            WHERE s.week_start = ? AND (s.total_win - s.total_bet) < 0
+            ORDER BY (s.total_win - s.total_bet) ASC 
+            LIMIT ?`
+        ),
+        getUserWeeklyRank: db.query<{ rank: number }, [string, string]>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_weekly_stats WHERE week_start = ? AND (total_win - total_bet) > (SELECT (total_win - total_bet) FROM user_slot_weekly_stats WHERE linux_do_id = ? AND week_start = ?)'
+        ),
+        getUserWeeklyLossRank: db.query<{ rank: number }, [string, string]>(
+            'SELECT COUNT(*) + 1 as rank FROM user_slot_weekly_stats WHERE week_start = ? AND (total_win - total_bet) < (SELECT (total_win - total_bet) FROM user_slot_weekly_stats WHERE linux_do_id = ? AND week_start = ?)'
+        ),
+        getUserWeeklyStats: db.query<any, [string, string]>(
+            'SELECT * FROM user_slot_weekly_stats WHERE linux_do_id = ? AND week_start = ?'
+        ),
+        cleanOldWeeklyStats: db.query<void, string>(
+            'DELETE FROM user_slot_weekly_stats WHERE week_start < ?'
         ),
 
         // 购买次数记录

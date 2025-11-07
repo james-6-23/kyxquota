@@ -1816,8 +1816,7 @@
     </button>
 
     <!-- 🎵 背景音乐audio元素 -->
-    <audio id="bgMusicPlayer" loop preload="auto">
-      <source src="/sounds/Deadman.mp3" type="audio/mpeg">
+    <audio id="bgMusicPlayer" preload="auto">
       您的浏览器不支持音频播放
     </audio>
 
@@ -2338,6 +2337,19 @@
         </button>
       </div>
       
+      <!-- 时间范围切换 -->
+      <div class="flex gap-2 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-slate-200">
+        <button id="dailyRangeBtn" onclick="switchLeaderboardRange('daily')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md">
+          📅 日榜
+        </button>
+        <button id="weeklyRangeBtn" onclick="switchLeaderboardRange('weekly')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+          📊 周榜
+        </button>
+        <button id="totalRangeBtn" onclick="switchLeaderboardRange('total')" class="flex-1 px-4 py-3 text-center font-semibold rounded-lg transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200">
+          🏆 总榜
+        </button>
+      </div>
+
       <!-- 标签页切换 -->
       <div class="flex border-b border-slate-200 bg-slate-50">
         <button id="profitTabBtn" onclick="switchLeaderboardTab('profit')" class="flex-1 px-6 py-4 text-center font-semibold transition-all border-b-2 border-green-500 bg-white text-green-600">
@@ -2649,6 +2661,27 @@
         this.isPlaying = false;
         this.volume = parseFloat(localStorage.getItem('bgMusicVolume') || '0.3');
         this.muted = localStorage.getItem('bgMusicMuted') === 'true';
+        
+        // 🎵 播放列表（随机顺序）
+        this.playlist = [
+          '/sounds/llh.mp3',
+          '/sounds/sjsdehjm.mp3',
+          '/sounds/mb.mp3',
+          '/sounds/Deadman.mp3'
+        ];
+        this.currentTrackIndex = 0;
+        
+        // 随机打乱播放列表
+        this.shufflePlaylist();
+      }
+
+      // 随机打乱播放列表
+      shufflePlaylist() {
+        for (let i = this.playlist.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [this.playlist[i], this.playlist[j]] = [this.playlist[j], this.playlist[i]];
+        }
+        console.log('🎵 播放列表已随机化:', this.playlist.map(p => p.split('/').pop()));
       }
 
       // 初始化音乐播放器
@@ -2664,6 +2697,15 @@
         // 设置音量
         this.player.volume = this.volume;
         
+        // 🎵 监听音乐播放结束事件，自动播放下一首
+        this.player.addEventListener('ended', () => {
+          console.log('🎵 当前音乐播放完毕，切换下一首');
+          this.playNext();
+        });
+        
+        // 加载第一首音乐
+        this.loadTrack(this.currentTrackIndex);
+        
         // 🎵 只在娱乐站模式且未静音时播放
         if (!this.muted && currentMode === 'entertain') {
           this.play();
@@ -2671,6 +2713,39 @@
         
         // 更新按钮状态
         this.updateButton();
+      }
+
+      // 加载指定音轨
+      loadTrack(index) {
+        if (!this.player || index < 0 || index >= this.playlist.length) return;
+        
+        this.currentTrackIndex = index;
+        const trackUrl = this.playlist[index];
+        const trackName = trackUrl.split('/').pop();
+        
+        this.player.src = trackUrl;
+        this.player.load();
+        
+        console.log(`🎵 已加载音乐: ${trackName} (${index + 1}/${this.playlist.length})`);
+      }
+
+      // 播放下一首
+      playNext() {
+        // 循环播放列表
+        this.currentTrackIndex = (this.currentTrackIndex + 1) % this.playlist.length;
+        
+        // 如果播放完整个列表，重新随机打乱
+        if (this.currentTrackIndex === 0) {
+          console.log('🎵 播放列表已播放完毕，重新随机化');
+          this.shufflePlaylist();
+        }
+        
+        this.loadTrack(this.currentTrackIndex);
+        
+        // 如果之前正在播放，继续播放下一首
+        if (this.isPlaying && !this.muted) {
+          this.play();
+        }
       }
 
       // 播放音乐
@@ -2681,7 +2756,8 @@
         this.player.play().then(() => {
           this.isPlaying = true;
           this.updateButton();
-          console.log('🎵 背景音乐开始播放');
+          const trackName = this.player.src.split('/').pop();
+          console.log(`🎵 背景音乐开始播放: ${trackName}`);
         }).catch(err => {
           console.warn('背景音乐播放失败（可能需要用户交互）:', err.message);
           // 浏览器策略：需要用户交互后才能播放
@@ -7216,9 +7292,14 @@
     }
     
     // 显示排行榜
-    async function showLeaderboard() {
+    // 当前选择的时间范围（默认日榜）
+    let currentLeaderboardRange = 'daily';
+
+    async function showLeaderboard(range = 'daily') {
+      currentLeaderboardRange = range;
+      
       try {
-        const res = await fetch('/api/slot/leaderboard?limit=100');
+        const res = await fetch(`/api/slot/leaderboard?limit=100&type=${range}`);
         const data = await res.json();
 
         if (!data.success) {
@@ -7414,6 +7495,36 @@
     // 关闭排行榜
     function closeLeaderboard() {
       document.getElementById('leaderboardModal').classList.add('hidden');
+    }
+
+    // 切换排行榜时间范围
+    function switchLeaderboardRange(range) {
+      // 更新按钮样式
+      const dailyBtn = document.getElementById('dailyRangeBtn');
+      const weeklyBtn = document.getElementById('weeklyRangeBtn');
+      const totalBtn = document.getElementById('totalRangeBtn');
+
+      // 重置所有按钮样式
+      [dailyBtn, weeklyBtn, totalBtn].forEach(btn => {
+        btn.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-500', 'text-white', 'shadow-md');
+        btn.classList.add('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      });
+
+      // 激活选中的按钮
+      let activeBtn;
+      if (range === 'daily') {
+        activeBtn = dailyBtn;
+      } else if (range === 'weekly') {
+        activeBtn = weeklyBtn;
+      } else {
+        activeBtn = totalBtn;
+      }
+      
+      activeBtn.classList.remove('bg-white', 'text-slate-600', 'border', 'border-slate-200');
+      activeBtn.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-500', 'text-white', 'shadow-md');
+
+      // 重新加载排行榜数据
+      showLeaderboard(range);
     }
 
     // 切换排行榜标签页
