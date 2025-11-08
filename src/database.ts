@@ -1232,6 +1232,9 @@ export function initDatabase() {
 
     // 🔥 自动修复错误的奖励规则数据
     fixRewardRulesData();
+
+    // 🔥 自动更新成就描述单位
+    fixAchievementDescriptions();
 }
 
 /**
@@ -1399,11 +1402,11 @@ function insertDefaultData() {
             { key: 'combo_5_wins', name: '连胜王者', desc: '连续5次中奖', category: 'jackpot', icon: '👑', condition_type: 'combo', condition_value: JSON.stringify({ count: 5 }), reward: 500 * 500000, rarity: 'epic', order: 26 },
 
             // 财富成就
-            { key: 'earn_10k', name: '小富即安', desc: '累计获得10,000 quota', category: 'wealth', icon: '💰', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 10000 }), reward: 100 * 500000, rarity: 'common', order: 27 },
-            { key: 'earn_100k', name: '财源滚滚', desc: '累计获得100,000 quota', category: 'wealth', icon: '💸', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 100000 }), reward: 200 * 500000, rarity: 'rare', order: 28 },
-            { key: 'earn_1m', name: '富甲一方', desc: '累计获得1,000,000 quota', category: 'wealth', icon: '💵', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 1000000 }), reward: 500 * 500000, rarity: 'epic', order: 29 },
-            { key: 'balance_50k', name: '土豪本豪', desc: '账户余额达到50,000', category: 'wealth', icon: '👑', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'quota', threshold: 50000 }), reward: 200 * 500000, rarity: 'rare', order: 30 },
-            { key: 'single_win_5k', name: '单次暴富', desc: '单次中奖超过5,000 quota', category: 'wealth', icon: '🎊', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'win_amount', threshold: 5000 }), reward: 500 * 500000, rarity: 'epic', order: 31 },
+            { key: 'earn_10k', name: '小富即安', desc: '累计盈利$2,000', category: 'wealth', icon: '💰', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 10000 }), reward: 100 * 500000, rarity: 'common', order: 27 },
+            { key: 'earn_100k', name: '财源滚滚', desc: '累计盈利$20,000', category: 'wealth', icon: '💸', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 100000 }), reward: 200 * 500000, rarity: 'rare', order: 28 },
+            { key: 'earn_1m', name: '富甲一方', desc: '累计盈利$2,000,000', category: 'wealth', icon: '💵', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'total_earned', threshold: 1000000 }), reward: 500 * 500000, rarity: 'epic', order: 29 },
+            { key: 'balance_50k', name: '土豪本豪', desc: '账户余额达到$10,000,000', category: 'wealth', icon: '👑', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'quota', threshold: 50000 }), reward: 200 * 500000, rarity: 'rare', order: 30 },
+            { key: 'single_win_5k', name: '单次暴富', desc: '单次中奖超过$100,000', category: 'wealth', icon: '🎊', condition_type: 'threshold', condition_value: JSON.stringify({ field: 'win_amount', threshold: 5000 }), reward: 500 * 500000, rarity: 'epic', order: 31 },
             { key: 'rank_1_profit', name: '坤圈首富', desc: '登上盈利榜第1名', category: 'wealth', icon: '🏆', condition_type: 'rank', condition_value: JSON.stringify({ rank: 1, type: 'profit' }), reward: 2000 * 500000, rarity: 'mythic', order: 32 },
 
             // 探索成就
@@ -3259,6 +3262,50 @@ function fixRewardRulesData(): void {
 
     } catch (error: any) {
         console.error('❌ [数据修复] 修复 reward_rules 数据时出错:', error);
+        // 不抛出错误，避免影响系统启动
+    }
+}
+
+/**
+ * 修复成就描述 - 将 quota 单位改为 $
+ */
+function fixAchievementDescriptions(): void {
+    try {
+        console.log('🔧 [成就修复] 开始更新成就描述单位...');
+
+        const updates = [
+            { key: 'earn_10k', oldDesc: '累计获得10,000 quota', newDesc: '累计盈利$2,000' },
+            { key: 'earn_100k', oldDesc: '累计获得100,000 quota', newDesc: '累计盈利$20,000' },
+            { key: 'earn_1m', oldDesc: '累计获得1,000,000 quota', newDesc: '累计盈利$2,000,000' },
+            { key: 'balance_50k', oldDesc: '账户余额达到50,000', newDesc: '账户余额达到$10,000,000' },
+            { key: 'single_win_5k', oldDesc: '单次中奖超过5,000 quota', newDesc: '单次中奖超过$100,000' }
+        ];
+
+        let updatedCount = 0;
+        const now = Date.now();
+
+        for (const update of updates) {
+            // 只更新旧描述的成就
+            const result = db.query<{ changes: number }, never>(`
+                UPDATE achievements 
+                SET description = '${update.newDesc}', updated_at = ${now}
+                WHERE achievement_key = '${update.key}' AND description = '${update.oldDesc}'
+            `).run();
+
+            if (result && result.changes > 0) {
+                console.log(`  ✅ ${update.key}: ${update.oldDesc} → ${update.newDesc}`);
+                updatedCount++;
+            }
+        }
+
+        if (updatedCount > 0) {
+            console.log(`✅ [成就修复] 成功更新 ${updatedCount} 个成就描述`);
+        } else {
+            console.log('✅ [成就修复] 成就描述已是最新，无需更新');
+        }
+
+    } catch (error: any) {
+        console.error('❌ [成就修复] 更新成就描述时出错:', error);
         // 不抛出错误，避免影响系统启动
     }
 }

@@ -541,12 +541,44 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
             // 🔥 6. 符号收集者成就 - 记录本次抽到的符号（与高级场保持一致）
             await recordSymbols(session.linux_do_id!, symbols);
 
-            // 🔥 7. 逆风翻盘成就 - 更新盈利追踪（与高级场保持一致）
-            // 注意：至尊场需要从用户总统计获取盈利数据
+            // 🔥 7. 财富成就 - 余额达标（余额达到50k）
+            if (quotaAfter >= 25000000) { // 50000 * 500000 = 25000000
+                const balanceResult = await checkAndUnlockAchievement(session.linux_do_id!, 'balance_50k');
+                if (balanceResult.unlocked && balanceResult.achievement) {
+                    unlockedAchievements.push(balanceResult.achievement);
+                }
+            }
+
+            // 🔥 8. 财富成就 - 累计盈利（从用户总统计获取）
             const { getUserTotalStats } = await import('../services/slot');
             const userTotalStats = getUserTotalStats(session.linux_do_id!);
             if (userTotalStats) {
-                const currentProfit = userTotalStats.total_win - userTotalStats.total_bet;
+                const totalProfit = userTotalStats.total_win - userTotalStats.total_bet;
+
+                // 累计盈利10k
+                if (totalProfit >= 5000000) { // 10000 * 500000 = 5000000
+                    const earn10kResult = await checkAndUnlockAchievement(session.linux_do_id!, 'earn_10k');
+                    if (earn10kResult.unlocked && earn10kResult.achievement) {
+                        unlockedAchievements.push(earn10kResult.achievement);
+                    }
+                }
+                // 累计盈利100k
+                if (totalProfit >= 50000000) { // 100000 * 500000 = 50000000
+                    const earn100kResult = await checkAndUnlockAchievement(session.linux_do_id!, 'earn_100k');
+                    if (earn100kResult.unlocked && earn100kResult.achievement) {
+                        unlockedAchievements.push(earn100kResult.achievement);
+                    }
+                }
+                // 累计盈利1m
+                if (totalProfit >= 500000000) { // 1000000 * 500000 = 500000000
+                    const earn1mResult = await checkAndUnlockAchievement(session.linux_do_id!, 'earn_1m');
+                    if (earn1mResult.unlocked && earn1mResult.achievement) {
+                        unlockedAchievements.push(earn1mResult.achievement);
+                    }
+                }
+
+                // 🔥 9. 逆风翻盘成就 - 更新盈利追踪
+                const currentProfit = totalProfit;
                 await updateProfitTracking(session.linux_do_id!, currentProfit);
             }
 
