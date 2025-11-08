@@ -3832,16 +3832,16 @@ app.post('/grant-achievement-all', requireAdmin, async (c) => {
 app.get('/rate-limit-bans', requireAdmin, async (c) => {
     try {
         const { rateLimitBanQueries } = await import('../database');
-        
+
         const page = parseInt(c.req.query('page') || '1');
         const pageSize = parseInt(c.req.query('pageSize') || '50');
         const search = c.req.query('search') || '';
-        
+
         const offset = (page - 1) * pageSize;
-        
+
         let records;
         let totalResult;
-        
+
         if (search) {
             const searchPattern = `%${search}%`;
             records = rateLimitBanQueries.searchByUser.all(searchPattern, searchPattern, pageSize, offset);
@@ -3853,13 +3853,13 @@ app.get('/rate-limit-bans', requireAdmin, async (c) => {
             records = rateLimitBanQueries.getAllPaginated.all(pageSize, offset);
             totalResult = rateLimitBanQueries.getCount.get();
         }
-        
+
         const total = totalResult?.total || 0;
         const totalPages = Math.ceil(total / pageSize);
-        
+
         // 获取统计信息
         const stats = rateLimitBanQueries.getStats.get();
-        
+
         return c.json({
             success: true,
             data: {
@@ -3895,21 +3895,21 @@ app.post('/rate-limit-bans/:id/unban', requireAdmin, async (c) => {
         const { rateLimitBanQueries } = await import('../database');
         const banId = parseInt(c.param('id'));
         const { reason, adminName } = await c.req.json();
-        
+
         if (!banId || !reason) {
             return c.json({
                 success: false,
                 message: '参数错误：需要提供解封原因'
             }, 400);
         }
-        
+
         const now = Date.now();
         const admin = adminName || '管理员';
-        
+
         rateLimitBanQueries.unban.run(now, admin, reason, banId);
-        
+
         logger.info('管理员', `解封用户 - 封禁ID: ${banId}, 操作人: ${admin}, 原因: ${reason}`);
-        
+
         return c.json({
             success: true,
             message: '解封成功'
@@ -3930,14 +3930,14 @@ app.get('/rate-limit-bans/stats', requireAdmin, async (c) => {
     try {
         const { rateLimitBanQueries } = await import('../database');
         const stats = rateLimitBanQueries.getStats.get();
-        
+
         // 获取最近24小时的封禁数
         const oneDayAgo = Date.now() - 24 * 60 * 60 * 1000;
         const recentBans = db.query<{ count: number }, number>(`
             SELECT COUNT(*) as count FROM rate_limit_bans
             WHERE created_at > ?
         `).get(oneDayAgo);
-        
+
         return c.json({
             success: true,
             data: {
@@ -3963,20 +3963,44 @@ app.get('/rate-limit-bans/stats', requireAdmin, async (c) => {
  */
 app.get('/analytics/today', requireAdmin, async (c) => {
     try {
-        const { getTodayGameStats, getYesterdayComparison } = await import('../services/analytics');
+        const days = c.req.query('days');
 
-        const todayStats = getTodayGameStats();
-        const comparison = getYesterdayComparison();
+        if (days) {
+            // 返回指定天数的汇总数据
+            const { getRangeGameStats } = await import('../services/analytics');
+            const daysNum = parseInt(days);
+            const rangeStats = getRangeGameStats(daysNum);
 
-        return c.json({
-            success: true,
-            data: {
-                ...todayStats,
-                comparison
-            }
-        });
+            return c.json({
+                success: true,
+                data: {
+                    ...rangeStats,
+                    comparison: {
+                        spins: { change: 0, trend: 'neutral' },
+                        activeUsers: { change: 0, trend: 'neutral' },
+                        profit: { change: 0, trend: 'neutral' },
+                        totalBet: { change: 0, trend: 'neutral' },
+                        totalWin: { change: 0, trend: 'neutral' }
+                    }
+                }
+            });
+        } else {
+            // 返回今日数据
+            const { getTodayGameStats, getYesterdayComparison } = await import('../services/analytics');
+
+            const todayStats = getTodayGameStats();
+            const comparison = getYesterdayComparison();
+
+            return c.json({
+                success: true,
+                data: {
+                    ...todayStats,
+                    comparison
+                }
+            });
+        }
     } catch (error: any) {
-        logger.error('数据分析', '获取今日统计失败', error);
+        logger.error('数据分析', '获取统计失败', error);
         return c.json({ success: false, message: '获取统计失败: ' + error.message }, 500);
     }
 });

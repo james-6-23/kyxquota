@@ -250,6 +250,130 @@ export function getGameTrendStats(days: number = 7) {
 }
 
 /**
+ * 获取指定天数范围的汇总统计（用于近7天、近30天）
+ */
+export function getRangeGameStats(days: number) {
+    try {
+        const dates: string[] = [];
+        const now = new Date();
+        const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+        const beijingTime = new Date(utcTime + 8 * 3600000);
+
+        // 生成日期列表
+        for (let i = days - 1; i >= 0; i--) {
+            const date = new Date(beijingTime);
+            date.setDate(beijingTime.getDate() - i);
+            dates.push(date.toISOString().split('T')[0]);
+        }
+
+        // 初始化汇总数据
+        const totalStats = {
+            spins: 0,
+            activeUsers: new Set<number>(),
+            totalBet: 0,
+            totalWin: 0,
+            profit: 0
+        };
+
+        const normalStats = { spins: 0, totalBet: 0, totalWin: 0, profit: 0 };
+        const advancedStats = { spins: 0, totalBet: 0, totalWin: 0, profit: 0 };
+        const supremeStats = { spins: 0, totalBet: 0, totalWin: 0, profit: 0 };
+
+        // 累加每天的数据
+        dates.forEach(date => {
+            const dayStats = getGameStatsByDate(date);
+            
+            totalStats.spins += dayStats.total.spins;
+            totalStats.totalBet += dayStats.total.totalBet;
+            totalStats.totalWin += dayStats.total.totalWin;
+            totalStats.profit += dayStats.total.profit;
+
+            normalStats.spins += dayStats.normal.spins;
+            normalStats.totalBet += dayStats.normal.total_bet || 0;
+            normalStats.totalWin += dayStats.normal.total_win || 0;
+            normalStats.profit += dayStats.normal.profit || 0;
+
+            advancedStats.spins += dayStats.advanced.spins;
+            advancedStats.totalBet += dayStats.advanced.total_bet || 0;
+            advancedStats.totalWin += dayStats.advanced.total_win || 0;
+            advancedStats.profit += dayStats.advanced.profit || 0;
+
+            supremeStats.spins += dayStats.supreme.spins;
+            supremeStats.totalBet += dayStats.supreme.total_bet || 0;
+            supremeStats.totalWin += dayStats.supreme.total_win || 0;
+            supremeStats.profit += dayStats.supreme.profit || 0;
+        });
+
+        // 获取唯一活跃用户数（需要查询所有日期的用户）
+        const placeholders = dates.map(() => '?').join(',');
+        const uniqueUsersQuery = db.query(`
+            SELECT COUNT(DISTINCT linux_do_id) as count
+            FROM (
+                SELECT linux_do_id FROM slot_machine_records WHERE date IN (${placeholders})
+                UNION
+                SELECT linux_do_id FROM supreme_slot_records WHERE date IN (${placeholders})
+            )
+        `);
+        
+        const uniqueUsers = uniqueUsersQuery.get(...dates, ...dates) as any;
+
+        // 计算RTP和占比
+        const normalRtp = normalStats.totalBet > 0 ? (normalStats.totalWin / normalStats.totalBet) * 100 : 0;
+        const advancedRtp = advancedStats.totalBet > 0 ? (advancedStats.totalWin / advancedStats.totalBet) * 100 : 0;
+        const supremeRtp = supremeStats.totalBet > 0 ? (supremeStats.totalWin / supremeStats.totalBet) * 100 : 0;
+        const totalRtp = totalStats.totalBet > 0 ? (totalStats.totalWin / totalStats.totalBet) * 100 : 0;
+
+        const normalPercentage = totalStats.spins > 0 ? (normalStats.spins / totalStats.spins) * 100 : 0;
+        const advancedPercentage = totalStats.spins > 0 ? (advancedStats.spins / totalStats.spins) * 100 : 0;
+        const supremePercentage = totalStats.spins > 0 ? (supremeStats.spins / totalStats.spins) * 100 : 0;
+
+        const activeUsersCount = uniqueUsers?.count || 0;
+
+        return {
+            dateRange: `${dates[0]} ~ ${dates[dates.length - 1]}`,
+            days,
+            total: {
+                spins: totalStats.spins,
+                activeUsers: activeUsersCount,
+                totalBet: totalStats.totalBet,
+                totalWin: totalStats.totalWin,
+                profit: totalStats.profit,
+                rtp: totalRtp,
+                avgBetPerSpin: totalStats.spins > 0 ? totalStats.totalBet / totalStats.spins : 0,
+                avgBetPerUser: activeUsersCount > 0 ? totalStats.totalBet / activeUsersCount : 0
+            },
+            normal: {
+                spins: normalStats.spins,
+                total_bet: normalStats.totalBet,
+                total_win: normalStats.totalWin,
+                profit: normalStats.profit,
+                rtp: normalRtp,
+                percentage: normalPercentage
+            },
+            advanced: {
+                spins: advancedStats.spins,
+                total_bet: advancedStats.totalBet,
+                total_win: advancedStats.totalWin,
+                profit: advancedStats.profit,
+                rtp: advancedRtp,
+                percentage: advancedPercentage
+            },
+            supreme: {
+                spins: supremeStats.spins,
+                total_bet: supremeStats.totalBet,
+                total_win: supremeStats.totalWin,
+                profit: supremeStats.profit,
+                rtp: supremeRtp,
+                percentage: supremePercentage
+            }
+        };
+    } catch (error: any) {
+        logger.error('数据分析', `获取范围统计失败 - 天数: ${days}, 错误: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
  * 获取场次详情
  */
 export function getModeDetails(mode: 'normal' | 'advanced' | 'supreme', date?: string) {

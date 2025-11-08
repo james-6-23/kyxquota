@@ -13058,19 +13058,27 @@ RTP (Return to Player)：
           }
         });
         
-        // 加载今日统计
-        console.log('请求API: /api/admin/analytics/today');
-        const todayRes = await fetch('/api/admin/analytics/today');
-        const todayData = await todayRes.json();
-        console.log('API响应:', todayData);
-        
-        if (todayData.success) {
-          analyticsData = todayData.data;
-          updateOverviewCards(todayData.data);
-          updateModeDetails(currentModeTab);
-          updateModeDistributionChart(todayData.data);
+        // 根据时间范围加载统计数据
+        let apiUrl = '/api/admin/analytics/today';
+        if (range !== 'today') {
+          const days = range === '7days' ? 7 : 30;
+          apiUrl = `/api/admin/analytics/today?days=${days}`;
+          console.log(`请求API: ${apiUrl} (近${days}天汇总)`);
         } else {
-          showToast(todayData.message || '加载数据失败', 'error');
+          console.log('请求API: /api/admin/analytics/today');
+        }
+        
+        const statsRes = await fetch(apiUrl);
+        const statsData = await statsRes.json();
+        console.log('API响应:', statsData);
+        
+        if (statsData.success) {
+          analyticsData = statsData.data;
+          updateOverviewCards(statsData.data);
+          updateModeDetails(currentModeTab);
+          updateModeDistributionChart(statsData.data);
+        } else {
+          showToast(statsData.message || '加载数据失败', 'error');
           return;
         }
         
