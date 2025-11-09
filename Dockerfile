@@ -11,7 +11,7 @@ RUN apk add --no-cache curl
 COPY package.json bun.lockb* ./
 
 # 安装依赖（包括 ioredis）
-RUN bun install --production
+RUN bun install
 
 # 复制源代码
 COPY src ./src
