@@ -63,6 +63,17 @@ startRankAchievementChecker();
     console.log('✅ 排行榜数据清理服务已启动（每天凌晨3点执行）');
 })();
 
+// 启动K线系统
+(async () => {
+    try {
+        const { initKlineSystem } = await import('./services/crypto/kline-generator');
+        await initKlineSystem();
+        console.log('✅ K线系统已启动');
+    } catch (error) {
+        console.error('⚠️ K线系统启动失败:', error);
+    }
+})();
+
 // 创建应用
 const app = new Hono();
 
@@ -74,6 +85,16 @@ import slotRoutes from './routes/slot';
 import kunbeiRoutes from './routes/kunbei';
 import supremeRoutes from './routes/supreme';
 import achievementRoutes from './routes/achievement';
+import cryptoRoutes from './routes/crypto';
+
+// 导入WebSocket
+import { upgradeWebSocket } from 'hono/bun';
+import {
+    wsManager,
+    handleWebSocketMessage,
+    startPeriodicPush,
+    generateConnectionId,
+} from './services/crypto/websocket-server';
 
 // 中间件
 app.use('*', cors());
@@ -86,6 +107,38 @@ app.route('/api/slot', slotRoutes);
 app.route('/api/kunbei', kunbeiRoutes);
 app.route('/api/supreme', supremeRoutes);
 app.route('/api/achievement', achievementRoutes);
+app.route('/api/crypto', cryptoRoutes);
+
+// WebSocket路由
+app.get('/ws/trading',
+    upgradeWebSocket((c) => {
+        const connectionId = generateConnectionId();
+        const session = c.get('session');
+        const linuxDoId = session?.linux_do_id;
+
+        return {
+            onOpen(_event, ws) {
+                wsManager.addConnection(connectionId, ws, linuxDoId);
+            },
+
+            onMessage(event, ws) {
+                handleWebSocketMessage(ws, connectionId, event.data.toString(), linuxDoId);
+            },
+
+            onClose(_event, _ws) {
+                wsManager.removeConnection(connectionId);
+            },
+
+            onError(event, _ws) {
+                console.error(`WebSocket错误 [${connectionId}]:`, event);
+                wsManager.removeConnection(connectionId);
+            },
+        };
+    })
+);
+
+// 启动WebSocket定时推送
+startPeriodicPush();
 
 // 静态文件服务（老虎机符号图片）
 app.get('/slot-symbols/:filename', async (c) => {
@@ -157,6 +210,18 @@ app.get('/', async (c) => {
 // 管理后台
 app.get('/admin', async (c) => {
     const html = await Bun.file('src/templates/admin.html').text();
+    return c.html(html);
+});
+
+// 交易页面
+app.get('/trading', async (c) => {
+    const html = await Bun.file('src/templates/trading.html').text();
+    return c.html(html);
+});
+
+// 虚拟币交易管理页面
+app.get('/crypto-admin', async (c) => {
+    const html = await Bun.file('src/templates/crypto-admin.html').text();
     return c.html(html);
 });
 

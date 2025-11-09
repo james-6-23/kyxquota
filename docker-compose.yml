@@ -10,9 +10,14 @@ services:
       - LINUX_DO_CLIENT_SECRET=${LINUX_DO_CLIENT_SECRET}
       - LINUX_DO_REDIRECT_URI=${LINUX_DO_REDIRECT_URI}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=123456
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
+    depends_on:
+      - redis
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/"]
       interval: 30s
@@ -24,4 +29,26 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: kyxquota-redis
+    restart: unless-stopped
+    # Redis端口不对外开放，仅容器内部访问
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes --requirepass 123456
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "123456", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  redis-data:
 
