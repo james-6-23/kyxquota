@@ -213,8 +213,19 @@ app.get('/admin', async (c) => {
     return c.html(html);
 });
 
-// 交易页面
+// 交易页面 - 需要登录
 app.get('/trading', async (c) => {
+    // 验证session
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.redirect('/');
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.redirect('/');
+    }
+
     const html = await Bun.file('src/templates/trading.html').text();
     return c.html(html);
 });

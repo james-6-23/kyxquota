@@ -7,8 +7,27 @@ import { db } from '../database';
 import { getCryptoConfig, getUserAsset, getUserAllAssets } from '../database-crypto';
 import type { TradeOrder, TradeFill, CreateOrderParams } from '../types-crypto';
 import { logger } from '../utils/logger';
+import { getCookie, getSession } from '../utils';
 
 const crypto = new Hono();
+
+/**
+ * 中间件：验证用户登录
+ */
+async function requireAuth(c: any, next: any) {
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.json({ success: false, message: '未登录' }, 401);
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.json({ success: false, message: '会话无效' }, 401);
+    }
+
+    c.set('session', session);
+    await next();
+}
 
 // ========== 订单相关API ==========
 
@@ -16,12 +35,9 @@ const crypto = new Hono();
  * 创建订单
  * POST /api/crypto/order
  */
-crypto.post('/order', async (c) => {
+crypto.post('/order', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const body = await c.req.json();
         const params: CreateOrderParams = {
@@ -51,12 +67,9 @@ crypto.post('/order', async (c) => {
  * 取消订单
  * POST /api/crypto/order/cancel
  */
-crypto.post('/order/cancel', async (c) => {
+crypto.post('/order/cancel', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const body = await c.req.json();
         const { order_id } = body;
@@ -77,12 +90,9 @@ crypto.post('/order/cancel', async (c) => {
  * 获取用户当前订单列表
  * GET /api/crypto/orders
  */
-crypto.get('/orders', async (c) => {
+crypto.get('/orders', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const status = c.req.query('status') || 'pending,partial_filled';
         const symbol = c.req.query('symbol');
@@ -115,12 +125,9 @@ crypto.get('/orders', async (c) => {
  * 获取用户历史订单
  * GET /api/crypto/order/history
  */
-crypto.get('/order/history', async (c) => {
+crypto.get('/order/history', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const symbol = c.req.query('symbol');
         const page = parseInt(c.req.query('page') || '1');
@@ -169,12 +176,9 @@ crypto.get('/order/history', async (c) => {
  * 获取成交记录
  * GET /api/crypto/fills
  */
-crypto.get('/fills', async (c) => {
+crypto.get('/fills', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const symbol = c.req.query('symbol');
         const page = parseInt(c.req.query('page') || '1');
@@ -336,12 +340,9 @@ crypto.get('/ticker', async (c) => {
  * 获取用户资产
  * GET /api/crypto/assets
  */
-crypto.get('/assets', async (c) => {
+crypto.get('/assets', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const assets = getUserAllAssets(session.linux_do_id);
 
@@ -356,12 +357,9 @@ crypto.get('/assets', async (c) => {
  * 获取用户信息
  * GET /api/user/info
  */
-crypto.get('/user/info', async (c) => {
+crypto.get('/user/info', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session?.linux_do_id) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         return c.json({
             success: true,
@@ -557,12 +555,9 @@ crypto.post('/admin/klines/clean', async (c) => {
  * 获取用户交易统计
  * GET /api/crypto/user/stats
  */
-crypto.get('/user/stats', async (c) => {
+crypto.get('/user/stats', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const stats = await riskControl.getUserTradingStats(session.linuxDoId);
 
@@ -580,12 +575,9 @@ crypto.get('/user/stats', async (c) => {
  * 获取用户风险等级
  * GET /api/crypto/user/risk-level
  */
-crypto.get('/user/risk-level', async (c) => {
+crypto.get('/user/risk-level', requireAuth, async (c) => {
     try {
         const session = c.get('session');
-        if (!session) {
-            return c.json({ success: false, error: '未登录' }, 401);
-        }
 
         const riskLevel = await riskControl.getUserRiskLevel(session.linuxDoId);
 
