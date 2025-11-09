@@ -12,12 +12,13 @@ import type {
     CryptoConfig,
     ExchangeRecord,
 } from './types-crypto';
+import { logger } from './utils/logger';
 
 /**
  * 初始化交易系统数据库表
  */
 export function initCryptoDatabase() {
-    console.log('💰 初始化虚拟币交易系统数据库...');
+    logger.info('DatabaseCrypto', '初始化虚拟币交易系统数据库...');
 
     // 1. 虚拟币系统配置表
     db.exec(`
@@ -50,7 +51,7 @@ export function initCryptoDatabase() {
                 max_orders_per_user, max_position_value_ratio, updated_at
             ) VALUES (1, '坤币', 'KC', 10000, 10000, 10000000, 0.01, 50000000, 100, 0.1, 20, 0.5, ?)
         `, [Date.now()]);
-        console.log('✅ 已创建默认交易系统配置');
+        logger.info('DatabaseCrypto', '已创建默认交易系统配置');
     }
 
     // 2. 交易对配置表
@@ -86,7 +87,7 @@ export function initCryptoDatabase() {
                 enabled, max_leverage, maintenance_margin_rate, created_at, updated_at
             ) VALUES ('KC/QUOTA', 'KC', 'QUOTA', 0.01, 10000, 2, 4, 0.001, 0.0005, 1, 10, 0.05, ?, ?)
         `, [Date.now(), Date.now()]);
-        console.log('✅ 已创建默认交易对 KC/QUOTA');
+        logger.info('DatabaseCrypto', '已创建默认交易对 KC/QUOTA');
     }
 
     // 3. 用户资产表
@@ -302,7 +303,7 @@ export function initCryptoDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_exchange_records_linux_do_id ON exchange_records(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_exchange_records_timestamp ON exchange_records(timestamp)');
 
-    console.log('✅ 虚拟币交易系统数据库初始化完成');
+    logger.info('DatabaseCrypto', '虚拟币交易系统数据库初始化完成');
 }
 
 // ========== 辅助函数 ==========

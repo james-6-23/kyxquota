@@ -17,6 +17,7 @@ import {
     pushUserOrderUpdate,
 } from './websocket-server';
 import { riskControl } from './risk-control';
+import { logger } from '../../utils/logger';
 
 /**
  * 撮合引擎
@@ -61,7 +62,7 @@ export class TradingEngine {
             });
 
             if (anomalyDetection.anomalous) {
-                console.warn(`⚠️ 异常交易检测 [${linuxDoId}]:`, anomalyDetection.warnings);
+                logger.warn('TradingEngine', `异常交易检测 [${linuxDoId}]: ${anomalyDetection.warnings.join(', ')}`);
                 // 记录警告但仍允许交易（可根据需求调整）
             }
 
@@ -189,7 +190,7 @@ export class TradingEngine {
                 fills: fills.length > 0 ? fills : undefined,
             };
         } catch (error) {
-            console.error('创建订单失败:', error);
+            logger.error('TradingEngine', '创建订单失败', error);
             return { success: false, error: '创建订单失败，请稍后重试' };
         }
     }
@@ -287,7 +288,7 @@ export class TradingEngine {
 
             return fills;
         } catch (error) {
-            console.error('订单撮合失败:', error);
+            logger.error('TradingEngine', '订单撮合失败', error);
             throw error;
         }
     }
@@ -380,7 +381,7 @@ export class TradingEngine {
 
         // WebSocket推送：行情更新（异步，不阻塞）
         pushTickerUpdate(fill.symbol).catch(err =>
-            console.error('推送行情更新失败:', err)
+            logger.error('TradingEngine', '推送行情更新失败', err)
         );
 
         return fill;
@@ -539,7 +540,7 @@ export class TradingEngine {
 
             return { success: true };
         } catch (error) {
-            console.error('取消订单失败:', error);
+            logger.error('TradingEngine', '取消订单失败', error);
             return { success: false, error: '取消订单失败' };
         }
     }
@@ -583,7 +584,7 @@ export class TradingEngine {
             // 设置过期时间
             await redisCache.expire(key, CacheExpiry.RECENT_TRADES);
         } catch (error) {
-            console.error('缓存最新成交失败:', error);
+            logger.error('TradingEngine', '缓存最新成交失败', error);
         }
     }
 }

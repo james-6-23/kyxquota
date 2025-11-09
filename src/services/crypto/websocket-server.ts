@@ -5,6 +5,7 @@ import { orderBookManager } from './orderbook';
 import { klineManager } from './kline-generator';
 import { redisCache } from '../redis-cache';
 import { db } from '../../database';
+import { logger } from '../../utils/logger';
 
 /**
  * WebSocket连接管理器
@@ -28,8 +29,8 @@ class WebSocketConnectionManager {
         if (linuxDoId) {
             this.userConnections.set(linuxDoId, connectionId);
         }
-        
-        console.log(`✅ WebSocket连接建立 [${connectionId}]${linuxDoId ? ` 用户: ${linuxDoId}` : ''}`);
+
+        logger.info('WebSocket', `连接建立 [${connectionId}]${linuxDoId ? ` 用户: ${linuxDoId}` : ''}`);
     }
 
     /**
@@ -53,8 +54,8 @@ class WebSocketConnectionManager {
                 break;
             }
         }
-        
-        console.log(`🔌 WebSocket连接关闭 [${connectionId}]`);
+
+        logger.info('WebSocket', `连接关闭 [${connectionId}]`);
     }
 
     /**
@@ -64,9 +65,9 @@ class WebSocketConnectionManager {
         if (!this.subscriptions.has(channel)) {
             this.subscriptions.set(channel, new Set());
         }
-        
+
         this.subscriptions.get(channel)!.add(connectionId);
-        console.log(`📡 订阅频道 [${connectionId}] -> ${channel}`);
+        logger.debug('WebSocket', `订阅频道 [${connectionId}] -> ${channel}`);
     }
 
     /**
@@ -81,8 +82,8 @@ class WebSocketConnectionManager {
                 this.subscriptions.delete(channel);
             }
         }
-        
-        console.log(`🔕 取消订阅 [${connectionId}] -> ${channel}`);
+
+        logger.debug('WebSocket', `取消订阅 [${connectionId}] -> ${channel}`);
     }
 
     /**
@@ -94,7 +95,7 @@ class WebSocketConnectionManager {
             try {
                 ws.send(JSON.stringify(message));
             } catch (error) {
-                console.error(`发送消息失败 [${connectionId}]:`, error);
+                logger.error('WebSocket', `发送消息失败 [${connectionId}]`, error);
             }
         }
     }
@@ -114,7 +115,7 @@ class WebSocketConnectionManager {
                 try {
                     ws.send(messageStr);
                 } catch (error) {
-                    console.error(`广播消息失败 [${connectionId}]:`, error);
+                    logger.error('WebSocket', `广播消息失败 [${connectionId}]`, error);
                 }
             }
         }
@@ -222,7 +223,7 @@ export async function handleWebSocketMessage(
                 }));
         }
     } catch (error) {
-        console.error('处理WebSocket消息失败:', error);
+        logger.error('WebSocket', '处理WebSocket消息失败', error);
         ws.send(JSON.stringify({
             type: 'error',
             data: { message: '消息格式错误' },
@@ -292,7 +293,7 @@ async function sendInitialData(ws: WSContext, channel: string): Promise<void> {
             }
         }
     } catch (error) {
-        console.error('发送初始数据失败:', error);
+        logger.error('WebSocket', '发送初始数据失败', error);
     }
 }
 
@@ -470,7 +471,7 @@ export function startPeriodicPush(): void {
         }
     }, 5000);
 
-    console.log('✅ WebSocket定时推送任务已启动');
+    logger.info('WebSocket', 'WebSocket定时推送任务已启动');
 }
 
 /**

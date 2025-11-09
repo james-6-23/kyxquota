@@ -1,6 +1,7 @@
 import { db } from '../../database';
 import type { KlineData, TradeFill } from '../../types-crypto';
 import { redisCache, CacheKeys, CacheExpiry } from '../redis-cache';
+import { logger } from '../../utils/logger';
 
 /**
  * K线周期
@@ -26,7 +27,7 @@ export class KlineGenerator {
             try {
                 await this.updateKlineForInterval(trade, interval);
             } catch (error) {
-                console.error(`更新${interval} K线失败:`, error);
+                logger.error('KlineGenerator', `更新${interval} K线失败`, error);
             }
         }
     }
@@ -171,7 +172,7 @@ export class KlineGenerator {
             const cacheKey = CacheKeys.KLINE(kline.symbol, kline.interval, kline.timestamp);
             await redisCache.set(cacheKey, kline, CacheExpiry.KLINE);
         } catch (error) {
-            console.error('缓存K线失败:', error);
+            logger.error('KlineGenerator', '缓存K线失败', error);
         }
     }
 
@@ -186,7 +187,7 @@ export class KlineGenerator {
             const cacheKey = CacheKeys.KLINE(this.symbol, interval, timestamp);
             return await redisCache.get<KlineData>(cacheKey);
         } catch (error) {
-            console.error('从缓存获取K线失败:', error);
+            logger.error('KlineGenerator', '从缓存获取K线失败', error);
             return null;
         }
     }
@@ -263,7 +264,7 @@ export class KlineGenerator {
             count++;
         }
 
-        console.log(`✅ 生成了 ${count} 条 ${interval} K线数据`);
+        logger.info('KlineGenerator', `生成了 ${count} 条 ${interval} K线数据`);
         return count;
     }
 
@@ -278,7 +279,7 @@ export class KlineGenerator {
             WHERE symbol = ? AND timestamp < ?
         `, [this.symbol, cutoffTime]);
 
-        console.log(`🗑️ 清理了 ${result.changes} 条过期K线数据`);
+        logger.info('KlineGenerator', `清理了 ${result.changes} 条过期K线数据`);
         return result.changes || 0;
     }
 }
@@ -329,7 +330,7 @@ export class KlineManager {
      * 初始化所有交易对的K线数据
      */
     async initializeKlines(symbols: string[]): Promise<void> {
-        console.log('📊 开始初始化K线数据...');
+        logger.info('KlineManager', '开始初始化K线数据...');
 
         for (const symbol of symbols) {
             const generator = this.getGenerator(symbol);
@@ -340,7 +341,7 @@ export class KlineManager {
             `).get(symbol) as { first_time: number | null };
 
             if (!firstTrade?.first_time) {
-                console.log(`⚠️ ${symbol} 暂无成交记录，跳过K线初始化`);
+                logger.warn('KlineManager', `${symbol} 暂无成交记录，跳过K线初始化`);
                 continue;
             }
 
@@ -353,14 +354,14 @@ export class KlineManager {
             }
         }
 
-        console.log('✅ K线数据初始化完成');
+        logger.info('KlineManager', 'K线数据初始化完成');
     }
 
     /**
      * 定期清理过期K线数据
      */
     async cleanOldKlinesForAll(symbols: string[], daysToKeep: number = 90): Promise<void> {
-        console.log(`🗑️ 开始清理 ${daysToKeep} 天前的K线数据...`);
+        logger.info('KlineManager', `开始清理 ${daysToKeep} 天前的K线数据...`);
 
         let totalCleaned = 0;
         for (const symbol of symbols) {
@@ -369,7 +370,7 @@ export class KlineManager {
             totalCleaned += cleaned;
         }
 
-        console.log(`✅ 共清理了 ${totalCleaned} 条过期K线数据`);
+        logger.info('KlineManager', `共清理了 ${totalCleaned} 条过期K线数据`);
     }
 }
 
@@ -380,7 +381,7 @@ export const klineManager = new KlineManager();
  * 初始化K线系统
  */
 export async function initKlineSystem(): Promise<void> {
-    console.log('📊 初始化K线系统...');
+    logger.info('KlineSystem', '初始化K线系统...');
 
     // 获取所有启用的交易对
     const pairs = db.query('SELECT symbol FROM trading_pairs WHERE enabled = 1').all() as { symbol: string }[];
@@ -400,6 +401,6 @@ export async function initKlineSystem(): Promise<void> {
         }
     }, 5 * 60 * 1000); // 每5分钟检查一次
 
-    console.log('✅ K线系统初始化完成');
+    logger.info('KlineSystem', 'K线系统初始化完成');
 }
 

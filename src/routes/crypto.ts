@@ -6,6 +6,7 @@ import { riskControl } from '../services/crypto/risk-control';
 import { db } from '../database';
 import { getCryptoConfig, getUserAsset, getUserAllAssets } from '../database-crypto';
 import type { TradeOrder, TradeFill, CreateOrderParams } from '../types-crypto';
+import { logger } from '../utils/logger';
 
 const crypto = new Hono();
 
@@ -13,9 +14,9 @@ const crypto = new Hono();
 
 /**
  * 创建订单
- * POST /api/crypto/order/create
+ * POST /api/crypto/order
  */
-crypto.post('/order/create', async (c) => {
+crypto.post('/order', async (c) => {
     try {
         const session = c.get('session');
         if (!session?.linux_do_id) {
@@ -41,7 +42,7 @@ crypto.post('/order/create', async (c) => {
 
         return c.json(result);
     } catch (error) {
-        console.error('创建订单失败:', error);
+        logger.error('CryptoAPI', '创建订单失败', error);
         return c.json({ success: false, error: '创建订单失败' }, 500);
     }
 });
@@ -67,16 +68,16 @@ crypto.post('/order/cancel', async (c) => {
         const result = await tradingEngine.cancelOrder(order_id, session.linux_do_id);
         return c.json(result);
     } catch (error) {
-        console.error('取消订单失败:', error);
+        logger.error('CryptoAPI', '取消订单失败', error);
         return c.json({ success: false, error: '取消订单失败' }, 500);
     }
 });
 
 /**
  * 获取用户当前订单列表
- * GET /api/crypto/order/list
+ * GET /api/crypto/orders
  */
-crypto.get('/order/list', async (c) => {
+crypto.get('/orders', async (c) => {
     try {
         const session = c.get('session');
         if (!session?.linux_do_id) {
@@ -102,10 +103,10 @@ crypto.get('/order/list', async (c) => {
         params.push(limit);
 
         const orders = db.query(sql).all(...params) as TradeOrder[];
-        
+
         return c.json({ success: true, orders });
     } catch (error) {
-        console.error('获取订单列表失败:', error);
+        logger.error('CryptoAPI', '获取订单列表失败', error);
         return c.json({ success: false, error: '获取订单列表失败' }, 500);
     }
 });
@@ -159,7 +160,7 @@ crypto.get('/order/history', async (c) => {
             },
         });
     } catch (error) {
-        console.error('获取历史订单失败:', error);
+        logger.error('CryptoAPI', '获取历史订单失败', error);
         return c.json({ success: false, error: '获取历史订单失败' }, 500);
     }
 });
@@ -213,7 +214,7 @@ crypto.get('/fills', async (c) => {
             },
         });
     } catch (error) {
-        console.error('获取成交记录失败:', error);
+        logger.error('CryptoAPI', '获取成交记录失败', error);
         return c.json({ success: false, error: '获取成交记录失败' }, 500);
     }
 });
@@ -232,9 +233,9 @@ crypto.get('/orderbook', async (c) => {
         const orderBook = orderBookManager.getOrderBook(symbol);
         const snapshot = orderBook.getSnapshot(levels);
 
-        return c.json({ success: true, data: snapshot });
+        return c.json({ success: true, depth: snapshot });
     } catch (error) {
-        console.error('获取订单簿失败:', error);
+        logger.error('CryptoAPI', '获取订单簿失败', error);
         return c.json({ success: false, error: '获取订单簿失败' }, 500);
     }
 });
@@ -257,7 +258,7 @@ crypto.get('/trades', async (c) => {
 
         return c.json({ success: true, trades: fills });
     } catch (error) {
-        console.error('获取最新成交失败:', error);
+        logger.error('CryptoAPI', '获取最新成交失败', error);
         return c.json({ success: false, error: '获取最新成交失败' }, 500);
     }
 });
@@ -287,7 +288,7 @@ crypto.get('/ticker', async (c) => {
                     symbol,
                     last_price: 10000,
                     price_change_24h: 0,
-                    price_change_percent_24h: 0,
+                    change_24h: 0, // 添加前端期望的字段
                     high_24h: 10000,
                     low_24h: 10000,
                     volume_24h: 0,
@@ -314,7 +315,7 @@ crypto.get('/ticker', async (c) => {
                 symbol,
                 last_price: lastPrice,
                 price_change_24h: priceChange,
-                price_change_percent_24h: priceChangePercent,
+                change_24h: priceChangePercent / 100, // 添加前端期望的字段（小数形式）
                 high_24h: high24h,
                 low_24h: low24h,
                 volume_24h: volume24h,
@@ -324,7 +325,7 @@ crypto.get('/ticker', async (c) => {
             },
         });
     } catch (error) {
-        console.error('获取行情失败:', error);
+        logger.error('CryptoAPI', '获取行情失败', error);
         return c.json({ success: false, error: '获取行情失败' }, 500);
     }
 });
@@ -343,10 +344,10 @@ crypto.get('/assets', async (c) => {
         }
 
         const assets = getUserAllAssets(session.linux_do_id);
-        
+
         return c.json({ success: true, assets });
     } catch (error) {
-        console.error('获取资产失败:', error);
+        logger.error('CryptoAPI', '获取资产失败', error);
         return c.json({ success: false, error: '获取资产失败' }, 500);
     }
 });
@@ -372,7 +373,7 @@ crypto.get('/user/info', async (c) => {
             },
         });
     } catch (error) {
-        console.error('获取用户信息失败:', error);
+        logger.error('CryptoAPI', '获取用户信息失败', error);
         return c.json({ success: false, error: '获取用户信息失败' }, 500);
     }
 });
@@ -386,7 +387,7 @@ crypto.get('/config', async (c) => {
         const config = getCryptoConfig();
         return c.json({ success: true, config });
     } catch (error) {
-        console.error('获取配置失败:', error);
+        logger.error('CryptoAPI', '获取配置失败', error);
         return c.json({ success: false, error: '获取配置失败' }, 500);
     }
 });
@@ -400,7 +401,7 @@ crypto.get('/pairs', async (c) => {
         const pairs = db.query('SELECT * FROM trading_pairs WHERE enabled = 1').all();
         return c.json({ success: true, pairs });
     } catch (error) {
-        console.error('获取交易对失败:', error);
+        logger.error('CryptoAPI', '获取交易对失败', error);
         return c.json({ success: false, error: '获取交易对失败' }, 500);
     }
 });
@@ -438,7 +439,7 @@ crypto.get('/klines', async (c) => {
             count: klines.length,
         });
     } catch (error) {
-        console.error('获取K线数据失败:', error);
+        logger.error('CryptoAPI', '获取K线数据失败', error);
         return c.json({ success: false, error: '获取K线数据失败' }, 500);
     }
 });
@@ -474,7 +475,7 @@ crypto.get('/kline/latest', async (c) => {
             kline,
         });
     } catch (error) {
-        console.error('获取最新K线失败:', error);
+        logger.error('CryptoAPI', '获取最新K线失败', error);
         return c.json({ success: false, error: '获取最新K线失败' }, 500);
     }
 });
@@ -517,7 +518,7 @@ crypto.post('/admin/klines/initialize', async (c) => {
             count,
         });
     } catch (error) {
-        console.error('初始化K线数据失败:', error);
+        logger.error('CryptoAPI', '初始化K线数据失败', error);
         return c.json({ success: false, error: '初始化K线数据失败' }, 500);
     }
 });
@@ -547,7 +548,7 @@ crypto.post('/admin/klines/clean', async (c) => {
             message: `成功清理${daysToKeep}天前的K线数据`,
         });
     } catch (error) {
-        console.error('清理K线数据失败:', error);
+        logger.error('CryptoAPI', '清理K线数据失败', error);
         return c.json({ success: false, error: '清理K线数据失败' }, 500);
     }
 });
@@ -570,7 +571,7 @@ crypto.get('/user/stats', async (c) => {
             stats,
         });
     } catch (error) {
-        console.error('获取用户统计失败:', error);
+        logger.error('CryptoAPI', '获取用户统计失败', error);
         return c.json({ success: false, error: '获取用户统计失败' }, 500);
     }
 });
@@ -593,7 +594,7 @@ crypto.get('/user/risk-level', async (c) => {
             riskLevel,
         });
     } catch (error) {
-        console.error('获取用户风险等级失败:', error);
+        logger.error('CryptoAPI', '获取用户风险等级失败', error);
         return c.json({ success: false, error: '获取用户风险等级失败' }, 500);
     }
 });
@@ -622,7 +623,7 @@ crypto.get('/admin/user-limits/:linuxDoId', async (c) => {
             limits,
         });
     } catch (error) {
-        console.error('获取用户限额失败:', error);
+        logger.error('CryptoAPI', '获取用户限额失败', error);
         return c.json({ success: false, error: '获取用户限额失败' }, 500);
     }
 });
@@ -676,7 +677,7 @@ crypto.get('/admin/risk-stats', async (c) => {
             }),
         });
     } catch (error) {
-        console.error('获取风控统计失败:', error);
+        logger.error('CryptoAPI', '获取风控统计失败', error);
         return c.json({ success: false, error: '获取风控统计失败' }, 500);
     }
 });
@@ -695,7 +696,7 @@ crypto.get('/admin/stats/orders', async (c) => {
         const result = db.query('SELECT COUNT(*) as total FROM trade_orders').get() as { total: number };
         return c.json({ success: true, total: result.total });
     } catch (error) {
-        console.error('获取订单统计失败:', error);
+        logger.error('CryptoAPI', '获取订单统计失败', error);
         return c.json({ success: false, error: '获取订单统计失败' }, 500);
     }
 });
@@ -716,10 +717,10 @@ crypto.get('/admin/stats/active-users', async (c) => {
             FROM trade_orders
             WHERE created_at >= ?
         `).get(Date.now() - 24 * 60 * 60 * 1000) as { count: number };
-        
+
         return c.json({ success: true, count: result.count });
     } catch (error) {
-        console.error('获取活跃用户统计失败:', error);
+        logger.error('CryptoAPI', '获取活跃用户统计失败', error);
         return c.json({ success: false, error: '获取活跃用户统计失败' }, 500);
     }
 });
@@ -750,10 +751,10 @@ crypto.get('/admin/orders', async (c) => {
         params.push(parseInt(limit));
         
         const orders = db.query(query).all(...params);
-        
+
         return c.json({ success: true, orders });
     } catch (error) {
-        console.error('获取订单列表失败:', error);
+        logger.error('CryptoAPI', '获取订单列表失败', error);
         return c.json({ success: false, error: '获取订单列表失败' }, 500);
     }
 });
@@ -780,7 +781,7 @@ crypto.post('/admin/pair/toggle', async (c) => {
 
         return c.json({ success: true, message: '操作成功' });
     } catch (error) {
-        console.error('切换交易对状态失败:', error);
+        logger.error('CryptoAPI', '切换交易对状态失败', error);
         return c.json({ success: false, error: '操作失败' }, 500);
     }
 });
@@ -828,7 +829,7 @@ crypto.post('/admin/config', async (c) => {
 
         return c.json({ success: true, message: '配置更新成功' });
     } catch (error) {
-        console.error('更新配置失败:', error);
+        logger.error('CryptoAPI', '更新配置失败', error);
         return c.json({ success: false, error: '更新配置失败' }, 500);
     }
 });

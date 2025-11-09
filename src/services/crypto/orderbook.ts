@@ -1,5 +1,6 @@
 import type { TradeOrder, OrderbookSnapshot } from '../../types-crypto';
 import { redisCache, CacheKeys, CacheExpiry } from '../redis-cache';
+import { logger } from '../../utils/logger';
 
 /**
  * 优先队列节点
@@ -405,7 +406,7 @@ export class OrderBook {
             const cacheKey = CacheKeys.ORDERBOOK(this.symbol);
             await redisCache.set(cacheKey, snapshot, CacheExpiry.ORDERBOOK);
         } catch (error) {
-            console.error(`订单簿缓存保存失败 [${this.symbol}]:`, error);
+            logger.error('OrderBook', `订单簿缓存保存失败 [${this.symbol}]`, error);
         }
     }
 
@@ -417,7 +418,7 @@ export class OrderBook {
             const cacheKey = CacheKeys.ORDERBOOK(symbol);
             return await redisCache.get<OrderbookSnapshot>(cacheKey);
         } catch (error) {
-            console.error(`订单簿缓存加载失败 [${symbol}]:`, error);
+            logger.error('OrderBook', `订单簿缓存加载失败 [${symbol}]`, error);
             return null;
         }
     }

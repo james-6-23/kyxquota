@@ -3296,8 +3296,8 @@ function fixAchievementDescriptions(): void {
             // 只更新旧描述的成就
             const result = db.query<{ changes: number }, never>(`
                 UPDATE achievements 
-                SET description = '${update.newDesc}', updated_at = ${now}
-                WHERE achievement_key = '${update.key}' AND description = '${update.oldDesc}'
+                SET achievement_desc = '${update.newDesc}', updated_at = ${now}
+                WHERE achievement_key = '${update.key}' AND achievement_desc = '${update.oldDesc}'
             `).run();
 
             if (result && result.changes > 0) {

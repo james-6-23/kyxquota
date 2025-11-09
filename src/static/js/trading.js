@@ -89,7 +89,7 @@ function initUI() {
 // 加载用户信息
 async function loadUserInfo() {
     try {
-        const response = await fetch('/api/user/info');
+        const response = await fetch('/api/crypto/user/info');
         const data = await response.json();
         if (data.success) {
             document.getElementById('userName').textContent = data.user.username;
@@ -337,7 +337,7 @@ function initDepthChart() {
 // 加载订单簿
 async function loadOrderbook() {
     try {
-        const response = await fetch(`/api/crypto/orderbook?symbol=${currentSymbol}&depth=20`);
+        const response = await fetch(`/api/crypto/orderbook?symbol=${currentSymbol}&levels=20`);
         const data = await response.json();
         if (data.success && data.depth) {
             updateOrderbook(data.depth);
