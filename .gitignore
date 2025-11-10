@@ -30,6 +30,8 @@ desktop.ini
 *.swp
 *.swo
 *~
+docs/
+
 
 # Build
 dist/
