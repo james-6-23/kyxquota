@@ -20,8 +20,6 @@ COPY tsconfig.json ./
 # 复制老虎机符号图片（重要！）
 COPY public ./public
 
-# 复制工具脚本（虚拟币交易初始化工具）
-COPY scripts ./scripts
 
 # 创建必要的目录
 RUN mkdir -p /app/data /app/logs
