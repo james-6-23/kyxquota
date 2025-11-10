@@ -1225,15 +1225,7 @@ export function initDatabase() {
     // 插入默认数据
     insertDefaultData();
 
-    // 初始化虚拟币交易系统
-    try {
-        const { initCryptoDatabase } = require('./database-crypto');
-        initCryptoDatabase();
-    } catch (error) {
-        console.error('⚠️ 交易系统数据库初始化失败:', error);
-    }
-
-    console.log('✅ 数据库初始化完成（含高级场、至尊场、配置方案系统和交易系统）');
+    console.log('✅ 数据库初始化完成（含高级场、至尊场、配置方案系统）');
 
     // 初始化预编译查询语句
     initQueries();

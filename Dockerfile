@@ -40,8 +40,7 @@ ENV NODE_ENV=production \
     DATABASE_PATH=/app/data/kyxquota.db \
     REDIS_HOST=redis \
     REDIS_PORT=6379 \
-    REDIS_PASSWORD=123456 \
-    CRYPTO_TRADING_ENABLED=true
+    REDIS_PASSWORD=123456
 
 # 启动应用
 CMD ["bun", "src/index.ts"]
