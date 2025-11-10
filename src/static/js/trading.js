@@ -92,8 +92,30 @@ async function loadUserInfo() {
         const response = await fetch('/api/crypto/user/info');
         const data = await response.json();
         if (data.success) {
-            document.getElementById('userName').textContent = data.user.username;
-            document.getElementById('userAvatar').src = data.user.avatar || '/static/images/default-avatar.png';
+            const username = data.user.username;
+            const avatarUrl = data.user.avatar;
+
+            // 显示用户名，添加@前缀
+            document.getElementById('userName').textContent = `@${username}`;
+
+            // 处理头像
+            const avatarImg = document.getElementById('userAvatar');
+
+            if (avatarUrl && avatarUrl.trim()) {
+                // 尝试加载用户头像
+                avatarImg.src = avatarUrl;
+                avatarImg.onerror = function() {
+                    // 如果加载失败，使用letter avatar
+                    const firstLetter = username.charAt(0).toLowerCase();
+                    const colorCode = firstLetter.charCodeAt(0) % 10;
+                    avatarImg.src = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
+                };
+            } else {
+                // 如果没有头像URL，直接使用letter avatar
+                const firstLetter = username.charAt(0).toLowerCase();
+                const colorCode = firstLetter.charCodeAt(0) % 10;
+                avatarImg.src = `https://linux.do/letter_avatar_proxy/v4/letter/${firstLetter}/${colorCode}/120.png`;
+            }
         }
     } catch (error) {
         console.error('加载用户信息失败:', error);
