@@ -166,23 +166,34 @@ export async function transferToAPI(
     }
 
     // 6. 创建划转记录
-    const transferResult = recordTransferStmt().run(
-        linuxDoId,
-        username,
-        'kyx_to_api',
-        amountKYX,
-        amountUSD,
-        amountQuota,
-        CURRENCY.EXCHANGE_RATE,
-        'pending',
-        fee,
-        Date.now()
-    );
+    let transferResult;
+    try {
+        transferResult = recordTransferStmt().run(
+            linuxDoId,
+            username,
+            'kyx_to_api',
+            amountKYX,
+            amountUSD,
+            amountQuota,
+            CURRENCY.EXCHANGE_RATE,
+            'pending',
+            fee,
+            Date.now()
+        );
+    } catch (error: any) {
+        // 解冻金额
+        walletService.unfreezeKYX(linuxDoId, actualAmount);
+        logger.error('划转', `❌ 创建划转记录异常:`, error);
+        return {
+            success: false,
+            message: `创建划转记录失败: ${error.message || '数据库错误'}`
+        };
+    }
 
     if (!transferResult || !transferResult.lastInsertRowid) {
         // 解冻金额
         walletService.unfreezeKYX(linuxDoId, actualAmount);
-        logger.error('划转', `❌ 创建划转记录失败: transferResult 无效`);
+        logger.error('划转', `❌ 创建划转记录失败: transferResult =`, transferResult);
         return {
             success: false,
             message: '创建划转记录失败，请稍后重试'
@@ -356,21 +367,30 @@ export async function transferFromAPI(
     logger.info('反向划转', `💸 金额换算: ${amountQuota} quota = ${formatKYX(amountKYX)} = ${formatQuota(amountQuota)}`);
 
     // 4. 创建划转记录
-    const transferResult = recordTransferStmt().run(
-        linuxDoId,
-        username,
-        'api_to_kyx',
-        amountKYX,
-        amountUSD,
-        amountQuota,
-        CURRENCY.EXCHANGE_RATE,
-        'pending',
-        0,  // 反向划转无手续费
-        Date.now()
-    );
+    let transferResult;
+    try {
+        transferResult = recordTransferStmt().run(
+            linuxDoId,
+            username,
+            'api_to_kyx',
+            amountKYX,
+            amountUSD,
+            amountQuota,
+            CURRENCY.EXCHANGE_RATE,
+            'pending',
+            0,  // 反向划转无手续费
+            Date.now()
+        );
+    } catch (error: any) {
+        logger.error('反向划转', `❌ 创建划转记录异常:`, error);
+        return {
+            success: false,
+            message: `创建划转记录失败: ${error.message || '数据库错误'}`
+        };
+    }
 
     if (!transferResult || !transferResult.lastInsertRowid) {
-        logger.error('反向划转', `❌ 创建划转记录失败: transferResult 无效`);
+        logger.error('反向划转', `❌ 创建划转记录失败: transferResult =`, transferResult);
         return {
             success: false,
             message: '创建划转记录失败，请稍后重试'
