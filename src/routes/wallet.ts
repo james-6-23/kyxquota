@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { walletService } from '../services/wallet';
 import { transferService } from '../services/transfer';
-import { getKyxUserByLinuxDoId } from '../services/kyx-api';
+import { getKyxUserById } from '../services/kyx-api';
 import { adminQueries, userQueries } from '../database';
 import { formatKYX, formatUSD, kyxToUSD, quotaToUSD, quotaToKYX, CURRENCY } from '../utils/currency';
 
@@ -310,8 +310,8 @@ app.get('/api-balance', async (c) => {
         }
 
         // 从 KYX API 获取最新余额
-        const apiResult = await getKyxUserByLinuxDoId(
-            user.linux_do_id,
+        const apiResult = await getKyxUserById(
+            user.kyx_user_id,
             adminConfig.session,
             adminConfig.new_api_user
         );
