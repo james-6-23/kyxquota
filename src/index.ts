@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { CONFIG, validateConfig } from './config';
-import { initDatabase, db } from './database';
+import { initDatabase, databaseHealthCheck, optimizeDatabase } from './database';
 import { cacheManager } from './cache';
 import { startRewardProcessor } from './services/reward-processor';
 import { startRankAchievementChecker } from './services/rank-achievement-checker';
@@ -11,6 +11,9 @@ validateConfig();
 
 // 初始化数据库
 initDatabase();
+
+// 数据库健康检查
+databaseHealthCheck();
 
 // 🔥 预热概率缓存（避免重启后缓存丢失）
 (async () => {
@@ -59,8 +62,32 @@ startRankAchievementChecker();
             }
         }
     }, 5 * 60 * 1000); // 每5分钟检查一次
-    
+
     console.log('✅ 排行榜数据清理服务已启动（每天凌晨3点执行）');
+})();
+
+// 🔧 启动数据库优化定时任务
+(async () => {
+    // 每天凌晨4点执行数据库优化
+    setInterval(() => {
+        const now = new Date();
+        const utcTime = now.getTime() + now.getTimezoneOffset() * 60000;
+        const beijingTime = new Date(utcTime + 8 * 3600000);
+        const hour = beijingTime.getHours();
+        const minute = beijingTime.getMinutes();
+
+        // 在凌晨4点到4点5分之间执行
+        if (hour === 4 && minute < 5) {
+            try {
+                console.log('🔧 开始执行定时数据库优化...');
+                optimizeDatabase();
+            } catch (error) {
+                console.error('❌ 数据库优化失败:', error);
+            }
+        }
+    }, 5 * 60 * 1000); // 每5分钟检查一次
+
+    console.log('✅ 数据库优化服务已启动（每天凌晨4点执行）');
 })();
 
 // 创建应用
@@ -74,6 +101,7 @@ import slotRoutes from './routes/slot';
 import kunbeiRoutes from './routes/kunbei';
 import supremeRoutes from './routes/supreme';
 import achievementRoutes from './routes/achievement';
+import walletRoutes from './routes/wallet';
 
 
 // 中间件
@@ -87,6 +115,7 @@ app.route('/api/slot', slotRoutes);
 app.route('/api/kunbei', kunbeiRoutes);
 app.route('/api/supreme', supremeRoutes);
 app.route('/api/achievement', achievementRoutes);
+app.route('/api/wallet', walletRoutes);
 
 // 静态文件服务（老虎机符号图片）
 app.get('/slot-symbols/:filename', async (c) => {
@@ -159,6 +188,57 @@ app.get('/', async (c) => {
 app.get('/admin', async (c) => {
     const html = await Bun.file('src/templates/admin.html').text();
     return c.html(html);
+});
+
+// ========== 性能监控 API ==========
+
+// 健康检查端点
+app.get('/api/health', (c) => {
+    return c.json({
+        status: 'ok',
+        timestamp: Date.now(),
+        uptime: process.uptime(),
+        memory: process.memoryUsage()
+    });
+});
+
+// 数据库统计信息（管理员）
+app.get('/api/admin/db/stats', async (c) => {
+    try {
+        const { getDatabaseStats } = await import('./database');
+        const stats = getDatabaseStats();
+
+        return c.json({
+            success: true,
+            stats,
+            timestamp: Date.now()
+        });
+    } catch (error: any) {
+        return c.json({
+            success: false,
+            message: error.message
+        }, 500);
+    }
+});
+
+// 手动触发数据库优化（管理员）
+app.post('/api/admin/db/optimize', async (c) => {
+    try {
+        const start = Date.now();
+        optimizeDatabase();
+        const duration = Date.now() - start;
+
+        return c.json({
+            success: true,
+            message: '数据库优化完成',
+            duration
+        });
+    } catch (error: any) {
+        return c.json({
+            success: false,
+            message: error.message
+        }, 500);
+    }
 });
 
 // 404

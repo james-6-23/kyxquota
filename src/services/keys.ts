@@ -288,7 +288,26 @@ export async function validateAndDonateKeys(
     // 计算奖励额度
     const totalQuotaAdded = validKeys.length * CONFIG.DONATE_QUOTA_PER_KEY;
 
-    // 查询用户信息并更新额度（adminConfig 已在函数开头获取）
+    // 💰 优先添加 KYX 到钱包（本地操作，无需 API）
+    try {
+        const { walletService } = await import('./wallet');
+        const { quotaToKYX, formatKYX } = await import('../utils/currency');
+
+        const kyxAmount = quotaToKYX(totalQuotaAdded);
+        walletService.addKYX(
+            linuxDoId,
+            kyxAmount,
+            'donate_keys',
+            `投喂 ${validKeys.length} 个 ${keyType === 'iflow' ? 'iFlow' : 'ModelScope'} Key`
+        );
+
+        logger.info('投喂Keys', `✅ 添加 KYX 成功 - 用户: ${username}, 奖励: ${formatKYX(kyxAmount)}`);
+    } catch (error: any) {
+        logger.error('投喂Keys', `❌ 添加 KYX 失败 - 用户: ${username}, 错误: ${error.message}`);
+        // KYX 添加失败不影响后续流程
+    }
+
+    // 🔄 同步到公益站 API（保持兼容性）
     const searchResult = await searchAndFindExactUser(
         username,
         adminConfig.session,
@@ -300,7 +319,7 @@ export async function validateAndDonateKeys(
         const kyxUser = searchResult.user;
         const newQuota = kyxUser.quota + totalQuotaAdded;
 
-        logger.debug('投喂Keys', `准备添加额度 - 用户: ${kyxUser.username}, 当前: ${kyxUser.quota}, 奖励: ${totalQuotaAdded}, 目标: ${newQuota}`);
+        logger.debug('投喂Keys', `准备同步额度到API - 用户: ${kyxUser.username}, 当前: ${kyxUser.quota}, 奖励: ${totalQuotaAdded}, 目标: ${newQuota}`);
 
         const updateResult = await updateKyxUserQuota(
             kyxUser.id,
@@ -313,14 +332,14 @@ export async function validateAndDonateKeys(
 
         // 【关键】检查额度更新结果
         if (!updateResult || !updateResult.success) {
-            logger.error('投喂Keys', `❌ 添加额度失败 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
-            // 注意：即使额度添加失败，仍然继续推送keys和保存记录
-            // 这样管理员可以从记录中看到失败情况并补发
+            logger.error('投喂Keys', `❌ 同步额度到API失败 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
+            // 注意：即使API同步失败，仍然继续推送keys和保存记录
+            // 用户钱包已经添加了KYX，这才是最重要的
         } else {
-            logger.info('投喂Keys', `✅ 添加额度成功 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}`);
+            logger.info('投喂Keys', `✅ 同步额度到API成功 - 用户: ${kyxUser.username}, 奖励: $${(totalQuotaAdded / 500000).toFixed(2)}`);
         }
     } else {
-        logger.error('投喂Keys', `⚠️ 未找到用户或搜索失败，无法添加额度 - LinuxDo ID: ${linuxDoId}`);
+        logger.error('投喂Keys', `⚠️ 未找到用户或搜索失败，API同步跳过 - LinuxDo ID: ${linuxDoId}`);
     }
 
     // 推送 keys 到分组（根据 key_type 使用不同的 group_id）

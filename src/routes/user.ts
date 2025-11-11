@@ -165,67 +165,61 @@ app.post('/auth/bind', requireAuth, async (c) => {
     cacheManager.delete(`user:${session.linux_do_id}`);
     cacheManager.clear(`kyx_user:${kyxUser.id}`);
 
-    // 如果是首次绑定，赠送新手额度
+    // 如果是首次绑定，赠送新手额度（使用 KYX 钱包）
     if (isFirstBind) {
         const bonusQuota = 50000000;
-        const newQuota = kyxUser.quota + bonusQuota;
 
         console.log('[绑定] 首次绑定，赠送额度:', bonusQuota);
 
-        const updateResult = await updateKyxUserQuota(
-            kyxUser.id,
-            newQuota,
-            adminConfig.session,
-            adminConfig.new_api_user,
-            kyxUser.username,
-            kyxUser.group || 'default'
-        );
+        try {
+            // 💰 使用 KYX 钱包系统 - 初始化钱包并添加绑定奖励
+            const { walletService } = await import('../services/wallet');
+            const { formatKYX } = await import('../utils/currency');
 
-        if (!updateResult || !updateResult.success) {
-            console.error(`[绑定] ❌ 发放新手奖励失败 - 用户: ${kyxUser.username}, 错误: ${updateResult?.message || '未知错误'}`);
+            walletService.initializeUserWallet(session.linux_do_id, bonusQuota);
+
+            // 保存绑定奖励记录到领取记录表
+            const today = getTodayDate();  // 🔥 使用北京时间
+            const timestamp = Date.now();
+            claimQueries.insert.run(
+                session.linux_do_id,
+                kyxUser.username,
+                bonusQuota,
+                timestamp,
+                today
+            );
+            console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
+
+            // 🏆 首次绑定成就
+            try {
+                await checkAndUnlockAchievement(session.linux_do_id, 'first_bind');
+            } catch (achievementError) {
+                console.error('[成就系统] 检查首次绑定成就时出错:', achievementError);
+            }
+
+            const bonusKYX = walletService.getOrCreateWallet(session.linux_do_id).kyx_balance;
+
+            return c.json({
+                success: true,
+                message: `绑定成功！已赠送新手奖励 ${formatKYX(bonusKYX)}`,
+                data: {
+                    kyx_user: kyxUser,
+                    bonus_kyx: bonusKYX,
+                    bonus_kyx_formatted: formatKYX(bonusKYX),
+                },
+            });
+        } catch (error: any) {
+            console.error(`[绑定] ❌ 发放新手奖励失败 - 用户: ${kyxUser.username}, 错误: ${error.message}`);
             // 绑定成功但奖励发放失败，告知用户
             return c.json({
                 success: true,
-                message: `绑定成功！但新手奖励发放失败（${updateResult?.message || '未知错误'}），请联系管理员补发`,
+                message: `绑定成功！但新手奖励发放失败（${error.message}），请联系管理员补发`,
                 data: {
                     kyx_user: kyxUser,
-                    quota_before: kyxUser.quota,
-                    bonus_quota: bonusQuota,
                     bonus_failed: true
                 }
             });
         }
-
-        // 保存绑定奖励记录到领取记录表
-        const today = getTodayDate();  // 🔥 使用北京时间
-        const timestamp = Date.now();
-        claimQueries.insert.run(
-            session.linux_do_id,
-            kyxUser.username,
-            bonusQuota,
-            timestamp,
-            today
-        );
-        console.log(`[用户操作] 🎁 新手奖励发放成功 - 用户: ${kyxUser.username}, 奖励: $${(bonusQuota / 500000).toFixed(2)}`);
-
-        // 🏆 首次绑定成就
-        try {
-            await checkAndUnlockAchievement(session.linux_do_id, 'first_bind');
-        } catch (achievementError) {
-            console.error('[成就系统] 检查首次绑定成就时出错:', achievementError);
-        }
-
-        return c.json({
-            success: true,
-            message: `绑定成功！已赠送新手奖励 $${(bonusQuota / 500000).toFixed(2)}`,
-            data: {
-                kyx_user: kyxUser,
-                quota_before: kyxUser.quota,
-                quota_after: newQuota,
-                bonus: bonusQuota,
-                bonusCNY: (bonusQuota / 500000).toFixed(2),
-            },
-        });
     } else {
         return c.json({
             success: true,
@@ -238,7 +232,7 @@ app.post('/auth/bind', requireAuth, async (c) => {
 });
 
 /**
- * 查询用户额度
+ * 查询用户额度（包含 KYX 钱包信息）
  */
 app.get('/user/quota', requireAuth, async (c) => {
     const session = c.get('session');
@@ -256,6 +250,13 @@ app.get('/user/quota', requireAuth, async (c) => {
         return c.json({ success: false, message: '未绑定账号' }, 400);
     }
 
+    // 💰 获取 KYX 钱包信息（本地快速查询）
+    const { walletService } = await import('../services/wallet');
+    const { formatKYX, kyxToUSD, formatUSD } = await import('../utils/currency');
+
+    const wallet = walletService.getOrCreateWallet(user.linux_do_id);
+    const availableKYX = walletService.getAvailableBalance(user.linux_do_id);
+
     // 获取管理员配置
     const adminConfig = await cacheManager.getOrLoad(
         'admin_config',
@@ -263,7 +264,7 @@ app.get('/user/quota', requireAuth, async (c) => {
         300000
     );
 
-    // 优化：直接通过 kyx_user_id 查询，避免每次都搜索用户
+    // 🔄 公益站 API 余额（可选，降低查询频率）
     const cacheKey = `kyx_user:${user.kyx_user_id}:quota`;
     const kyxUserResult = await cacheManager.getOrLoad(
         cacheKey,
@@ -274,32 +275,13 @@ app.get('/user/quota', requireAuth, async (c) => {
                 adminConfig!.new_api_user
             );
         },
-        120000 // 缓存2分钟，大幅减少查询频率（从30秒提升到2分钟）
+        300000 // 缓存5分钟（从2分钟提升，进一步减少API调用）
     );
 
-    if (!kyxUserResult.success || !kyxUserResult.user) {
-        if (
-            kyxUserResult.message?.includes('未登录') ||
-            kyxUserResult.message?.includes('无权进行此操作')
-        ) {
-            return c.json(
-                {
-                    success: false,
-                    message: '系统配置错误，请联系管理员',
-                },
-                500
-            );
-        }
-        return c.json(
-            {
-                success: false,
-                message: kyxUserResult.message || '查询额度失败',
-            },
-            500
-        );
+    let kyxUser = null;
+    if (kyxUserResult.success && kyxUserResult.user) {
+        kyxUser = kyxUserResult.user;
     }
-
-    const kyxUser = kyxUserResult.user!;
 
     // 检查今日是否已领取（使用北京时间）
     const today = getTodayDate();  // 🔥 使用北京时间
@@ -358,16 +340,29 @@ app.get('/user/quota', requireAuth, async (c) => {
     return c.json({
         success: true,
         data: {
-            username: kyxUser.username,
-            display_name: kyxUser.display_name,
+            username: user.username,
+            display_name: kyxUser?.display_name || user.username,
             linux_do_id: user.linux_do_id,
             linux_do_username: session.username || '',
             avatar_url: session.avatar_url || '',
-            name: session.name || kyxUser.username,
-            quota: kyxUser.quota,
-            used_quota: kyxUser.used_quota,
-            total: kyxUser.quota + kyxUser.used_quota,
-            can_claim: kyxUser.quota < CONFIG.MIN_QUOTA_THRESHOLD && remaining_claims > 0,
+            name: session.name || user.username,
+            // 💰 KYX 钱包信息（主要显示）
+            kyx_balance: wallet.kyx_balance,
+            kyx_available: availableKYX,
+            kyx_frozen: wallet.kyx_frozen,
+            kyx_balance_formatted: formatKYX(wallet.kyx_balance),
+            kyx_available_formatted: formatKYX(availableKYX),
+            kyx_balance_usd: kyxToUSD(wallet.kyx_balance),
+            kyx_balance_usd_formatted: formatUSD(kyxToUSD(wallet.kyx_balance)),
+            // 🔄 公益站 API 余额（仅作参考）
+            api_quota: kyxUser?.quota || 0,
+            api_used_quota: kyxUser?.used_quota || 0,
+            api_total: kyxUser ? kyxUser.quota + kyxUser.used_quota : 0,
+            // 兼容旧版字段
+            quota: kyxUser?.quota || 0,
+            used_quota: kyxUser?.used_quota || 0,
+            total: kyxUser ? kyxUser.quota + kyxUser.used_quota : 0,
+            can_claim: remaining_claims > 0,
             claimed_today: !!claimToday,
             // 投喂相关信息
             today_donate_modelscope_count: today_donate_modelscope_count,
@@ -388,7 +383,7 @@ app.get('/user/quota', requireAuth, async (c) => {
 });
 
 /**
- * 每日领取额度
+ * 每日领取额度（使用 KYX 钱包）
  */
 app.post('/claim/daily', requireAuth, async (c) => {
     const session = c.get('session');
@@ -401,7 +396,7 @@ app.post('/claim/daily', requireAuth, async (c) => {
 
     // 检查今日领取次数（使用北京时间）
     const today = getTodayDate();  // 🔥 使用北京时间
-    
+
     // 🔥 构建北京时间今天0点的时间戳
     const beijingDate = new Date().toLocaleString('zh-CN', {
         timeZone: 'Asia/Shanghai',
@@ -444,76 +439,27 @@ app.post('/claim/daily', requireAuth, async (c) => {
         );
     }
 
-    // 查询用户当前额度
-    const searchResult = await searchAndFindExactUser(
-        user.username,
-        adminConfig.session,
-        adminConfig.new_api_user,
-        '每日领取'
-    );
+    // 💰 使用 KYX 钱包系统 - 直接添加 KYX，无需调用 API
+    const { walletService } = await import('../services/wallet');
+    const { quotaToKYX, formatKYX } = await import('../utils/currency');
 
-    if (!searchResult.success) {
-        if (
-            searchResult.message?.includes('未登录') ||
-            searchResult.message?.includes('无权进行此操作')
-        ) {
-            return c.json(
-                {
-                    success: false,
-                    message: '系统配置错误，请联系管理员',
-                },
-                500
-            );
-        }
-        return c.json(
-            {
-                success: false,
-                message: searchResult.message || '查询用户失败',
-            },
-            500
+    // 将 quota 转换为 KYX
+    const kyxAmount = quotaToKYX(adminConfig.claim_quota);
+
+    try {
+        // 添加 KYX 到钱包
+        walletService.addKYX(
+            user.linux_do_id,
+            kyxAmount,
+            'daily_claim',
+            `每日领取 (第${todayClaimsResult + 1}次)`
         );
-    }
-
-    const kyxUser = searchResult.user!;
-
-    if (kyxUser.quota >= CONFIG.MIN_QUOTA_THRESHOLD) {
-        return c.json(
-            { success: false, message: '额度充足，未达到领取要求' },
-            400
-        );
-    }
-
-    // 更新额度
-    const newQuota = kyxUser.quota + adminConfig.claim_quota;
-    const updateResult = await updateKyxUserQuota(
-        user.kyx_user_id,
-        newQuota,
-        adminConfig.session,
-        adminConfig.new_api_user,
-        kyxUser.username,
-        kyxUser.group || 'default'
-    );
-
-    if (!updateResult.success) {
-        if (
-            updateResult.message?.includes('未登录') ||
-            updateResult.message?.includes('无权进行此操作')
-        ) {
-            return c.json(
-                {
-                    success: false,
-                    message: '系统配置错误，请联系管理员',
-                },
-                500
-            );
-        }
-        return c.json(
-            {
-                success: false,
-                message: '额度添加失败: ' + (updateResult.message || '未知错误'),
-            },
-            500
-        );
+    } catch (error: any) {
+        console.error(`[用户操作] ❌ 每日领取失败 - 用户: ${user.username}, 错误: ${error.message}`);
+        return c.json({
+            success: false,
+            message: `领取失败: ${error.message}`,
+        }, 500);
     }
 
     // 保存领取记录
@@ -529,9 +475,8 @@ app.post('/claim/daily', requireAuth, async (c) => {
     // 清除缓存
     cacheManager.clear(`claim:${user.linux_do_id}`);
     cacheManager.clear(`claims_count:${user.linux_do_id}`);
-    cacheManager.clear(`kyx_user:${user.kyx_user_id}`);
 
-    console.log(`[用户操作] 💰 每日领取成功 - 用户: ${user.username}, 额度: $${(adminConfig.claim_quota / 500000).toFixed(2)}, 今日第 ${todayClaimsResult + 1} 次`);
+    console.log(`[用户操作] 💰 每日领取成功 - 用户: ${user.username}, 领取: ${formatKYX(kyxAmount)}, 今日第 ${todayClaimsResult + 1} 次`);
 
     // 🏆 每日签到成就
     try {
@@ -545,8 +490,11 @@ app.post('/claim/daily', requireAuth, async (c) => {
 
     return c.json({
         success: true,
-        message: `成功添加额度 $${(adminConfig.claim_quota / 500000).toFixed(2)}`,
-        data: { quota_added: adminConfig.claim_quota },
+        message: `成功添加 ${formatKYX(kyxAmount)}`,
+        data: {
+            kyx_added: kyxAmount,
+            kyx_formatted: formatKYX(kyxAmount)
+        },
     });
 });
 

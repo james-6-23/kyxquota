@@ -80,6 +80,14 @@ app.get('/config', requireAdmin, async (c) => {
             iflow_group_id: config!.iflow_group_id || 26,
             max_daily_donate_modelscope: config!.max_daily_donate_modelscope || 1,
             max_daily_donate_iflow: config!.max_daily_donate_iflow || 1,
+
+            // 💰 划转配置
+            transfer_min_kyx: config!.transfer_min_kyx || 25,
+            transfer_max_kyx: config!.transfer_max_kyx || 2500,
+            transfer_max_daily_count: config!.transfer_max_daily_count || 10,
+            transfer_fee_rate: config!.transfer_fee_rate || 0,
+            transfer_reverse_enabled: config!.transfer_reverse_enabled || 1,
+
             updated_at: config!.updated_at,
         },
         cache_stats: {
@@ -4047,6 +4055,70 @@ app.get('/analytics/mode/:mode', requireAdmin, async (c) => {
     } catch (error: any) {
         logger.error('数据分析', '获取场次详情失败', error);
         return c.json({ success: false, message: '获取详情失败: ' + error.message }, 500);
+    }
+});
+
+// ========== 💰 划转配置管理 ==========
+
+/**
+ * 更新划转配置
+ * PUT /api/admin/config/transfer
+ */
+app.put('/config/transfer', requireAdmin, async (c) => {
+    try {
+        const {
+            transfer_min_kyx,
+            transfer_max_kyx,
+            transfer_max_daily_count,
+            transfer_fee_rate,
+            transfer_reverse_enabled
+        } = await c.req.json();
+
+        // 验证参数
+        if (transfer_min_kyx !== undefined && (typeof transfer_min_kyx !== 'number' || transfer_min_kyx <= 0)) {
+            return c.json({ success: false, message: '最小划转金额必须为正数' }, 400);
+        }
+
+        if (transfer_max_kyx !== undefined && (typeof transfer_max_kyx !== 'number' || transfer_max_kyx <= 0)) {
+            return c.json({ success: false, message: '最大划转金额必须为正数' }, 400);
+        }
+
+        if (transfer_min_kyx !== undefined && transfer_max_kyx !== undefined && transfer_min_kyx >= transfer_max_kyx) {
+            return c.json({ success: false, message: '最小划转金额必须小于最大划转金额' }, 400);
+        }
+
+        if (transfer_max_daily_count !== undefined && (typeof transfer_max_daily_count !== 'number' || transfer_max_daily_count <= 0)) {
+            return c.json({ success: false, message: '每日最大划转次数必须为正数' }, 400);
+        }
+
+        if (transfer_fee_rate !== undefined && (typeof transfer_fee_rate !== 'number' || transfer_fee_rate < 0 || transfer_fee_rate > 1)) {
+            return c.json({ success: false, message: '手续费率必须在 0-1 之间' }, 400);
+        }
+
+        if (transfer_reverse_enabled !== undefined && typeof transfer_reverse_enabled !== 'number') {
+            return c.json({ success: false, message: '反向划转启用状态必须为数字' }, 400);
+        }
+
+        // 获取当前配置
+        const config = adminQueries.get.get()!;
+
+        // 更新配置
+        adminQueries.updateTransferConfig.run(
+            transfer_min_kyx !== undefined ? transfer_min_kyx : config.transfer_min_kyx,
+            transfer_max_kyx !== undefined ? transfer_max_kyx : config.transfer_max_kyx,
+            transfer_max_daily_count !== undefined ? transfer_max_daily_count : config.transfer_max_daily_count,
+            transfer_fee_rate !== undefined ? transfer_fee_rate : config.transfer_fee_rate,
+            transfer_reverse_enabled !== undefined ? transfer_reverse_enabled : config.transfer_reverse_enabled,
+            Date.now()
+        );
+
+        cacheManager.clear('admin_config');
+
+        logger.info('管理员', '✅ 更新划转配置成功');
+        return c.json({ success: true, message: '划转配置已更新' });
+    } catch (error: any) {
+        logger.error('管理员', '❌ 更新划转配置失败', error);
+        return c.json({ success: false, message: '更新失败: ' + error.message }, 500);
     }
 });
 

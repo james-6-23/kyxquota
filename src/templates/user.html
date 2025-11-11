@@ -699,6 +699,13 @@
                 <span>娱乐站</span>
               </button>
 
+              <!-- 💰 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>💰</span>
+                <span>钱包</span>
+              </button>
+
               <!-- 成就 -->
               <button data-btn="achievement" onclick="switchToAchievement()"
                       class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
@@ -707,9 +714,22 @@
               </button>
             </div>
           </div>
-          
-          <!-- 右侧：用户菜单 -->
+
+          <!-- 右侧：KYX余额 + 用户菜单 -->
           <div class="flex items-center gap-3 ml-auto">
+            <!-- 💰 KYX 余额显示 -->
+            <div class="hidden lg:flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200">
+              <div class="flex items-center gap-1 text-amber-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-sm font-semibold">KYX</span>
+              </div>
+              <div class="text-right">
+                <p id="navKyxBalance" class="text-lg font-bold text-slate-900">--</p>
+                <p id="navKyxUSD" class="text-xs text-slate-500">≈ $--</p>
+              </div>
+            </div>
             <div class="relative">
               <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
                 <div id="userAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
@@ -897,6 +917,301 @@
         </div>
         <div id="claimRecords" class="tab-content overflow-y-auto max-h-96"></div>
         <div id="donateRecords" class="tab-content hidden overflow-y-auto max-h-96"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 💰 钱包界面 -->
+  <div id="walletSection" class="hidden fixed inset-0 bg-slate-50 z-50 overflow-y-auto">
+    <!-- 固定顶部导航栏 -->
+    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-[60]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 w-full">
+          <!-- Logo and Navigation -->
+          <div class="flex items-center gap-4 lg:gap-6 flex-shrink-0">
+            <h1 class="text-lg lg:text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent whitespace-nowrap">KYX API</h1>
+
+            <!-- 导航选项卡 -->
+            <div class="flex items-center gap-1" data-switch-container>
+              <!-- 加油站 -->
+              <button data-btn="refuel" onclick="switchToRefuel()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>⛽</span>
+                <span>加油站</span>
+              </button>
+
+              <!-- 娱乐站 -->
+              <button data-btn="entertain" onclick="switchToEntertain()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>🎰</span>
+                <span>娱乐站</span>
+              </button>
+
+              <!-- 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md">
+                <span>💰</span>
+                <span>钱包</span>
+              </button>
+
+              <!-- 成就 -->
+              <button data-btn="achievement" onclick="switchToAchievement()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>🏆</span>
+                <span>成就</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 右侧：用户菜单 -->
+          <div class="flex items-center gap-3 ml-auto">
+            <div class="relative">
+              <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+                <div id="userAvatarWallet" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold">
+                  <span id="userInitialWallet">U</span>
+                </div>
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- 内容区域 - 添加顶部padding -->
+    <div class="max-w-6xl mx-auto p-6 pt-24">
+      <!-- 钱包余额卡片 -->
+      <div class="bg-gradient-to-r from-amber-500 via-yellow-500 to-orange-500 rounded-2xl p-6 md:p-8 text-white mb-6 shadow-xl animate-in relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32"></div>
+        <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-24 -mb-24"></div>
+
+        <div class="relative z-10">
+          <div class="flex items-center justify-between mb-6">
+            <div>
+              <p class="text-sm opacity-90 mb-1">💎 KYX 钱包余额</p>
+              <h2 id="walletKyxBalance" class="text-4xl md:text-5xl font-bold">--</h2>
+              <p id="walletKyxUSD" class="text-sm opacity-75 mt-1">≈ $--</p>
+            </div>
+            <div class="text-right">
+              <p class="text-sm opacity-90 mb-1">可用余额</p>
+              <p id="walletKyxAvailable" class="text-2xl font-bold">--</p>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-6 border-t border-white/20">
+            <div>
+              <p class="text-xs opacity-75 mb-1">冻结中</p>
+              <p id="walletKyxFrozen" class="text-lg font-semibold">--</p>
+            </div>
+            <div>
+              <p class="text-xs opacity-75 mb-1">累计收入</p>
+              <p id="walletTotalEarned" class="text-lg font-semibold">--</p>
+            </div>
+            <div>
+              <p class="text-xs opacity-75 mb-1">累计支出</p>
+              <p id="walletTotalSpent" class="text-lg font-semibold">--</p>
+            </div>
+            <div>
+              <p class="text-xs opacity-75 mb-1">今日可划转</p>
+              <p id="walletTransferRemaining" class="text-lg font-semibold">--</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 快捷操作卡片 -->
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6 animate-in">
+        <h3 class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <span>⚡</span>
+          <span>快捷操作</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- 划转到公益站 -->
+          <div class="border border-slate-200 rounded-xl p-4 hover:border-blue-500 hover:shadow-md transition-all">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-slate-900 mb-1">划转到公益站</h4>
+                <p class="text-sm text-slate-600">将 KYX 余额划转到公益站账户</p>
+              </div>
+              <div class="text-2xl">➡️</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-slate-700 mb-2">划转金额 (KYX)</label>
+              <input
+                type="number"
+                id="transferAmount"
+                placeholder="请输入划转金额"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                min="0.01"
+                step="0.01"
+              >
+              <p class="text-xs text-slate-500 mt-1">
+                最小: <span id="transferMinKYX">--</span> KYX •
+                最大: <span id="transferMaxKYX">--</span> KYX
+              </p>
+            </div>
+
+            <button
+              onclick="transferToAPI()"
+              id="transferButton"
+              class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              确认划转
+            </button>
+          </div>
+
+          <!-- 从公益站划转 -->
+          <div class="border border-slate-200 rounded-xl p-4 hover:border-green-500 hover:shadow-md transition-all">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-slate-900 mb-1">从公益站划转</h4>
+                <p class="text-sm text-slate-600">将公益站余额划转到 KYX 钱包</p>
+              </div>
+              <div class="text-2xl">⬅️</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-sm font-medium text-slate-700 mb-2">划转金额 (USD)</label>
+              <input
+                type="number"
+                id="transferFromAPIAmount"
+                placeholder="请输入划转金额"
+                class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                min="0.01"
+                step="0.01"
+              >
+              <p class="text-xs text-slate-500 mt-1">
+                将转换为 <span id="transferFromAPIKYX" class="font-semibold text-green-600">-- KYX</span>
+              </p>
+            </div>
+
+            <button
+              onclick="transferFromAPI()"
+              id="transferFromAPIButton"
+              class="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white py-2 rounded-lg font-semibold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+              确认划转
+            </button>
+          </div>
+
+          <!-- 公益站账户信息 -->
+          <div class="border border-slate-200 rounded-xl p-4">
+            <div class="flex items-start justify-between mb-3">
+              <div>
+                <h4 class="font-semibold text-slate-900 mb-1">公益站账户</h4>
+                <p class="text-sm text-slate-600">公益站 API 余额（仅供参考）</p>
+              </div>
+              <div class="text-2xl">🔗</div>
+            </div>
+
+            <div class="space-y-3">
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <span class="text-sm text-slate-600">API 余额</span>
+                <span id="apiQuota" class="font-semibold text-slate-900">$--</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <span class="text-sm text-slate-600">已使用</span>
+                <span id="apiUsed" class="font-semibold text-slate-900">$--</span>
+              </div>
+              <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                <span class="text-sm text-slate-600">总计</span>
+                <span id="apiTotal" class="font-semibold text-slate-900">$--</span>
+              </div>
+              <div class="flex justify-between items-center py-2">
+                <span class="text-sm text-slate-600">今日剩余</span>
+                <span id="transferRemainingCount" class="font-semibold text-indigo-600">--次</span>
+              </div>
+            </div>
+
+            <button
+              onclick="refreshAPIBalance()"
+              class="w-full mt-3 bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 rounded-lg font-medium transition-all flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+              </svg>
+              刷新余额
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 标签页切换 -->
+      <div class="bg-white rounded-2xl shadow-lg overflow-hidden animate-in">
+        <div class="border-b border-slate-200">
+          <div class="flex gap-1 p-2">
+            <button
+              onclick="switchWalletTab('transactions')"
+              data-wallet-tab="transactions"
+              class="flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+              交易记录
+            </button>
+            <button
+              onclick="switchWalletTab('transfers')"
+              data-wallet-tab="transfers"
+              class="flex-1 px-4 py-2 rounded-lg font-medium text-sm transition-all text-slate-600 hover:bg-slate-100">
+              划转记录
+            </button>
+          </div>
+        </div>
+
+        <!-- 交易记录 -->
+        <div id="transactionsTab" class="p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-900">交易记录</h3>
+            <select id="transactionTypeFilter" onchange="loadWalletTransactions()" class="px-3 py-1 border border-slate-300 rounded-lg text-sm">
+              <option value="all">全部类型</option>
+              <option value="income">收入</option>
+              <option value="expense">支出</option>
+            </select>
+          </div>
+
+          <div id="transactionsList" class="space-y-3">
+            <!-- 交易记录将通过JS动态生成 -->
+            <div class="text-center py-8 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p>暂无交易记录</p>
+            </div>
+          </div>
+
+          <div id="transactionsLoadMore" class="hidden mt-4 text-center">
+            <button onclick="loadMoreTransactions()" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-all">
+              加载更多
+            </button>
+          </div>
+        </div>
+
+        <!-- 划转记录 -->
+        <div id="transfersTab" class="hidden p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-slate-900">划转记录</h3>
+            <select id="transferStatusFilter" onchange="loadWalletTransfers()" class="px-3 py-1 border border-slate-300 rounded-lg text-sm">
+              <option value="all">全部状态</option>
+              <option value="completed">已完成</option>
+              <option value="pending">处理中</option>
+              <option value="failed">失败</option>
+            </select>
+          </div>
+
+          <div id="transfersList" class="space-y-3">
+            <!-- 划转记录将通过JS动态生成 -->
+            <div class="text-center py-8 text-slate-500">
+              <svg class="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+              </svg>
+              <p>暂无划转记录</p>
+            </div>
+          </div>
+
+          <div id="transfersLoadMore" class="hidden mt-4 text-center">
+            <button onclick="loadMoreTransfers()" class="px-6 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium transition-all">
+              加载更多
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -10302,6 +10617,317 @@
     }
 
     // ========== 结束：成就系统相关功能 ==========
+
+    // ========== 💰 钱包系统相关功能 ==========
+
+    // 监听反向划转金额输入，实时显示转换后的KYX
+    document.addEventListener('DOMContentLoaded', () => {
+      const transferFromAPIInput = document.getElementById('transferFromAPIAmount');
+      const transferFromAPIKYXSpan = document.getElementById('transferFromAPIKYX');
+
+      if (transferFromAPIInput && transferFromAPIKYXSpan) {
+        transferFromAPIInput.addEventListener('input', (e) => {
+          const usd = parseFloat(e.target.value) || 0;
+          const quota = usd * 500000;
+          const kyx = quota * 2.5;
+          transferFromAPIKYXSpan.textContent = kyx > 0 ? kyx.toFixed(2) + ' KYX' : '-- KYX';
+        });
+      }
+    });
+
+    // 划转到公益站
+    async function transferToAPI() {
+      const amountInput = document.getElementById('transferAmount');
+      const amount = parseFloat(amountInput.value);
+
+      if (!amount || amount <= 0) {
+        showToast('请输入有效的划转金额', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('transferButton');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner mx-auto" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+
+      try {
+        const response = await fetch('/api/wallet/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount_kyx: amount })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          amountInput.value = '';
+          // 刷新钱包信息
+          await loadWalletInfo();
+          await refreshAPIBalance();
+        } else {
+          showToast(data.message || '划转失败', 'error');
+        }
+      } catch (error) {
+        console.error('划转失败:', error);
+        showToast('划转失败，请稍后重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 从公益站划转到KYX钱包
+    async function transferFromAPI() {
+      const amountInput = document.getElementById('transferFromAPIAmount');
+      const usd = parseFloat(amountInput.value);
+
+      if (!usd || usd <= 0) {
+        showToast('请输入有效的划转金额', 'error');
+        return;
+      }
+
+      const quota = usd * 500000;
+
+      const btn = document.getElementById('transferFromAPIButton');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner mx-auto" style="width: 20px; height: 20px; border-width: 2px;"></div>';
+
+      try {
+        const response = await fetch('/api/wallet/transfer-from-api', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount_quota: quota })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showToast(data.message, 'success');
+          amountInput.value = '';
+          document.getElementById('transferFromAPIKYX').textContent = '-- KYX';
+          // 刷新钱包信息
+          await loadWalletInfo();
+          await refreshAPIBalance();
+        } else {
+          showToast(data.message || '划转失败', 'error');
+        }
+      } catch (error) {
+        console.error('反向划转失败:', error);
+        showToast('划转失败，请稍后重试', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }
+    }
+
+    // 加载钱包信息
+    async function loadWalletInfo() {
+      try {
+        const response = await fetch('/api/wallet/info');
+        const data = await response.json();
+
+        if (data.success) {
+          const { wallet, transfer_config, today_transfer_count } = data;
+
+          // 更新钱包余额
+          document.getElementById('walletKyxBalance').textContent = wallet.kyx_balance_formatted;
+          document.getElementById('walletKyxUSD').textContent = `≈ ${wallet.kyx_balance_usd_formatted}`;
+          document.getElementById('walletKyxAvailable').textContent = wallet.kyx_available_formatted;
+          document.getElementById('walletKyxFrozen').textContent = wallet.kyx_frozen_formatted;
+          document.getElementById('walletTotalEarned').textContent = wallet.total_earned_formatted;
+          document.getElementById('walletTotalSpent').textContent = wallet.total_spent_formatted;
+
+          // 更新导航栏KYX余额
+          const navKyxBalance = document.getElementById('navKyxBalance');
+          const navKyxUSD = document.getElementById('navKyxUSD');
+          if (navKyxBalance) navKyxBalance.textContent = wallet.kyx_balance_formatted;
+          if (navKyxUSD) navKyxUSD.textContent = wallet.kyx_balance_usd_formatted;
+
+          // 更新划转配置
+          document.getElementById('transferMinKYX').textContent = transfer_config.min_kyx;
+          document.getElementById('transferMaxKYX').textContent = transfer_config.max_kyx;
+          document.getElementById('transferRemainingCount').textContent = transfer_config.max_daily_count - today_transfer_count;
+          document.getElementById('walletTransferRemaining').textContent = `${transfer_config.max_daily_count - today_transfer_count}次`;
+        }
+      } catch (error) {
+        console.error('加载钱包信息失败:', error);
+      }
+    }
+
+    // 刷新公益站余额
+    async function refreshAPIBalance() {
+      try {
+        const response = await fetch('/api/wallet/api-balance');
+        const data = await response.json();
+
+        if (data.success) {
+          const { quota, used_quota, total } = data;
+          document.getElementById('apiQuota').textContent = `$${(quota / 500000).toFixed(2)}`;
+          document.getElementById('apiUsed').textContent = `$${(used_quota / 500000).toFixed(2)}`;
+          document.getElementById('apiTotal').textContent = `$${(total / 500000).toFixed(2)}`;
+        }
+      } catch (error) {
+        console.error('刷新公益站余额失败:', error);
+      }
+    }
+
+    // 切换到钱包界面
+    function switchToWallet() {
+      // 隐藏所有界面
+      document.getElementById('refuelSection').classList.add('hidden');
+      document.getElementById('entertainSection').classList.add('hidden');
+      document.getElementById('walletSection').classList.remove('hidden');
+      document.getElementById('achievementSection').classList.add('hidden');
+
+      // 更新导航按钮状态
+      updateNavButtons('wallet');
+
+      // 加载钱包数据
+      loadWalletInfo();
+      refreshAPIBalance();
+      loadWalletTransactions();
+    }
+
+    // 切换钱包标签页
+    function switchWalletTab(tab) {
+      const tabs = ['transactions', 'transfers'];
+      tabs.forEach(t => {
+        const tabEl = document.getElementById(`${t}Tab`);
+        const btnEl = document.querySelector(`[data-wallet-tab="${t}"]`);
+
+        if (t === tab) {
+          tabEl.classList.remove('hidden');
+          btnEl.classList.add('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+          btnEl.classList.remove('text-slate-600', 'hover:bg-slate-100');
+        } else {
+          tabEl.classList.add('hidden');
+          btnEl.classList.remove('bg-gradient-to-r', 'from-blue-500', 'to-indigo-600', 'text-white');
+          btnEl.classList.add('text-slate-600', 'hover:bg-slate-100');
+        }
+      });
+
+      // 加载对应数据
+      if (tab === 'transactions') {
+        loadWalletTransactions();
+      } else if (tab === 'transfers') {
+        loadWalletTransfers();
+      }
+    }
+
+    // 加载交易记录
+    async function loadWalletTransactions(page = 1) {
+      try {
+        const filter = document.getElementById('transactionTypeFilter').value;
+        const response = await fetch(`/api/wallet/transactions?page=${page}&filter=${filter}`);
+        const data = await response.json();
+
+        if (data.success && data.transactions.length > 0) {
+          const listEl = document.getElementById('transactionsList');
+          listEl.innerHTML = data.transactions.map(tx => `
+            <div class="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <p class="font-semibold text-slate-900">${getTransactionTypeName(tx.transaction_type)}</p>
+                  <p class="text-sm text-slate-600">${tx.description || '-'}</p>
+                </div>
+                <div class="text-right">
+                  <p class="text-lg font-bold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}">
+                    ${tx.amount >= 0 ? '+' : ''}${tx.amount_kyx_formatted}
+                  </p>
+                  <p class="text-xs text-slate-500">${new Date(tx.timestamp).toLocaleString('zh-CN')}</p>
+                </div>
+              </div>
+              <div class="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+                <span>余额: ${tx.balance_before_formatted} → ${tx.balance_after_formatted}</span>
+              </div>
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('加载交易记录失败:', error);
+      }
+    }
+
+    // 加载划转记录
+    async function loadWalletTransfers(page = 1) {
+      try {
+        const filter = document.getElementById('transferStatusFilter').value;
+        const response = await fetch(`/api/wallet/transfers?page=${page}&filter=${filter}`);
+        const data = await response.json();
+
+        if (data.success && data.transfers.length > 0) {
+          const listEl = document.getElementById('transfersList');
+          listEl.innerHTML = data.transfers.map(tr => `
+            <div class="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all">
+              <div class="flex items-start justify-between mb-2">
+                <div>
+                  <p class="font-semibold text-slate-900">${getTransferTypeName(tr.transfer_type)}</p>
+                  <p class="text-sm text-slate-600">${tr.amount_kyx_formatted} (${tr.amount_usd_formatted})</p>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-1 rounded text-xs font-semibold ${getTransferStatusClass(tr.status)}">
+                    ${getTransferStatusName(tr.status)}
+                  </span>
+                  <p class="text-xs text-slate-500 mt-1">${new Date(tr.timestamp).toLocaleString('zh-CN')}</p>
+                </div>
+              </div>
+              ${tr.error_message ? `<p class="text-xs text-red-600 mt-2">错误: ${tr.error_message}</p>` : ''}
+            </div>
+          `).join('');
+        }
+      } catch (error) {
+        console.error('加载划转记录失败:', error);
+      }
+    }
+
+    // 获取交易类型名称
+    function getTransactionTypeName(type) {
+      const names = {
+        'daily_claim': '每日领取',
+        'slot_bet': '老虎机下注',
+        'slot_win': '老虎机中奖',
+        'loan_borrow': '借款',
+        'loan_repay': '还款',
+        'transfer_in': '划转进入',
+        'transfer_out': '划转转出',
+        'binding_bonus': '绑定奖励',
+        'admin_adjust': '管理员调整'
+      };
+      return names[type] || type;
+    }
+
+    // 获取划转类型名称
+    function getTransferTypeName(type) {
+      const names = {
+        'kyx_to_api': '划转到公益站',
+        'api_to_kyx': '从公益站划转'
+      };
+      return names[type] || type;
+    }
+
+    // 获取划转状态名称
+    function getTransferStatusName(status) {
+      const names = {
+        'pending': '处理中',
+        'success': '成功',
+        'failed': '失败'
+      };
+      return names[status] || status;
+    }
+
+    // 获取划转状态样式
+    function getTransferStatusClass(status) {
+      const classes = {
+        'pending': 'bg-yellow-100 text-yellow-700',
+        'success': 'bg-green-100 text-green-700',
+        'failed': 'bg-red-100 text-red-700'
+      };
+      return classes[status] || 'bg-slate-100 text-slate-700';
+    }
+
+    // ========== 结束：钱包系统相关功能 ==========
 
     // ========== 全局清理函数 - 防止内存泄漏 ==========
     

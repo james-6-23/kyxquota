@@ -44,6 +44,14 @@ export interface AdminConfig {
     iflow_group_id: number;       // iFlow 分组 ID
     max_daily_donate_modelscope: number;  // ModelScope 每日最大投喂次数
     max_daily_donate_iflow: number;       // iFlow 每日最大投喂次数
+
+    // 💰 划转配置
+    transfer_min_kyx: number;           // 最小划转金额 (KYX)
+    transfer_max_kyx: number;           // 最大划转金额 (KYX)
+    transfer_max_daily_count: number;   // 每日最大划转次数
+    transfer_fee_rate: number;          // 手续费率 (0-1)
+    transfer_reverse_enabled: number;   // 是否启用反向划转 (0/1)
+
     updated_at: number;
 }
 

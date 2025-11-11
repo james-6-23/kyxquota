@@ -140,19 +140,13 @@ slot.get('/config', requireAuth, async (c) => {
             return c.json({ success: false, message: '老虎机功能已关闭' }, 403);
         }
 
-        // 获取管理员配置
-        const adminConfig = adminQueries.get.get();
-        if (!adminConfig) {
-            return c.json({ success: false, message: '系统配置未找到' }, 500);
-        }
+        // 💰 获取用户 KYX 钱包余额（本地查询，快速）
+        const { walletService } = await import('../services/wallet');
+        const { kyxToQuota } = await import('../utils/currency');
 
-        // 获取用户额度
-        const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-        if (!kyxUserResult.success || !kyxUserResult.user) {
-            return c.json({ success: false, message: '获取额度失败' }, 500);
-        }
-
-        const quota = kyxUserResult.user.quota;
+        const wallet = walletService.getOrCreateWallet(session.linux_do_id);
+        const availableKYX = walletService.getAvailableBalance(session.linux_do_id);
+        const quota = kyxToQuota(availableKYX); // 将 KYX 转换为 quota 用于兼容性
 
         // 🎯 关键修复：使用同一个日期变量进行所有查询
         const today = getTodayDate();
@@ -175,7 +169,7 @@ slot.get('/config', requireAuth, async (c) => {
         // 计算剩余次数
         const remainingSpins = Math.max(0, config.max_daily_spins - todaySpins);
 
-        // 是否可以游玩
+        // 是否可以游玩（使用钱包余额检查）
         const canPlay = !banStatus.banned && (remainingSpins > 0 || freeSpins > 0) && quota >= config.min_quota_required;
 
         const resolveAbsoluteUrl = (path: string) => {
@@ -398,51 +392,38 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
                 return c.json({ success: false, message: '系统配置未找到' }, 500);
             }
 
-            // 检查额度
-            const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-            if (!kyxUserResult.success || !kyxUserResult.user) {
-                return c.json({ success: false, message: '获取额度失败' }, 500);
-            }
+            // 💰 使用 KYX 钱包扣除投注
+            try {
+                const { walletService } = await import('../services/wallet');
+                const { quotaToKYX, formatKYX } = await import('../utils/currency');
 
-            const currentQuota = kyxUserResult.user.quota;
+                const betKYX = quotaToKYX(betAmount);
 
-            if (currentQuota < config.min_quota_required) {
+                // 检查钱包余额
+                const availableKYX = walletService.getAvailableBalance(session.linux_do_id);
+                if (availableKYX < betKYX) {
+                    return c.json({
+                        success: false,
+                        message: `KYX 余额不足，需要 ${formatKYX(betKYX)}，当前可用 ${formatKYX(availableKYX)}`
+                    }, 400);
+                }
+
+                // 扣除投注
+                walletService.deductKYX(
+                    session.linux_do_id,
+                    betKYX,
+                    'slot_bet',
+                    `老虎机投注 (${inAdvancedMode ? '高级场' : '初级场'})`
+                );
+
+                logger.info('老虎机', `✅ 扣除投注成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 投注: ${formatKYX(betKYX)}`);
+            } catch (error: any) {
+                logger.error('老虎机', `❌ 扣除投注失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 错误: ${error.message}`);
                 return c.json({
                     success: false,
-                    message: `额度不足，最少需要 $${(config.min_quota_required / 500000).toFixed(2)}`
-                }, 400);
-            }
-
-            if (currentQuota < betAmount) {
-                return c.json({
-                    success: false,
-                    message: `额度不足以支付投注金额 $${(betAmount / 500000).toFixed(2)}`
-                }, 400);
-            }
-
-            // 扣除投注额度（计算新额度 = 当前额度 - 投注金额）
-            const newQuotaAfterBet = currentQuota - betAmount;
-
-            logger.info('老虎机', `准备扣除投注 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
-
-            const deductResult = await updateKyxUserQuota(
-                user.kyx_user_id,
-                newQuotaAfterBet,
-                adminConfig.session,
-                adminConfig.new_api_user,
-                user.username,
-                kyxUserResult.user.group || 'default'
-            );
-
-            if (!deductResult || !deductResult.success) {
-                logger.error('老虎机', `❌ 扣除投注失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 错误: ${deductResult?.message || '未知错误'}`);
-                return c.json({
-                    success: false,
-                    message: `扣除投注额度失败: ${deductResult?.message || '未知错误'}，请稍后重试`
+                    message: `扣除投注失败: ${error.message}`
                 }, 500);
             }
-
-            logger.info('老虎机', `✅ 扣除投注成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
         }
 
         // 🔥 获取高级场配置（用于倍率）
@@ -494,16 +475,8 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             logger.info('老虎机', `🚫 严重惩罚 - 用户: ${user.username}, 在【${slotMode === 'normal' ? '初级场' : '高级场'}】禁止抽奖${result.banHours}小时`);
         }
 
-        // 获取管理员配置（用于更新额度）
-        const adminConfigForWin = adminQueries.get.get();
-        if (!adminConfigForWin) {
-            return c.json({ success: false, message: '系统配置未找到' }, 500);
-        }
-
-        // 处理中奖或惩罚金额
+        // 💰 处理中奖或惩罚金额（使用 KYX 钱包）
         let winAmount = 0;
-        let quotaUpdateFailed = false;
-        let quotaUpdateError = '';
 
         if (result.multiplier > 0) {
             // 正常中奖 - 使用 calculationBetAmount 计算奖金
@@ -511,124 +484,59 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
 
             logger.info('老虎机', `💰 中奖 - 用户: ${getUserDisplayName(session.linux_do_id)}, 类型: ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType}, 奖金: $${(winAmount / 500000).toFixed(2)}`);
 
-            // 增加额度
-            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-            if (!currentKyxUser.success || !currentKyxUser.user) {
-                logger.error('老虎机', `❌ 中奖后获取用户信息失败 - 用户: ${getUserDisplayName(session.linux_do_id)}`);
-                quotaUpdateFailed = true;
-                quotaUpdateError = '获取用户信息失败，请联系管理员补发奖金';
-            } else {
-                const quotaBeforeWin = currentKyxUser.user.quota;
-                const newQuotaAfterWin = quotaBeforeWin + winAmount;
+            // 💰 使用 KYX 钱包添加奖金（本地操作，立即到账）
+            try {
+                const { walletService } = await import('../services/wallet');
+                const { quotaToKYX, formatKYX } = await import('../utils/currency');
 
-                logger.debug('老虎机', `准备添加额度 - 当前: ${quotaBeforeWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
+                const winKYX = quotaToKYX(winAmount);
 
-                const updateResult = await updateKyxUserQuota(
-                    user.kyx_user_id,
-                    newQuotaAfterWin,
-                    adminConfigForWin.session,
-                    adminConfigForWin.new_api_user,
-                    user.username,
-                    currentKyxUser.user.group || 'default'
+                walletService.addKYX(
+                    session.linux_do_id,
+                    winKYX,
+                    'slot_win',
+                    `老虎机中奖 - ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType} (${result.multiplier}倍)`
                 );
 
-                // 【关键】检查更新结果
-                if (!updateResult || !updateResult.success) {
-                    logger.error('老虎机', `❌ 添加额度失败 - 用户: ${user.username}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
-                    quotaUpdateFailed = true;
-
-                    // 记录到待发放表，系统会自动重试
-                    try {
-                        const now = Date.now();
-                        pendingRewardQueries.insert.run(
-                            session.linux_do_id,
-                            user.kyx_user_id,
-                            user.username,
-                            winAmount,
-                            `老虎机中奖 - ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType} ${result.multiplier}倍`,
-                            'pending',
-                            0,
-                            now,
-                            now
-                        );
-                        logger.info('老虎机', `📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
-                        quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
-                    } catch (dbError) {
-                        logger.error('老虎机', `❌ 记录待发放失败`, dbError);
-                        quotaUpdateError = '额度添加失败，请联系管理员补发奖金';
-                    }
-                } else {
-                    // 验证额度是否真的更新了
-                    const verifyUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-                    if (verifyUser.success && verifyUser.user) {
-                        const actualQuota = verifyUser.user.quota;
-                        logger.debug('老虎机', `✅ 验证额度 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}`);
-
-                        // 允许小范围误差（可能有其他操作）
-                        if (Math.abs(actualQuota - newQuotaAfterWin) > winAmount) {
-                            logger.error('老虎机', `⚠️ 额度验证异常 - 期望: ${newQuotaAfterWin}, 实际: ${actualQuota}, 差异过大`);
-                            quotaUpdateFailed = true;
-
-                            // 记录到待发放表，系统会自动重试
-                            try {
-                                const now = Date.now();
-                                pendingRewardQueries.insert.run(
-                                    session.linux_do_id,
-                                    user.kyx_user_id,
-                                    user.username,
-                                    winAmount,
-                                    `老虎机中奖 - ${result.ruleName || WIN_TYPE_NAMES[result.winType] || result.winType} ${result.multiplier}倍 (验证失败)`,
-                                    'pending',
-                                    0,
-                                    now,
-                                    now
-                                );
-                                logger.info('老虎机', `📝 已记录到待发放表 - 用户: ${user.username}, 金额: $${(winAmount / 500000).toFixed(2)}`);
-                                quotaUpdateError = '奖金已记录，系统会自动发放到您的账户';
-                            } catch (dbError) {
-                                logger.error('老虎机', `❌ 记录待发放失败`, dbError);
-                                quotaUpdateError = '额度验证失败，请联系管理员';
-                            }
-                        }
-                    }
-                }
+                logger.info('老虎机', `✅ 中奖奖励发放成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 奖励: ${formatKYX(winKYX)}`);
+            } catch (error: any) {
+                logger.error('老虎机', `❌ 中奖奖励发放失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 错误: ${error.message}`);
+                // 钱包操作失败，但不影响游戏记录
+                winAmount = 0;
             }
         } else if (result.multiplier < 0) {
             // 惩罚扣除（负倍率）- 使用 calculationBetAmount 计算惩罚金额
             const punishmentAmount = Math.floor(calculationBetAmount * Math.abs(result.multiplier));
 
-            // 获取当前额度
-            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-            if (!currentKyxUser.success || !currentKyxUser.user) {
-                logger.error('老虎机', `❌ 惩罚时获取用户信息失败 - 用户: ${user.username}`);
-                // 惩罚失败不阻止游戏继续
-            } else {
-                // 计算扣除后的额度，确保不会为负数
-                const currentQuota = currentKyxUser.user.quota;
-                const actualDeduction = Math.min(punishmentAmount, currentQuota);  // 最多扣到0
-                const newQuotaAfterPunishment = currentQuota - actualDeduction;
+            // 💰 使用 KYX 钱包扣除惩罚（本地操作，确保不超过余额）
+            try {
+                const { walletService } = await import('../services/wallet');
+                const { quotaToKYX, formatKYX } = await import('../utils/currency');
 
-                logger.debug('老虎机', `⚡ 准备扣除惩罚 - 当前: ${currentQuota}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
+                const punishmentKYX = quotaToKYX(punishmentAmount);
+                const availableKYX = walletService.getAvailableBalance(session.linux_do_id);
 
-                const updateResult = await updateKyxUserQuota(
-                    user.kyx_user_id,
-                    newQuotaAfterPunishment,
-                    adminConfigForWin.session,
-                    adminConfigForWin.new_api_user,
-                    user.username,
-                    currentKyxUser.user.group || 'default'
-                );
+                // 计算实际扣除金额，不超过可用余额
+                const actualDeductionKYX = Math.min(punishmentKYX, availableKYX);
+                const actualDeduction = Math.floor(actualDeductionKYX * 200000); // KYX 转回 quota
 
-                // 检查惩罚扣除结果
-                if (!updateResult || !updateResult.success) {
-                    logger.error('老虎机', `❌ 惩罚扣除失败 - 用户: ${user.username}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${updateResult?.message || '未知错误'}`);
-                    // 惩罚失败，记录为0
-                    winAmount = 0;
+                if (actualDeductionKYX > 0) {
+                    walletService.deductKYX(
+                        session.linux_do_id,
+                        actualDeductionKYX,
+                        'slot_punishment',
+                        `律师函惩罚 - ${result.punishmentCount}份律师函 (${Math.abs(result.multiplier)}倍)`
+                    );
+
+                    winAmount = -actualDeduction; // 设为负数，用于记录
+                    logger.info('老虎机', `⚡ 惩罚成功 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: ${formatKYX(actualDeductionKYX)}`);
                 } else {
-                    // winAmount 设为负数，用于记录
-                    winAmount = -actualDeduction;
-                    logger.info('老虎机', `⚡ 惩罚成功 - 用户: ${user.username}, 律师函数量: ${result.punishmentCount}, 扣除: $${(actualDeduction / 500000).toFixed(2)}`);
+                    winAmount = 0;
+                    logger.info('老虎机', `⚡ 惩罚跳过 - 用户: ${user.username}, 余额不足，无法扣除惩罚`);
                 }
+            } catch (error: any) {
+                logger.error('老虎机', `❌ 惩罚扣除失败 - 用户: ${user.username}, 错误: ${error.message}`);
+                winAmount = 0;
             }
 
             // 🔥 封禁逻辑已移至上方（第472-476行），使用配置的 banHours，此处删除硬编码的60小时
@@ -757,9 +665,10 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             }
         }
 
-        // 获取更新后的状态
-        const kyxUserAfterResult = await getKyxUserById(user.kyx_user_id, adminConfigForWin.session, adminConfigForWin.new_api_user);
-        const quotaAfter = (kyxUserAfterResult.success && kyxUserAfterResult.user) ? kyxUserAfterResult.user.quota : 0;
+        // 💰 获取更新后的钱包余额（本地查询，无需 API）
+        const { walletService: walletServiceForResult } = await import('../services/wallet');
+        const walletAfter = walletServiceForResult.getOrCreateWallet(session.linux_do_id);
+        const kyxBalanceAfter = walletAfter.kyx_balance;
 
         // 🎯 关键修复：获取今日已购买次数（使用北京时间，确保与抽奖检查时使用同一日期）
         const todayForSpinResult = getTodayDate();
@@ -791,11 +700,6 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             message = result.ruleName || WIN_TYPE_NAMES[result.winType] || '未知';
             if (result.multiplier > 0) {
                 message += ` ${result.multiplier}倍！赢得 $${(winAmount / 500000).toFixed(2)}`;
-
-                // 【关键】如果额度更新失败，明确告知用户
-                if (quotaUpdateFailed) {
-                    message += ` | ⚠️ ${quotaUpdateError}`;
-                }
             }
             if (result.freeSpinAwarded) {
                 message += ' | 🎁 获得1次免费机会！';
@@ -1038,10 +942,9 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
                 bet_amount: betAmount,
                 win_amount: winAmount,
                 free_spin_awarded: result.freeSpinAwarded,
-                quota_after: quotaAfter,
+                kyx_balance_after: kyxBalanceAfter,  // 💰 使用钱包余额
                 spins_remaining: remainingSpinsAfter,
                 free_spins_remaining: freeSpinsAfter,
-                quota_update_failed: quotaUpdateFailed,  // 标记额度更新是否失败
                 // 高级场掉落信息
                 ticket_dropped: ticketDropped,
                 drop_type: dropType,
@@ -1051,8 +954,7 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
                 // 🏆 本次解锁的成就列表
                 unlocked_achievements: unlockedAchievements
             },
-            message,
-            warning: quotaUpdateFailed ? quotaUpdateError : undefined  // 警告信息
+            message
         });
     } catch (error) {
         logger.error('老虎机', '旋转老虎机失败', error);
@@ -1506,19 +1408,11 @@ slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), asy
             return c.json({ success: false, message: '购买抽奖次数功能未开启' }, 403);
         }
 
-        // 获取管理员配置
-        const adminConfig = adminQueries.get.get();
-        if (!adminConfig) {
-            return c.json({ success: false, message: '系统配置未找到' }, 500);
-        }
+        // 💰 检查用户 KYX 钱包余额（本地查询）
+        const { walletService } = await import('../services/wallet');
+        const { quotaToKYX, formatKYX } = await import('../utils/currency');
 
-        // 检查用户额度
-        const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-        if (!kyxUserResult.success || !kyxUserResult.user) {
-            return c.json({ success: false, message: '获取额度失败' }, 500);
-        }
-
-        const currentQuota = kyxUserResult.user.quota;
+        const availableKYX = walletService.getAvailableBalance(session.linux_do_id);
 
         // 🔥 支持批量购买：从请求体获取购买数量
         const body = await c.req.json().catch(() => ({}));
@@ -1550,13 +1444,14 @@ slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), asy
 
         logger.info('购买次数', `购买数量确认 - 用户: ${user.username}, 请求: ${requestedCount}, 实际购买: ${buyCount}`);
 
-        const buyPrice = config.buy_spins_price * buyCount; // 总价格
+        const buyPrice = config.buy_spins_price * buyCount; // 总价格（quota）
+        const buyPriceKYX = quotaToKYX(buyPrice); // 转换为 KYX
 
-        // 检查额度是否足够
-        if (currentQuota < buyPrice) {
+        // 💰 检查 KYX 余额是否足够
+        if (availableKYX < buyPriceKYX) {
             return c.json({
                 success: false,
-                message: `额度不足，购买${buyCount}次需要 $${(buyPrice / 500000).toFixed(2)}，当前额度 $${(currentQuota / 500000).toFixed(2)}`
+                message: `KYX 余额不足，购买${buyCount}次需要 ${formatKYX(buyPriceKYX)}，当前可用 ${formatKYX(availableKYX)}`
             }, 400);
         }
 
@@ -1576,28 +1471,23 @@ slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), asy
             }, 400);
         }
 
-        // 扣除购买费用
-        const newQuota = currentQuota - buyPrice;
-        logger.info('购买次数', `准备扣除费用 - 用户: ${user.username}, 购买: ${buyCount}次, 当前: ${currentQuota}, 费用: ${buyPrice}, 目标: ${newQuota}`);
+        // 💰 使用 KYX 钱包扣除购买费用（本地操作，原子性）
+        try {
+            walletService.deductKYX(
+                session.linux_do_id,
+                buyPriceKYX,
+                'buy_spins',
+                `购买抽奖次数 ${buyCount}次`
+            );
 
-        const deductResult = await updateKyxUserQuota(
-            user.kyx_user_id,
-            newQuota,
-            adminConfig.session,
-            adminConfig.new_api_user,
-            user.username,
-            kyxUserResult.user.group || 'default'
-        );
-
-        if (!deductResult || !deductResult.success) {
-            logger.error('购买次数', `扣除费用失败 - 用户: ${user.username}, 错误: ${deductResult?.message || '未知错误'}`);
+            logger.info('购买次数', `扣除费用成功 - 用户: ${user.username}, 数量: ${buyCount}, 费用: ${formatKYX(buyPriceKYX)}`);
+        } catch (error: any) {
+            logger.error('购买次数', `扣除费用失败 - 用户: ${user.username}, 错误: ${error.message}`);
             return c.json({
                 success: false,
-                message: `扣除费用失败: ${deductResult?.message || '未知错误'}，请稍后重试`
+                message: `扣除费用失败: ${error.message}`
             }, 500);
         }
-
-        logger.info('购买次数', `扣除费用成功 - 用户: ${user.username}, 数量: ${buyCount}, 剩余额度: ${newQuota}`);
 
         // 🔥 记录购买（添加错误处理和回滚机制）
         const now = Date.now();
@@ -1636,30 +1526,28 @@ slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), asy
         } catch (dbError: any) {
             logger.error('购买次数', `数据库记录失败 - 用户: ${user.username}, 错误: ${dbError.message}, stack: ${dbError.stack || '无堆栈信息'}`);
 
-            // 🔥 尝试回滚额度（将扣除的额度还回去）
-            logger.warn('购买次数', `尝试回滚额度 - 用户: ${user.username}, 从 ${newQuota} 恢复到 ${currentQuota}`);
-            const rollbackResult = await updateKyxUserQuota(
-                user.kyx_user_id,
-                currentQuota, // 恢复到原始额度
-                adminConfig.session,
-                adminConfig.new_api_user,
-                user.username,
-                kyxUserResult.user.group || 'default'
-            );
+            // 💰 尝试回滚 KYX（将扣除的 KYX 还回去）
+            logger.warn('购买次数', `尝试回滚 KYX - 用户: ${user.username}, 回退金额: ${formatKYX(buyPriceKYX)}`);
+            try {
+                walletService.addKYX(
+                    session.linux_do_id,
+                    buyPriceKYX,
+                    'buy_spins_rollback',
+                    `购买次数失败回滚 ${buyCount}次`
+                );
 
-            if (rollbackResult && rollbackResult.success) {
-                logger.info('购买次数', `回滚成功 - 用户: ${user.username}, 额度已恢复到 ${currentQuota}`);
+                logger.info('购买次数', `回滚成功 - 用户: ${user.username}, KYX 已恢复`);
                 return c.json({
                     success: false,
-                    message: '购买失败：数据库记录出错，额度已自动退回，请稍后重试'
+                    message: '购买失败：数据库记录出错，KYX 已自动退回，请稍后重试'
                 }, 500);
-            } else {
-                logger.error('购买次数', `回滚失败 - 用户: ${user.username}, 损失额度: $${(buyPrice / 500000).toFixed(2)}, 需要人工处理`);
+            } catch (rollbackError: any) {
+                logger.error('购买次数', `回滚失败 - 用户: ${user.username}, 损失: ${formatKYX(buyPriceKYX)}, 需要人工处理`);
 
                 return c.json({
                     success: false,
-                    message: '购买失败：系统错误，请联系管理员处理（错误代码：DB_ROLLBACK_FAILED）',
-                    error_details: `额度已扣除但记录失败，需要人工恢复 $${(buyPrice / 500000).toFixed(2)}`
+                    message: '购买失败：系统错误，请联系管理员处理（错误代码：ROLLBACK_FAILED）',
+                    error_details: `KYX 已扣除但记录失败，需要人工恢复 ${formatKYX(buyPriceKYX)}`
                 }, 500);
             }
         }
@@ -1676,16 +1564,19 @@ slot.post('/buy-spins', requireAuth, createRateLimiter(RateLimits.PURCHASE), asy
 
         logger.debug('购买次数', `计算剩余次数 - 用户: ${user.username}, 每日基础: ${config.max_daily_spins}, 今日已购(实际): ${finalBoughtToday}, 今日已玩: ${todaySpins}, 剩余: ${newRemainingSpins}`);
 
-        // 返回新的额度和购买信息
+        // 💰 获取购买后的 KYX 余额
+        const kyxBalanceAfter = walletService.getOrCreateWallet(session.linux_do_id).kyx_balance;
+
+        // 返回新的余额和购买信息
         return c.json({
             success: true,
-            message: `购买成功！+${buyCount}次抽奖机会，花费 $${(buyPrice / 500000).toFixed(2)}`,
+            message: `购买成功！+${buyCount}次抽奖机会，花费 ${formatKYX(buyPriceKYX)}`,
             data: {
-                quota_after: newQuota,
+                kyx_balance_after: kyxBalanceAfter,  // 💰 使用钱包余额
                 remaining_spins: newRemainingSpins,
                 bought_today: finalBoughtToday,  // 🔥 使用实际购买次数
                 max_daily_buy: config.max_daily_buy_spins,
-                price: buyPrice,
+                price_kyx: buyPriceKYX,
                 buy_count: buyCount // 🔥 返回本次购买数量
             }
         });

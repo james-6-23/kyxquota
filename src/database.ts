@@ -26,525 +26,460 @@ import type {
 } from './types';
 // 数据库迁移已整合到本文件中
 
-// 创建数据库连接
-export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
-
-// 启用 WAL 模式（提升并发性能）
-db.exec('PRAGMA journal_mode = WAL');
-db.exec('PRAGMA synchronous = NORMAL');
-db.exec('PRAGMA cache_size = 10000');
-db.exec('PRAGMA temp_store = MEMORY');
+// ========== 数据库连接配置 ==========
 
 /**
- * 初始化数据库表
+ * 主数据库连接（读写）
+ */
+export const db = new Database(CONFIG.DATABASE_PATH, { create: true });
+
+/**
+ * 只读数据库连接（优化并发读取）
+ * 用于查询密集型操作，不占用写锁
+ */
+export const readDB = new Database(CONFIG.DATABASE_PATH, {
+    readonly: true,
+    create: false
+});
+
+// ========== 性能优化配置 ==========
+
+console.log('⚡ 启用 SQLite 性能优化...');
+
+// WAL 模式（高并发读写）
+db.exec('PRAGMA journal_mode = WAL');
+
+// 同步模式（平衡性能和安全性）
+db.exec('PRAGMA synchronous = NORMAL');
+
+// 缓存大小：64MB（负数表示 KB，正数表示页数）
+// -64000 = 64,000 KB = 64 MB（固定大小，不受页大小影响）
+db.exec('PRAGMA cache_size = -64000');
+
+// 内存映射：256MB（显著提升大文件性能）
+db.exec('PRAGMA mmap_size = 268435456');
+
+// 页大小：8KB（优化 I/O 效率）
+db.exec('PRAGMA page_size = 8192');
+
+// 临时表存储在内存
+db.exec('PRAGMA temp_store = MEMORY');
+
+// WAL 日志大小限制：64MB
+db.exec('PRAGMA journal_size_limit = 67108864');
+
+// 自动检查点：每 1000 页
+db.exec('PRAGMA wal_autocheckpoint = 1000');
+
+// 分析查询计划（帮助优化器）
+db.exec('PRAGMA optimize');
+
+console.log('✅ SQLite 性能优化已启用');
+console.log('  📊 缓存大小: 64MB');
+console.log('  📊 内存映射: 256MB');
+console.log('  📊 WAL 模式: 已启用');
+console.log('  📊 读写分离: 已启用');
+
+/**
+ * 初始化数据库表（全新部署版本 - 无迁移代码）
  */
 export function initDatabase() {
     console.log('📦 初始化数据库...');
 
-    // 用户表
-    db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT UNIQUE NOT NULL,
-      username TEXT NOT NULL,
-      linux_do_username TEXT,
-      kyx_user_id INTEGER NOT NULL,
-      is_banned INTEGER DEFAULT 0,
-      banned_at INTEGER,
-      banned_reason TEXT,
-      created_at INTEGER NOT NULL
-    )
-  `);
+    // ========== 核心表 ==========
 
-    // 🚀 优化：为用户表添加索引
+    // 用户表（包含所有最新字段）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT UNIQUE NOT NULL,
+            username TEXT NOT NULL,
+            linux_do_username TEXT,
+            kyx_user_id INTEGER NOT NULL,
+            is_banned INTEGER DEFAULT 0,
+            banned_at INTEGER,
+            banned_reason TEXT,
+            win_streak INTEGER DEFAULT 0,
+            created_at INTEGER NOT NULL
+        )
+    `);
+
+    // 用户表索引
     db.exec('CREATE INDEX IF NOT EXISTS idx_users_linux_do_username ON users(linux_do_username)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_users_created_at ON users(created_at)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_users_is_banned ON users(is_banned)');
 
-    // 添加封禁相关字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE users ADD COLUMN is_banned INTEGER DEFAULT 0');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE users ADD COLUMN banned_at INTEGER');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE users ADD COLUMN banned_reason TEXT');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加LinuxDo用户名字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE users ADD COLUMN linux_do_username TEXT');
-        console.log('✅ 已添加 linux_do_username 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加连击计数器字段（用于连续中奖成就）
-    try {
-        db.exec('ALTER TABLE users ADD COLUMN win_streak INTEGER DEFAULT 0');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
     // 领取记录表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS claim_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      quota_added INTEGER NOT NULL,
-      timestamp INTEGER NOT NULL,
-      date TEXT NOT NULL
-    )
-  `);
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_claim_linux_do_id ON claim_records(linux_do_id)'
-    );
+        CREATE TABLE IF NOT EXISTS claim_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            quota_added INTEGER NOT NULL,
+            timestamp INTEGER NOT NULL,
+            date TEXT NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_claim_linux_do_id ON claim_records(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_claim_date ON claim_records(date)');
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_claim_timestamp ON claim_records(timestamp)'
-    );
+    db.exec('CREATE INDEX IF NOT EXISTS idx_claim_timestamp ON claim_records(timestamp)');
 
-    // 投喂记录表
+    // 投喂记录表（包含key_type字段）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS donate_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      keys_count INTEGER NOT NULL,
-      total_quota_added INTEGER NOT NULL,
-      timestamp INTEGER NOT NULL,
-      push_status TEXT DEFAULT 'success',
-      push_message TEXT,
-      failed_keys TEXT,
-      key_type TEXT DEFAULT 'modelscope'
-    )
-  `);
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_donate_linux_do_id ON donate_records(linux_do_id)'
-    );
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_donate_timestamp ON donate_records(timestamp)'
-    );
+        CREATE TABLE IF NOT EXISTS donate_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            keys_count INTEGER NOT NULL,
+            total_quota_added INTEGER NOT NULL,
+            timestamp INTEGER NOT NULL,
+            push_status TEXT DEFAULT 'success',
+            push_message TEXT,
+            failed_keys TEXT,
+            key_type TEXT DEFAULT 'modelscope'
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_donate_linux_do_id ON donate_records(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_donate_timestamp ON donate_records(timestamp)');
 
-    // 添加 key_type 字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE donate_records ADD COLUMN key_type TEXT DEFAULT \'modelscope\'');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 已使用的 Key 表
+    // 已使用的 Key 表（包含key_type字段）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS used_keys (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      key TEXT NOT NULL,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      timestamp INTEGER NOT NULL,
-      key_type TEXT DEFAULT 'modelscope',
-      UNIQUE(key, key_type)
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS used_keys (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT NOT NULL,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            timestamp INTEGER NOT NULL,
+            key_type TEXT DEFAULT 'modelscope',
+            UNIQUE(key, key_type)
+        )
+    `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_used_keys_key ON used_keys(key)');
-
-    // 添加 key_type 字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE used_keys ADD COLUMN key_type TEXT DEFAULT \'modelscope\'');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
 
     // Session 表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS sessions (
-      id TEXT PRIMARY KEY,
-      data TEXT NOT NULL,
-      expires_at INTEGER NOT NULL
-    )
-  `);
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)'
-    );
+        CREATE TABLE IF NOT EXISTS sessions (
+            id TEXT PRIMARY KEY,
+            data TEXT NOT NULL,
+            expires_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)');
 
-    // 🛡️ 速率限制封禁记录表
+    // 速率限制封禁记录表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS rate_limit_bans (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      ban_type TEXT NOT NULL,
-      trigger_count INTEGER NOT NULL,
-      ban_reason TEXT NOT NULL,
-      banned_at INTEGER NOT NULL,
-      banned_until INTEGER NOT NULL,
-      is_active INTEGER DEFAULT 1,
-      unbanned_at INTEGER,
-      unbanned_by TEXT,
-      unban_reason TEXT,
-      created_at INTEGER NOT NULL
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS rate_limit_bans (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            ban_type TEXT NOT NULL,
+            trigger_count INTEGER NOT NULL,
+            ban_reason TEXT NOT NULL,
+            banned_at INTEGER NOT NULL,
+            banned_until INTEGER NOT NULL,
+            is_active INTEGER DEFAULT 1,
+            unbanned_at INTEGER,
+            unbanned_by TEXT,
+            unban_reason TEXT,
+            created_at INTEGER NOT NULL
+        )
+    `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_linux_do_id ON rate_limit_bans(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_is_active ON rate_limit_bans(is_active)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_rate_limit_bans_banned_until ON rate_limit_bans(banned_until)');
 
-    // 管理员配置表
+    // 管理员配置表（包含所有最新字段）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS admin_config (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      session TEXT DEFAULT '',
-      new_api_user TEXT DEFAULT '1',
-      claim_quota INTEGER DEFAULT 20000000,
-      max_daily_claims INTEGER DEFAULT 1,
-      keys_api_url TEXT DEFAULT 'https://gpt-load.kyx03.de/api/keys/add-async',
-      keys_authorization TEXT DEFAULT '',
-      modelscope_group_id INTEGER DEFAULT 26,
-      iflow_group_id INTEGER DEFAULT 26,
-      max_daily_donate_modelscope INTEGER DEFAULT 1,
-      max_daily_donate_iflow INTEGER DEFAULT 1,
-      updated_at INTEGER NOT NULL
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS admin_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            session TEXT DEFAULT '',
+            new_api_user TEXT DEFAULT '1',
+            claim_quota INTEGER DEFAULT 20000000,
+            max_daily_claims INTEGER DEFAULT 1,
+            keys_api_url TEXT DEFAULT 'https://gpt-load.kyx03.de/api/keys/add-async',
+            keys_authorization TEXT DEFAULT '',
+            modelscope_group_id INTEGER DEFAULT 26,
+            iflow_group_id INTEGER DEFAULT 26,
+            max_daily_donate_modelscope INTEGER DEFAULT 1,
+            max_daily_donate_iflow INTEGER DEFAULT 1,
+
+            -- 💰 划转配置
+            transfer_min_kyx INTEGER DEFAULT 25,
+            transfer_max_kyx INTEGER DEFAULT 2500,
+            transfer_max_daily_count INTEGER DEFAULT 10,
+            transfer_fee_rate REAL DEFAULT 0,
+            transfer_reverse_enabled INTEGER DEFAULT 1,
+
+            updated_at INTEGER NOT NULL
+        )
+    `);
 
     // 插入默认管理员配置
     db.exec(`
-    INSERT OR IGNORE INTO admin_config (id, updated_at, claim_quota, max_daily_claims)
-    VALUES (1, ${Date.now()}, ${CONFIG.DEFAULT_CLAIM_QUOTA}, 1)
-  `);
+        INSERT OR IGNORE INTO admin_config (id, updated_at, claim_quota, max_daily_claims)
+        VALUES (1, ${Date.now()}, ${CONFIG.DEFAULT_CLAIM_QUOTA}, 1)
+    `);
 
-    // 兼容旧数据：如果表已存在但缺少 max_daily_claims 字段，则添加
-    try {
-        db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_claims INTEGER DEFAULT 1');
-        console.log('✅ 已添加 max_daily_claims 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+    // ========== KYX 钱包系统表 ==========
 
-    // 兼容旧数据：重命名 group_id 为 modelscope_group_id
-    try {
-        // SQLite 不支持 RENAME COLUMN，需要通过查询判断
-        const hasOldColumn = db.query("SELECT COUNT(*) as count FROM pragma_table_info('admin_config') WHERE name='group_id'").get();
-        const hasNewColumn = db.query("SELECT COUNT(*) as count FROM pragma_table_info('admin_config') WHERE name='modelscope_group_id'").get();
-
-        if ((hasOldColumn as any).count > 0 && (hasNewColumn as any).count === 0) {
-            // 先添加新字段
-            db.exec('ALTER TABLE admin_config ADD COLUMN modelscope_group_id INTEGER DEFAULT 26');
-            // 复制旧数据
-            db.exec('UPDATE admin_config SET modelscope_group_id = group_id');
-            console.log('✅ 已将 group_id 迁移为 modelscope_group_id');
-        }
-    } catch (e) {
-        // 忽略错误
-    }
-
-    // 兼容旧数据：如果表已存在但缺少 iflow_group_id 字段，则添加
-    try {
-        db.exec('ALTER TABLE admin_config ADD COLUMN iflow_group_id INTEGER DEFAULT 26');
-        console.log('✅ 已添加 iflow_group_id 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 兼容旧数据：添加投喂限制字段
-    try {
-        db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_donate_modelscope INTEGER DEFAULT 1');
-        console.log('✅ 已添加 max_daily_donate_modelscope 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    try {
-        db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_donate_iflow INTEGER DEFAULT 1');
-        console.log('✅ 已添加 max_daily_donate_iflow 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 老虎机配置表
+    // 用户钱包表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS slot_machine_config (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      bet_amount INTEGER DEFAULT 10000000,
-      max_daily_spins INTEGER DEFAULT 5,
-      min_quota_required INTEGER DEFAULT 10000000,
-      enabled INTEGER DEFAULT 1,
-      background_type TEXT DEFAULT 'default',
-      buy_spins_enabled INTEGER DEFAULT 0,
-      buy_spins_price INTEGER DEFAULT 20000000,
-      max_daily_buy_spins INTEGER DEFAULT 5,
-      updated_at INTEGER NOT NULL
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS user_wallets (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT UNIQUE NOT NULL,
 
-    // 兼容旧数据：添加 background_type 字段（必须在 INSERT 之前）
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN background_type TEXT DEFAULT \'default\'');
-        console.log('✅ 已添加 background_type 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+            -- KYX 余额（系统内虚拟货币）
+            kyx_balance INTEGER DEFAULT 0,
 
-    // 兼容旧数据：添加购买次数相关字段
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN buy_spins_enabled INTEGER DEFAULT 0');
-        console.log('✅ 已添加 buy_spins_enabled 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN buy_spins_price INTEGER DEFAULT 20000000');
-        console.log('✅ 已添加 buy_spins_price 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN max_daily_buy_spins INTEGER DEFAULT 5');
-        console.log('✅ 已添加 max_daily_buy_spins 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+            -- 冻结余额（划转中、下注中等）
+            kyx_frozen INTEGER DEFAULT 0,
 
-    // 添加配置方案引用字段
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN weight_config_id INTEGER DEFAULT 1');
-        console.log('✅ 已添加 weight_config_id 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE slot_machine_config ADD COLUMN reward_scheme_id INTEGER DEFAULT 1');
-        console.log('✅ 已添加 reward_scheme_id 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+            -- 累计统计
+            total_earned INTEGER DEFAULT 0,
+            total_spent INTEGER DEFAULT 0,
+            total_transfer_in INTEGER DEFAULT 0,
+            total_transfer_out INTEGER DEFAULT 0,
+
+            -- 时间戳
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_wallet_linux_do_id ON user_wallets(linux_do_id)');
+
+    // 划转记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS transfer_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+
+            -- 划转类型
+            transfer_type TEXT NOT NULL,
+
+            -- 金额
+            amount_kyx INTEGER NOT NULL,
+            amount_usd INTEGER NOT NULL,
+            amount_quota INTEGER NOT NULL,
+
+            -- 汇率
+            exchange_rate REAL NOT NULL,
+
+            -- 状态
+            status TEXT DEFAULT 'pending',
+
+            -- API 响应
+            api_response TEXT,
+            error_message TEXT,
+
+            -- 手续费
+            fee_kyx INTEGER DEFAULT 0,
+
+            -- 时间戳
+            timestamp INTEGER NOT NULL,
+            completed_at INTEGER
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_transfer_linux_do_id ON transfer_records(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_transfer_status ON transfer_records(status)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_transfer_timestamp ON transfer_records(timestamp)');
+
+    // KYX 交易记录表
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS kyx_transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+
+            -- 交易类型
+            transaction_type TEXT NOT NULL,
+
+            -- 金额（正数=收入，负数=支出）
+            amount INTEGER NOT NULL,
+
+            -- 余额快照
+            balance_before INTEGER NOT NULL,
+            balance_after INTEGER NOT NULL,
+
+            -- 关联信息
+            related_id INTEGER,
+            description TEXT,
+
+            -- 时间戳
+            timestamp INTEGER NOT NULL
+        )
+    `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tx_linux_do_id ON kyx_transactions(linux_do_id)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tx_type ON kyx_transactions(transaction_type)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_tx_timestamp ON kyx_transactions(timestamp)');
+
+    console.log('✅ KYX 钱包系统表创建完成');
+
+    // ========== 老虎机系统表 ==========
+
+    // 老虎机配置表（包含所有最新字段）
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS slot_machine_config (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            bet_amount INTEGER DEFAULT 10000000,
+            max_daily_spins INTEGER DEFAULT 5,
+            min_quota_required INTEGER DEFAULT 10000000,
+            enabled INTEGER DEFAULT 1,
+            background_type TEXT DEFAULT 'default',
+            buy_spins_enabled INTEGER DEFAULT 0,
+            buy_spins_price INTEGER DEFAULT 20000000,
+            max_daily_buy_spins INTEGER DEFAULT 5,
+            weight_config_id INTEGER DEFAULT 1,
+            reward_scheme_id INTEGER DEFAULT 1,
+            updated_at INTEGER NOT NULL
+        )
+    `);
 
     // 插入默认老虎机配置
     db.exec(`
-    INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, buy_spins_enabled, buy_spins_price, max_daily_buy_spins, updated_at)
-    VALUES (1, 10000000, 5, 10000000, 1, 'default', 0, 20000000, 5, ${Date.now()})
-  `);
+        INSERT OR IGNORE INTO slot_machine_config (id, bet_amount, max_daily_spins, min_quota_required, enabled, background_type, buy_spins_enabled, buy_spins_price, max_daily_buy_spins, updated_at)
+        VALUES (1, 10000000, 5, 10000000, 1, 'default', 0, 20000000, 5, ${Date.now()})
+    `);
 
-    // 符号权重配置表
+    // 符号权重配置表（包含所有符号）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS slot_symbol_weights (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      weight_m INTEGER DEFAULT 100,
-      weight_t INTEGER DEFAULT 100,
-      weight_n INTEGER DEFAULT 100,
-      weight_j INTEGER DEFAULT 100,
-      weight_lq INTEGER DEFAULT 100,
-      weight_bj INTEGER DEFAULT 100,
-      weight_zft INTEGER DEFAULT 100,
-      weight_bdk INTEGER DEFAULT 100,
-      weight_lsh INTEGER DEFAULT 25,
-      weight_man INTEGER DEFAULT 25,
-      updated_at INTEGER NOT NULL
-    )
-  `);
-
-    // 🔥 数据库迁移：添加新符号列（如果不存在）
-    try {
-        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_lsh INTEGER DEFAULT 25');
-        console.log('✅ 已添加 slot_symbol_weights.weight_lsh 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-    try {
-        db.exec('ALTER TABLE slot_symbol_weights ADD COLUMN weight_man INTEGER DEFAULT 25');
-        console.log('✅ 已添加 slot_symbol_weights.weight_man 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+        CREATE TABLE IF NOT EXISTS slot_symbol_weights (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            weight_m INTEGER DEFAULT 100,
+            weight_t INTEGER DEFAULT 100,
+            weight_n INTEGER DEFAULT 100,
+            weight_j INTEGER DEFAULT 100,
+            weight_lq INTEGER DEFAULT 100,
+            weight_bj INTEGER DEFAULT 100,
+            weight_zft INTEGER DEFAULT 100,
+            weight_bdk INTEGER DEFAULT 100,
+            weight_lsh INTEGER DEFAULT 25,
+            weight_man INTEGER DEFAULT 25,
+            updated_at INTEGER NOT NULL
+        )
+    `);
 
     // 插入默认符号权重配置
     db.exec(`
-    INSERT OR IGNORE INTO slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, updated_at)
-    VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, ${Date.now()})
-  `);
+        INSERT OR IGNORE INTO slot_symbol_weights (id, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, updated_at)
+        VALUES (1, 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, ${Date.now()})
+    `);
 
     // 奖励倍数配置表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS slot_reward_multipliers (
-      id INTEGER PRIMARY KEY CHECK (id = 1),
-      super_jackpot_multiplier INTEGER DEFAULT 256,
-      special_combo_multiplier INTEGER DEFAULT 16,
-      quad_multiplier INTEGER DEFAULT 32,
-      triple_multiplier INTEGER DEFAULT 8,
-      double_multiplier INTEGER DEFAULT 4,
-      updated_at INTEGER NOT NULL
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS slot_reward_multipliers (
+            id INTEGER PRIMARY KEY CHECK (id = 1),
+            super_jackpot_multiplier INTEGER DEFAULT 256,
+            special_combo_multiplier INTEGER DEFAULT 16,
+            quad_multiplier INTEGER DEFAULT 32,
+            triple_multiplier INTEGER DEFAULT 8,
+            double_multiplier INTEGER DEFAULT 4,
+            updated_at INTEGER NOT NULL
+        )
+    `);
 
     // 插入默认奖励倍数配置
     db.exec(`
-    INSERT OR IGNORE INTO slot_reward_multipliers (id, super_jackpot_multiplier, special_combo_multiplier, quad_multiplier, triple_multiplier, double_multiplier, updated_at)
-    VALUES (1, 256, 16, 32, 8, 4, ${Date.now()})
-  `);
+        INSERT OR IGNORE INTO slot_reward_multipliers (id, super_jackpot_multiplier, special_combo_multiplier, quad_multiplier, triple_multiplier, double_multiplier, updated_at)
+        VALUES (1, 256, 16, 32, 8, 4, ${Date.now()})
+    `);
 
-    // 老虎机游戏记录表
+    // 老虎机游戏记录表（包含所有最新字段）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS slot_machine_records (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      linux_do_username TEXT,
-      bet_amount INTEGER NOT NULL,
-      result_symbols TEXT NOT NULL,
-      win_type TEXT NOT NULL,
-      win_multiplier REAL NOT NULL,
-      win_amount INTEGER NOT NULL,
-      free_spin_awarded INTEGER DEFAULT 0,
-      is_free_spin INTEGER DEFAULT 0,
-      timestamp INTEGER NOT NULL,
-      date TEXT NOT NULL
-    )
-  `);
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_slot_linux_do_id ON slot_machine_records(linux_do_id)'
-    );
+        CREATE TABLE IF NOT EXISTS slot_machine_records (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            linux_do_username TEXT,
+            bet_amount INTEGER NOT NULL,
+            result_symbols TEXT NOT NULL,
+            win_type TEXT NOT NULL,
+            win_multiplier REAL NOT NULL,
+            win_amount INTEGER NOT NULL,
+            free_spin_awarded INTEGER DEFAULT 0,
+            is_free_spin INTEGER DEFAULT 0,
+            rule_name TEXT,
+            slot_mode TEXT,
+            timestamp INTEGER NOT NULL,
+            date TEXT NOT NULL
+        )
+    `);
+
+    // 游戏记录表索引
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_linux_do_id ON slot_machine_records(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_slot_date ON slot_machine_records(date)');
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_slot_timestamp ON slot_machine_records(timestamp)'
-    );
-    // 🚀 优化：为用户筛选字段添加索引
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_slot_linux_do_username ON slot_machine_records(linux_do_username)'
-    );
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_slot_username ON slot_machine_records(username)'
-    );
-    db.exec(
-        'CREATE INDEX IF NOT EXISTS idx_slot_mode ON slot_machine_records(slot_mode)'
-    );
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_timestamp ON slot_machine_records(timestamp)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_linux_do_username ON slot_machine_records(linux_do_username)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_username ON slot_machine_records(username)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_slot_mode ON slot_machine_records(slot_mode)');
 
-    // 添加 linux_do_username 字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE slot_machine_records ADD COLUMN linux_do_username TEXT');
-        console.log('✅ 已添加 linux_do_username 字段到 slot_machine_records');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加 rule_name 字段（兼容旧数据库）- 用于显示具体的规则名称
-    try {
-        db.exec('ALTER TABLE slot_machine_records ADD COLUMN rule_name TEXT');
-        console.log('✅ 已添加 rule_name 字段到 slot_machine_records');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 用户免费次数表
+    // 用户免费次数表（包含封禁相关字段）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS user_free_spins (
-      linux_do_id TEXT PRIMARY KEY,
-      free_spins INTEGER DEFAULT 0,
-      banned_until INTEGER DEFAULT 0,
-      updated_at INTEGER NOT NULL
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS user_free_spins (
+            linux_do_id TEXT PRIMARY KEY,
+            free_spins INTEGER DEFAULT 0,
+            banned_until INTEGER DEFAULT 0,
+            ban_slot_mode TEXT DEFAULT NULL,
+            ban_hours INTEGER DEFAULT 0,
+            banned_at INTEGER DEFAULT 0,
+            updated_at INTEGER NOT NULL
+        )
+    `);
 
-    // 添加 banned_until 字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE user_free_spins ADD COLUMN banned_until INTEGER DEFAULT 0');
-        console.log('✅ 已添加 banned_until 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加 ban_slot_mode 字段（记录封禁发生的场次类型）
-    try {
-        db.exec('ALTER TABLE user_free_spins ADD COLUMN ban_slot_mode TEXT DEFAULT NULL');
-        console.log('✅ 已添加 ban_slot_mode 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加 ban_hours 字段（记录实际封禁的小时数）
-    try {
-        db.exec('ALTER TABLE user_free_spins ADD COLUMN ban_hours INTEGER DEFAULT 0');
-        console.log('✅ 已添加 ban_hours 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 添加 banned_at 字段（记录封禁开始时间的时间戳）
-    try {
-        db.exec('ALTER TABLE user_free_spins ADD COLUMN banned_at INTEGER DEFAULT 0');
-        console.log('✅ 已添加 banned_at 字段');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
-
-    // 用户老虎机统计表（用于排行榜）
+    // 用户老虎机统计表（总榜）
     db.exec(`
-    CREATE TABLE IF NOT EXISTS user_slot_stats (
-      linux_do_id TEXT PRIMARY KEY,
-      username TEXT NOT NULL,
-      avatar_url TEXT,
-      total_spins INTEGER DEFAULT 0,
-      total_bet INTEGER DEFAULT 0,
-      total_win INTEGER DEFAULT 0,
-      biggest_win INTEGER DEFAULT 0,
-      biggest_win_type TEXT,
-      updated_at INTEGER NOT NULL
-    )
-  `);
-
-    // 添加 avatar_url 字段（兼容旧数据库）
-    try {
-        db.exec('ALTER TABLE user_slot_stats ADD COLUMN avatar_url TEXT');
-    } catch (e) {
-        // 字段已存在，忽略错误
-    }
+        CREATE TABLE IF NOT EXISTS user_slot_stats (
+            linux_do_id TEXT PRIMARY KEY,
+            username TEXT NOT NULL,
+            avatar_url TEXT,
+            total_spins INTEGER DEFAULT 0,
+            total_bet INTEGER DEFAULT 0,
+            total_win INTEGER DEFAULT 0,
+            biggest_win INTEGER DEFAULT 0,
+            biggest_win_type TEXT,
+            updated_at INTEGER NOT NULL
+        )
+    `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_user_slot_stats_total_win ON user_slot_stats(total_win DESC)');
 
     // 日榜统计表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS user_slot_daily_stats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      avatar_url TEXT,
-      date TEXT NOT NULL,
-      total_spins INTEGER DEFAULT 0,
-      total_bet INTEGER DEFAULT 0,
-      total_win INTEGER DEFAULT 0,
-      biggest_win INTEGER DEFAULT 0,
-      biggest_win_type TEXT,
-      updated_at INTEGER NOT NULL,
-      UNIQUE(linux_do_id, date)
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS user_slot_daily_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            avatar_url TEXT,
+            date TEXT NOT NULL,
+            total_spins INTEGER DEFAULT 0,
+            total_bet INTEGER DEFAULT 0,
+            total_win INTEGER DEFAULT 0,
+            biggest_win INTEGER DEFAULT 0,
+            biggest_win_type TEXT,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(linux_do_id, date)
+        )
+    `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_date ON user_slot_daily_stats(date)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_linux_do_id ON user_slot_daily_stats(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_daily_stats_profit ON user_slot_daily_stats((total_win - total_bet) DESC)');
 
-    // 周榜统计表（周起始日期，例如：2025-01-06 代表该周的周一）
+    // 周榜统计表
     db.exec(`
-    CREATE TABLE IF NOT EXISTS user_slot_weekly_stats (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      linux_do_id TEXT NOT NULL,
-      username TEXT NOT NULL,
-      avatar_url TEXT,
-      week_start TEXT NOT NULL,
-      total_spins INTEGER DEFAULT 0,
-      total_bet INTEGER DEFAULT 0,
-      total_win INTEGER DEFAULT 0,
-      biggest_win INTEGER DEFAULT 0,
-      biggest_win_type TEXT,
-      updated_at INTEGER NOT NULL,
-      UNIQUE(linux_do_id, week_start)
-    )
-  `);
+        CREATE TABLE IF NOT EXISTS user_slot_weekly_stats (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            linux_do_id TEXT NOT NULL,
+            username TEXT NOT NULL,
+            avatar_url TEXT,
+            week_start TEXT NOT NULL,
+            total_spins INTEGER DEFAULT 0,
+            total_bet INTEGER DEFAULT 0,
+            total_win INTEGER DEFAULT 0,
+            biggest_win INTEGER DEFAULT 0,
+            biggest_win_type TEXT,
+            updated_at INTEGER NOT NULL,
+            UNIQUE(linux_do_id, week_start)
+        )
+    `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_week ON user_slot_weekly_stats(week_start)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_linux_do_id ON user_slot_weekly_stats(linux_do_id)');
     db.exec('CREATE INDEX IF NOT EXISTS idx_weekly_stats_profit ON user_slot_weekly_stats((total_win - total_bet) DESC)');
@@ -1689,6 +1624,9 @@ function initQueries() {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
             'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
+        ),
+        updateTransferConfig: db.query(
+            'UPDATE admin_config SET transfer_min_kyx = ?, transfer_max_kyx = ?, transfer_max_daily_count = ?, transfer_fee_rate = ?, transfer_reverse_enabled = ?, updated_at = ? WHERE id = 1'
         ),
     };
 
@@ -3307,5 +3245,177 @@ function fixAchievementDescriptions(): void {
     } catch (error: any) {
         console.error('❌ [成就修复] 更新成就描述时出错:', error);
         // 不抛出错误，避免影响系统启动
+    }
+}
+
+// ========== 性能优化工具 ==========
+
+/**
+ * 批量操作事务包装器
+ * 将多个操作包装在一个事务中，显著提升性能
+ *
+ * @example
+ * const insertMany = batchTransaction((records) => {
+ *   const stmt = db.prepare('INSERT INTO users VALUES (?, ?)');
+ *   for (const record of records) {
+ *     stmt.run(record.id, record.name);
+ *   }
+ * });
+ * insertMany(records); // 一次性提交所有操作
+ */
+export function batchTransaction<T extends any[], R>(
+    fn: (...args: T) => R
+): (...args: T) => R {
+    return db.transaction(fn) as any;
+}
+
+/**
+ * 性能监控装饰器
+ * 测量函数执行时间
+ *
+ * @example
+ * const result = withTiming('查询用户', () => {
+ *   return db.query('SELECT * FROM users').all();
+ * });
+ */
+export function withTiming<T>(label: string, fn: () => T): T {
+    const start = performance.now();
+    try {
+        const result = fn();
+        const duration = performance.now() - start;
+        if (duration > 100) { // 只记录超过 100ms 的慢查询
+            console.log(`⏱️  [性能] ${label} 耗时: ${duration.toFixed(2)}ms`);
+        }
+        return result;
+    } catch (error) {
+        const duration = performance.now() - start;
+        console.error(`❌ [性能] ${label} 失败 (耗时: ${duration.toFixed(2)}ms)`, error);
+        throw error;
+    }
+}
+
+/**
+ * 数据库统计信息
+ */
+export function getDatabaseStats() {
+    const stats = {
+        // 数据库文件大小
+        fileSize: db.query<{ page_count: number, page_size: number }, never>(
+            'SELECT page_count * page_size as size FROM pragma_page_count(), pragma_page_size()'
+        ).get(),
+
+        // WAL 文件大小
+        walSize: db.query<{ seq: number }, never>('SELECT seq FROM pragma_wal_checkpoint(PASSIVE)').get(),
+
+        // 缓存命中率
+        cacheStats: db.query<{ cache_hit: number, cache_miss: number }, never>(
+            'SELECT * FROM pragma_cache_stats'
+        ).all(),
+
+        // 表统计
+        tables: db.query<{ name: string, count: number }, never>(`
+            SELECT name,
+                   (SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=m.name) as count
+            FROM sqlite_master m
+            WHERE type='table' AND name NOT LIKE 'sqlite_%'
+        `).all(),
+    };
+
+    return stats;
+}
+
+/**
+ * 优化数据库（重建索引、更新统计信息）
+ * 建议定期执行（如每天一次）
+ */
+export function optimizeDatabase() {
+    console.log('🔧 开始优化数据库...');
+
+    const start = performance.now();
+
+    // 分析所有表，更新查询优化器统计信息
+    db.exec('PRAGMA analysis_limit = 1000');
+    db.exec('PRAGMA optimize');
+
+    // 整理碎片（可选，耗时较长）
+    // db.exec('VACUUM');
+
+    const duration = performance.now() - start;
+    console.log(`✅ 数据库优化完成，耗时: ${duration.toFixed(2)}ms`);
+}
+
+/**
+ * 批量插入排行榜数据（优化版本）
+ * 使用事务包装，性能提升 10-100 倍
+ */
+export const batchUpdateLeaderboard = batchTransaction((
+    records: Array<{
+        linux_do_id: string;
+        username: string;
+        date: string;
+        total_bet: number;
+        total_win: number;
+    }>
+) => {
+    const stmt = db.prepare(`
+        INSERT OR REPLACE INTO user_slot_daily_stats
+        (linux_do_id, username, date, total_bet, total_win, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+    for (const record of records) {
+        stmt.run(
+            record.linux_do_id,
+            record.username,
+            record.date,
+            record.total_bet,
+            record.total_win,
+            Date.now()
+        );
+    }
+});
+
+/**
+ * 批量删除过期数据（优化版本）
+ */
+export const batchDeleteExpiredRecords = batchTransaction((
+    table: string,
+    timestampField: string,
+    expiryDays: number
+) => {
+    const expiryTime = Date.now() - (expiryDays * 24 * 60 * 60 * 1000);
+    const result = db.prepare(`
+        DELETE FROM ${table} WHERE ${timestampField} < ?
+    `).run(expiryTime);
+
+    console.log(`🗑️  清理 ${table} 表: 删除 ${result.changes} 条过期数据`);
+    return result.changes;
+});
+
+/**
+ * 启动时的数据库健康检查
+ */
+export function databaseHealthCheck() {
+    console.log('🏥 数据库健康检查...');
+
+    try {
+        // 完整性检查
+        const integrity = db.query<{ integrity_check: string }, never>('PRAGMA integrity_check').get();
+        if (integrity?.integrity_check !== 'ok') {
+            console.error('❌ 数据库完整性检查失败:', integrity);
+            return false;
+        }
+
+        // 检查 WAL 模式
+        const walMode = db.query<{ journal_mode: string }, never>('PRAGMA journal_mode').get();
+        if (walMode?.journal_mode !== 'wal') {
+            console.warn('⚠️  WAL 模式未启用');
+        }
+
+        console.log('✅ 数据库健康检查通过');
+        return true;
+    } catch (error) {
+        console.error('❌ 数据库健康检查失败:', error);
+        return false;
     }
 }

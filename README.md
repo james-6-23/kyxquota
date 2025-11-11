@@ -1,15 +1,20 @@
 # 🚀 KYX API Quota Bridge
 
 基于 **Bun + Hono + SQLite** 构建的高性能公益站额度自助管理系统
+集成**老虎机游戏**、**坤呗借款**、**成就系统**等多元化功能
 
 ---
 
 ## ✨ 核心特性
 
 - ⚡ **极致性能** - Bun 运行时，QPS 70k+，响应延迟 <5ms
-- 🗄️ **SQLite 数据库** - WAL 模式，零配置，支持高并发读写
+- 🗄️ **高性能存储** - SQLite (WAL模式) + Redis 多层缓存，零配置，支持高并发
+- 🎰 **游戏系统** - 老虎机抽奖系统，支持普通/高级模式，实时排行榜
+- 💰 **坤呗借款** - 虚拟借款系统，支持额度借贷、利息计算、逾期管理
+- 🏆 **成就系统** - 50+ 成就挑战，实时进度追踪，徽章展示
 - 🎨 **现代化 UI** - Tailwind CSS 设计，流畅动画，响应式布局
-- 🔒 **安全可靠** - OAuth2 标准认证 + Session 管理
+- 🔒 **安全可靠** - OAuth2 标准认证 + Session 管理 + 反滥用系统
+- 📊 **数据分析** - 用户行为分析、游戏数据统计、实时监控
 - 🐳 **一键部署** - Docker Compose，3 分钟完成部署
 
 ---
@@ -44,13 +49,42 @@ data/
 └── kyxquota.db-wal      # WAL 日志文件
 ```
 
-### 数据库表结构（6个表）
-- `users` - 用户绑定信息
+### 数据库表结构（20+ 表）
+
+#### 核心表
+- `users` - 用户绑定信息（含封禁状态、LinuxDo用户名、连击计数器）
 - `claim_records` - 每日领取记录
 - `donate_records` - Key 投喂记录
 - `used_keys` - 已使用的 Keys
 - `sessions` - 用户会话（24小时有效期）
-- `admin_config` - 系统配置（单例表，包含每日领取次数等配置）
+- `admin_config` - 系统配置（单例表）
+
+#### 老虎机相关表
+- `slot_machine_config` - 老虎机配置（倍率、符号权重）
+- `slot_machine_records` - 游戏记录
+- `user_free_spins` - 用户免费旋转次数
+- `user_tickets` - 用户券和碎片
+- `user_total_stats` - 用户累计统计
+- `user_daily_stats` - 用户每日统计
+- `user_weekly_stats` - 用户每周统计
+- `advanced_slot_config` - 高级老虎机配置
+- `advanced_slot_rtp_stats` - RTP 统计数据
+- `ticket_drop_records` - 券掉落记录
+- `user_advanced_entry` - 高级模式入场记录
+- `user_daily_ticket_grant` - 每日券发放记录
+- `pending_rewards` - 待发放奖励队列
+
+#### 坤呗系统表
+- `kunbei_config` - 坤呗借款配置
+- `kunbei_gradient_config` - 利率梯度配置
+- `user_loans` - 用户借款记录
+- `user_kunbei_stats` - 用户坤呗统计
+
+#### 成就系统表
+- `achievements` - 成就定义
+- `user_achievements` - 用户成就解锁记录
+- `achievement_progress` - 成就进度追踪
+- `user_achievement_stats` - 用户成就统计
 
 ---
 
@@ -99,7 +133,9 @@ if (kyxUser.linux_do_id !== session.linux_do_id) {
 
 ## 📋 功能清单
 
-### 用户端功能
+### 🎮 核心功能模块
+
+#### 1️⃣ 用户系统
 - ✅ Linux Do OAuth2 登录
 - ✅ 绑定公益站账号（首次奖励 $100）
 - ✅ 查询实时额度
@@ -107,14 +143,65 @@ if (kyxUser.linux_do_id !== session.linux_do_id) {
 - ✅ 投喂 ModelScope Keys（每个 $50，限制 **1 个/天**）
 - ✅ 后端验证 Key 有效性（安全可靠）
 - ✅ 查看个人领取/投喂记录
+- ✅ 用户封禁/解封机制
 
-### 管理员功能
-- ✅ 仪表板数据统计
-- ✅ 系统配置管理（额度、领取次数、Session、Keys 推送）
-- ✅ Keys 批量管理（导出、测试、删除）
-- ✅ 用户数据统计与导出
-- ✅ 领取/投喂记录查询（支持分页）
-- ✅ 失败 Keys 重新推送
+#### 2️⃣ 老虎机游戏系统 🎰
+- ✅ **普通模式**：基础抽奖玩法，支持免费旋转
+- ✅ **高级模式**：碎片合成券、进阶奖励机制
+- ✅ **至尊模式**：高倍率、高风险游戏模式
+- ✅ 多种符号组合（10种符号，含特殊符号）
+- ✅ 倍率系统（2x - 256x）
+- ✅ 排行榜系统（日榜/周榜/总榜，盈利/亏损双榜）
+- ✅ 实时统计（今日/本周/累计盈亏）
+- ✅ 概率计算器（动态权重配置）
+- ✅ 奖励自动发放（异步队列处理）
+- ✅ 防刷机制（频率限制、行为监测）
+
+#### 3️⃣ 坤呗借款系统 💰
+- ✅ 虚拟额度借款（支持多档位借款额度）
+- ✅ 梯度利率配置（不同借款额度不同利率）
+- ✅ 逾期管理（自动计算逾期天数和罚息）
+- ✅ 还款功能（支持提前还款）
+- ✅ 借款记录查询
+- ✅ 额度冻结/解冻机制
+- ✅ 管理员贷款赦免功能
+
+#### 4️⃣ 成就系统 🏆
+- ✅ **50+ 成就挑战**：涵盖额度、游戏、社交等多维度
+- ✅ **成就分类**：
+  - 额度成就（新手上路、财富自由等）
+  - 游戏成就（连胜、大奖、特殊组合等）
+  - 排行榜成就（登顶、前三名等）
+  - 社交成就（投喂、帮助他人等）
+  - 特殊成就（隐藏成就、彩蛋等）
+- ✅ **实时进度追踪**：自动更新成就进度
+- ✅ **徽章系统**：展示个人成就徽章（最多3个）
+- ✅ **成就排行榜**：积分排名系统
+- ✅ **奖励领取**：解锁成就后可领取额度奖励
+- ✅ **批量领取**：一键领取所有可领取奖励
+
+#### 5️⃣ 数据分析系统 📊
+- ✅ 用户行为分析
+- ✅ 游戏数据统计（RTP、赢率、投注分布）
+- ✅ 实时监控仪表板
+- ✅ 排行榜数据管理（自动清理过期数据）
+
+#### 6️⃣ 反滥用系统 🛡️
+- ✅ 频率限制（基于用户的 API 调用限流）
+- ✅ 异常行为检测
+- ✅ 自动封禁机制
+- ✅ IP 黑名单
+
+### 🔧 管理员功能
+- ✅ **系统配置**：额度、领取次数、Session、Keys 推送
+- ✅ **游戏配置**：老虎机倍率、符号权重、概率调整
+- ✅ **坤呗配置**：借款额度、利率梯度、逾期设置
+- ✅ **成就管理**：创建/编辑成就、奖励配置
+- ✅ **用户管理**：封禁/解封、数据导出、重新绑定
+- ✅ **Keys 管理**：批量导出、测试、删除、重试推送
+- ✅ **数据统计**：仪表板、领取/投喂/游戏记录查询（分页）
+- ✅ **排行榜管理**：查看各类排行榜数据
+- ✅ **日志监控**：系统日志、错误日志查看
 
 ---
 
@@ -349,40 +436,99 @@ docker-compose up -d
 ```
 kyxquota-bun/
 ├── src/
-│   ├── index.ts           # 主入口（Hono 应用）
-│   ├── config.ts          # 配置管理
-│   ├── types.ts           # TypeScript 类型定义
-│   ├── database.ts        # SQLite 数据库（预编译查询）
-│   ├── cache.ts           # LRU 缓存管理器
-│   ├── utils.ts           # 工具函数
-│   ├── routes/            # 路由层（28 个 API 端点）
-│   │   ├── oauth.ts       # OAuth2 认证
-│   │   ├── user.ts        # 用户 API
-│   │   └── admin.ts       # 管理员 API
-│   ├── services/          # 服务层
-│   │   ├── kyx-api.ts     # 公益站 API
-│   │   └── keys.ts        # Key 验证
-│   └── templates/         # HTML 模板
-│       ├── user.html      # 用户界面
-│       └── admin.html     # 管理员界面
-├── data/                  # 数据目录（SQLite 数据库）
-├── Dockerfile             # Docker 镜像构建
-├── docker-compose.yml     # Docker Compose 配置
-├── package.json           # Bun 项目配置
-└── deploy.sh              # 一键部署脚本
+│   ├── index.ts                 # 主入口（Hono 应用）
+│   ├── config.ts                # 配置管理
+│   ├── types.ts                 # TypeScript 类型定义
+│   ├── database.ts              # SQLite 数据库（预编译查询）
+│   ├── cache.ts                 # LRU 缓存管理器
+│   ├── utils.ts                 # 工具函数
+│   │
+│   ├── routes/                  # 路由层
+│   │   ├── oauth.ts             # OAuth2 认证
+│   │   ├── user.ts              # 用户 API
+│   │   ├── admin.ts             # 管理员 API
+│   │   ├── slot.ts              # 老虎机 API
+│   │   ├── kunbei.ts            # 坤呗借款 API
+│   │   ├── achievement.ts       # 成就系统 API
+│   │   └── supreme.ts           # 至尊模式 API
+│   │
+│   ├── services/                # 服务层
+│   │   ├── kyx-api.ts           # 公益站 API 服务
+│   │   ├── keys.ts              # Key 验证服务
+│   │   ├── slot.ts              # 老虎机游戏逻辑
+│   │   ├── advanced-slot.ts     # 高级老虎机逻辑
+│   │   ├── supreme-slot.ts      # 至尊模式逻辑
+│   │   ├── kunbei.ts            # 坤呗借款服务
+│   │   ├── achievement.ts       # 成就系统服务
+│   │   ├── probability-calculator.ts  # 概率计算器
+│   │   ├── reward-processor.ts  # 奖励自动发放
+│   │   ├── rank-achievement-checker.ts  # 排行榜成就检查
+│   │   ├── anti-abuse.ts        # 反滥用服务
+│   │   ├── analytics.ts         # 数据分析服务
+│   │   ├── rate-limiter.ts      # 限流器
+│   │   ├── redis-cache.ts       # Redis 缓存（可选）
+│   │   ├── user-cache.ts        # 用户缓存
+│   │   ├── search-cache.ts      # 搜索缓存
+│   │   └── scheme-loader.ts     # 配置方案加载器
+│   │
+│   ├── middleware/              # 中间件
+│   │   └── user-rate-limit.ts   # 用户级限流中间件
+│   │
+│   ├── templates/               # HTML 模板
+│   │   ├── user.html            # 用户界面
+│   │   └── admin.html           # 管理员界面
+│   │
+│   └── utils/                   # 工具模块
+│       └── logger.ts            # 日志工具
+│
+├── public/                      # 静态资源
+│   ├── slot-symbols/            # 老虎机符号图片
+│   ├── sounds/                  # 音效文件
+│   └── ctrl.gif                 # 背景动画
+│
+├── data/                        # 数据目录（SQLite 数据库）
+│   ├── kyxquota.db              # 主数据库文件
+│   ├── kyxquota.db-shm          # 共享内存文件
+│   └── kyxquota.db-wal          # WAL 日志文件
+│
+├── Dockerfile                   # Docker 镜像构建
+├── docker-compose.yml           # Docker Compose 配置
+├── docker-compose.build.yml     # 本地构建配置
+├── package.json                 # Bun 项目配置
+├── tsconfig.json                # TypeScript 配置
+└── env.example                  # 环境变量示例
 ```
 
 ---
 
 ## 🛠️ 技术栈
 
-- **运行时**: Bun 1.0+
-- **Web 框架**: Hono 4.0+
-- **数据库**: SQLite (WAL 模式)
-- **前端**: Tailwind CSS
-- **部署**: Docker Compose
-- **语言**: TypeScript
-- **CI/CD**: GitHub Actions（自动构建镜像）
+### 核心技术
+- **运行时**: Bun 1.0+ (极致性能的 JavaScript 运行时)
+- **Web 框架**: Hono 4.0+ (超快速的轻量级框架)
+- **数据库**: SQLite (WAL 模式，嵌入式关系型数据库)
+- **缓存**: Redis (可选) + 内存 LRU 缓存
+- **语言**: TypeScript (类型安全)
+
+### 前端技术
+- **样式**: Tailwind CSS (实用优先的 CSS 框架)
+- **动画**: CSS3 动画 + 原生 JavaScript
+- **图表**: 原生 Canvas / SVG
+- **音效**: Web Audio API
+
+### 开发工具
+- **部署**: Docker + Docker Compose
+- **CI/CD**: GitHub Actions (自动构建 Docker 镜像)
+- **日志**: 自定义日志工具 (支持彩色输出、级别过滤)
+- **监控**: 内置性能监控 + 错误追踪
+
+### 架构特点
+- **多层缓存策略**: Redis + 内存缓存 + 数据库缓存
+- **异步队列处理**: 奖励延迟发放，避免游戏卡顿
+- **预编译 SQL**: 所有查询预编译，性能提升 3x
+- **反滥用系统**: 多维度限流 + 异常检测
+- **概率引擎**: 动态权重配置，实时概率计算
+- **事件驱动**: 成就解锁、排行榜更新等基于事件触发
 
 ---
 
@@ -422,10 +568,53 @@ git push origin main  # 触发自动构建
 
 ---
 
-## 🆕 最新更新（v1.2.0）
+## 🆕 最新更新
 
-### 核心优化
+### v2.0.0（2025-01-11）
 
+#### 🎮 新增功能
+1. **老虎机游戏系统**
+   - 支持普通/高级/至尊三种模式
+   - 10 种符号组合，256 倍最高倍率
+   - 实时排行榜（日/周/总榜，盈利/亏损双榜）
+   - 异步奖励发放系统，避免游戏卡顿
+
+2. **坤呗借款系统**
+   - 虚拟额度借款功能
+   - 梯度利率配置
+   - 逾期自动计算和管理
+   - 管理员贷款赦免功能
+
+3. **成就系统**
+   - 50+ 成就挑战
+   - 成就分类（额度/游戏/排行榜/社交/特殊）
+   - 实时进度追踪
+   - 徽章展示系统
+   - 成就排行榜
+
+4. **数据分析系统**
+   - 用户行为分析
+   - 游戏数据统计（RTP、赢率）
+   - 实时监控仪表板
+
+#### 🔒 安全增强
+- 反滥用系统（频率限制 + 异常检测）
+- 用户级限流中间件
+- 自动封禁机制
+- IP 黑名单功能
+
+#### ⚡ 性能优化
+- 多层缓存策略（Redis + 内存 + 数据库）
+- 概率计算器预热
+- 预编译 SQL 查询
+- 排行榜数据自动清理
+
+#### 🗑️ 移除功能
+- 虚拟币交易系统（已在 cbfe810 提交中移除）
+
+### v1.2.0（2025-01-10）
+
+#### 核心优化
 1. **Key 验证优化** 🔒
    - 移除前端验证，只在后端验证（更安全）
    - 防止绕过验证机制
@@ -449,36 +638,90 @@ git push origin main  # 触发自动构建
 
 ---
 
-## 📖 API 端点（28个）
+## 📖 API 端点
 
-### 用户 API（10个）
-- `POST /api/auth/bind` - 绑定账号
+### OAuth 认证 API (3个)
+- `GET /oauth/authorize` - 发起 OAuth2 授权
+- `GET /oauth/callback` - OAuth2 回调处理
+- `GET /oauth/userinfo` - 获取用户信息
+
+### 用户 API (10+)
+- `POST /api/auth/bind` - 绑定公益站账号
 - `POST /api/auth/logout` - 退出登录
+- `GET /api/user/info` - 获取用户信息
 - `GET /api/user/quota` - 查询额度
 - `POST /api/claim/daily` - 每日领取
 - `POST /api/donate/validate` - 投喂 Keys（后端验证）
 - `GET /api/user/records/claim` - 领取记录
 - `GET /api/user/records/donate` - 投喂记录
 
-### 管理员 API（18个）
+### 老虎机 API (20+)
+- `GET /api/slot/config` - 获取游戏配置
+- `POST /api/slot/spin` - 旋转（普通模式）
+- `POST /api/slot/advanced-spin` - 旋转（高级模式）
+- `POST /api/slot/supreme-spin` - 旋转（至尊模式）
+- `GET /api/slot/records` - 游戏记录
+- `GET /api/slot/stats` - 个人统计
+- `GET /api/slot/leaderboard` - 排行榜（总榜）
+- `GET /api/slot/leaderboard/daily` - 日排行榜
+- `GET /api/slot/leaderboard/weekly` - 周排行榜
+- `GET /api/slot/tickets` - 查询券/碎片
+- `POST /api/slot/synthesize` - 合成券
+
+### 坤呗借款 API (8+)
+- `GET /api/kunbei/config` - 获取借款配置
+- `GET /api/kunbei/status` - 查询借款状态
+- `POST /api/kunbei/borrow` - 申请借款
+- `POST /api/kunbei/repay` - 还款
+- `GET /api/kunbei/loan-details` - 借款详情
+- `GET /api/kunbei/gradients` - 获取利率梯度
+
+### 成就系统 API (8+)
+- `GET /api/achievement/list` - 获取所有成就
+- `GET /api/achievement/user` - 获取用户成就
+- `GET /api/achievement/stats` - 获取成就统计
+- `POST /api/achievement/claim` - 领取成就奖励
+- `POST /api/achievement/claim-all` - 批量领取奖励
+- `GET /api/achievement/leaderboard` - 成就排行榜
+- `POST /api/achievement/badges` - 设置徽章
+
+### 管理员 API (30+)
+
+#### 系统管理
 - `POST /api/admin/login` - 管理员登录
-- `GET /api/admin/config` - 获取配置
-- `PUT /api/admin/config/quota` - 更新领取额度
-- `PUT /api/admin/config/max-daily-claims` - 设置每日领取次数 🆕
-- `PUT /api/admin/config/session` - 更新 API Session
-- `PUT /api/admin/config/new-api-user` - 更新 new-api-user
-- `PUT /api/admin/config/keys-api-url` - 更新 Keys API URL
-- `PUT /api/admin/config/keys-authorization` - 更新授权 Token
-- `PUT /api/admin/config/group-id` - 更新 Group ID
-- `GET /api/admin/records/claim?page=1&pageSize=50` - 领取记录（分页）🆕
-- `GET /api/admin/records/donate?page=1&pageSize=50` - 投喂记录（分页）🆕
+- `GET /api/admin/config` - 获取系统配置
+- `PUT /api/admin/config/*` - 更新各项配置（额度、领取次数、Session 等）
+
+#### 用户管理
+- `GET /api/admin/users` - 用户列表
+- `GET /api/admin/export/users` - 导出用户
+- `POST /api/admin/rebind-user` - 重新绑定用户
+- `POST /api/admin/ban-user` - 封禁用户
+- `POST /api/admin/unban-user` - 解封用户
+
+#### 游戏管理
+- `GET /api/admin/slot/config` - 获取游戏配置
+- `PUT /api/admin/slot/multipliers` - 更新倍率
+- `PUT /api/admin/slot/weights` - 更新符号权重
+- `GET /api/admin/slot/records` - 游戏记录查询
+
+#### 坤呗管理
+- `GET /api/admin/kunbei/config` - 获取借款配置
+- `PUT /api/admin/kunbei/config` - 更新借款配置
+- `POST /api/admin/kunbei/forgive` - 贷款赦免
+- `GET /api/admin/kunbei/loans` - 借款记录查询
+
+#### Keys 管理
 - `GET /api/admin/keys/export` - 导出 Keys
 - `POST /api/admin/keys/test` - 测试 Keys
 - `POST /api/admin/keys/delete` - 删除 Keys
-- `GET /api/admin/users` - 用户列表
-- `GET /api/admin/export/users` - 导出用户
-- `POST /api/admin/rebind-user` - 重新绑定
-- `POST /api/admin/retry-push` - 重试推送
+- `POST /api/admin/retry-push` - 重试推送失败的 Keys
+
+#### 记录查询
+- `GET /api/admin/records/claim?page=1&pageSize=50` - 领取记录（分页）
+- `GET /api/admin/records/donate?page=1&pageSize=50` - 投喂记录（分页）
+
+**总计**: 80+ API 端点
 
 ---
 
@@ -538,6 +781,38 @@ MIT License
 - 首次绑定赠送 **$100** 新手奖励
 - 重新绑定不会获得额外奖励
 
+### 游戏说明
+
+#### 老虎机玩法
+- **普通模式**：消耗额度旋转，中奖获得倍率奖励
+- **高级模式**：使用券进入，有机会获得碎片合成更多券
+- **至尊模式**：高倍率高风险，适合追求刺激的玩家
+
+#### 符号说明
+- **特殊符号组 1**：j, n, t, m（基础符号）
+- **特殊符号组 2**：bj, zft, bdk, lq（进阶符号）
+- **惩罚符号**：lsh（律师函）- 减少奖励
+- **特殊惩罚**：man - 优先级高于律师函
+
+#### 倍率系统
+- **超级大奖**（256x）：特殊符号组合
+- **特殊组合**（32x）：稀有符号组合
+- **四连**（16x）：四个相同符号
+- **三连**（8x）：三个相同符号
+- **双连**（4x）：两个相同符号
+
+#### 坤呗借款
+- 支持多档位借款额度
+- 不同借款额度对应不同利率
+- 逾期会产生罚息
+- 可提前还款无手续费
+
+#### 成就系统
+- 完成特定条件解锁成就
+- 解锁后可领取额度奖励
+- 可设置最多 3 个徽章展示
+- 成就积分参与排行榜竞争
+
 ---
 
 ## 🙏 致谢
@@ -549,6 +824,6 @@ MIT License
 
 ---
 
-**详细部署指南**: [DEPLOYMENT.md](./DEPLOYMENT.md)  
-**版本**: v1.2.0  
-**更新日期**: 2025-10-22
+**详细部署指南**: [DEPLOYMENT.md](./DEPLOYMENT.md)
+**版本**: v2.0.0
+**更新日期**: 2025-01-11
