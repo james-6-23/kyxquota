@@ -1,7 +1,8 @@
 import { db } from '../database';
 import { walletService } from './wallet';
 import { addQuota, deductQuota } from './kyx-api';
-import { kyxToUSD, kyxToQuota, quotaToKYX, CURRENCY, formatKYX, formatUSD } from '../utils/currency';
+import { kyxToUSD, kyxToQuota, quotaToKYX, CURRENCY, formatKYX, formatUSD, formatQuota } from '../utils/currency';
+import { logger } from '../utils/logger';
 import type { TransferRecord } from './wallet';
 
 // ========== 数据库查询（懒加载模式） ==========
@@ -95,7 +96,7 @@ export async function transferToAPI(
     session: string,
     newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; transferId?: number }> {
-    console.log(`💸 [划转] ${username} 请求划转 ${formatKYX(amountKYX)} 到公益站`);
+    logger.info('划转', `💸 ${username} 请求划转 ${formatKYX(amountKYX)} 到公益站`);
 
     // 1. 验证金额范围
     if (amountKYX < TRANSFER_CONFIG.MIN_TRANSFER_KYX) {
@@ -133,9 +134,9 @@ export async function transferToAPI(
     const fee = Math.floor(amountKYX * TRANSFER_CONFIG.FEE_RATE);
     const actualAmount = amountKYX + fee;
 
-    console.log(`💸 [划转] 金额换算: ${formatKYX(amountKYX)} = ${formatUSD(amountUSD)} = ${amountQuota} quota`);
+    logger.info('划转', `💸 金额换算: ${formatKYX(amountKYX)} = ${formatQuota(amountQuota)} = ${amountQuota} quota`);
     if (fee > 0) {
-        console.log(`💸 [划转] 手续费: ${formatKYX(fee)}`);
+        logger.info('划转', `💸 手续费: ${formatKYX(fee)}`);
     }
 
     // 4. 检查余额
@@ -181,7 +182,7 @@ export async function transferToAPI(
     if (!transferResult || !transferResult.lastInsertRowid) {
         // 解冻金额
         walletService.unfreezeKYX(linuxDoId, actualAmount);
-        console.error(`❌ [划转] 创建划转记录失败: transferResult 无效`);
+        logger.error('划转', `❌ 创建划转记录失败: transferResult 无效`);
         return {
             success: false,
             message: '创建划转记录失败，请稍后重试'
@@ -192,7 +193,7 @@ export async function transferToAPI(
 
     // 7. 请求 KYX API
     try {
-        console.log(`💸 [划转] 请求 KYX API 增加 ${formatUSD(amountUSD)} (${amountQuota} quota)`);
+        logger.info('划转', `💸 请求 KYX API 增加 ${formatQuota(amountQuota)} (${amountQuota} quota)`);
 
         const apiResult = await addQuota(
             kyxUserId,
@@ -205,7 +206,7 @@ export async function transferToAPI(
 
         if (apiResult.success) {
             // 成功：扣除冻结的 KYX
-            walletService.deductKYX(linuxDoId, actualAmount, 'transfer_out', `划转到公益站: ${formatUSD(amountUSD)}`, transferId);
+            walletService.deductKYX(linuxDoId, actualAmount, 'transfer_out', `划转到公益站: ${formatQuota(amountQuota)}`, transferId);
             walletService.unfreezeKYX(linuxDoId, actualAmount);
 
             // 更新划转统计
@@ -220,11 +221,11 @@ export async function transferToAPI(
                 transferId
             );
 
-            console.log(`✅ [划转] ${username} 划转成功: ${formatKYX(amountKYX)} → ${formatUSD(amountUSD)}`);
+            logger.info('划转', `✅ ${username} 划转成功: ${formatKYX(amountKYX)} → ${formatQuota(amountQuota)}`);
 
             return {
                 success: true,
-                message: `划转成功！已增加 ${formatUSD(amountUSD)} 到公益站账户`,
+                message: `划转成功！已增加 ${formatQuota(amountQuota)} 到公益站账户`,
                 transferId
             };
         } else {
@@ -240,7 +241,7 @@ export async function transferToAPI(
                 transferId
             );
 
-            console.error(`❌ [划转] ${username} 划转失败: ${apiResult.message}`);
+            logger.error('划转', `❌ ${username} 划转失败: ${apiResult.message}`);
 
             return {
                 success: false,
@@ -261,7 +262,7 @@ export async function transferToAPI(
             transferId
         );
 
-        console.error(`❌ [划转] ${username} 划转异常:`, error);
+        logger.error('划转', `❌ ${username} 划转异常:`, error);
 
         return {
             success: false,
@@ -316,7 +317,7 @@ export async function transferFromAPI(
     session: string,
     newApiUser: string = '1'
 ): Promise<{ success: boolean; message: string; transferId?: number }> {
-    console.log(`💸 [反向划转] ${username} 请求从公益站划转 ${amountQuota} quota 到 KYX 钱包`);
+    logger.info('反向划转', `💸 ${username} 请求从公益站划转 ${amountQuota} quota 到 KYX 钱包`);
 
     // 1. 换算金额
     const amountKYX = quotaToKYX(amountQuota);
@@ -352,7 +353,7 @@ export async function transferFromAPI(
         };
     }
 
-    console.log(`💸 [反向划转] 金额换算: ${amountQuota} quota = ${formatKYX(amountKYX)} = ${formatUSD(amountUSD)}`);
+    logger.info('反向划转', `💸 金额换算: ${amountQuota} quota = ${formatKYX(amountKYX)} = ${formatQuota(amountQuota)}`);
 
     // 4. 创建划转记录
     const transferResult = recordTransferStmt().run(
@@ -369,7 +370,7 @@ export async function transferFromAPI(
     );
 
     if (!transferResult || !transferResult.lastInsertRowid) {
-        console.error(`❌ [反向划转] 创建划转记录失败: transferResult 无效`);
+        logger.error('反向划转', `❌ 创建划转记录失败: transferResult 无效`);
         return {
             success: false,
             message: '创建划转记录失败，请稍后重试'
@@ -380,7 +381,7 @@ export async function transferFromAPI(
 
     // 5. 请求 KYX API 扣除额度
     try {
-        console.log(`💸 [反向划转] 请求 KYX API 扣除 ${formatUSD(amountUSD)} (${amountQuota} quota)`);
+        logger.info('反向划转', `💸 请求 KYX API 扣除 ${formatQuota(amountQuota)} (${amountQuota} quota)`);
 
         const apiResult = await deductQuota(
             kyxUserId,
@@ -393,7 +394,7 @@ export async function transferFromAPI(
 
         if (apiResult.success) {
             // 成功：增加 KYX 到钱包
-            walletService.addKYX(linuxDoId, amountKYX, 'transfer_in', `从公益站划转: ${formatUSD(amountUSD)}`, transferId);
+            walletService.addKYX(linuxDoId, amountKYX, 'transfer_in', `从公益站划转: ${formatQuota(amountQuota)}`, transferId);
 
             // 更新划转统计
             updateTransferStatsStmt().run(amountKYX, 0, Date.now(), linuxDoId);
@@ -407,7 +408,7 @@ export async function transferFromAPI(
                 transferId
             );
 
-            console.log(`✅ [反向划转] ${username} 划转成功: ${formatUSD(amountUSD)} → ${formatKYX(amountKYX)}`);
+            logger.info('反向划转', `✅ ${username} 划转成功: ${formatQuota(amountQuota)} → ${formatKYX(amountKYX)}`);
 
             return {
                 success: true,
@@ -424,7 +425,7 @@ export async function transferFromAPI(
                 transferId
             );
 
-            console.error(`❌ [反向划转] ${username} 划转失败: ${apiResult.message}`);
+            logger.error('反向划转', `❌ ${username} 划转失败: ${apiResult.message}`);
 
             return {
                 success: false,
@@ -442,7 +443,7 @@ export async function transferFromAPI(
             transferId
         );
 
-        console.error(`❌ [反向划转] ${username} 划转异常:`, error);
+        logger.error('反向划转', `❌ ${username} 划转异常:`, error);
 
         return {
             success: false,

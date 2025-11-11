@@ -5,6 +5,7 @@ import { getKyxUserById } from '../services/kyx-api';
 import { adminQueries, userQueries } from '../database';
 import { formatKYX, formatUSD, kyxToUSD, quotaToUSD, quotaToKYX, CURRENCY } from '../utils/currency';
 import { getCookie, getSession } from '../utils';
+import { logger } from '../utils/logger';
 
 const app = new Hono();
 
@@ -92,7 +93,7 @@ app.get('/info', requireAuth, async (c) => {
             }
         });
     } catch (error: any) {
-        console.error('[钱包API] 获取钱包信息失败:', error);
+        logger.error('钱包API', '获取钱包信息失败:', error);
         return c.json({
             success: false,
             message: error.message || '获取钱包信息失败'
@@ -129,7 +130,7 @@ app.get('/transactions', requireAuth, async (c) => {
             pageSize
         });
     } catch (error: any) {
-        console.error('[钱包API] 获取交易记录失败:', error);
+        logger.error('钱包API', '获取交易记录失败:', error);
         return c.json({
             success: false,
             message: error.message || '获取交易记录失败'
@@ -166,7 +167,7 @@ app.get('/transfers', requireAuth, async (c) => {
             pageSize
         });
     } catch (error: any) {
-        console.error('[钱包API] 获取划转记录失败:', error);
+        logger.error('钱包API', '获取划转记录失败:', error);
         return c.json({
             success: false,
             message: error.message || '获取划转记录失败'
@@ -224,7 +225,7 @@ app.post('/transfer', requireAuth, async (c) => {
 
         return c.json(result);
     } catch (error: any) {
-        console.error('[钱包API] 划转失败:', error);
+        logger.error('钱包API', '划转失败:', error);
         return c.json({
             success: false,
             message: error.message || '划转失败'
@@ -288,7 +289,7 @@ app.post('/transfer-from-api', requireAuth, async (c) => {
 
         return c.json(result);
     } catch (error: any) {
-        console.error('[钱包API] 反向划转失败:', error);
+        logger.error('钱包API', '反向划转失败:', error);
         return c.json({
             success: false,
             message: error.message || '反向划转失败'
@@ -352,7 +353,7 @@ app.get('/api-balance', requireAuth, async (c) => {
             }, 500);
         }
     } catch (error: any) {
-        console.error('[钱包API] 获取公益站余额失败:', error);
+        logger.error('钱包API', '获取公益站余额失败:', error);
         return c.json({
             success: false,
             message: error.message || '获取余额失败'

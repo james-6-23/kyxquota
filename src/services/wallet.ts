@@ -1,5 +1,6 @@
 import { db, batchTransaction } from '../database';
 import { usdToKYX, kyxToUSD, quotaToKYX, kyxToQuota, CURRENCY, formatKYX, formatUSD } from '../utils/currency';
+import { logger } from '../utils/logger';
 
 // ========== 类型定义 ==========
 
@@ -180,7 +181,7 @@ export function getOrCreateWallet(linuxDoId: string): UserWallet {
         // 重新获取钱包数据
         wallet = getWalletStmt().get(linuxDoId);
 
-        console.log(`💰 [钱包] 为用户 ${linuxDoId} 创建新钱包，初始余额: ${initialBalance} KYX`);
+        logger.info('钱包', `💰 为用户 ${linuxDoId} 创建新钱包，初始余额: ${initialBalance} KYX`);
     }
 
     return wallet;
@@ -230,7 +231,7 @@ export const addKYX = batchTransaction((
         Date.now()
     );
 
-    console.log(`💰 [钱包] ${linuxDoId} +${formatKYX(amount)} (${transactionType}) → ${formatKYX(balanceAfter)}`);
+    logger.info('钱包', `💰 ${linuxDoId} +${formatKYX(amount)} (${transactionType}) → ${formatKYX(balanceAfter)}`);
 
     return balanceAfter;
 });
@@ -277,7 +278,7 @@ export const deductKYX = batchTransaction((
         Date.now()
     );
 
-    console.log(`💰 [钱包] ${linuxDoId} -${formatKYX(amount)} (${transactionType}) → ${formatKYX(balanceAfter)}`);
+    logger.info('钱包', `💰 ${linuxDoId} -${formatKYX(amount)} (${transactionType}) → ${formatKYX(balanceAfter)}`);
 
     return balanceAfter;
 });
@@ -300,7 +301,7 @@ export function freezeKYX(linuxDoId: string, amount: number): void {
     const newFrozen = wallet.kyx_frozen + amount;
     updateFrozenStmt().run(newFrozen, Date.now(), linuxDoId);
 
-    console.log(`🔒 [钱包] ${linuxDoId} 冻结 ${formatKYX(amount)} → 总冻结: ${formatKYX(newFrozen)}`);
+    logger.info('钱包', `🔒 ${linuxDoId} 冻结 ${formatKYX(amount)} → 总冻结: ${formatKYX(newFrozen)}`);
 }
 
 /**
@@ -320,7 +321,7 @@ export function unfreezeKYX(linuxDoId: string, amount: number): void {
     const newFrozen = wallet.kyx_frozen - amount;
     updateFrozenStmt().run(newFrozen, Date.now(), linuxDoId);
 
-    console.log(`🔓 [钱包] ${linuxDoId} 解冻 ${formatKYX(amount)} → 剩余冻结: ${formatKYX(newFrozen)}`);
+    logger.info('钱包', `🔓 ${linuxDoId} 解冻 ${formatKYX(amount)} → 剩余冻结: ${formatKYX(newFrozen)}`);
 }
 
 /**
@@ -345,7 +346,7 @@ export function initializeUserWallet(linuxDoId: string, bindingBonusQuota: numbe
         `首次绑定奖励: ${formatUSD(bindingBonusQuota / CURRENCY.QUOTA_PER_USD)}`
     );
 
-    console.log(`🎁 [钱包] ${linuxDoId} 初始化钱包，绑定奖励: ${formatKYX(bonusKYX)}`);
+    logger.info('钱包', `🎁 ${linuxDoId} 初始化钱包，绑定奖励: ${formatKYX(bonusKYX)}`);
 }
 
 // ========== 导出 ==========
