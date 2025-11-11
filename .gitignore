@@ -433,3 +433,4 @@ reset-database.sh
 SQLITE_OPTIMIZATION_REPORT.md
 SQLITE_QUICK_REFERENCE.md
 WALLET_SYSTEM_DESIGN.md
+delete-user-data.md
