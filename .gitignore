@@ -426,7 +426,10 @@ UI_NAVIGATION_UPDATE.md
 TRADING_UI_FIXES.md
 DATABASE_PERFORMANCE_GUIDE.md
 DATABASE_UPDATE_SUMMARY.md
+<<<<<<< HEAD
 delete-user-data.md
+=======
+>>>>>>> db2f9480a8afbc5256bee895264d454483e0b251
 FRESH_DEPLOYMENT.md
 PRAGMA_EXPLAINED.md
 reset-database.bat
@@ -434,3 +437,7 @@ reset-database.sh
 SQLITE_OPTIMIZATION_REPORT.md
 SQLITE_QUICK_REFERENCE.md
 WALLET_SYSTEM_DESIGN.md
+<<<<<<< HEAD
+=======
+delete-user-data.md
+>>>>>>> db2f9480a8afbc5256bee895264d454483e0b251
