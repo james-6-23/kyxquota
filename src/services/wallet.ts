@@ -45,90 +45,99 @@ export interface TransferRecord {
     completed_at?: number;
 }
 
-// ========== 数据库查询 ==========
+// ========== 数据库查询（懒加载模式） ==========
 
-// 获取钱包
-const getWalletStmt = db.prepare<UserWallet, [string]>(`
-    SELECT * FROM user_wallets WHERE linux_do_id = ?
-`);
+// 使用懒加载避免在模块加载时执行 prepare（此时表可能还未创建）
+let _getWalletStmt: any;
+let _createWalletStmt: any;
+let _updateBalanceStmt: any;
+let _updateFrozenStmt: any;
+let _updateStatsStmt: any;
+let _recordTransactionStmt: any;
+let _getTransactionsStmt: any;
+let _recordTransferStmt: any;
+let _updateTransferStatusStmt: any;
 
-// 创建钱包
-const createWalletStmt = db.prepare(`
-    INSERT INTO user_wallets (linux_do_id, created_at, updated_at)
-    VALUES (?, ?, ?)
-`);
+function initStatements() {
+    if (!_getWalletStmt) {
+        _getWalletStmt = db.prepare<UserWallet, [string]>(`
+            SELECT * FROM user_wallets WHERE linux_do_id = ?
+        `);
+        _createWalletStmt = db.prepare(`
+            INSERT INTO user_wallets (linux_do_id, created_at, updated_at)
+            VALUES (?, ?, ?)
+        `);
+        _updateBalanceStmt = db.prepare(`
+            UPDATE user_wallets
+            SET kyx_balance = ?,
+                updated_at = ?
+            WHERE linux_do_id = ?
+        `);
+        _updateFrozenStmt = db.prepare(`
+            UPDATE user_wallets
+            SET kyx_frozen = ?,
+                updated_at = ?
+            WHERE linux_do_id = ?
+        `);
+        _updateStatsStmt = db.prepare(`
+            UPDATE user_wallets
+            SET total_earned = total_earned + ?,
+                total_spent = total_spent + ?,
+                updated_at = ?
+            WHERE linux_do_id = ?
+        `);
+        _recordTransactionStmt = db.prepare(`
+            INSERT INTO kyx_transactions (
+                linux_do_id,
+                transaction_type,
+                amount,
+                balance_before,
+                balance_after,
+                related_id,
+                description,
+                timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        _getTransactionsStmt = db.prepare<KYXTransaction, [string, number, number]>(`
+            SELECT * FROM kyx_transactions
+            WHERE linux_do_id = ?
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `);
+        _recordTransferStmt = db.prepare(`
+            INSERT INTO transfer_records (
+                linux_do_id,
+                username,
+                transfer_type,
+                amount_kyx,
+                amount_usd,
+                amount_quota,
+                exchange_rate,
+                status,
+                timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        _updateTransferStatusStmt = db.prepare(`
+            UPDATE transfer_records
+            SET status = ?,
+                api_response = ?,
+                error_message = ?,
+                completed_at = ?
+            WHERE id = ?
+        `);
+    }
+}
 
-// 更新余额
-const updateBalanceStmt = db.prepare(`
-    UPDATE user_wallets
-    SET kyx_balance = ?,
-        updated_at = ?
-    WHERE linux_do_id = ?
-`);
-
-// 更新冻结余额
-const updateFrozenStmt = db.prepare(`
-    UPDATE user_wallets
-    SET kyx_frozen = ?,
-        updated_at = ?
-    WHERE linux_do_id = ?
-`);
-
-// 更新统计
-const updateStatsStmt = db.prepare(`
-    UPDATE user_wallets
-    SET total_earned = total_earned + ?,
-        total_spent = total_spent + ?,
-        updated_at = ?
-    WHERE linux_do_id = ?
-`);
-
-// 记录交易
-const recordTransactionStmt = db.prepare(`
-    INSERT INTO kyx_transactions (
-        linux_do_id,
-        transaction_type,
-        amount,
-        balance_before,
-        balance_after,
-        related_id,
-        description,
-        timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-// 获取交易记录
-const getTransactionsStmt = db.prepare<KYXTransaction, [string, number, number]>(`
-    SELECT * FROM kyx_transactions
-    WHERE linux_do_id = ?
-    ORDER BY timestamp DESC
-    LIMIT ? OFFSET ?
-`);
-
-// 记录划转
-const recordTransferStmt = db.prepare(`
-    INSERT INTO transfer_records (
-        linux_do_id,
-        username,
-        transfer_type,
-        amount_kyx,
-        amount_usd,
-        amount_quota,
-        exchange_rate,
-        status,
-        timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
-
-// 更新划转状态
-const updateTransferStatusStmt = db.prepare(`
-    UPDATE transfer_records
-    SET status = ?,
-        api_response = ?,
-        error_message = ?,
-        completed_at = ?
-    WHERE id = ?
-`);
+// Getter 函数
+const getWalletStmt = () => { initStatements(); return _getWalletStmt; };
+const createWalletStmt = () => { initStatements(); return _createWalletStmt; };
+const updateBalanceStmt = () => { initStatements(); return _updateBalanceStmt; };
+const updateFrozenStmt = () => { initStatements(); return _updateFrozenStmt; };
+const updateStatsStmt = () => { initStatements(); return _updateStatsStmt; };
+const recordTransactionStmt = () => { initStatements(); return _recordTransactionStmt; };
+const getTransactionsStmt = () => { initStatements(); return _getTransactionsStmt; };
+const recordTransferStmt = () => { initStatements(); return _recordTransferStmt; };
+const updateTransferStatusStmt = () => { initStatements(); return _updateTransferStatusStmt; };
 
 // ========== 钱包核心功能 ==========
 
@@ -136,12 +145,12 @@ const updateTransferStatusStmt = db.prepare(`
  * 获取或创建用户钱包
  */
 export function getOrCreateWallet(linuxDoId: string): UserWallet {
-    let wallet = getWalletStmt.get(linuxDoId);
+    let wallet = getWalletStmt().get(linuxDoId);
 
     if (!wallet) {
         const now = Date.now();
-        createWalletStmt.run(linuxDoId, now, now);
-        wallet = getWalletStmt.get(linuxDoId);
+        createWalletStmt().run(linuxDoId, now, now);
+        wallet = getWalletStmt().get(linuxDoId);
 
         if (!wallet) {
             throw new Error('创建钱包失败');
@@ -180,13 +189,13 @@ export const addKYX = batchTransaction((
     const balanceAfter = balanceBefore + amount;
 
     // 更新余额
-    updateBalanceStmt.run(balanceAfter, Date.now(), linuxDoId);
+    updateBalanceStmt().run(balanceAfter, Date.now(), linuxDoId);
 
     // 更新统计
-    updateStatsStmt.run(amount, 0, Date.now(), linuxDoId);
+    updateStatsStmt().run(amount, 0, Date.now(), linuxDoId);
 
     // 记录交易
-    recordTransactionStmt.run(
+    recordTransactionStmt().run(
         linuxDoId,
         transactionType,
         amount,
@@ -227,13 +236,13 @@ export const deductKYX = batchTransaction((
     const balanceAfter = balanceBefore - amount;
 
     // 更新余额
-    updateBalanceStmt.run(balanceAfter, Date.now(), linuxDoId);
+    updateBalanceStmt().run(balanceAfter, Date.now(), linuxDoId);
 
     // 更新统计
-    updateStatsStmt.run(0, amount, Date.now(), linuxDoId);
+    updateStatsStmt().run(0, amount, Date.now(), linuxDoId);
 
     // 记录交易
-    recordTransactionStmt.run(
+    recordTransactionStmt().run(
         linuxDoId,
         transactionType,
         -amount,
@@ -265,7 +274,7 @@ export function freezeKYX(linuxDoId: string, amount: number): void {
     }
 
     const newFrozen = wallet.kyx_frozen + amount;
-    updateFrozenStmt.run(newFrozen, Date.now(), linuxDoId);
+    updateFrozenStmt().run(newFrozen, Date.now(), linuxDoId);
 
     console.log(`🔒 [钱包] ${linuxDoId} 冻结 ${formatKYX(amount)} → 总冻结: ${formatKYX(newFrozen)}`);
 }
@@ -285,7 +294,7 @@ export function unfreezeKYX(linuxDoId: string, amount: number): void {
     }
 
     const newFrozen = wallet.kyx_frozen - amount;
-    updateFrozenStmt.run(newFrozen, Date.now(), linuxDoId);
+    updateFrozenStmt().run(newFrozen, Date.now(), linuxDoId);
 
     console.log(`🔓 [钱包] ${linuxDoId} 解冻 ${formatKYX(amount)} → 剩余冻结: ${formatKYX(newFrozen)}`);
 }
@@ -295,7 +304,7 @@ export function unfreezeKYX(linuxDoId: string, amount: number): void {
  */
 export function getTransactions(linuxDoId: string, page: number = 1, pageSize: number = 20): KYXTransaction[] {
     const offset = (page - 1) * pageSize;
-    return getTransactionsStmt.all(linuxDoId, pageSize, offset);
+    return getTransactionsStmt().all(linuxDoId, pageSize, offset);
 }
 
 /**

@@ -4,46 +4,67 @@ import { addQuota, deductQuota } from './kyx-api';
 import { kyxToUSD, kyxToQuota, quotaToKYX, CURRENCY, formatKYX, formatUSD } from '../utils/currency';
 import type { TransferRecord } from './wallet';
 
-// ========== 数据库查询 ==========
+// ========== 数据库查询（懒加载模式） ==========
 
-const recordTransferStmt = db.prepare(`
-    INSERT INTO transfer_records (
-        linux_do_id,
-        username,
-        transfer_type,
-        amount_kyx,
-        amount_usd,
-        amount_quota,
-        exchange_rate,
-        status,
-        fee_kyx,
-        timestamp
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
+let _recordTransferStmt: any;
+let _updateTransferStatusStmt: any;
+let _updateTransferStatsStmt: any;
+let _getTransferRecordsStmt: any;
+let _getTodayTransferCountStmt: any;
 
-const updateTransferStatusStmt = db.prepare(`
-    UPDATE transfer_records
-    SET status = ?,
-        api_response = ?,
-        error_message = ?,
-        completed_at = ?
-    WHERE id = ?
-`);
+function initStatements() {
+    if (!_recordTransferStmt) {
+        _recordTransferStmt = db.prepare(`
+            INSERT INTO transfer_records (
+                linux_do_id,
+                username,
+                transfer_type,
+                amount_kyx,
+                amount_usd,
+                amount_quota,
+                exchange_rate,
+                status,
+                fee_kyx,
+                timestamp
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        _updateTransferStatusStmt = db.prepare(`
+            UPDATE transfer_records
+            SET status = ?,
+                api_response = ?,
+                error_message = ?,
+                completed_at = ?
+            WHERE id = ?
+        `);
+        _updateTransferStatsStmt = db.prepare(`
+            UPDATE user_wallets
+            SET total_transfer_in = total_transfer_in + ?,
+                total_transfer_out = total_transfer_out + ?,
+                updated_at = ?
+            WHERE linux_do_id = ?
+        `);
+        _getTransferRecordsStmt = db.prepare<TransferRecord, [string, number, number]>(`
+            SELECT * FROM transfer_records
+            WHERE linux_do_id = ?
+            ORDER BY timestamp DESC
+            LIMIT ? OFFSET ?
+        `);
+        _getTodayTransferCountStmt = db.prepare<{ count: number }, [string, number, number]>(`
+            SELECT COUNT(*) as count
+            FROM transfer_records
+            WHERE linux_do_id = ?
+                AND timestamp >= ?
+                AND timestamp < ?
+                AND status = 'completed'
+        `);
+    }
+}
 
-const updateTransferStatsStmt = db.prepare(`
-    UPDATE user_wallets
-    SET total_transfer_in = total_transfer_in + ?,
-        total_transfer_out = total_transfer_out + ?,
-        updated_at = ?
-    WHERE linux_do_id = ?
-`);
-
-const getTransferRecordsStmt = db.prepare<TransferRecord, [string, number, number]>(`
-    SELECT * FROM transfer_records
-    WHERE linux_do_id = ?
-    ORDER BY timestamp DESC
-    LIMIT ? OFFSET ?
-`);
+const recordTransferStmt = () => { initStatements(); return _recordTransferStmt; };
+const updateTransferStatusStmt = () => { initStatements(); return _updateTransferStatusStmt; };
+const updateTransferStatsStmt = () => { initStatements(); return _updateTransferStatsStmt; };
+const getTransferRecordsStmt = () => { initStatements(); return _getTransferRecordsStmt; };
+const getTodayTransferCountStmt = () => { initStatements(); return _getTodayTransferCountStmt; };
 
 // ========== 划转配置 ==========
 
@@ -144,7 +165,7 @@ export async function transferToAPI(
     }
 
     // 6. 创建划转记录
-    const transferResult = recordTransferStmt.run(
+    const transferResult = recordTransferStmt().run(
         linuxDoId,
         username,
         'kyx_to_api',
@@ -178,10 +199,10 @@ export async function transferToAPI(
             walletService.unfreezeKYX(linuxDoId, actualAmount);
 
             // 更新划转统计
-            updateTransferStatsStmt.run(0, amountKYX, Date.now(), linuxDoId);
+            updateTransferStatsStmt().run(0, amountKYX, Date.now(), linuxDoId);
 
             // 更新划转记录
-            updateTransferStatusStmt.run(
+            updateTransferStatusStmt().run(
                 'success',
                 JSON.stringify(apiResult),
                 null,
@@ -201,7 +222,7 @@ export async function transferToAPI(
             walletService.unfreezeKYX(linuxDoId, actualAmount);
 
             // 更新划转记录
-            updateTransferStatusStmt.run(
+            updateTransferStatusStmt().run(
                 'failed',
                 JSON.stringify(apiResult),
                 apiResult.message || '未知错误',
@@ -222,7 +243,7 @@ export async function transferToAPI(
         walletService.unfreezeKYX(linuxDoId, actualAmount);
 
         // 更新划转记录
-        updateTransferStatusStmt.run(
+        updateTransferStatusStmt().run(
             'failed',
             null,
             error.message || '网络错误',
@@ -245,7 +266,7 @@ export async function transferToAPI(
  */
 export function getTransferRecords(linuxDoId: string, page: number = 1, pageSize: number = 20): TransferRecord[] {
     const offset = (page - 1) * pageSize;
-    return getTransferRecordsStmt.all(linuxDoId, pageSize, offset);
+    return getTransferRecordsStmt().all(linuxDoId, pageSize, offset);
 }
 
 /**
@@ -324,7 +345,7 @@ export async function transferFromAPI(
     console.log(`💸 [反向划转] 金额换算: ${amountQuota} quota = ${formatKYX(amountKYX)} = ${formatUSD(amountUSD)}`);
 
     // 4. 创建划转记录
-    const transferResult = recordTransferStmt.run(
+    const transferResult = recordTransferStmt().run(
         linuxDoId,
         username,
         'api_to_kyx',
@@ -357,10 +378,10 @@ export async function transferFromAPI(
             walletService.addKYX(linuxDoId, amountKYX, 'transfer_in', `从公益站划转: ${formatUSD(amountUSD)}`, transferId);
 
             // 更新划转统计
-            updateTransferStatsStmt.run(amountKYX, 0, Date.now(), linuxDoId);
+            updateTransferStatsStmt().run(amountKYX, 0, Date.now(), linuxDoId);
 
             // 更新划转记录
-            updateTransferStatusStmt.run(
+            updateTransferStatusStmt().run(
                 'success',
                 JSON.stringify(apiResult),
                 null,
@@ -377,7 +398,7 @@ export async function transferFromAPI(
             };
         } else {
             // 失败：更新记录
-            updateTransferStatusStmt.run(
+            updateTransferStatusStmt().run(
                 'failed',
                 JSON.stringify(apiResult),
                 apiResult.message || '未知错误',
@@ -395,7 +416,7 @@ export async function transferFromAPI(
         }
     } catch (error: any) {
         // 异常：更新记录
-        updateTransferStatusStmt.run(
+        updateTransferStatusStmt().run(
             'failed',
             null,
             error.message || '网络错误',
