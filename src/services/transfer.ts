@@ -128,8 +128,8 @@ export async function transferToAPI(
     }
 
     // 3. 换算金额
-    const amountUSD = kyxToUSD(amountKYX);
     const amountQuota = kyxToQuota(amountKYX);
+    const amountUSD = amountQuota;  // amount_usd 字段存储的是 quota（聪单位），与 amount_quota 相同
     const fee = Math.floor(amountKYX * TRANSFER_CONFIG.FEE_RATE);
     const actualAmount = amountKYX + fee;
 
@@ -320,7 +320,7 @@ export async function transferFromAPI(
 
     // 1. 换算金额
     const amountKYX = quotaToKYX(amountQuota);
-    const amountUSD = kyxToUSD(amountKYX);  // 修复：使用正确的换算函数，保持与正向划转一致
+    const amountUSD = amountQuota;  // 修复：amount_usd 字段存储的是 quota（聪单位），与 amount_quota 相同
 
     // 2. 验证金额范围（使用相同的限制）
     if (amountKYX < TRANSFER_CONFIG.MIN_TRANSFER_KYX) {
