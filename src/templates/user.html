@@ -1791,7 +1791,7 @@
             <div class="flex flex-col gap-3">
               <!-- 顶部信息 -->
               <div class="flex flex-row items-center justify-between text-white text-sm">
-                <span>💰 单价：<span id="buySpinsPrice" class="text-orange-300 font-bold">$40</span>/次</span>
+                <span>💰 单价：<span id="buySpinsPrice" class="text-orange-300 font-bold">100 KYX</span>/次</span>
                 <span class="text-white/70">今日已购：<span id="buySpinsToday" class="text-orange-300">0</span>/<span id="buySpinsMax" class="text-orange-300">5</span></span>
               </div>
               
@@ -1816,7 +1816,7 @@
                       class="w-full px-4 py-2.5 bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-600 hover:to-yellow-600
                              text-white font-bold rounded-lg shadow-lg transform hover:scale-105 transition-all duration-200
                              disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm">
-                🛒 购买 <span id="buySpinsBtnCount">1</span> 次 (总计 $<span id="buySpinsBtnPrice">40</span>)
+                🛒 购买 <span id="buySpinsBtnCount">1</span> 次 (总计 <span id="buySpinsBtnPrice">100</span> KYX)
               </button>
             </div>
           </div>
@@ -1852,7 +1852,7 @@
                          transform hover:scale-105 transition-all duration-200
                          active:scale-95
                          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:active:scale-100">
-            <span>🎰 spin</span> <span id="spinButtonPrice">($20)</span>
+            <span>🎰 spin</span> <span id="spinButtonPrice">(50 KYX)</span>
           </button>
           
           <button id="freeSpinButton" onclick="spinSlot(true)"
@@ -4210,8 +4210,8 @@
         // 渲染领取记录
         if (claimData.success && claimData.data.length > 0) {
           claimContainer.innerHTML = claimData.data.map(r => {
-            const quotaUSD = (r.quota_added / 500000).toFixed(2);
-            const isBindingBonus = r.quota_added === 50000000; // 绑定奖励是 $100
+            const quotaKYX = Math.floor(r.quota_added / 200000);
+            const isBindingBonus = r.quota_added === 50000000; // 绑定奖励是 250 KYX
 
             const typeLabel = isBindingBonus
               ? '<span class="px-2 py-1 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 rounded-full text-xs font-semibold">🎁 绑定奖励</span>'
@@ -4223,7 +4223,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${typeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">$${quotaUSD}</span></p>
+                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">${quotaKYX} KYX</span></p>
               </div>
             `;
           }).join('');
@@ -4244,7 +4244,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${keyTypeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">$${(r.total_quota_added / 500000).toFixed(2)}</span></p>
+                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">${Math.floor(r.total_quota_added / 200000)} KYX</span></p>
               </div>
             `;
           }).join('');
@@ -5904,12 +5904,13 @@
       const spinButtonPrice = document.getElementById('spinButtonPrice');
       if (spinButtonPrice) {
         if (isInAdvancedMode) {
-          // 🔥 高级场显示选择的投注金额
-          spinButtonPrice.textContent = `($${advancedBetAmount})`;
+          // 🔥 高级场显示选择的投注金额 (转换为 KYX)
+          const betAmountKYX = Math.floor(advancedBetAmount * 2.5);
+          spinButtonPrice.textContent = `(${betAmountKYX} KYX)`;
         } else {
           // 初级场显示配置的投注金额
-          const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-          spinButtonPrice.textContent = `($${betAmountUSD})`;
+          const betAmountKYX = Math.floor(slotConfig.bet_amount / 200000);
+          spinButtonPrice.textContent = `(${betAmountKYX} KYX)`;
         }
       }
 
@@ -6026,8 +6027,8 @@
       
       // 更新总价格
       if (slotConfig && buyBtnPriceEl) {
-        const totalPrice = (slotConfig.buy_spins_price * buyCount / 500000).toFixed(2);
-        buyBtnPriceEl.textContent = totalPrice;
+        const totalPriceKYX = Math.floor((slotConfig.buy_spins_price * buyCount) / 200000);
+        buyBtnPriceEl.textContent = totalPriceKYX;
       }
       
       // 更新按钮状态（检查额度是否足够）

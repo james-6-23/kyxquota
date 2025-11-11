@@ -149,6 +149,9 @@ export function getOrCreateWallet(linuxDoId: string): UserWallet {
 
     if (!wallet) {
         const now = Date.now();
+        const initialBalance = 250; // 新用户初始余额：250 KYX
+
+        // 创建钱包
         createWalletStmt().run(linuxDoId, now, now);
         wallet = getWalletStmt().get(linuxDoId);
 
@@ -156,7 +159,28 @@ export function getOrCreateWallet(linuxDoId: string): UserWallet {
             throw new Error('创建钱包失败');
         }
 
-        console.log(`💰 [钱包] 为用户 ${linuxDoId} 创建新钱包`);
+        // 添加初始余额
+        updateBalanceStmt().run(initialBalance, now, linuxDoId);
+
+        // 更新统计
+        updateStatsStmt().run(initialBalance, 0, now, linuxDoId);
+
+        // 记录初始余额交易
+        recordTransactionStmt().run(
+            linuxDoId,
+            'system_bonus',
+            initialBalance,
+            0,
+            initialBalance,
+            null,
+            '新用户欢迎奖励',
+            now
+        );
+
+        // 重新获取钱包数据
+        wallet = getWalletStmt().get(linuxDoId);
+
+        console.log(`💰 [钱包] 为用户 ${linuxDoId} 创建新钱包，初始余额: ${initialBalance} KYX`);
     }
 
     return wallet;

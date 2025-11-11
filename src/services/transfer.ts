@@ -320,7 +320,7 @@ export async function transferFromAPI(
 
     // 1. 换算金额
     const amountKYX = quotaToKYX(amountQuota);
-    const amountUSD = amountQuota / CURRENCY.QUOTA_PER_USD;
+    const amountUSD = Math.floor(amountQuota / CURRENCY.QUOTA_PER_USD);
 
     // 2. 验证金额范围（使用相同的限制）
     if (amountKYX < TRANSFER_CONFIG.MIN_TRANSFER_KYX) {
