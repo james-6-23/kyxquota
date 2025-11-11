@@ -215,6 +215,33 @@ export function initDatabase() {
         )
     `);
 
+    // 🔧 迁移：确保 admin_config 表包含所有最新字段
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN transfer_min_kyx INTEGER DEFAULT 25');
+    } catch (e) {
+        // 列已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN transfer_max_kyx INTEGER DEFAULT 2500');
+    } catch (e) {
+        // 列已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN transfer_max_daily_count INTEGER DEFAULT 10');
+    } catch (e) {
+        // 列已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN transfer_fee_rate REAL DEFAULT 0');
+    } catch (e) {
+        // 列已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN transfer_reverse_enabled INTEGER DEFAULT 1');
+    } catch (e) {
+        // 列已存在，忽略错误
+    }
+
     // 插入默认管理员配置
     db.exec(`
         INSERT OR IGNORE INTO admin_config (id, updated_at, claim_quota, max_daily_claims)
