@@ -922,9 +922,9 @@
   </div>
 
   <!-- 💰 钱包界面 -->
-  <div id="walletSection" class="hidden fixed inset-0 bg-slate-50 z-50 overflow-y-auto">
+  <div id="walletSection" class="hidden fixed inset-0 bg-slate-50 z-[60] overflow-y-auto">
     <!-- 固定顶部导航栏 -->
-    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-[60]">
+    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-[70]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 w-full">
           <!-- Logo and Navigation -->
@@ -1242,6 +1242,13 @@
                 <span>娱乐站</span>
               </button>
 
+              <!-- 💰 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>💰</span>
+                <span>钱包</span>
+              </button>
+
               <!-- 成就 -->
               <button data-btn="achievement" onclick="switchToAchievement()"
                       class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md">
@@ -1498,6 +1505,13 @@
                       class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
                 <span class="text-base sm:text-lg">🎰</span>
                 <span class="hidden sm:inline">娱乐站</span>
+              </button>
+
+              <!-- 💰 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()" 
+                      class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
+                <span class="text-base sm:text-lg">💰</span>
+                <span class="hidden sm:inline">钱包</span>
               </button>
               
               <!-- 成就 -->
@@ -3253,6 +3267,8 @@
         window.location.hash = 'slot';
       } else if (mode === 'achievement') {
         window.location.hash = 'achievement';  // ✅ 支持成就页面hash
+      } else if (mode === 'wallet') {
+        window.location.hash = 'wallet';  // ✅ 支持钱包页面hash
       } else {
         window.location.hash = '';
       }
@@ -3265,6 +3281,8 @@
         return 'entertain';
       } else if (hash === 'achievement') {
         return 'achievement';  // ✅ 支持恢复成就页面
+      } else if (hash === 'wallet') {
+        return 'wallet';  // ✅ 支持恢复钱包页面
       }
       return 'refuel';
     }
@@ -3285,12 +3303,18 @@
 
       const mainSection = document.getElementById('mainSection');
       const achievementSection = document.getElementById('achievementSection');
+      const walletSection = document.getElementById('walletSection');
       const slotModal = document.getElementById('slotMachineModal');
       const backToTopBtn = document.getElementById('backToTopBtn');
 
       // 隐藏成就界面
       if (achievementSection && !achievementSection.classList.contains('hidden')) {
         achievementSection.classList.add('hidden');
+      }
+      
+      // 隐藏钱包界面
+      if (walletSection && !walletSection.classList.contains('hidden')) {
+        walletSection.classList.add('hidden');
       }
       
       // ✅ 隐藏返回顶部按钮
@@ -3345,6 +3369,12 @@
         achievementSection.classList.add('hidden');
       }
 
+      // ✅ 隐藏钱包界面
+      const walletSection = document.getElementById('walletSection');
+      if (walletSection && !walletSection.classList.contains('hidden')) {
+        walletSection.classList.add('hidden');
+      }
+
       // ✅ 隐藏返回顶部按钮
       const backToTopBtn = document.getElementById('backToTopBtn');
       if (backToTopBtn) {
@@ -3371,6 +3401,7 @@
 
       const mainSection = document.getElementById('mainSection');
       const achievementSection = document.getElementById('achievementSection');
+      const walletSection = document.getElementById('walletSection');
       const slotModal = document.getElementById('slotMachineModal');
 
       // 关闭老虎机界面（如果打开）
@@ -3383,6 +3414,11 @@
 
       // 隐藏加油站界面
       mainSection.classList.add('hidden');
+
+      // 隐藏钱包界面
+      if (walletSection && !walletSection.classList.contains('hidden')) {
+        walletSection.classList.add('hidden');
+      }
 
       // 显示成就界面
       achievementSection.classList.remove('hidden');
@@ -3422,11 +3458,11 @@
         if (mode === 'refuel') {
           // 加油站模式激活
           if (isDarkTheme) {
-            // 老虎机界面 - 暗色主题
-            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg';
-            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
-            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
-            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            // 老虎机界面 - 暗色主题（响应式）
+            refuelBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg';
+            entertainBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            if (walletBtn) walletBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            if (achievementBtn) achievementBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md';
@@ -3437,11 +3473,11 @@
         } else if (mode === 'entertain') {
           // 娱乐站模式激活
           if (isDarkTheme) {
-            // 老虎机界面 - 暗色主题
-            refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
-            entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg';
-            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
-            if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            // 老虎机界面 - 暗色主题（响应式）
+            refuelBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            entertainBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg';
+            if (walletBtn) walletBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            if (achievementBtn) achievementBtn.className = 'px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
@@ -9141,6 +9177,18 @@
             loadAchievements();
             // 加载待发放记录统计
             loadPendingRewardsSummary();
+          } else if (restoredMode === 'wallet') {
+            // ✅ 如果之前在钱包页面，恢复到钱包页面
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('walletSection').classList.remove('hidden');
+            await loadQuota();
+            updateSwitchButtons('wallet');
+            // 加载钱包数据
+            loadWalletInfo();
+            refreshAPIBalance();
+            loadWalletTransactions();
+            // 加载待发放记录统计
+            loadPendingRewardsSummary();
           } else {
             // 默认显示加油站
             document.getElementById('mainSection').classList.remove('hidden');
@@ -10738,41 +10786,30 @@
     async function loadWalletInfo() {
       try {
         const response = await fetch('/api/wallet/info');
-        
-        // 处理未登录的情况
-        if (response.status === 401) {
-          showToast('请先登录', 'error');
-          // 切换回加油站界面
-          setTimeout(() => {
-            switchToRefuel();
-          }, 1000);
-          return;
-        }
-
         const data = await response.json();
 
         if (data.success) {
-          const { wallet, transfer_config, today_transfer_count } = data;
+          const { wallet, today_transfer, config } = data;
 
           // 更新钱包余额
           document.getElementById('walletKyxBalance').textContent = wallet.kyx_balance_formatted;
-          document.getElementById('walletKyxUSD').textContent = `≈ ${wallet.kyx_balance_usd_formatted}`;
+          document.getElementById('walletKyxUSD').textContent = `≈ ${wallet.usd_equivalent_formatted}`;
           document.getElementById('walletKyxAvailable').textContent = wallet.kyx_available_formatted;
-          document.getElementById('walletKyxFrozen').textContent = wallet.kyx_frozen_formatted;
-          document.getElementById('walletTotalEarned').textContent = wallet.total_earned_formatted;
-          document.getElementById('walletTotalSpent').textContent = wallet.total_spent_formatted;
+          document.getElementById('walletKyxFrozen').textContent = wallet.kyx_frozen.toLocaleString();
+          document.getElementById('walletTotalEarned').textContent = wallet.total_earned.toLocaleString();
+          document.getElementById('walletTotalSpent').textContent = wallet.total_spent.toLocaleString();
 
           // 更新导航栏KYX余额
           const navKyxBalance = document.getElementById('navKyxBalance');
           const navKyxUSD = document.getElementById('navKyxUSD');
           if (navKyxBalance) navKyxBalance.textContent = wallet.kyx_balance_formatted;
-          if (navKyxUSD) navKyxUSD.textContent = wallet.kyx_balance_usd_formatted;
+          if (navKyxUSD) navKyxUSD.textContent = wallet.usd_equivalent_formatted;
 
           // 更新划转配置
-          document.getElementById('transferMinKYX').textContent = transfer_config.min_kyx;
-          document.getElementById('transferMaxKYX').textContent = transfer_config.max_kyx;
-          document.getElementById('transferRemainingCount').textContent = transfer_config.max_daily_count - today_transfer_count;
-          document.getElementById('walletTransferRemaining').textContent = `${transfer_config.max_daily_count - today_transfer_count}次`;
+          document.getElementById('transferMinKYX').textContent = config.min_transfer_kyx;
+          document.getElementById('transferMaxKYX').textContent = config.max_transfer_kyx;
+          document.getElementById('transferRemainingCount').textContent = today_transfer.remaining;
+          document.getElementById('walletTransferRemaining').textContent = `${today_transfer.remaining}次`;
         }
       } catch (error) {
         console.error('加载钱包信息失败:', error);
@@ -10784,12 +10821,6 @@
     async function refreshAPIBalance() {
       try {
         const response = await fetch('/api/wallet/api-balance');
-        
-        // 处理未登录的情况
-        if (response.status === 401) {
-          return; // 静默失败，因为loadWalletInfo已经处理了
-        }
-
         const data = await response.json();
 
         if (data.success) {
@@ -10805,6 +10836,16 @@
 
     // 切换到钱包界面
     function switchToWallet() {
+      if (currentMode === 'wallet') return;
+
+      // 保存当前模式
+      saveCurrentMode('wallet');
+
+      // 🎵 暂停背景音乐（保持进度）
+      if (bgMusicManager) {
+        bgMusicManager.pauseKeepProgress();
+      }
+
       // 隐藏所有界面
       const mainSection = document.getElementById('mainSection');
       const slotModal = document.getElementById('slotMachineModal');
@@ -10856,12 +10897,6 @@
       try {
         const filter = document.getElementById('transactionTypeFilter').value;
         const response = await fetch(`/api/wallet/transactions?page=${page}&filter=${filter}`);
-        
-        // 处理未登录的情况
-        if (response.status === 401) {
-          return; // 静默失败，因为loadWalletInfo已经处理了
-        }
-
         const data = await response.json();
 
         if (data.success && data.transactions.length > 0) {
@@ -10896,12 +10931,6 @@
       try {
         const filter = document.getElementById('transferStatusFilter').value;
         const response = await fetch(`/api/wallet/transfers?page=${page}&filter=${filter}`);
-        
-        // 处理未登录的情况
-        if (response.status === 401) {
-          return; // 静默失败，因为loadWalletInfo已经处理了
-        }
-
         const data = await response.json();
 
         if (data.success && data.transfers.length > 0) {

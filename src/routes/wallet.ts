@@ -4,8 +4,37 @@ import { transferService } from '../services/transfer';
 import { getKyxUserById } from '../services/kyx-api';
 import { adminQueries, userQueries } from '../database';
 import { formatKYX, formatUSD, kyxToUSD, quotaToUSD, quotaToKYX, CURRENCY } from '../utils/currency';
+import { getCookie, getSession } from '../utils';
 
 const app = new Hono();
+
+/**
+ * 中间件：验证用户登录
+ */
+async function requireAuth(c: any, next: any) {
+    const sessionId = getCookie(c.req.raw.headers, 'session_id');
+    if (!sessionId) {
+        return c.json({ success: false, message: '未登录' }, 401);
+    }
+
+    const session = await getSession(sessionId);
+    if (!session || !session.linux_do_id) {
+        return c.json({ success: false, message: '会话无效' }, 401);
+    }
+
+    // 检查用户是否被封禁
+    const user = userQueries.get.get(session.linux_do_id);
+    if (user && user.is_banned) {
+        return c.json({
+            success: false,
+            message: `您的账号已被封禁${user.banned_reason ? '，原因：' + user.banned_reason : ''}`,
+            banned: true
+        }, 403);
+    }
+
+    c.set('session', session);
+    await next();
+}
 
 // ========== 钱包查询 API ==========
 
@@ -13,14 +42,8 @@ const app = new Hono();
  * 获取钱包信息
  * GET /api/wallet/info
  */
-app.get('/info', async (c) => {
-    const session = c.req.query('session');
-    if (!session) {
-        return c.json({ success: false, message: '未登录' }, 401);
-    }
-
+app.get('/info', requireAuth, async (c) => {
     try {
-        // 从 sessions 表获取用户信息
         const sessionData = c.get('session');
         if (!sessionData) {
             return c.json({ success: false, message: '会话无效' }, 401);
@@ -81,12 +104,7 @@ app.get('/info', async (c) => {
  * 获取交易记录
  * GET /api/wallet/transactions?page=1&pageSize=20
  */
-app.get('/transactions', async (c) => {
-    const session = c.req.query('session');
-    if (!session) {
-        return c.json({ success: false, message: '未登录' }, 401);
-    }
-
+app.get('/transactions', requireAuth, async (c) => {
     try {
         const sessionData = c.get('session');
         if (!sessionData) {
@@ -123,12 +141,7 @@ app.get('/transactions', async (c) => {
  * 获取划转记录
  * GET /api/wallet/transfers?page=1&pageSize=20
  */
-app.get('/transfers', async (c) => {
-    const session = c.req.query('session');
-    if (!session) {
-        return c.json({ success: false, message: '未登录' }, 401);
-    }
-
+app.get('/transfers', requireAuth, async (c) => {
     try {
         const sessionData = c.get('session');
         if (!sessionData) {
@@ -168,11 +181,11 @@ app.get('/transfers', async (c) => {
  * POST /api/wallet/transfer
  * Body: { amount_kyx: number }
  */
-app.post('/transfer', async (c) => {
+app.post('/transfer', requireAuth, async (c) => {
     try {
         const sessionData = c.get('session');
         if (!sessionData) {
-            return c.json({ success: false, message: '未登录' }, 401);
+            return c.json({ success: false, message: '会话无效' }, 401);
         }
 
         const { amount_kyx } = await c.req.json();
@@ -224,11 +237,11 @@ app.post('/transfer', async (c) => {
  * POST /api/wallet/transfer-from-api
  * Body: { amount_quota: number }
  */
-app.post('/transfer-from-api', async (c) => {
+app.post('/transfer-from-api', requireAuth, async (c) => {
     try {
         const sessionData = c.get('session');
         if (!sessionData) {
-            return c.json({ success: false, message: '未登录' }, 401);
+            return c.json({ success: false, message: '会话无效' }, 401);
         }
 
         const { amount_quota } = await c.req.json();
@@ -287,11 +300,11 @@ app.post('/transfer-from-api', async (c) => {
  * 获取公益站账户余额
  * GET /api/wallet/api-balance
  */
-app.get('/api-balance', async (c) => {
+app.get('/api-balance', requireAuth, async (c) => {
     try {
         const sessionData = c.get('session');
         if (!sessionData) {
-            return c.json({ success: false, message: '未登录' }, 401);
+            return c.json({ success: false, message: '会话无效' }, 401);
         }
 
         // 获取用户信息
