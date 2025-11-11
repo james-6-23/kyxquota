@@ -3413,6 +3413,7 @@
       containers.forEach((container) => {
         const refuelBtn = container.querySelector('[data-btn="refuel"]');
         const entertainBtn = container.querySelector('[data-btn="entertain"]');
+        const walletBtn = container.querySelector('[data-btn="wallet"]');
         const achievementBtn = container.querySelector('[data-btn="achievement"]');
 
         // 检查是否在老虎机界面（暗色主题）
@@ -3424,11 +3425,13 @@
             // 老虎机界面 - 暗色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
+            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
             if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
             if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           }
         } else if (mode === 'entertain') {
@@ -3437,17 +3440,26 @@
             // 老虎机界面 - 暗色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg';
+            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
             if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-white/70 hover:bg-white/10';
           } else {
             // 主界面 - 亮色主题
             refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
             entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-md';
+            if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
             if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           }
+        } else if (mode === 'wallet') {
+          // 钱包模式激活
+          refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md';
+          if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
         } else if (mode === 'achievement') {
           // 成就模式激活
           refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md';
         }
       });
@@ -10776,13 +10788,18 @@
     // 切换到钱包界面
     function switchToWallet() {
       // 隐藏所有界面
-      document.getElementById('refuelSection').classList.add('hidden');
-      document.getElementById('entertainSection').classList.add('hidden');
-      document.getElementById('walletSection').classList.remove('hidden');
-      document.getElementById('achievementSection').classList.add('hidden');
+      const mainSection = document.getElementById('mainSection');
+      const slotModal = document.getElementById('slotMachineModal');
+      const walletSection = document.getElementById('walletSection');
+      const achievementSection = document.getElementById('achievementSection');
+
+      if (mainSection) mainSection.classList.add('hidden');
+      if (slotModal) slotModal.classList.add('hidden');
+      if (walletSection) walletSection.classList.remove('hidden');
+      if (achievementSection) achievementSection.classList.add('hidden');
 
       // 更新导航按钮状态
-      updateNavButtons('wallet');
+      updateSwitchButtons('wallet');
 
       // 加载钱包数据
       loadWalletInfo();
