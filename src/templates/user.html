@@ -10738,6 +10738,17 @@
     async function loadWalletInfo() {
       try {
         const response = await fetch('/api/wallet/info');
+        
+        // 处理未登录的情况
+        if (response.status === 401) {
+          showToast('请先登录', 'error');
+          // 切换回加油站界面
+          setTimeout(() => {
+            switchToRefuel();
+          }, 1000);
+          return;
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -10765,6 +10776,7 @@
         }
       } catch (error) {
         console.error('加载钱包信息失败:', error);
+        showToast('加载钱包信息失败', 'error');
       }
     }
 
@@ -10772,6 +10784,12 @@
     async function refreshAPIBalance() {
       try {
         const response = await fetch('/api/wallet/api-balance');
+        
+        // 处理未登录的情况
+        if (response.status === 401) {
+          return; // 静默失败，因为loadWalletInfo已经处理了
+        }
+
         const data = await response.json();
 
         if (data.success) {
@@ -10838,6 +10856,12 @@
       try {
         const filter = document.getElementById('transactionTypeFilter').value;
         const response = await fetch(`/api/wallet/transactions?page=${page}&filter=${filter}`);
+        
+        // 处理未登录的情况
+        if (response.status === 401) {
+          return; // 静默失败，因为loadWalletInfo已经处理了
+        }
+
         const data = await response.json();
 
         if (data.success && data.transactions.length > 0) {
@@ -10872,6 +10896,12 @@
       try {
         const filter = document.getElementById('transferStatusFilter').value;
         const response = await fetch(`/api/wallet/transfers?page=${page}&filter=${filter}`);
+        
+        // 处理未登录的情况
+        if (response.status === 401) {
+          return; // 静默失败，因为loadWalletInfo已经处理了
+        }
+
         const data = await response.json();
 
         if (data.success && data.transfers.length > 0) {
