@@ -974,6 +974,22 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
+              <div id="walletDropdownMenu" class="hidden absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
+                <div class="px-4 py-3 border-b border-slate-200">
+                  <p id="walletLinuxDoUsername" class="font-semibold text-slate-900 text-sm">@用户名</p>
+                  <p id="walletUserName" class="text-sm text-slate-600">公益站: 用户名</p>
+                  <p id="walletUserId" class="text-xs text-slate-500">ID: xxx</p>
+                </div>
+                <button onclick="showSlotRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                  <span>🎰</span> 抽奖记录
+                </button>
+                <button onclick="showMyRecords()" class="w-full text-left px-4 py-2 hover:bg-slate-100 transition-colors flex items-center gap-2">
+                  <span>📊</span> 我的记录
+                </button>
+                <button onclick="logout()" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600 transition-colors flex items-center gap-2">
+                  <span>🚪</span> 退出登录
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1049,6 +1065,9 @@
                 min="0.01"
                 step="0.01"
               >
+              <p class="text-xs text-blue-600 mt-1">
+                将转换为 <span id="transferToAPIUSD" class="font-semibold">$--</span>
+              </p>
               <p class="text-xs text-slate-500 mt-1">
                 最小: <span id="transferMinKYX">--</span> KYX •
                 最大: <span id="transferMaxKYX">--</span> KYX
@@ -5468,6 +5487,34 @@
       }
     }
 
+    // ✅ 同步用户信息到钱包界面
+    function syncUserInfoToWallet() {
+      // 从主界面复制用户信息到钱包界面
+      const linuxDoUsername = document.getElementById('linuxDoUsername')?.textContent;
+      const userName = document.getElementById('userName')?.textContent;
+      const userId = document.getElementById('userId')?.textContent;
+      const userInitial = document.getElementById('userInitial')?.textContent;
+      
+      // 同步用户名
+      const walletLinuxDoUsername = document.getElementById('walletLinuxDoUsername');
+      const walletUserName = document.getElementById('walletUserName');
+      const walletUserId = document.getElementById('walletUserId');
+      const walletUserInitial = document.getElementById('userInitialWallet');
+      
+      if (walletLinuxDoUsername && linuxDoUsername) {
+        walletLinuxDoUsername.textContent = linuxDoUsername;
+      }
+      if (walletUserName && userName) {
+        walletUserName.textContent = userName;
+      }
+      if (walletUserId && userId) {
+        walletUserId.textContent = userId;
+      }
+      if (walletUserInitial && userInitial) {
+        walletUserInitial.textContent = userInitial;
+      }
+    }
+
     // 全局存储用户信息（用于获取头像）
     let userDataCache = {};
 
@@ -9183,6 +9230,8 @@
             document.getElementById('walletSection').classList.remove('hidden');
             await loadQuota();
             updateSwitchButtons('wallet');
+            // ✅ 同步用户信息到钱包界面
+            syncUserInfoToWallet();
             // 加载钱包数据
             loadWalletInfo();
             refreshAPIBalance();
@@ -10680,6 +10729,21 @@
 
     // ========== 💰 钱包系统相关功能 ==========
 
+    // 监听正向划转金额输入，实时显示转换后的USD
+    document.addEventListener('DOMContentLoaded', () => {
+      const transferAmountInput = document.getElementById('transferAmount');
+      const transferToAPIUSDSpan = document.getElementById('transferToAPIUSD');
+
+      if (transferAmountInput && transferToAPIUSDSpan) {
+        transferAmountInput.addEventListener('input', (e) => {
+          const kyx = parseFloat(e.target.value) || 0;
+          // 汇率：1 KYX = $0.4
+          const usd = kyx * 0.4;
+          transferToAPIUSDSpan.textContent = usd > 0 ? '$' + usd.toFixed(2) : '$--';
+        });
+      }
+    });
+
     // 监听反向划转金额输入，实时显示转换后的KYX
     document.addEventListener('DOMContentLoaded', () => {
       const transferFromAPIInput = document.getElementById('transferFromAPIAmount');
@@ -10688,8 +10752,8 @@
       if (transferFromAPIInput && transferFromAPIKYXSpan) {
         transferFromAPIInput.addEventListener('input', (e) => {
           const usd = parseFloat(e.target.value) || 0;
-          const quota = usd * 500000;
-          const kyx = quota * 2.5;
+          // 汇率：1$ = 2.5 KYX
+          const kyx = usd * 2.5;
           transferFromAPIKYXSpan.textContent = kyx > 0 ? kyx.toFixed(2) + ' KYX' : '-- KYX';
         });
       }
@@ -10722,6 +10786,7 @@
         if (data.success) {
           showToast(data.message, 'success');
           amountInput.value = '';
+          document.getElementById('transferToAPIUSD').textContent = '$--';
           // 刷新钱包信息
           await loadWalletInfo();
           await refreshAPIBalance();
@@ -10823,11 +10888,13 @@
         const response = await fetch('/api/wallet/api-balance');
         const data = await response.json();
 
-        if (data.success) {
-          const { quota, used_quota, total } = data;
-          document.getElementById('apiQuota').textContent = `$${(quota / 500000).toFixed(2)}`;
-          document.getElementById('apiUsed').textContent = `$${(used_quota / 500000).toFixed(2)}`;
-          document.getElementById('apiTotal').textContent = `$${(total / 500000).toFixed(2)}`;
+        if (data.success && data.balance) {
+          const { quota, usd, usd_formatted } = data.balance;
+          // 显示格式化的美元金额
+          document.getElementById('apiQuota').textContent = usd_formatted || `$${(quota / 500000).toFixed(2)}`;
+          // 已使用和总计暂时显示相同值（可以后续扩展）
+          document.getElementById('apiUsed').textContent = '$0.00';
+          document.getElementById('apiTotal').textContent = usd_formatted || `$${(quota / 500000).toFixed(2)}`;
         }
       } catch (error) {
         console.error('刷新公益站余额失败:', error);
@@ -10859,6 +10926,9 @@
 
       // 更新导航按钮状态
       updateSwitchButtons('wallet');
+
+      // ✅ 同步用户信息到钱包界面
+      syncUserInfoToWallet();
 
       // 加载钱包数据
       loadWalletInfo();
