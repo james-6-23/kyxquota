@@ -178,6 +178,16 @@ export async function transferToAPI(
         Date.now()
     );
 
+    if (!transferResult || !transferResult.lastInsertRowid) {
+        // 解冻金额
+        walletService.unfreezeKYX(linuxDoId, actualAmount);
+        console.error(`❌ [划转] 创建划转记录失败: transferResult 无效`);
+        return {
+            success: false,
+            message: '创建划转记录失败，请稍后重试'
+        };
+    }
+
     const transferId = Number(transferResult.lastInsertRowid);
 
     // 7. 请求 KYX API
@@ -357,6 +367,14 @@ export async function transferFromAPI(
         0,  // 反向划转无手续费
         Date.now()
     );
+
+    if (!transferResult || !transferResult.lastInsertRowid) {
+        console.error(`❌ [反向划转] 创建划转记录失败: transferResult 无效`);
+        return {
+            success: false,
+            message: '创建划转记录失败，请稍后重试'
+        };
+    }
 
     const transferId = Number(transferResult.lastInsertRowid);
 
