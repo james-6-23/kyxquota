@@ -296,6 +296,21 @@ export function initDatabase() {
   `);
     db.exec('CREATE INDEX IF NOT EXISTS idx_wallets_updated_at ON user_wallets(updated_at)');
 
+    // 迁移：检查并添加 user_wallets 表的缺失列
+    try {
+        db.exec('ALTER TABLE user_wallets ADD COLUMN balance_quota INTEGER DEFAULT 0');
+        console.log('✅ 已添加 balance_quota 字段到 user_wallets');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    try {
+        db.exec('ALTER TABLE user_wallets ADD COLUMN updated_at INTEGER DEFAULT 0');
+        console.log('✅ 已添加 updated_at 字段到 user_wallets');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
     // 钱包划转记录（用于限次与审计）
     db.exec(`
     CREATE TABLE IF NOT EXISTS wallet_transfer_records (
@@ -3338,10 +3353,10 @@ function fixAchievementDescriptions(): void {
         for (const update of updates) {
             // 只更新旧描述的成就
             const result = db.query<{ changes: number }, never>(`
-                UPDATE achievements 
-                SET description = '${update.newDesc}', updated_at = ${now}
-                WHERE achievement_key = '${update.key}' AND description = '${update.oldDesc}'
-            `).run();
+                UPDATE achievements
+                SET achievement_desc = ?, updated_at = ?
+                WHERE achievement_key = ? AND achievement_desc = ?
+            `, [update.newDesc, now, update.key, update.oldDesc]).run();
 
             if (result && result.changes > 0) {
                 console.log(`  ✅ ${update.key}: ${update.oldDesc} → ${update.newDesc}`);
