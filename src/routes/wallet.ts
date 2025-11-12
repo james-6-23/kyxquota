@@ -3,8 +3,14 @@ import { db, adminQueries } from '../database';
 import { getWalletBalance } from '../services/wallet';
 import { getCookie, getSession } from '../utils';
 import { getKyxUserById, updateKyxUserQuota } from '../services/kyx-api';
+import logger from '../utils/logger';
 
 const app = new Hono();
+
+function getUserDisplayName(linuxDoId: string): string {
+  const userRow = db.query('SELECT username FROM users WHERE linux_do_id = ?').get(linuxDoId) as any;
+  return userRow ? `${userRow.username} (${linuxDoId})` : linuxDoId;
+}
 
 async function requireAuth(c: any, next: any) {
   const sessionId = getCookie(c.req.raw.headers, 'session_id');
@@ -122,39 +128,75 @@ app.post('/transfer', requireAuth, async (c) => {
   upstreamQuota = r.user.quota || 0;
 
   if (direction === 'in') {
+    // 公益站 -> 本地钱包
+    logger.info('钱包划转', `开始划转 (公益站→本地) - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 上游余额: $${(upstreamQuota / 500000).toFixed(2)}, 本地余额: $${(walletQuota / 500000).toFixed(2)}`);
+
     if (upstreamQuota < amountQuota) {
+      logger.warn('钱包划转', `❌ 划转失败 - 用户: ${getUserDisplayName(linuxDoId)}, 上游余额不足: $${(upstreamQuota / 500000).toFixed(2)} < $${(amountQuota / 500000).toFixed(2)}`);
       return c.json({ success: false, message: '上游余额不足' }, 400);
     }
+
     // 更新上游余额：扣减
     const newUp = upstreamQuota - amountQuota;
+    logger.info('钱包划转', `正在从上游扣款 - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 上游余额: $${(upstreamQuota / 500000).toFixed(2)} → $${(newUp / 500000).toFixed(2)}`);
+
     const upRes = await updateKyxUserQuota(kyxUserId, newUp, adminSession, newApiUser, r.user.username, r.user.group || 'default');
-    if (!upRes || !upRes.success) return c.json({ success: false, message: '上游扣款失败' }, 500);
+    if (!upRes || !upRes.success) {
+      logger.error('钱包划转', `❌ 上游扣款失败 - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}`);
+      return c.json({ success: false, message: '上游扣款失败' }, 500);
+    }
+
+    logger.info('钱包划转', `✅ 上游扣款成功 - 用户: ${getUserDisplayName(linuxDoId)}`);
+
     // 本地钱包增加
     const now = Date.now();
+    const newWallet = (walletQuota + amountQuota);
+
+    logger.info('钱包划转', `正在更新本地钱包 - 用户: ${getUserDisplayName(linuxDoId)}, 本地余额: $${(walletQuota / 500000).toFixed(2)} → $${(newWallet / 500000).toFixed(2)}`);
+
     db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = balance_quota + ?, updated_at = ?')
       .run(linuxDoId, amountQuota, now, now, amountQuota, now);
+
     // 记录
     db.query('INSERT INTO wallet_transfer_records (linux_do_id, direction, amount_quota, timestamp, date) VALUES (?, ?, ?, ?, ?)')
       .run(linuxDoId, 'in', amountQuota, now, today);
 
-    const newWallet = (walletQuota + amountQuota);
+    logger.info('钱包划转', `✅ 划转成功 (公益站→本地) - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 上游余额: $${(newUp / 500000).toFixed(2)}, 本地余额: $${(newWallet / 500000).toFixed(2)}, 今日次数: ${todayCount + 1}/${limitCount}`);
+
     return c.json({ success: true, message: '划转成功', data: { upstream_quota: newUp, wallet_quota: newWallet } });
   } else {
-    // out: 本地->上游
+    // 本地钱包 -> 公益站
+    logger.info('钱包划转', `开始划转 (本地→公益站) - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 本地余额: $${(walletQuota / 500000).toFixed(2)}, 上游余额: $${(upstreamQuota / 500000).toFixed(2)}`);
+
     if (walletQuota < amountQuota) {
+      logger.warn('钱包划转', `❌ 划转失败 - 用户: ${getUserDisplayName(linuxDoId)}, 本地余额不足: $${(walletQuota / 500000).toFixed(2)} < $${(amountQuota / 500000).toFixed(2)}`);
       return c.json({ success: false, message: '本地钱包余额不足' }, 400);
     }
+
     const newUp = upstreamQuota + amountQuota;
+    const newWallet = (walletQuota - amountQuota);
+
+    logger.info('钱包划转', `正在向上游加款 - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 上游余额: $${(upstreamQuota / 500000).toFixed(2)} → $${(newUp / 500000).toFixed(2)}`);
+
     const upRes = await updateKyxUserQuota(kyxUserId, newUp, adminSession, newApiUser, r.user.username, r.user.group || 'default');
-    if (!upRes || !upRes.success) return c.json({ success: false, message: '上游加款失败' }, 500);
+    if (!upRes || !upRes.success) {
+      logger.error('钱包划转', `❌ 上游加款失败 - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}`);
+      return c.json({ success: false, message: '上游加款失败' }, 500);
+    }
+
+    logger.info('钱包划转', `✅ 上游加款成功 - 用户: ${getUserDisplayName(linuxDoId)}`);
 
     const now = Date.now();
+
+    logger.info('钱包划转', `正在更新本地钱包 - 用户: ${getUserDisplayName(linuxDoId)}, 本地余额: $${(walletQuota / 500000).toFixed(2)} → $${(newWallet / 500000).toFixed(2)}`);
+
     db.query('UPDATE user_wallets SET balance_quota = balance_quota - ?, updated_at = ? WHERE linux_do_id = ?')
       .run(amountQuota, now, linuxDoId);
     db.query('INSERT INTO wallet_transfer_records (linux_do_id, direction, amount_quota, timestamp, date) VALUES (?, ?, ?, ?, ?)')
       .run(linuxDoId, 'out', amountQuota, now, today);
 
-    const newWallet = (walletQuota - amountQuota);
+    logger.info('钱包划转', `✅ 提现成功 (本地→公益站) - 用户: ${getUserDisplayName(linuxDoId)}, 金额: $${(amountQuota / 500000).toFixed(2)}, 本地余额: $${(newWallet / 500000).toFixed(2)}, 上游余额: $${(newUp / 500000).toFixed(2)}, 今日次数: ${todayCount + 1}/${limitCount}`);
+
     return c.json({ success: true, message: '提现成功', data: { upstream_quota: newUp, wallet_quota: newWallet } });
   }
 });

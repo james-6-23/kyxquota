@@ -1177,37 +1177,150 @@
         </div>
       </div>
     </nav>
-    <div class="max-w-3xl mx-auto p-6 pt-24">
-      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">👛 我的钱包</h2>
-        <div id="walletMsg" class="hidden mb-3 p-3 rounded"></div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-4 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 text-white">
-            <div class="text-sm opacity-90">公益站余额</div>
-            <div id="walletUpstream" class="text-3xl font-bold">🥚--</div>
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 space-y-6">
+      <div id="walletMsg" class="hidden mb-3 p-4 rounded-xl border border-amber-200 bg-amber-50 text-amber-700"></div>
+
+      <section class="bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-400 rounded-3xl p-8 shadow-xl text-white">
+        <div class="flex flex-col lg:flex-row gap-8">
+          <div class="flex-1">
+            <p class="text-sm uppercase tracking-wide text-white/80">KYX 钱包余额</p>
+            <div id="walletLocal" class="text-5xl font-bold tracking-tight mt-2">🥚--</div>
+            <p class="mt-4 text-white/90 flex items-center gap-2">
+              可用余额
+              <span id="walletAvailable" class="text-2xl font-semibold">🥚--</span>
+            </p>
+            <div class="mt-6 flex flex-wrap gap-4 text-sm text-white/80">
+              <div class="flex flex-col">
+                <span class="uppercase text-xs opacity-80">汇率</span>
+                <span id="walletRate" class="font-semibold">--</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="uppercase text-xs opacity-80">今日可划转</span>
+                <span id="walletLimit" class="font-semibold">--</span>
+              </div>
+            </div>
           </div>
-          <div class="p-4 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white">
-            <div class="text-sm opacity-90">本地钱包</div>
-            <div id="walletLocal" class="text-3xl font-bold">🥚--</div>
+          <div class="grid grid-cols-2 gap-4 flex-1">
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur">
+              <p class="text-sm text-white/80">公益站余额</p>
+              <p id="walletUpstream" class="text-3xl font-bold mt-2">🐔🏀--</p>
+              <p class="text-xs text-white/80 mt-3">API 实时数据</p>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur">
+              <p class="text-sm text-white/80">今日剩余次数</p>
+              <p id="walletRemaining" class="text-3xl font-bold mt-2">--</p>
+              <p class="text-xs text-white/80 mt-3">剩余可划转次数</p>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur">
+              <p class="text-sm text-white/80">累计转入</p>
+              <p id="walletStatIn" class="text-2xl font-semibold mt-2">--</p>
+              <p class="text-xs text-white/80 mt-3">即将开放</p>
+            </div>
+            <div class="bg-white/10 rounded-2xl p-4 backdrop-blur">
+              <p class="text-sm text-white/80">累计支出</p>
+              <p id="walletStatOut" class="text-2xl font-semibold mt-2">--</p>
+              <p class="text-xs text-white/80 mt-3">即将开放</p>
+            </div>
           </div>
         </div>
-        <div class="mt-4 text-sm text-slate-600">
-          <span>汇率：</span><span id="walletRate">1 🥚 = 500,000 quota</span>
-          <span class="mx-2">|</span>
-          <span>今日可划转次数：</span><span id="walletLimit"></span>
-        </div>
-      </div>
-      <div class="bg-white rounded-2xl shadow-lg p-6">
-        <h3 class="text-xl font-bold text-slate-900 mb-4">划转</h3>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+      </section>
+
+      <section class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div class="flex items-center gap-2">
+          <span class="text-amber-500 text-xl">⚡</span>
           <div>
-            <label class="block text-sm text-slate-700 mb-1">金额（🥚）</label>
-            <input id="walletAmount" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded-lg" placeholder="10">
+            <p class="text-lg font-semibold text-slate-900">快捷操作</p>
+            <p class="text-sm text-slate-500">在 KYX 与公益站之间快速划转</p>
           </div>
-          <button id="btnIn" onclick="walletTransfer('in')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">从公益站 → 本地</button>
-          <button id="btnOut" onclick="walletTransfer('out')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">从本地 → 公益站</button>
         </div>
-      </div>
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="rounded-2xl border border-slate-100 p-5 shadow-sm bg-gradient-to-b from-white to-slate-50 flex flex-col">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold text-slate-900">划转到公益站</p>
+              <span class="text-slate-400 text-sm">KYX → 公益站</span>
+            </div>
+            <p class="text-sm text-slate-500 mt-2">将 KYX 余额划转到公益站账户</p>
+            <label class="mt-6 text-xs font-semibold text-slate-500">划转金额（🥚）</label>
+            <div class="mt-2 relative">
+              <input id="walletAmountOut" type="number" step="0.01" min="0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 outline-none bg-white" placeholder="请输入划转金额">
+              <span class="absolute inset-y-0 right-4 flex items-center text-slate-400 text-sm">🥚</span>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">余额参考：<span id="walletLocalHint">-- 🥚</span></p>
+            <button id="btnOut" onclick="walletTransfer('out')" class="mt-5 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-indigo-500 to-blue-600 text-white font-medium py-3 hover:opacity-90 transition-all shadow focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2">确认划转</button>
+          </div>
+
+          <div class="rounded-2xl border border-slate-100 p-5 shadow-sm bg-gradient-to-b from-white to-slate-50 flex flex-col">
+            <div class="flex items-center justify-between">
+              <p class="font-semibold text-slate-900">从公益站划转</p>
+              <span class="text-slate-400 text-sm">公益站 → KYX</span>
+            </div>
+            <p class="text-sm text-slate-500 mt-2">将公益站额度划转回 KYX 钱包</p>
+            <label class="mt-6 text-xs font-semibold text-slate-500">划转金额（🐔🏀）</label>
+            <div class="mt-2 relative">
+              <input id="walletAmountIn" type="number" step="0.01" min="0" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 outline-none bg-white" placeholder="请输入划转金额">
+              <span class="absolute inset-y-0 right-4 flex items-center text-slate-400 text-sm">🐔🏀</span>
+            </div>
+            <p class="mt-2 text-xs text-slate-400">今日剩余次数：<span id="walletRemainingText">--</span></p>
+            <button id="btnIn" onclick="walletTransfer('in')" class="mt-5 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-500 to-green-500 text-white font-medium py-3 hover:opacity-90 transition-all shadow focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2">确认划转</button>
+          </div>
+
+          <div class="rounded-2xl border border-slate-100 p-5 shadow-sm bg-white flex flex-col">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-slate-900">公益站账户</p>
+                <p class="text-sm text-slate-500">公益站 API 余额（仅供参考）</p>
+              </div>
+              <button onclick="loadWalletBalance()" class="p-2 rounded-full border border-slate-200 hover:bg-slate-50 transition-colors" title="刷新余额">
+                <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M20 9A8 8 0 006.343 6.343M4 15a8 8 0 0013.657 2.657"/>
+                </svg>
+              </button>
+            </div>
+            <dl class="mt-6 space-y-4 text-sm text-slate-600">
+              <div class="flex items-center justify-between">
+                <dt>API 余额</dt>
+                <dd id="walletApiQuota" class="font-semibold text-slate-900">🐔🏀--</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt>已使用</dt>
+                <dd class="text-slate-500">--</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt>累计</dt>
+                <dd class="text-slate-500">--</dd>
+              </div>
+              <div class="flex items-center justify-between">
+                <dt>今日剩余</dt>
+                <dd id="walletDailyLimit" class="text-slate-900 font-medium">--</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <section class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <button class="px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-sm font-medium shadow">交易记录</button>
+            <button class="px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">划转记录</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <select class="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 bg-white">
+              <option>全部类型</option>
+              <option>划转</option>
+              <option>收入</option>
+              <option>支出</option>
+            </select>
+            <button class="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
+              本月
+            </button>
+          </div>
+        </div>
+        <div class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-slate-500 text-sm">
+          <p class="font-medium text-slate-600">交易记录功能即将上线</p>
+          <p class="mt-1">我们将展示近期待处理的划转记录、上下游余额变化等信息，敬请期待。</p>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -1238,21 +1351,28 @@
             <!-- 导航选项卡 - 响应式 -->
             <div class="flex items-center gap-1" data-switch-container>
               <!-- 加油站 -->
-              <button data-btn="refuel" onclick="switchToRefuel()" 
+              <button data-btn="refuel" onclick="switchToRefuel()"
                       class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
                 <span class="text-base sm:text-lg">⛽</span>
                 <span class="hidden sm:inline">加油站</span>
               </button>
-              
+
               <!-- 娱乐站 -->
-              <button data-btn="entertain" onclick="switchToEntertain()" 
+              <button data-btn="entertain" onclick="switchToEntertain()"
                       class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 bg-gradient-to-r from-yellow-500 to-orange-600 text-white shadow-lg">
                 <span class="text-base sm:text-lg">🎰</span>
                 <span class="hidden sm:inline">娱乐站</span>
               </button>
-              
+
+              <!-- 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()"
+                      class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
+                <span class="text-base sm:text-lg">👛</span>
+                <span class="hidden sm:inline">钱包</span>
+              </button>
+
               <!-- 成就 -->
-              <button data-btn="achievement" onclick="switchToAchievement()" 
+              <button data-btn="achievement" onclick="switchToAchievement()"
                       class="px-3 sm:px-4 py-2 rounded-lg font-medium text-xs sm:text-sm flex items-center gap-1 sm:gap-2 transition-all duration-200 text-white/70 hover:bg-white/10">
                 <span class="text-base sm:text-lg">🏆</span>
                 <span class="hidden sm:inline">成就</span>
@@ -1928,9 +2048,9 @@
         <p class="text-xs sm:text-sm md:text-base">
           已玩 <span id="todayPlayed" class="font-bold text-yellow-400">0</span> 次 
           <span class="mx-1 sm:mx-2 text-white/40">|</span> 
-          投注 <span id="todayBet" class="font-bold text-red-400">🥚0</span>
+          投注 <span id="todayBet" class="font-bold text-red-400">🐔🏀0</span>
           <span class="mx-1 sm:mx-2 text-white/40">|</span>
-          赢得 <span id="todayWon" class="font-bold text-green-400">🥚0</span>
+          赢得 <span id="todayWon" class="font-bold text-green-400">🐔🏀0</span>
         </p>
       </div>
       <!-- 历史总计 -->
@@ -2315,7 +2435,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">当前余额</p>
-            <p id="modalCurrentBalance" class="text-2xl font-bold text-blue-600">🥚0</p>
+            <p id="modalCurrentBalance" class="text-2xl font-bold text-blue-600">🐔🏀0</p>
           </div>
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">待发放总数</p>
@@ -2323,11 +2443,11 @@
           </div>
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">待发放金额</p>
-            <p id="modalPendingAmount" class="text-2xl font-bold text-green-600">🥚0</p>
+            <p id="modalPendingAmount" class="text-2xl font-bold text-green-600">🐔🏀0</p>
           </div>
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">已发放金额</p>
-            <p id="modalSuccessAmount" class="text-2xl font-bold text-purple-600">🥚0</p>
+            <p id="modalSuccessAmount" class="text-2xl font-bold text-purple-600">🐔🏀0</p>
           </div>
         </div>
       </div>
@@ -2469,15 +2589,15 @@
           </div>
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">总投注</p>
-            <p id="myTotalBet" class="text-2xl font-bold text-red-600">🥚0</p>
+            <p id="myTotalBet" class="text-2xl font-bold text-red-600">🐔🏀0</p>
           </div>
           <div class="text-center">
             <p class="text-sm text-slate-600 mb-1">总盈亏</p>
-            <p id="myTotalProfit" class="text-2xl font-bold">🥚0</p>
+            <p id="myTotalProfit" class="text-2xl font-bold">🐔🏀0</p>
           </div>
         </div>
         <div class="mt-4 text-center">
-          <p class="text-sm text-slate-600">最大单次奖金：<span id="myBiggestWin" class="text-lg font-bold text-orange-600">🥚0</span> <span id="myBiggestWinType" class="text-sm text-slate-500"></span></p>
+          <p class="text-sm text-slate-600">最大单次奖金：<span id="myBiggestWin" class="text-lg font-bold text-orange-600">🐔🏀0</span> <span id="myBiggestWinType" class="text-sm text-slate-500"></span></p>
         </div>
       </div>
 
@@ -3197,22 +3317,52 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.message || '获取失败');
         const { rate, limit_count, today_count, remaining_count, wallet_quota, upstream_quota } = data.data;
+        const CHICKEN_RATE = 500000;
         const toEgg = (q) => (q / rate).toFixed(2);
+        const toChicken = (q) => (q / CHICKEN_RATE).toFixed(2);
+        const formattedLocal = `🥚${toEgg(wallet_quota)}`;
+        const formattedUpstream = `🐔🏀${toChicken(upstream_quota)}`;
+
         const walletLocal = document.getElementById('walletLocal');
+        const walletAvailable = document.getElementById('walletAvailable');
         const walletUp = document.getElementById('walletUpstream');
         const walletRate = document.getElementById('walletRate');
         const walletLimit = document.getElementById('walletLimit');
-        if (walletLocal) walletLocal.textContent = `🥚${toEgg(wallet_quota)}`;
-        if (walletUp) walletUp.textContent = `🥚${toEgg(upstream_quota)}`;
-        if (walletRate) walletRate.textContent = `1 🥚 = ${rate.toLocaleString()} quota`;
+        const walletRemaining = document.getElementById('walletRemaining');
+        const walletRemainingText = document.getElementById('walletRemainingText');
+        const walletLocalHint = document.getElementById('walletLocalHint');
+        const walletApiQuota = document.getElementById('walletApiQuota');
+        const walletDailyLimit = document.getElementById('walletDailyLimit');
+
+        if (walletLocal) walletLocal.textContent = formattedLocal;
+        if (walletAvailable) walletAvailable.textContent = formattedLocal;
+        if (walletUp) walletUp.textContent = formattedUpstream;
+        if (walletApiQuota) walletApiQuota.textContent = formattedUpstream;
+        if (walletRate) {
+          if (rate > 0) {
+            const eggPerChicken = (CHICKEN_RATE / rate).toFixed(2);
+            walletRate.textContent = `1 🥚 = ${rate.toLocaleString()} quota · 1 🐔🏀 = ${CHICKEN_RATE.toLocaleString()} quota（${eggPerChicken} 🥚 = 1 🐔🏀）`;
+          } else {
+            walletRate.textContent = '请检查汇率配置';
+          }
+        }
         if (walletLimit) walletLimit.textContent = `${today_count}/${limit_count}（剩余 ${remaining_count} 次）`;
+        if (walletRemaining) walletRemaining.textContent = `${remaining_count} 次`;
+        if (walletRemainingText) walletRemainingText.textContent = `剩余 ${remaining_count} 次`;
+        if (walletDailyLimit) walletDailyLimit.textContent = `剩余 ${remaining_count} 次`;
+        if (walletLocalHint) walletLocalHint.textContent = `${toEgg(wallet_quota)} 🥚`;
       } catch (e) {
         showToast('加载钱包失败', 'error');
       }
     }
 
     async function walletTransfer(direction) {
-      const amountInput = document.getElementById('walletAmount');
+      const amountInputId = direction === 'in' ? 'walletAmountIn' : 'walletAmountOut';
+      const amountInput = document.getElementById(amountInputId);
+      if (!amountInput) {
+        showToast('找不到输入框', 'error');
+        return;
+      }
       const amount = parseFloat(amountInput.value);
       if (!Number.isFinite(amount) || amount <= 0) {
         showToast('请输入有效金额', 'error');
@@ -3220,7 +3370,11 @@
       }
       const btnIn = document.getElementById('btnIn');
       const btnOut = document.getElementById('btnOut');
-      if (direction === 'in') btnIn.disabled = true; else btnOut.disabled = true;
+      if (direction === 'in') {
+        if (btnIn) btnIn.disabled = true;
+      } else if (btnOut) {
+        btnOut.disabled = true;
+      }
       try {
         const res = await fetch('/api/wallet/transfer', {
           method: 'POST',
@@ -3230,14 +3384,32 @@
         const data = await res.json();
         if (data.success) {
           showToast(data.message || '划转成功', 'success');
+          amountInput.value = '';
           await loadWalletBalance();
+
+          // 🔥 同步更新娱乐站余额数据
+          if (slotUserData && data.data && data.data.wallet_quota !== undefined) {
+            slotUserData.quota = data.data.wallet_quota;
+            // 如果娱乐站界面已打开，更新显示
+            const slotQuotaEl = document.getElementById('slotQuota');
+            const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
+            if (slotQuotaEl || slotQuotaMobileEl) {
+              const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
+              if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
+              if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
+            }
+          }
         } else {
           showToast(data.message || '划转失败', 'error');
         }
       } catch (e) {
         showToast('划转失败', 'error');
       } finally {
-        if (direction === 'in') btnIn.disabled = false; else btnOut.disabled = false;
+        if (direction === 'in') {
+          if (btnIn) btnIn.disabled = false;
+        } else if (btnOut) {
+          btnOut.disabled = false;
+        }
       }
     }
 
@@ -3367,7 +3539,7 @@
             </div>
             <div class="flex items-center gap-2 text-sm font-semibold">
               <span>💰 奖励:</span>
-              <span class="text-yellow-200">+🥚${rewardAmount}</span>
+              <span class="text-yellow-200">+🐔🏀${rewardAmount}</span>
             </div>
           </div>
 
@@ -3666,7 +3838,7 @@
           }
 
           const quotaUSD = (quota / 500000).toFixed(2);
-          document.getElementById('quotaValue').textContent = '🥚' + quotaUSD;
+          document.getElementById('quotaValue').textContent = '🐔🏀' + quotaUSD;
           document.getElementById('quotaUsage').textContent = ((used_quota / total * 100).toFixed(2)) + '%';
           document.getElementById('quotaStatus').textContent = quota < 10000000 ? '额度不足' : '充足';
           
@@ -3674,7 +3846,7 @@
           const maxModelscope = data.data.max_daily_donate_modelscope || 1;
           const maxIflow = data.data.max_daily_donate_iflow || 1;
           if (maxModelscope === maxIflow) {
-            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 🥚50 额度并获得1次免费抽奖 · 每种类型每天可投喂 ${maxModelscope} 个`;
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 🐔🏀50 额度并获得1次免费抽奖 · 每种类型每天可投喂 ${maxModelscope} 个`;
           } else {
             document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度并获得1次免费抽奖 · ModelScope 每天可投喂 ${maxModelscope} 个，iFlow 每天可投喂 ${maxIflow} 个`;
           }
@@ -3999,7 +4171,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${typeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">🥚${quotaUSD}</span></p>
+                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">🐔🏀${quotaUSD}</span></p>
               </div>
             `;
           }).join('');
@@ -4020,7 +4192,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${keyTypeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">🥚${(r.total_quota_added / 500000).toFixed(2)}</span></p>
+                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">🐔🏀${(r.total_quota_added / 500000).toFixed(2)}</span></p>
               </div>
             `;
           }).join('');
@@ -4126,7 +4298,7 @@
         button.onclick = () => setAdvancedBet(amount);
         button.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         button.setAttribute('data-amount', amount);
-        button.textContent = `🥚${amount}`;
+        button.textContent = `🐔🏀${amount}`;
         container.appendChild(button);
       });
       
@@ -4137,7 +4309,7 @@
     function setAdvancedBet(amount) {
       advancedBetAmount = amount;
       document.getElementById('advancedBetSlider').value = amount;
-      document.getElementById('advancedBetDisplay').textContent = `🥚${amount}`;
+      document.getElementById('advancedBetDisplay').textContent = `🐔🏀${amount}`;
       
       // 高亮选中的按钮
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
@@ -4157,7 +4329,7 @@
     // 🔥 更新投注金额显示（滑块）
     function updateAdvancedBetDisplay(value) {
       advancedBetAmount = parseInt(value);
-      document.getElementById('advancedBetDisplay').textContent = `🥚${value}`;
+      document.getElementById('advancedBetDisplay').textContent = `🐔🏀${value}`;
       
       // 更新按钮高亮（只有精确匹配的才高亮）
       const presets = [100, 200, 300, 500];
@@ -4243,7 +4415,7 @@
       
       const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
       
-      progressText.textContent = `🥚${todayBetAmount.toFixed(2)} / 🥚${betLimit.toLocaleString()}`;
+      progressText.textContent = `🐔🏀${todayBetAmount.toFixed(2)} / 🐔🏀${betLimit.toLocaleString()}`;
       progressBar.style.width = `${betPercentage}%`;
       
       // 根据进度改变颜色
@@ -4475,7 +4647,7 @@
             setAdvancedBet(advancedBetMin);
           }
           
-          // console.log(`[高级场] 投注范围: 🥚${advancedBetMin} ~ 🥚${advancedBetMax}, 步长: ${slider.step}`);
+          // console.log(`[高级场] 投注范围: 🐔🏀${advancedBetMin} ~ 🐔🏀${advancedBetMax}, 步长: ${slider.step}`);
         }
         
         // 🔥 立即更新进度条显示（确保高级场进度条显示）
@@ -5297,7 +5469,7 @@
 
         // 计算用户盈亏
         const userProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const userProfitText = `${userProfit >= 0 ? '+' : ''}🥚${(userProfit / 500000).toFixed(2)}`;
+        const userProfitText = `${userProfit >= 0 ? '+' : ''}🐔🏀${(userProfit / 500000).toFixed(2)}`;
         const userProfitColor = userProfit >= 0 ? 'text-green-300' : 'text-red-300';
 
         // 更新右侧排行榜的用户统计
@@ -5359,7 +5531,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5418,7 +5590,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5541,7 +5713,7 @@
       //   bought_today: slotUserData.bought_today
       // });
 
-      const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+      const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('slotQuota').textContent = quotaText;
       // 同步更新移动端额度显示
       const slotQuotaMobile = document.getElementById('slotQuotaMobile');
@@ -5581,13 +5753,13 @@
       
       // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
-      document.getElementById('todayBet').textContent = `🥚${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('todayWon').textContent = `🥚${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
+      document.getElementById('todayBet').textContent = `🐔🏀${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('todayWon').textContent = `🐔🏀${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
       
       // 历史总计
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
-      document.getElementById('totalBet').textContent = `🥚${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('totalWon').textContent = `🥚${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalBet').textContent = `🐔🏀${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalWon').textContent = `🐔🏀${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
       // 🔥 更新投注限额进度条（在 updateSlotUI 中直接调用）
       // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
@@ -5653,11 +5825,11 @@
       if (spinButtonPrice) {
         if (isInAdvancedMode) {
           // 🔥 高级场显示选择的投注金额
-          spinButtonPrice.textContent = `(🥚${advancedBetAmount})`;
+          spinButtonPrice.textContent = `(🐔🏀${advancedBetAmount})`;
         } else {
           // 初级场显示配置的投注金额
           const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-          spinButtonPrice.textContent = `(🥚${betAmountUSD})`;
+          spinButtonPrice.textContent = `(🐔🏀${betAmountUSD})`;
         }
       }
 
@@ -5716,7 +5888,7 @@
         // 更新价格显示
         const buyPriceUSD = parseFloat((slotConfig.buy_spins_price / 500000).toFixed(2));
         const buySpinsPriceEl = document.getElementById('buySpinsPrice');
-        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `🥚${buyPriceUSD}`;
+        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `🐔🏀${buyPriceUSD}`;
 
         // 更新已购次数和滑块最大值
         const buySpinsTodayEl = document.getElementById('buySpinsToday');
@@ -5819,7 +5991,7 @@
       // 更新弹窗中的价格显示
       const confirmPriceEl = document.getElementById('confirmBuyPrice');
       if (confirmPriceEl) {
-        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 🥚${buyPriceUSD}`;
+        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 🐔🏀${buyPriceUSD}`;
       }
 
       // 显示确认弹窗
@@ -6575,12 +6747,12 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div class="bg-white rounded-lg p-3 border-2 border-orange-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">待发放</p>
-            <p class="text-xl font-bold text-orange-600">🥚${(summary.pending_amount / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-orange-600">🐔🏀${(summary.pending_amount / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">${summary.pending_count} 笔</p>
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-green-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">已发放</p>
-            <p class="text-xl font-bold text-green-600">🥚${(summary.success_amount / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-green-600">🐔🏀${(summary.success_amount / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">${summary.success_count} 笔</p>
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-indigo-200 shadow-sm">
@@ -6590,7 +6762,7 @@
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-purple-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">总金额</p>
-            <p class="text-xl font-bold text-purple-600">🥚${((summary.pending_amount + summary.success_amount) / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-purple-600">🐔🏀${((summary.pending_amount + summary.success_amount) / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">待发+已发</p>
           </div>
         </div>
@@ -6629,7 +6801,7 @@
                   ${reward.error_message ? `<p class="text-xs text-red-600 mt-1">⚠️ ${reward.error_message}</p>` : ''}
                 </div>
                 <div class="text-right flex-shrink-0">
-                  <p class="text-lg font-bold text-orange-600 mb-1">🥚${reward.amount.toFixed(2)}</p>
+                  <p class="text-lg font-bold text-orange-600 mb-1">🐔🏀${reward.amount.toFixed(2)}</p>
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusColor}">
                     ${statusText}
                   </span>
@@ -6666,7 +6838,7 @@
                   <p class="text-xs text-slate-500">🕐 ${formatTimestamp(reward.created_at)}</p>
                 </div>
                 <div class="text-right flex-shrink-0">
-                  <p class="text-lg font-bold text-green-600 mb-1">🥚${reward.amount.toFixed(2)}</p>
+                  <p class="text-lg font-bold text-green-600 mb-1">🐔🏀${reward.amount.toFixed(2)}</p>
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-300">
                     已发放
                   </span>
@@ -6809,7 +6981,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-base font-bold text-purple-700 flex items-center gap-2">
                   <span>📊</span>
-                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}🥚${(netProfit / 500000).toFixed(2)}</span>
+                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}🐔🏀${(netProfit / 500000).toFixed(2)}</span>
                 </h3>
               </div>
               
@@ -6823,20 +6995,20 @@
                 
                 <!-- 总投注 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-red-100">
-                  <div class="text-xl font-bold text-red-600">🥚${(totalBet / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-red-600">🐔🏀${(totalBet / 500000).toFixed(2)}</div>
                   <p class="text-xs text-slate-600">总投注</p>
                 </div>
                 
                 <!-- 总赢得 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-green-100">
-                  <div class="text-xl font-bold text-green-600">🥚${(totalWin / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-green-600">🐔🏀${(totalWin / 500000).toFixed(2)}</div>
                   <p class="text-xs text-slate-600">总赢得</p>
                 </div>
                 
                 <!-- 盈亏 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
                   <div class="text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
-                    ${netProfit >= 0 ? '+' : ''}🥚${(netProfit / 500000).toFixed(2)}
+                    ${netProfit >= 0 ? '+' : ''}🐔🏀${(netProfit / 500000).toFixed(2)}
                   </div>
                   <p class="text-xs text-slate-600">净盈亏</p>
                 </div>
@@ -6940,12 +7112,12 @@
                       </span>
                     </div>
                     <div class="text-xs text-slate-600 leading-relaxed">
-                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">🥚${(r.bet_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">🐔🏀${(r.bet_amount / 500000).toFixed(2)}</span>
                       <span class="mx-1">·</span>
-                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">🥚${(r.win_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">🐔🏀${(r.win_amount / 500000).toFixed(2)}</span>
                       <span class="mx-1">·</span>
                       <span class="font-semibold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${netAmount >= 0 ? '+' : ''}🥚${(netAmount / 500000).toFixed(2)}
+                        ${netAmount >= 0 ? '+' : ''}🐔🏀${(netAmount / 500000).toFixed(2)}
                       </span>
                     </div>
                     ${r.free_spin_awarded ? `
@@ -7107,7 +7279,7 @@
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注范围</p>
-                    <p class="text-white font-bold">🥚${advConfig.bet_min / 500000} - 🥚${advConfig.bet_max / 500000}</p>
+                    <p class="text-white font-bold">🐔🏀${advConfig.bet_min / 500000} - 🐔🏀${advConfig.bet_max / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">会话时长</p>
@@ -7129,7 +7301,7 @@
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注金额</p>
-                    <p class="text-white font-bold">🥚${normalConfig.bet_amount / 500000}</p>
+                    <p class="text-white font-bold">🐔🏀${normalConfig.bet_amount / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">每日次数</p>
@@ -7137,7 +7309,7 @@
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">最低额度</p>
-                    <p class="text-white font-bold">🥚${normalConfig.min_quota_required / 500000}</p>
+                    <p class="text-white font-bold">🐔🏀${normalConfig.min_quota_required / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">购买功能</p>
@@ -7347,7 +7519,7 @@
               <div class="grid grid-cols-2 gap-3 text-sm">
                 <div class="bg-black/30 p-3 rounded-lg">
                   <p class="text-red-300">投注范围</p>
-                  <p class="text-white font-bold">🥚${config.min_bet} - 🥚${config.max_bet}</p>
+                  <p class="text-white font-bold">🐔🏀${config.min_bet} - 🐔🏀${config.max_bet}</p>
                 </div>
                 <div class="bg-black/30 p-3 rounded-lg">
                   <p class="text-red-300">每日进入</p>
@@ -7545,16 +7717,16 @@
         // 更新用户统计
         document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
         document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
-        document.getElementById('myTotalBet').textContent = `🥚${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myTotalBet').textContent = `🐔🏀${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
         
         // 计算并显示用户盈亏
         const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const myProfitText = `${myProfit >= 0 ? '+' : ''}🥚${(myProfit / 500000).toFixed(2)}`;
+        const myProfitText = `${myProfit >= 0 ? '+' : ''}🐔🏀${(myProfit / 500000).toFixed(2)}`;
         const myProfitElement = document.getElementById('myTotalProfit');
         myProfitElement.textContent = myProfitText;
         myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
         
-        document.getElementById('myBiggestWin').textContent = `🥚${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myBiggestWin').textContent = `🐔🏀${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
         
         const winTypeLabels = {
           'super_jackpot': '(🏆 超级大奖)',
@@ -7610,7 +7782,7 @@
                 
                 // 计算盈亏
                 const profit = (user.total_win || 0) - (user.total_bet || 0);
-                const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
+                const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
                 const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
 
                 return `
@@ -7626,7 +7798,7 @@
                       <div class="text-right">
                         <p class="text-xs text-slate-500">总盈亏</p>
                         <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                        <p class="text-xs text-slate-500 mt-1">最大奖金: 🥚${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
+                        <p class="text-xs text-slate-500 mt-1">最大奖金: 🐔🏀${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
                       </div>
                     </div>
                   </div>
@@ -7675,7 +7847,7 @@
                   
                   // 计算盈亏
                   const profit = (user.total_win || 0) - (user.total_bet || 0);
-                  const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
+                  const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
                   const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
 
                   return `
@@ -7691,7 +7863,7 @@
                         <div class="text-right">
                           <p class="text-xs text-slate-500">总盈亏</p>
                           <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                          <p class="text-xs text-slate-500 mt-1">投注: 🥚${(user.total_bet / 500000).toFixed(2)}</p>
+                          <p class="text-xs text-slate-500 mt-1">投注: 🐔🏀${(user.total_bet / 500000).toFixed(2)}</p>
                         </div>
                       </div>
                     </div>
@@ -7808,23 +7980,23 @@
         
         // 更新统计信息（模态框内）
         document.getElementById('modalPendingCount').textContent = summary.pending_count;
-        document.getElementById('modalPendingAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
-        document.getElementById('modalSuccessAmount').textContent = `🥚${(summary.success_amount / 500000).toFixed(2)}`;
+        document.getElementById('modalPendingAmount').textContent = `🐔🏀${(summary.pending_amount / 500000).toFixed(2)}`;
+        document.getElementById('modalSuccessAmount').textContent = `🐔🏀${(summary.success_amount / 500000).toFixed(2)}`;
         
         // 获取当前用户信息（包含余额）
         const userRes = await fetch('/api/user/quota');
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;
-          document.getElementById('modalCurrentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('modalCurrentBalance').textContent = `🐔🏀${(currentQuota / 500000).toFixed(2)}`;
           
           // 同时更新底部的当前余额显示
-          document.getElementById('currentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('currentBalance').textContent = `🐔🏀${(currentQuota / 500000).toFixed(2)}`;
         }
         
         // 更新底部统计栏的待发放信息
         document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
-        document.getElementById('pendingRewardsAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
+        document.getElementById('pendingRewardsAmount').textContent = `🐔🏀${(summary.pending_amount / 500000).toFixed(2)}`;
 
         // 渲染记录列表
         const container = document.getElementById('pendingRewardsList');
@@ -7879,7 +8051,7 @@
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-2">
-                        <span class="font-semibold text-${amountClass} text-lg">🥚${reward.amount.toFixed(2)}</span>
+                        <span class="font-semibold text-${amountClass} text-lg">🐔🏀${reward.amount.toFixed(2)}</span>
                         ${statusBadge}
                       </div>
                       <p class="text-sm text-slate-700 mb-1">
@@ -7919,7 +8091,7 @@
 
     // 用户申请补发待发放奖金
     async function retryUserPendingReward(rewardId, amount) {
-      if (!confirm(`确认申请补发 🥚${amount} 的奖金吗？\n\n系统将立即尝试为您发放到账。`)) {
+      if (!confirm(`确认申请补发 🐔🏀${amount} 的奖金吗？\n\n系统将立即尝试为您发放到账。`)) {
         return;
       }
 
@@ -7985,7 +8157,7 @@
         if (data.success && data.data) {
           const { summary } = data.data;
           document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
-          document.getElementById('pendingRewardsAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
+          document.getElementById('pendingRewardsAmount').textContent = `🐔🏀${(summary.pending_amount / 500000).toFixed(2)}`;
         }
         
         // 同时获取当前余额
@@ -7993,7 +8165,7 @@
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;
-          document.getElementById('currentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('currentBalance').textContent = `🐔🏀${(currentQuota / 500000).toFixed(2)}`;
         }
       } catch (error) {
         console.error('加载待发放统计失败:', error);
@@ -8466,7 +8638,7 @@
           // 🔥 同步余额到主界面右上角（加油站页面的余额显示）
           const quotaValueEl = document.getElementById('quotaValue');
           if (quotaValueEl) {
-            quotaValueEl.textContent = `🥚${(quotaAfter / 500000).toFixed(2)}`;
+            quotaValueEl.textContent = `🐔🏀${(quotaAfter / 500000).toFixed(2)}`;
           }
           
           // 🔥 更新待发放统计和余额显示
@@ -8513,10 +8685,10 @@
           const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
           if (multiplier > 0) {
             soundManager.playWin(multiplier);
-            showToast(`💎 恭喜中奖！${multiplier}x 赢得 🥚${winAmountUSD}`, 'success');
+            showToast(`💎 恭喜中奖！${multiplier}x 赢得 🐔🏀${winAmountUSD}`, 'success');
           } else if (multiplier < 0) {
             soundManager.playPunishment();
-            showToast(`⚖️ 律师函惩罚！扣除 🥚${winAmountUSD}`, 'error');
+            showToast(`⚖️ 律师函惩罚！扣除 🐔🏀${winAmountUSD}`, 'error');
           } else {
             soundManager.playLose();
             showToast('未中奖', 'error');
@@ -8885,7 +9057,7 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 text-sm';
-        btn.textContent = `🥚${amount}`;
+        btn.textContent = `🐔🏀${amount}`;
         btn.onclick = () => selectSupremeBet(amount);
         container.appendChild(btn);
       });
@@ -8916,7 +9088,7 @@
       const betDisplay = document.getElementById('supremeBetDisplay');
       
       if (slider) slider.value = amount;
-      if (betDisplay) betDisplay.textContent = `🥚${amount}`;  // 🔥 按钮上显示美元
+      if (betDisplay) betDisplay.textContent = `🐔🏀${amount}`;  // 🔥 按钮上显示美元
     }
     
     // 💎 更新至尊场投注显示
@@ -9247,9 +9419,9 @@
       const availableUsd = maxLoanUsd - activeLoanUsd;
       const usagePercent = maxLoanUsd > 0 ? (activeLoanUsd / maxLoanUsd * 100).toFixed(0) : 0;
       
-      document.getElementById('kunbeiAvailable').textContent = `🥚${availableUsd.toFixed(0)}`;
-      document.getElementById('kunbeiUsed').textContent = `🥚${activeLoanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiCredit').textContent = `🥚${maxLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiAvailable').textContent = `🐔🏀${availableUsd.toFixed(0)}`;
+      document.getElementById('kunbeiUsed').textContent = `🐔🏀${activeLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiCredit').textContent = `🐔🏀${maxLoanUsd.toFixed(0)}`;
       document.getElementById('kunbeiUsageBar').style.width = `${usagePercent}%`;
       document.getElementById('kunbeiUsagePercent').textContent = `${usagePercent}%`;
       document.getElementById('kunbeiCreditScore').textContent = kunbeiData.stats?.credit_score || 100;
@@ -9318,9 +9490,9 @@
       const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
       const cashbackUsd = repayUsd * kunbeiConfig.early_repay_discount;
       
-      document.getElementById('kunbeiSliderValue').textContent = `🥚${loanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiPreviewRepay').textContent = `🥚${repayUsd.toFixed(2)}`;
-      document.getElementById('kunbeiPreviewCashback').textContent = `🥚${cashbackUsd.toFixed(2)}`;
+      document.getElementById('kunbeiSliderValue').textContent = `🐔🏀${loanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiPreviewRepay').textContent = `🐔🏀${repayUsd.toFixed(2)}`;
+      document.getElementById('kunbeiPreviewCashback').textContent = `🐔🏀${cashbackUsd.toFixed(2)}`;
       
       const dueDate = new Date(Date.now() + kunbeiConfig.loan_duration_hours * 3600000);
       document.getElementById('kunbeiPreviewDue').textContent = 
@@ -9338,8 +9510,8 @@
       const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
       
       const confirmed = await kunbeiConfirm('确认借款', {
-        '借款金额': { text: `🥚${loanUsd.toFixed(2)}`, class: 'text-green-600' },
-        '需还金额': { text: `🥚${repayUsd.toFixed(2)}`, class: 'text-red-600' },
+        '借款金额': { text: `🐔🏀${loanUsd.toFixed(2)}`, class: 'text-green-600' },
+        '需还金额': { text: `🐔🏀${repayUsd.toFixed(2)}`, class: 'text-red-600' },
         '借款期限': { text: `${kunbeiConfig.loan_duration_hours}小时` },
         '提前还款优惠': { text: `${(kunbeiConfig.early_repay_discount * 100).toFixed(0)}%`, class: 'text-blue-600' }
       });
@@ -9375,7 +9547,7 @@
             // 增加额度
             slotUserData.quota = (slotUserData.quota || 0) + kunbeiCurrentAmount;
             // 立即更新UI显示
-            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -9409,8 +9581,8 @@
         document.getElementById('kunbeiHasLoan').classList.remove('hidden');
         document.getElementById('kunbeiNoLoan').classList.add('hidden');
         
-        document.getElementById('activeLoanAmount').textContent = `🥚${(loan.loan_amount / 500000).toFixed(2)}`;
-        document.getElementById('activeRepayAmount').textContent = `🥚${(loan.repay_amount / 500000).toFixed(2)}`;
+        document.getElementById('activeLoanAmount').textContent = `🐔🏀${(loan.loan_amount / 500000).toFixed(2)}`;
+        document.getElementById('activeRepayAmount').textContent = `🐔🏀${(loan.repay_amount / 500000).toFixed(2)}`;
         
         // 处理逾期时间显示
         if (remaining < 0) {
@@ -9436,7 +9608,7 @@
           const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
           const earlyAmount = loan.repay_amount - cashback;
           document.getElementById('kunbeiEarlyRepayInfo').classList.remove('hidden');
-          document.getElementById('activeEarlyRepay').textContent = `🥚${(earlyAmount / 500000).toFixed(2)}`;
+          document.getElementById('activeEarlyRepay').textContent = `🐔🏀${(earlyAmount / 500000).toFixed(2)}`;
         } else {
           document.getElementById('kunbeiEarlyRepayInfo').classList.add('hidden');
         }
@@ -9460,15 +9632,15 @@
       const isEarly = now < loan.due_at;
       
       let confirmContent = {
-        '借款金额': { text: `🥚${loanUsd.toFixed(2)}` },
-        '应还金额': { text: `🥚${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
+        '借款金额': { text: `🐔🏀${loanUsd.toFixed(2)}` },
+        '应还金额': { text: `🐔🏀${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
       };
       
       if (isEarly) {
         const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
         const actualRepay = (loan.repay_amount - cashback) / 500000;
-        confirmContent['提前还款'] = { text: `🥚${actualRepay.toFixed(2)}`, class: 'text-green-600' };
-        confirmContent['返现金额'] = { text: `🥚${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
+        confirmContent['提前还款'] = { text: `🐔🏀${actualRepay.toFixed(2)}`, class: 'text-green-600' };
+        confirmContent['返现金额'] = { text: `🐔🏀${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
       }
       
       const confirmed = await kunbeiConfirm('确认还款', confirmContent);
@@ -9495,7 +9667,7 @@
             const actualRepayAmount = data.data.actual_amount || loan.repay_amount;
             slotUserData.quota = Math.max(0, (slotUserData.quota || 0) - actualRepayAmount);
             // 立即更新UI显示
-            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -9556,7 +9728,7 @@
             <div class="flex justify-between items-start mb-2">
               <div class="text-sm">
                 <div class="font-semibold text-slate-900">
-                  借 🥚${loan.loan_amount_usd} → 还 🥚${loan.repay_amount_usd}
+                  借 🐔🏀${loan.loan_amount_usd} → 还 🐔🏀${loan.repay_amount_usd}
                 </div>
                 <div class="text-xs text-slate-500 mt-1">
                   借款: ${borrowTime}<br>到期: ${dueTime}${repaidTime ? `<br>还款: ${repaidTime}` : ''}
@@ -9568,9 +9740,9 @@
               loan.actual_repay_amount === 0 ? 
               '<div class="text-xs text-purple-600">管理员已豁免此借款</div>' :
               `<div class="text-xs text-green-600">
-                实还: 🥚${loan.actual_repay_amount_usd}
+                实还: 🐔🏀${loan.actual_repay_amount_usd}
                 ${loan.actual_repay_amount < loan.repay_amount ? 
-                  `· 返现 🥚${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
+                  `· 返现 🐔🏀${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
                 }
               </div>`
             ) : ''}
@@ -9582,7 +9754,7 @@
                 const multiplier = kunbeiConfig?.overdue_deduct_multiplier || 2.5;
                 
                 return `<div class="text-xs text-red-600 mt-1">
-                  系统扣除: 🥚${(deductedAmount / 500000).toFixed(2)}（欠款×${multiplier}）· 余额: 🥚${(balanceAfter / 500000).toFixed(2)}
+                  系统扣除: 🐔🏀${(deductedAmount / 500000).toFixed(2)}（欠款×${multiplier}）· 余额: 🐔🏀${(balanceAfter / 500000).toFixed(2)}
                 </div>`;
               })() : 
               ''
@@ -9598,7 +9770,7 @@
       
       // 更新规则内容
       const maxLoanUsd = kunbeiData.max_loan_amount ? kunbeiData.max_loan_amount / 500000 : kunbeiConfig.max_loan_amount / 500000;
-      document.getElementById('rulesUserMaxLoan').textContent = `🥚${maxLoanUsd.toFixed(0)}`;
+      document.getElementById('rulesUserMaxLoan').textContent = `🐔🏀${maxLoanUsd.toFixed(0)}`;
       document.getElementById('rulesRepayMultiplier').textContent = `${kunbeiConfig.repay_multiplier}倍`;
       document.getElementById('rulesLoanDuration').textContent = `${kunbeiConfig.loan_duration_hours}小时`;
       document.getElementById('rulesEarlyDiscount').textContent = `${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%`;
@@ -10323,7 +10495,7 @@
             updateSlotUI();
             
             // 更新老虎机界面的额度显示
-            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -10370,7 +10542,7 @@
             updateSlotUI();
             
             // 更新老虎机界面的额度显示
-            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🐔🏀${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -10459,11 +10631,11 @@
       const usd = quota / 500000;
       
       if (usd >= 1000) {
-        return '🥚' + (usd / 1000).toFixed(1) + 'K';  // 🥚5.0K
+        return '🐔🏀' + (usd / 1000).toFixed(1) + 'K';  // 🐔🏀5.0K
       } else if (usd >= 1) {
-        return '🥚' + usd.toFixed(0);  // 🥚100
+        return '🐔🏀' + usd.toFixed(0);  // 🐔🏀100
       } else {
-        return '🥚' + usd.toFixed(2);  // 🥚0.50
+        return '🐔🏀' + usd.toFixed(2);  // 🐔🏀0.50
       }
     }
 
