@@ -3209,7 +3209,7 @@
             </div>
             <div class="flex items-center gap-2 text-sm font-semibold">
               <span>💰 奖励:</span>
-              <span class="text-yellow-200">+$${rewardAmount}</span>
+              <span class="text-yellow-200">+🥚${rewardAmount}</span>
             </div>
           </div>
 
@@ -3508,7 +3508,7 @@
           }
 
           const quotaUSD = (quota / 500000).toFixed(2);
-          document.getElementById('quotaValue').textContent = '$' + quotaUSD;
+          document.getElementById('quotaValue').textContent = '🥚' + quotaUSD;
           document.getElementById('quotaUsage').textContent = ((used_quota / total * 100).toFixed(2)) + '%';
           document.getElementById('quotaStatus').textContent = quota < 10000000 ? '额度不足' : '充足';
           
@@ -3516,7 +3516,7 @@
           const maxModelscope = data.data.max_daily_donate_modelscope || 1;
           const maxIflow = data.data.max_daily_donate_iflow || 1;
           if (maxModelscope === maxIflow) {
-            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度并获得1次免费抽奖 · 每种类型每天可投喂 ${maxModelscope} 个`;
+            document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 🥚50 额度并获得1次免费抽奖 · 每种类型每天可投喂 ${maxModelscope} 个`;
           } else {
             document.getElementById('donateDescription').textContent = `每个有效的 API Key 可为您增加 $50 额度并获得1次免费抽奖 · ModelScope 每天可投喂 ${maxModelscope} 个，iFlow 每天可投喂 ${maxIflow} 个`;
           }
@@ -3841,7 +3841,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${typeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">$${quotaUSD}</span></p>
+                <p class="font-semibold text-slate-900">领取额度: <span class="text-lg text-green-600">🥚${quotaUSD}</span></p>
               </div>
             `;
           }).join('');
@@ -3862,7 +3862,7 @@
                   <p class="text-sm text-slate-600">${new Date(r.timestamp).toLocaleString('zh-CN', { hour12: false })}</p>
                   ${keyTypeLabel}
                 </div>
-                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">$${(r.total_quota_added / 500000).toFixed(2)}</span></p>
+                <p class="font-semibold text-slate-900">投喂 ${r.keys_count} 个 Key，增加额度: <span class="text-lg text-green-600">🥚${(r.total_quota_added / 500000).toFixed(2)}</span></p>
               </div>
             `;
           }).join('');
@@ -3968,7 +3968,7 @@
         button.onclick = () => setAdvancedBet(amount);
         button.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         button.setAttribute('data-amount', amount);
-        button.textContent = `$${amount}`;
+        button.textContent = `🥚${amount}`;
         container.appendChild(button);
       });
       
@@ -3979,7 +3979,7 @@
     function setAdvancedBet(amount) {
       advancedBetAmount = amount;
       document.getElementById('advancedBetSlider').value = amount;
-      document.getElementById('advancedBetDisplay').textContent = `$${amount}`;
+      document.getElementById('advancedBetDisplay').textContent = `🥚${amount}`;
       
       // 高亮选中的按钮
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
@@ -3999,7 +3999,7 @@
     // 🔥 更新投注金额显示（滑块）
     function updateAdvancedBetDisplay(value) {
       advancedBetAmount = parseInt(value);
-      document.getElementById('advancedBetDisplay').textContent = `$${value}`;
+      document.getElementById('advancedBetDisplay').textContent = `🥚${value}`;
       
       // 更新按钮高亮（只有精确匹配的才高亮）
       const presets = [100, 200, 300, 500];
@@ -4085,7 +4085,7 @@
       
       const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
       
-      progressText.textContent = `$${todayBetAmount.toFixed(2)} / $${betLimit.toLocaleString()}`;
+      progressText.textContent = `🥚${todayBetAmount.toFixed(2)} / 🥚${betLimit.toLocaleString()}`;
       progressBar.style.width = `${betPercentage}%`;
       
       // 根据进度改变颜色
@@ -4317,7 +4317,7 @@
             setAdvancedBet(advancedBetMin);
           }
           
-          // console.log(`[高级场] 投注范围: $${advancedBetMin} ~ $${advancedBetMax}, 步长: ${slider.step}`);
+          // console.log(`[高级场] 投注范围: 🥚${advancedBetMin} ~ 🥚${advancedBetMax}, 步长: ${slider.step}`);
         }
         
         // 🔥 立即更新进度条显示（确保高级场进度条显示）
@@ -5139,7 +5139,7 @@
 
         // 计算用户盈亏
         const userProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const userProfitText = `${userProfit >= 0 ? '+' : ''}$${(userProfit / 500000).toFixed(2)}`;
+        const userProfitText = `${userProfit >= 0 ? '+' : ''}🥚${(userProfit / 500000).toFixed(2)}`;
         const userProfitColor = userProfit >= 0 ? 'text-green-300' : 'text-red-300';
 
         // 更新右侧排行榜的用户统计
@@ -5201,7 +5201,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5260,7 +5260,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5383,7 +5383,7 @@
       //   bought_today: slotUserData.bought_today
       // });
 
-      const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+      const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
       document.getElementById('slotQuota').textContent = quotaText;
       // 同步更新移动端额度显示
       const slotQuotaMobile = document.getElementById('slotQuotaMobile');
@@ -5423,13 +5423,13 @@
       
       // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
-      document.getElementById('todayBet').textContent = `$${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('todayWon').textContent = `$${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
+      document.getElementById('todayBet').textContent = `🥚${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('todayWon').textContent = `🥚${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
       
       // 历史总计
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
-      document.getElementById('totalBet').textContent = `$${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('totalWon').textContent = `$${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalBet').textContent = `🥚${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalWon').textContent = `🥚${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
       
       // 🔥 更新投注限额进度条（在 updateSlotUI 中直接调用）
       // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
@@ -5495,11 +5495,11 @@
       if (spinButtonPrice) {
         if (isInAdvancedMode) {
           // 🔥 高级场显示选择的投注金额
-          spinButtonPrice.textContent = `($${advancedBetAmount})`;
+          spinButtonPrice.textContent = `(🥚${advancedBetAmount})`;
         } else {
           // 初级场显示配置的投注金额
           const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-          spinButtonPrice.textContent = `($${betAmountUSD})`;
+          spinButtonPrice.textContent = `(🥚${betAmountUSD})`;
         }
       }
 
@@ -5558,7 +5558,7 @@
         // 更新价格显示
         const buyPriceUSD = parseFloat((slotConfig.buy_spins_price / 500000).toFixed(2));
         const buySpinsPriceEl = document.getElementById('buySpinsPrice');
-        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `$${buyPriceUSD}`;
+        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `🥚${buyPriceUSD}`;
 
         // 更新已购次数和滑块最大值
         const buySpinsTodayEl = document.getElementById('buySpinsToday');
@@ -5661,7 +5661,7 @@
       // 更新弹窗中的价格显示
       const confirmPriceEl = document.getElementById('confirmBuyPrice');
       if (confirmPriceEl) {
-        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 $${buyPriceUSD}`;
+        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 🥚${buyPriceUSD}`;
       }
 
       // 显示确认弹窗
@@ -6417,12 +6417,12 @@
         <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           <div class="bg-white rounded-lg p-3 border-2 border-orange-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">待发放</p>
-            <p class="text-xl font-bold text-orange-600">$${(summary.pending_amount / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-orange-600">🥚${(summary.pending_amount / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">${summary.pending_count} 笔</p>
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-green-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">已发放</p>
-            <p class="text-xl font-bold text-green-600">$${(summary.success_amount / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-green-600">🥚${(summary.success_amount / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">${summary.success_count} 笔</p>
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-indigo-200 shadow-sm">
@@ -6432,7 +6432,7 @@
           </div>
           <div class="bg-white rounded-lg p-3 border-2 border-purple-200 shadow-sm">
             <p class="text-xs text-slate-600 mb-1">总金额</p>
-            <p class="text-xl font-bold text-purple-600">$${((summary.pending_amount + summary.success_amount) / 500000).toFixed(2)}</p>
+            <p class="text-xl font-bold text-purple-600">🥚${((summary.pending_amount + summary.success_amount) / 500000).toFixed(2)}</p>
             <p class="text-xs text-slate-500">待发+已发</p>
           </div>
         </div>
@@ -6471,7 +6471,7 @@
                   ${reward.error_message ? `<p class="text-xs text-red-600 mt-1">⚠️ ${reward.error_message}</p>` : ''}
                 </div>
                 <div class="text-right flex-shrink-0">
-                  <p class="text-lg font-bold text-orange-600 mb-1">$${reward.amount.toFixed(2)}</p>
+                  <p class="text-lg font-bold text-orange-600 mb-1">🥚${reward.amount.toFixed(2)}</p>
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium border ${statusColor}">
                     ${statusText}
                   </span>
@@ -6508,7 +6508,7 @@
                   <p class="text-xs text-slate-500">🕐 ${formatTimestamp(reward.created_at)}</p>
                 </div>
                 <div class="text-right flex-shrink-0">
-                  <p class="text-lg font-bold text-green-600 mb-1">$${reward.amount.toFixed(2)}</p>
+                  <p class="text-lg font-bold text-green-600 mb-1">🥚${reward.amount.toFixed(2)}</p>
                   <span class="inline-block px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700 border border-green-300">
                     已发放
                   </span>
@@ -6651,7 +6651,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-base font-bold text-purple-700 flex items-center gap-2">
                   <span>📊</span>
-                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}</span>
+                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}🥚${(netProfit / 500000).toFixed(2)}</span>
                 </h3>
               </div>
               
@@ -6665,20 +6665,20 @@
                 
                 <!-- 总投注 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-red-100">
-                  <div class="text-xl font-bold text-red-600">$${(totalBet / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-red-600">🥚${(totalBet / 500000).toFixed(2)}</div>
                   <p class="text-xs text-slate-600">总投注</p>
                 </div>
                 
                 <!-- 总赢得 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-green-100">
-                  <div class="text-xl font-bold text-green-600">$${(totalWin / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-green-600">🥚${(totalWin / 500000).toFixed(2)}</div>
                   <p class="text-xs text-slate-600">总赢得</p>
                 </div>
                 
                 <!-- 盈亏 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
                   <div class="text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
-                    ${netProfit >= 0 ? '+' : ''}$${(netProfit / 500000).toFixed(2)}
+                    ${netProfit >= 0 ? '+' : ''}🥚${(netProfit / 500000).toFixed(2)}
                   </div>
                   <p class="text-xs text-slate-600">净盈亏</p>
                 </div>
@@ -6782,12 +6782,12 @@
                       </span>
                     </div>
                     <div class="text-xs text-slate-600 leading-relaxed">
-                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">$${(r.bet_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">🥚${(r.bet_amount / 500000).toFixed(2)}</span>
                       <span class="mx-1">·</span>
-                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">$${(r.win_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">🥚${(r.win_amount / 500000).toFixed(2)}</span>
                       <span class="mx-1">·</span>
                       <span class="font-semibold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${netAmount >= 0 ? '+' : ''}$${(netAmount / 500000).toFixed(2)}
+                        ${netAmount >= 0 ? '+' : ''}🥚${(netAmount / 500000).toFixed(2)}
                       </span>
                     </div>
                     ${r.free_spin_awarded ? `
@@ -6949,7 +6949,7 @@
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注范围</p>
-                    <p class="text-white font-bold">$${advConfig.bet_min / 500000} - $${advConfig.bet_max / 500000}</p>
+                    <p class="text-white font-bold">🥚${advConfig.bet_min / 500000} - 🥚${advConfig.bet_max / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">会话时长</p>
@@ -6971,7 +6971,7 @@
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注金额</p>
-                    <p class="text-white font-bold">$${normalConfig.bet_amount / 500000}</p>
+                    <p class="text-white font-bold">🥚${normalConfig.bet_amount / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">每日次数</p>
@@ -6979,7 +6979,7 @@
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">最低额度</p>
-                    <p class="text-white font-bold">$${normalConfig.min_quota_required / 500000}</p>
+                    <p class="text-white font-bold">🥚${normalConfig.min_quota_required / 500000}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">购买功能</p>
@@ -7189,7 +7189,7 @@
               <div class="grid grid-cols-2 gap-3 text-sm">
                 <div class="bg-black/30 p-3 rounded-lg">
                   <p class="text-red-300">投注范围</p>
-                  <p class="text-white font-bold">$${config.min_bet} - $${config.max_bet}</p>
+                  <p class="text-white font-bold">🥚${config.min_bet} - 🥚${config.max_bet}</p>
                 </div>
                 <div class="bg-black/30 p-3 rounded-lg">
                   <p class="text-red-300">每日进入</p>
@@ -7387,16 +7387,16 @@
         // 更新用户统计
         document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
         document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
-        document.getElementById('myTotalBet').textContent = `$${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myTotalBet').textContent = `🥚${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
         
         // 计算并显示用户盈亏
         const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const myProfitText = `${myProfit >= 0 ? '+' : ''}$${(myProfit / 500000).toFixed(2)}`;
+        const myProfitText = `${myProfit >= 0 ? '+' : ''}🥚${(myProfit / 500000).toFixed(2)}`;
         const myProfitElement = document.getElementById('myTotalProfit');
         myProfitElement.textContent = myProfitText;
         myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
         
-        document.getElementById('myBiggestWin').textContent = `$${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
+        document.getElementById('myBiggestWin').textContent = `🥚${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
         
         const winTypeLabels = {
           'super_jackpot': '(🏆 超级大奖)',
@@ -7452,7 +7452,7 @@
                 
                 // 计算盈亏
                 const profit = (user.total_win || 0) - (user.total_bet || 0);
-                const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+                const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
                 const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
 
                 return `
@@ -7468,7 +7468,7 @@
                       <div class="text-right">
                         <p class="text-xs text-slate-500">总盈亏</p>
                         <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                        <p class="text-xs text-slate-500 mt-1">最大奖金: $${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
+                        <p class="text-xs text-slate-500 mt-1">最大奖金: 🥚${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
                       </div>
                     </div>
                   </div>
@@ -7517,7 +7517,7 @@
                   
                   // 计算盈亏
                   const profit = (user.total_win || 0) - (user.total_bet || 0);
-                  const profitText = `${profit >= 0 ? '+' : ''}$${(profit / 500000).toFixed(2)}`;
+                  const profitText = `${profit >= 0 ? '+' : ''}🥚${(profit / 500000).toFixed(2)}`;
                   const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
 
                   return `
@@ -7533,7 +7533,7 @@
                         <div class="text-right">
                           <p class="text-xs text-slate-500">总盈亏</p>
                           <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                          <p class="text-xs text-slate-500 mt-1">投注: $${(user.total_bet / 500000).toFixed(2)}</p>
+                          <p class="text-xs text-slate-500 mt-1">投注: 🥚${(user.total_bet / 500000).toFixed(2)}</p>
                         </div>
                       </div>
                     </div>
@@ -7650,23 +7650,23 @@
         
         // 更新统计信息（模态框内）
         document.getElementById('modalPendingCount').textContent = summary.pending_count;
-        document.getElementById('modalPendingAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
-        document.getElementById('modalSuccessAmount').textContent = `$${(summary.success_amount / 500000).toFixed(2)}`;
+        document.getElementById('modalPendingAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
+        document.getElementById('modalSuccessAmount').textContent = `🥚${(summary.success_amount / 500000).toFixed(2)}`;
         
         // 获取当前用户信息（包含余额）
         const userRes = await fetch('/api/user/quota');
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;
-          document.getElementById('modalCurrentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('modalCurrentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
           
           // 同时更新底部的当前余额显示
-          document.getElementById('currentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('currentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
         }
         
         // 更新底部统计栏的待发放信息
         document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
-        document.getElementById('pendingRewardsAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
+        document.getElementById('pendingRewardsAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
 
         // 渲染记录列表
         const container = document.getElementById('pendingRewardsList');
@@ -7721,7 +7721,7 @@
                   <div class="flex justify-between items-start">
                     <div class="flex-1">
                       <div class="flex items-center gap-2 mb-2">
-                        <span class="font-semibold text-${amountClass} text-lg">$${reward.amount.toFixed(2)}</span>
+                        <span class="font-semibold text-${amountClass} text-lg">🥚${reward.amount.toFixed(2)}</span>
                         ${statusBadge}
                       </div>
                       <p class="text-sm text-slate-700 mb-1">
@@ -7761,7 +7761,7 @@
 
     // 用户申请补发待发放奖金
     async function retryUserPendingReward(rewardId, amount) {
-      if (!confirm(`确认申请补发 $${amount} 的奖金吗？\n\n系统将立即尝试为您发放到账。`)) {
+      if (!confirm(`确认申请补发 🥚${amount} 的奖金吗？\n\n系统将立即尝试为您发放到账。`)) {
         return;
       }
 
@@ -7827,7 +7827,7 @@
         if (data.success && data.data) {
           const { summary } = data.data;
           document.getElementById('pendingRewardsCount').textContent = summary.pending_count;
-          document.getElementById('pendingRewardsAmount').textContent = `$${(summary.pending_amount / 500000).toFixed(2)}`;
+          document.getElementById('pendingRewardsAmount').textContent = `🥚${(summary.pending_amount / 500000).toFixed(2)}`;
         }
         
         // 同时获取当前余额
@@ -7835,7 +7835,7 @@
         const userData = await userRes.json();
         if (userData.success && userData.data) {
           const currentQuota = userData.data.quota || 0;
-          document.getElementById('currentBalance').textContent = `$${(currentQuota / 500000).toFixed(2)}`;
+          document.getElementById('currentBalance').textContent = `🥚${(currentQuota / 500000).toFixed(2)}`;
         }
       } catch (error) {
         console.error('加载待发放统计失败:', error);
@@ -8308,7 +8308,7 @@
           // 🔥 同步余额到主界面右上角（加油站页面的余额显示）
           const quotaValueEl = document.getElementById('quotaValue');
           if (quotaValueEl) {
-            quotaValueEl.textContent = `$${(quotaAfter / 500000).toFixed(2)}`;
+            quotaValueEl.textContent = `🥚${(quotaAfter / 500000).toFixed(2)}`;
           }
           
           // 🔥 更新待发放统计和余额显示
@@ -8355,10 +8355,10 @@
           const winAmountUSD = (Math.abs(winAmount) / 500000).toFixed(2);
           if (multiplier > 0) {
             soundManager.playWin(multiplier);
-            showToast(`💎 恭喜中奖！${multiplier}x 赢得 $${winAmountUSD}`, 'success');
+            showToast(`💎 恭喜中奖！${multiplier}x 赢得 🥚${winAmountUSD}`, 'success');
           } else if (multiplier < 0) {
             soundManager.playPunishment();
-            showToast(`⚖️ 律师函惩罚！扣除 $${winAmountUSD}`, 'error');
+            showToast(`⚖️ 律师函惩罚！扣除 🥚${winAmountUSD}`, 'error');
           } else {
             soundManager.playLose();
             showToast('未中奖', 'error');
@@ -8727,7 +8727,7 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.className = 'px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-all duration-200 text-sm';
-        btn.textContent = `$${amount}`;
+        btn.textContent = `🥚${amount}`;
         btn.onclick = () => selectSupremeBet(amount);
         container.appendChild(btn);
       });
@@ -8758,7 +8758,7 @@
       const betDisplay = document.getElementById('supremeBetDisplay');
       
       if (slider) slider.value = amount;
-      if (betDisplay) betDisplay.textContent = `$${amount}`;  // 🔥 按钮上显示美元
+      if (betDisplay) betDisplay.textContent = `🥚${amount}`;  // 🔥 按钮上显示美元
     }
     
     // 💎 更新至尊场投注显示
@@ -9081,9 +9081,9 @@
       const availableUsd = maxLoanUsd - activeLoanUsd;
       const usagePercent = maxLoanUsd > 0 ? (activeLoanUsd / maxLoanUsd * 100).toFixed(0) : 0;
       
-      document.getElementById('kunbeiAvailable').textContent = `$${availableUsd.toFixed(0)}`;
-      document.getElementById('kunbeiUsed').textContent = `$${activeLoanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiCredit').textContent = `$${maxLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiAvailable').textContent = `🥚${availableUsd.toFixed(0)}`;
+      document.getElementById('kunbeiUsed').textContent = `🥚${activeLoanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiCredit').textContent = `🥚${maxLoanUsd.toFixed(0)}`;
       document.getElementById('kunbeiUsageBar').style.width = `${usagePercent}%`;
       document.getElementById('kunbeiUsagePercent').textContent = `${usagePercent}%`;
       document.getElementById('kunbeiCreditScore').textContent = kunbeiData.stats?.credit_score || 100;
@@ -9152,9 +9152,9 @@
       const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
       const cashbackUsd = repayUsd * kunbeiConfig.early_repay_discount;
       
-      document.getElementById('kunbeiSliderValue').textContent = `$${loanUsd.toFixed(0)}`;
-      document.getElementById('kunbeiPreviewRepay').textContent = `$${repayUsd.toFixed(2)}`;
-      document.getElementById('kunbeiPreviewCashback').textContent = `$${cashbackUsd.toFixed(2)}`;
+      document.getElementById('kunbeiSliderValue').textContent = `🥚${loanUsd.toFixed(0)}`;
+      document.getElementById('kunbeiPreviewRepay').textContent = `🥚${repayUsd.toFixed(2)}`;
+      document.getElementById('kunbeiPreviewCashback').textContent = `🥚${cashbackUsd.toFixed(2)}`;
       
       const dueDate = new Date(Date.now() + kunbeiConfig.loan_duration_hours * 3600000);
       document.getElementById('kunbeiPreviewDue').textContent = 
@@ -9172,8 +9172,8 @@
       const repayUsd = loanUsd * kunbeiConfig.repay_multiplier;
       
       const confirmed = await kunbeiConfirm('确认借款', {
-        '借款金额': { text: `$${loanUsd.toFixed(2)}`, class: 'text-green-600' },
-        '需还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-red-600' },
+        '借款金额': { text: `🥚${loanUsd.toFixed(2)}`, class: 'text-green-600' },
+        '需还金额': { text: `🥚${repayUsd.toFixed(2)}`, class: 'text-red-600' },
         '借款期限': { text: `${kunbeiConfig.loan_duration_hours}小时` },
         '提前还款优惠': { text: `${(kunbeiConfig.early_repay_discount * 100).toFixed(0)}%`, class: 'text-blue-600' }
       });
@@ -9209,7 +9209,7 @@
             // 增加额度
             slotUserData.quota = (slotUserData.quota || 0) + kunbeiCurrentAmount;
             // 立即更新UI显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -9243,8 +9243,8 @@
         document.getElementById('kunbeiHasLoan').classList.remove('hidden');
         document.getElementById('kunbeiNoLoan').classList.add('hidden');
         
-        document.getElementById('activeLoanAmount').textContent = `$${(loan.loan_amount / 500000).toFixed(2)}`;
-        document.getElementById('activeRepayAmount').textContent = `$${(loan.repay_amount / 500000).toFixed(2)}`;
+        document.getElementById('activeLoanAmount').textContent = `🥚${(loan.loan_amount / 500000).toFixed(2)}`;
+        document.getElementById('activeRepayAmount').textContent = `🥚${(loan.repay_amount / 500000).toFixed(2)}`;
         
         // 处理逾期时间显示
         if (remaining < 0) {
@@ -9270,7 +9270,7 @@
           const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
           const earlyAmount = loan.repay_amount - cashback;
           document.getElementById('kunbeiEarlyRepayInfo').classList.remove('hidden');
-          document.getElementById('activeEarlyRepay').textContent = `$${(earlyAmount / 500000).toFixed(2)}`;
+          document.getElementById('activeEarlyRepay').textContent = `🥚${(earlyAmount / 500000).toFixed(2)}`;
         } else {
           document.getElementById('kunbeiEarlyRepayInfo').classList.add('hidden');
         }
@@ -9294,15 +9294,15 @@
       const isEarly = now < loan.due_at;
       
       let confirmContent = {
-        '借款金额': { text: `$${loanUsd.toFixed(2)}` },
-        '应还金额': { text: `$${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
+        '借款金额': { text: `🥚${loanUsd.toFixed(2)}` },
+        '应还金额': { text: `🥚${repayUsd.toFixed(2)}`, class: 'text-orange-600' }
       };
       
       if (isEarly) {
         const cashback = loan.repay_amount * kunbeiConfig.early_repay_discount;
         const actualRepay = (loan.repay_amount - cashback) / 500000;
-        confirmContent['提前还款'] = { text: `$${actualRepay.toFixed(2)}`, class: 'text-green-600' };
-        confirmContent['返现金额'] = { text: `$${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
+        confirmContent['提前还款'] = { text: `🥚${actualRepay.toFixed(2)}`, class: 'text-green-600' };
+        confirmContent['返现金额'] = { text: `🥚${(cashback / 500000).toFixed(2)}`, class: 'text-blue-600' };
       }
       
       const confirmed = await kunbeiConfirm('确认还款', confirmContent);
@@ -9329,7 +9329,7 @@
             const actualRepayAmount = data.data.actual_amount || loan.repay_amount;
             slotUserData.quota = Math.max(0, (slotUserData.quota || 0) - actualRepayAmount);
             // 立即更新UI显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -9390,7 +9390,7 @@
             <div class="flex justify-between items-start mb-2">
               <div class="text-sm">
                 <div class="font-semibold text-slate-900">
-                  借 $${loan.loan_amount_usd} → 还 $${loan.repay_amount_usd}
+                  借 🥚${loan.loan_amount_usd} → 还 🥚${loan.repay_amount_usd}
                 </div>
                 <div class="text-xs text-slate-500 mt-1">
                   借款: ${borrowTime}<br>到期: ${dueTime}${repaidTime ? `<br>还款: ${repaidTime}` : ''}
@@ -9402,9 +9402,9 @@
               loan.actual_repay_amount === 0 ? 
               '<div class="text-xs text-purple-600">管理员已豁免此借款</div>' :
               `<div class="text-xs text-green-600">
-                实还: $${loan.actual_repay_amount_usd}
+                实还: 🥚${loan.actual_repay_amount_usd}
                 ${loan.actual_repay_amount < loan.repay_amount ? 
-                  `· 返现 $${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
+                  `· 返现 🥚${((loan.repay_amount - loan.actual_repay_amount) / 500000).toFixed(2)}` : ''
                 }
               </div>`
             ) : ''}
@@ -9416,7 +9416,7 @@
                 const multiplier = kunbeiConfig?.overdue_deduct_multiplier || 2.5;
                 
                 return `<div class="text-xs text-red-600 mt-1">
-                  系统扣除: $${(deductedAmount / 500000).toFixed(2)}（欠款×${multiplier}）· 余额: $${(balanceAfter / 500000).toFixed(2)}
+                  系统扣除: 🥚${(deductedAmount / 500000).toFixed(2)}（欠款×${multiplier}）· 余额: 🥚${(balanceAfter / 500000).toFixed(2)}
                 </div>`;
               })() : 
               ''
@@ -9432,7 +9432,7 @@
       
       // 更新规则内容
       const maxLoanUsd = kunbeiData.max_loan_amount ? kunbeiData.max_loan_amount / 500000 : kunbeiConfig.max_loan_amount / 500000;
-      document.getElementById('rulesUserMaxLoan').textContent = `$${maxLoanUsd.toFixed(0)}`;
+      document.getElementById('rulesUserMaxLoan').textContent = `🥚${maxLoanUsd.toFixed(0)}`;
       document.getElementById('rulesRepayMultiplier').textContent = `${kunbeiConfig.repay_multiplier}倍`;
       document.getElementById('rulesLoanDuration').textContent = `${kunbeiConfig.loan_duration_hours}小时`;
       document.getElementById('rulesEarlyDiscount').textContent = `${(kunbeiConfig.early_repay_discount * 100).toFixed(1)}%`;
@@ -10157,7 +10157,7 @@
             updateSlotUI();
             
             // 更新老虎机界面的额度显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -10204,7 +10204,7 @@
             updateSlotUI();
             
             // 更新老虎机界面的额度显示
-            const quotaText = `$${(slotUserData.quota / 500000).toFixed(2)}`;
+            const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
@@ -10293,11 +10293,11 @@
       const usd = quota / 500000;
       
       if (usd >= 1000) {
-        return '$' + (usd / 1000).toFixed(1) + 'K';  // $5.0K
+        return '🥚' + (usd / 1000).toFixed(1) + 'K';  // 🥚5.0K
       } else if (usd >= 1) {
-        return '$' + usd.toFixed(0);  // $100
+        return '🥚' + usd.toFixed(0);  // 🥚100
       } else {
-        return '$' + usd.toFixed(2);  // $0.50
+        return '🥚' + usd.toFixed(2);  // 🥚0.50
       }
     }
 
