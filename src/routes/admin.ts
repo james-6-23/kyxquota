@@ -23,6 +23,15 @@ import type { DonateRecord } from '../types';
 
 const app = new Hono();
 
+function getTodayDate(): string {
+    const beijing = new Date().toLocaleString('zh-CN', {
+        timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour12: false
+    });
+    const [datePart] = beijing.split(' ');
+    const [y, m, d] = datePart.split('/');
+    return `${y}-${m}-${d}`;
+}
+
 /**
  * 管理员认证中间件
  */
@@ -80,6 +89,10 @@ app.get('/config', requireAdmin, async (c) => {
             iflow_group_id: config!.iflow_group_id || 26,
             max_daily_donate_modelscope: config!.max_daily_donate_modelscope || 1,
             max_daily_donate_iflow: config!.max_daily_donate_iflow || 1,
+            // 钱包配置
+            wallet_exchange_rate: config!.wallet_exchange_rate || 500000,
+            wallet_daily_transfer_limit_count: config!.wallet_daily_transfer_limit_count || 2,
+            wallet_initial_egg: config!.wallet_initial_egg || 250,
             updated_at: config!.updated_at,
         },
         cache_stats: {
@@ -87,6 +100,66 @@ app.get('/config', requireAdmin, async (c) => {
             memory_mb: (cacheStats.memoryUsage / 1024 / 1024).toFixed(2),
         },
     });
+});
+
+/**
+ * 更新钱包配置（汇率与每日划转次数上限）
+ */
+app.put('/wallet/config', requireAdmin, async (c) => {
+    const { wallet_exchange_rate, wallet_daily_transfer_limit_count, wallet_initial_egg } = await c.req.json();
+
+    const rate = parseInt(wallet_exchange_rate);
+    const limit = parseInt(wallet_daily_transfer_limit_count);
+    const initialEgg = parseInt(wallet_initial_egg);
+    if (!Number.isFinite(rate) || rate <= 0) {
+        return c.json({ success: false, message: '汇率必须为正整数（quota/🥚）' }, 400);
+    }
+    if (!Number.isFinite(limit) || limit < 0) {
+        return c.json({ success: false, message: '每日划转次数必须为非负整数' }, 400);
+    }
+    if (!Number.isFinite(initialEgg) || initialEgg < 0) {
+        return c.json({ success: false, message: '初始🥚额度必须为非负整数' }, 400);
+    }
+    adminQueries.updateWallet.run(rate, limit, initialEgg, Date.now());
+    return c.json({ success: true, message: '钱包配置已更新' });
+});
+
+/**
+ * 钱包概览（本地钱包统计）
+ */
+app.get('/wallet/overview', requireAdmin, async (c) => {
+    try {
+        const cfg = adminQueries.get.get();
+        const rate = (cfg?.wallet_exchange_rate as number) || 500000;
+        const today = getTodayDate();
+
+        const totalRow = db.query('SELECT COALESCE(SUM(balance_quota), 0) AS total FROM user_wallets').get() as any;
+        const totalQuota = totalRow ? (totalRow.total as number) : 0;
+
+        const inRow = db.query("SELECT COALESCE(SUM(amount_quota), 0) AS sum_in FROM wallet_transfer_records WHERE date = ? AND direction = 'in'").get(today) as any;
+        const outRow = db.query("SELECT COALESCE(SUM(amount_quota), 0) AS sum_out FROM wallet_transfer_records WHERE date = ? AND direction = 'out'").get(today) as any;
+        const sumIn = inRow ? (inRow.sum_in as number) : 0;
+        const sumOut = outRow ? (outRow.sum_out as number) : 0;
+        const net = sumIn - sumOut;
+
+        return c.json({
+            success: true,
+            data: {
+                rate,
+                total_quota: totalQuota,
+                total_egg: totalQuota / rate,
+                today_in_quota: sumIn,
+                today_out_quota: sumOut,
+                today_net_quota: net,
+                today_in_egg: sumIn / rate,
+                today_out_egg: sumOut / rate,
+                today_net_egg: net / rate,
+            }
+        });
+    } catch (e) {
+        logger.error('钱包概览', '统计失败', e);
+        return c.json({ success: false, message: '统计失败' }, 500);
+    }
 });
 
 /**

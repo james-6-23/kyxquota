@@ -699,6 +699,13 @@
                 <span>娱乐站</span>
               </button>
 
+              <!-- 钱包 -->
+              <button data-btn="wallet" onclick="switchToWallet()"
+                      class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
+                <span>👛</span>
+                <span>钱包</span>
+              </button>
+
               <!-- 成就 -->
               <button data-btn="achievement" onclick="switchToAchievement()"
                       class="px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100">
@@ -1142,6 +1149,65 @@
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 10l7-7m0 0l7 7m-7-7v18"></path>
         </svg>
       </button>
+    </div>
+  </div>
+
+  <!-- 钱包界面 -->
+  <div id="walletSection" class="hidden fixed inset-0 bg-slate-50 z-50 overflow-y-auto">
+    <nav class="bg-white shadow-sm border-b border-slate-200 fixed top-0 left-0 right-0 z-[60]">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center h-16">
+          <div class="flex items-center gap-8">
+            <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">KYX API</h1>
+            <div class="flex items-center gap-1" data-switch-container>
+              <button data-btn="refuel" onclick="switchToRefuel()" class="px-4 py-2 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2"><span>⛽</span><span>加油站</span></button>
+              <button data-btn="entertain" onclick="switchToEntertain()" class="px-4 py-2 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2"><span>🎰</span><span>娱乐站</span></button>
+              <button data-btn="wallet" onclick="switchToWallet()" class="px-4 py-2 rounded-lg font-medium text-sm bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md flex items-center gap-2"><span>👛</span><span>钱包</span></button>
+              <button data-btn="achievement" onclick="switchToAchievement()" class="px-4 py-2 rounded-lg font-medium text-sm text-slate-600 hover:bg-slate-100 flex items-center gap-2"><span>🏆</span><span>成就</span></button>
+            </div>
+          </div>
+          <div class="flex items-center gap-3 ml-auto">
+            <div class="relative">
+              <button onclick="toggleDropdown()" class="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-slate-100 transition-colors">
+                <div id="walletUserAvatar" class="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-semibold"><span id="walletUserInitial">U</span></div>
+                <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="max-w-3xl mx-auto p-6 pt-24">
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">👛 我的钱包</h2>
+        <div id="walletMsg" class="hidden mb-3 p-3 rounded"></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-lg bg-gradient-to-r from-sky-500 to-indigo-500 text-white">
+            <div class="text-sm opacity-90">公益站余额</div>
+            <div id="walletUpstream" class="text-3xl font-bold">🥚--</div>
+          </div>
+          <div class="p-4 rounded-lg bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+            <div class="text-sm opacity-90">本地钱包</div>
+            <div id="walletLocal" class="text-3xl font-bold">🥚--</div>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-slate-600">
+          <span>汇率：</span><span id="walletRate">1 🥚 = 500,000 quota</span>
+          <span class="mx-2">|</span>
+          <span>今日可划转次数：</span><span id="walletLimit"></span>
+        </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-xl font-bold text-slate-900 mb-4">划转</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div>
+            <label class="block text-sm text-slate-700 mb-1">金额（🥚）</label>
+            <input id="walletAmount" type="number" step="0.01" min="0" class="w-full px-3 py-2 border rounded-lg" placeholder="10">
+          </div>
+          <button id="btnIn" onclick="walletTransfer('in')" class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700">从公益站 → 本地</button>
+          <button id="btnOut" onclick="walletTransfer('out')" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">从本地 → 公益站</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -2938,6 +3004,8 @@
         window.location.hash = 'slot';
       } else if (mode === 'achievement') {
         window.location.hash = 'achievement';  // ✅ 支持成就页面hash
+      } else if (mode === 'wallet') {
+        window.location.hash = 'wallet';
       } else {
         window.location.hash = '';
       }
@@ -2950,6 +3018,8 @@
         return 'entertain';
       } else if (hash === 'achievement') {
         return 'achievement';  // ✅ 支持恢复成就页面
+      } else if (hash === 'wallet') {
+        return 'wallet';
       }
       return 'refuel';
     }
@@ -2971,11 +3041,15 @@
       const mainSection = document.getElementById('mainSection');
       const achievementSection = document.getElementById('achievementSection');
       const slotModal = document.getElementById('slotMachineModal');
+      const walletSection = document.getElementById('walletSection');
       const backToTopBtn = document.getElementById('backToTopBtn');
 
-      // 隐藏成就界面
+      // 隐藏成就/钱包界面
       if (achievementSection && !achievementSection.classList.contains('hidden')) {
         achievementSection.classList.add('hidden');
+      }
+      if (walletSection && !walletSection.classList.contains('hidden')) {
+        walletSection.classList.add('hidden');
       }
       
       // ✅ 隐藏返回顶部按钮
@@ -3024,10 +3098,14 @@
       // 更新主界面的切换按钮
       updateSwitchButtons('entertain');
 
-      // ✅ 隐藏成就界面
+      // ✅ 隐藏成就/钱包界面
       const achievementSection = document.getElementById('achievementSection');
+      const walletSection2 = document.getElementById('walletSection');
       if (achievementSection && !achievementSection.classList.contains('hidden')) {
         achievementSection.classList.add('hidden');
+      }
+      if (walletSection2 && !walletSection2.classList.contains('hidden')) {
+        walletSection2.classList.add('hidden');
       }
 
       // ✅ 隐藏返回顶部按钮
@@ -3066,8 +3144,12 @@
         slotModal.classList.remove('fade-exit');
       }
 
-      // 隐藏加油站界面
+      // 隐藏加油站/钱包界面
       mainSection.classList.add('hidden');
+      const walletSection4 = document.getElementById('walletSection');
+      if (walletSection4 && !walletSection4.classList.contains('hidden')) {
+        walletSection4.classList.add('hidden');
+      }
 
       // 显示成就界面
       achievementSection.classList.remove('hidden');
@@ -3088,6 +3170,75 @@
 
       // 加载成就数据
       loadAchievements();
+    }
+
+    // 切换到钱包
+    async function switchToWallet() {
+      if (currentMode === 'wallet') return;
+      saveCurrentMode('wallet');
+      updateSwitchButtons('wallet');
+
+      // 隐藏成就与主界面，显示钱包
+      const achievementSection = document.getElementById('achievementSection');
+      const mainSection = document.getElementById('mainSection');
+      const slotModal = document.getElementById('slotMachineModal');
+      if (achievementSection && !achievementSection.classList.contains('hidden')) achievementSection.classList.add('hidden');
+      if (slotModal && !slotModal.classList.contains('hidden')) slotModal.classList.add('hidden');
+      if (mainSection && !mainSection.classList.contains('hidden')) mainSection.classList.add('hidden');
+      const walletSection = document.getElementById('walletSection');
+      if (walletSection) walletSection.classList.remove('hidden');
+
+      await loadWalletBalance();
+    }
+
+    async function loadWalletBalance() {
+      try {
+        const res = await fetch('/api/wallet/balance');
+        const data = await res.json();
+        if (!data.success) throw new Error(data.message || '获取失败');
+        const { rate, limit_count, today_count, remaining_count, wallet_quota, upstream_quota } = data.data;
+        const toEgg = (q) => (q / rate).toFixed(2);
+        const walletLocal = document.getElementById('walletLocal');
+        const walletUp = document.getElementById('walletUpstream');
+        const walletRate = document.getElementById('walletRate');
+        const walletLimit = document.getElementById('walletLimit');
+        if (walletLocal) walletLocal.textContent = `🥚${toEgg(wallet_quota)}`;
+        if (walletUp) walletUp.textContent = `🥚${toEgg(upstream_quota)}`;
+        if (walletRate) walletRate.textContent = `1 🥚 = ${rate.toLocaleString()} quota`;
+        if (walletLimit) walletLimit.textContent = `${today_count}/${limit_count}（剩余 ${remaining_count} 次）`;
+      } catch (e) {
+        showToast('加载钱包失败', 'error');
+      }
+    }
+
+    async function walletTransfer(direction) {
+      const amountInput = document.getElementById('walletAmount');
+      const amount = parseFloat(amountInput.value);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        showToast('请输入有效金额', 'error');
+        return;
+      }
+      const btnIn = document.getElementById('btnIn');
+      const btnOut = document.getElementById('btnOut');
+      if (direction === 'in') btnIn.disabled = true; else btnOut.disabled = true;
+      try {
+        const res = await fetch('/api/wallet/transfer', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ direction, amount_egg: amount })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(data.message || '划转成功', 'success');
+          await loadWalletBalance();
+        } else {
+          showToast(data.message || '划转失败', 'error');
+        }
+      } catch (e) {
+        showToast('划转失败', 'error');
+      } finally {
+        if (direction === 'in') btnIn.disabled = false; else btnOut.disabled = false;
+      }
     }
 
     // 更新所有切换按钮的样式（主界面和老虎机界面同步）
@@ -3134,6 +3285,13 @@
           refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
           if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-md';
+        } else if (mode === 'wallet') {
+          const walletBtn = container.querySelector('[data-btn="wallet"]');
+          // 钱包模式激活（亮色）
+          refuelBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          entertainBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
+          if (walletBtn) walletBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-md';
+          if (achievementBtn) achievementBtn.className = 'px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all duration-200 text-slate-600 hover:bg-slate-100';
         }
       });
     }
@@ -8812,6 +8970,14 @@
             syncUserInfoToAchievement();
             // 加载成就数据
             loadAchievements();
+            // 加载待发放记录统计
+            loadPendingRewardsSummary();
+          } else if (restoredMode === 'wallet') {
+            // 恢复钱包页面
+            document.getElementById('mainSection').classList.add('hidden');
+            document.getElementById('walletSection').classList.remove('hidden');
+            await loadWalletBalance();
+            updateSwitchButtons('wallet');
             // 加载待发放记录统计
             loadPendingRewardsSummary();
           } else {

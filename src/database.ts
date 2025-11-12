@@ -211,7 +211,11 @@ export function initDatabase() {
       iflow_group_id INTEGER DEFAULT 26,
       max_daily_donate_modelscope INTEGER DEFAULT 1,
       max_daily_donate_iflow INTEGER DEFAULT 1,
-      updated_at INTEGER NOT NULL
+      updated_at INTEGER NOT NULL,
+      -- 钱包相关配置
+      wallet_exchange_rate INTEGER DEFAULT 500000, -- 每🥚对应的quota（默认500,000）
+      wallet_daily_transfer_limit_count INTEGER DEFAULT 2, -- 每日划转次数上限
+      wallet_initial_egg INTEGER DEFAULT 250 -- 初始🥚额度
     )
   `);
 
@@ -261,6 +265,49 @@ export function initDatabase() {
     } catch (e) {
         // 字段已存在，忽略错误
     }
+
+    // 兼容旧数据：添加钱包相关配置字段
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN wallet_exchange_rate INTEGER DEFAULT 500000');
+        console.log('✅ 已添加 wallet_exchange_rate 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN wallet_daily_transfer_limit_count INTEGER DEFAULT 2');
+        console.log('✅ 已添加 wallet_daily_transfer_limit_count 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN wallet_initial_egg INTEGER DEFAULT 250');
+        console.log('✅ 已添加 wallet_initial_egg 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 用户钱包表（余额以 quota 存储，展示时换算为🥚）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS user_wallets (
+      linux_do_id TEXT PRIMARY KEY,
+      balance_quota INTEGER DEFAULT 0,
+      updated_at INTEGER NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_wallets_updated_at ON user_wallets(updated_at)');
+
+    // 钱包划转记录（用于限次与审计）
+    db.exec(`
+    CREATE TABLE IF NOT EXISTS wallet_transfer_records (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      linux_do_id TEXT NOT NULL,
+      direction TEXT NOT NULL, -- in: 上游->本地, out: 本地->上游
+      amount_quota INTEGER NOT NULL, -- 以quota计
+      timestamp INTEGER NOT NULL,
+      date TEXT NOT NULL
+    )
+  `);
+    db.exec('CREATE INDEX IF NOT EXISTS idx_wallet_tx_user_date ON wallet_transfer_records(linux_do_id, date)');
 
     try {
         db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_donate_iflow INTEGER DEFAULT 1');
@@ -1689,6 +1736,10 @@ function initQueries() {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
             'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
+        ),
+        // 独立更新钱包配置（避免动到其它字段）
+        updateWallet: db.query(
+            'UPDATE admin_config SET wallet_exchange_rate = ?, wallet_daily_transfer_limit_count = ?, wallet_initial_egg = ?, updated_at = ? WHERE id = 1'
         ),
     };
 

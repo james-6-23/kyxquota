@@ -23,6 +23,7 @@ import { updateUserTotalStats, updateUserDailyStats, updateUserWeeklyStats, isUs
 import { calculateWinByScheme } from '../services/reward-calculator';
 import { supremeSlotQueries, userQueries, adminQueries } from '../database';
 import { updateKyxUserQuota } from '../services/kyx-api';
+import { db } from '../database';
 import { checkAndUnlockAchievement, updateAchievementProgress, recordSymbols, updateProfitTracking } from '../services/achievement';
 import logger from '../utils/logger';
 
@@ -246,14 +247,9 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
             return c.json({ success: false, message: '系统配置未找到' }, 500);
         }
 
-        // 🔥 获取用户当前额度（实时查询，与初级场/高级场保持一致）
-        const { getKyxUserById } = await import('../services/kyx-api');
-        const kyxUserResult = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-        if (!kyxUserResult.success || !kyxUserResult.user) {
-            return c.json({ success: false, message: '获取额度失败' }, 500);
-        }
-
-        const currentQuota = kyxUserResult.user.quota;
+        // 使用本地钱包余额
+        const walletRow = db.query('SELECT balance_quota FROM user_wallets WHERE linux_do_id = ?').get(session.linux_do_id) as any;
+        const currentQuota = walletRow ? (walletRow.balance_quota as number) : 0;
 
         // 检查额度是否足够
         if (currentQuota < betAmount) {
@@ -291,26 +287,13 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
         // 🔥 扣除投注额度（计算新额度 = 当前额度 - 投注金额，与初级场/高级场保持一致）
         const newQuotaAfterBet = currentQuota - betAmount;
 
-        logger.info('至尊场', `准备扣除投注 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
-
-        const deductResult = await updateKyxUserQuota(
-            user.kyx_user_id,
-            newQuotaAfterBet,
-            adminConfig.session,
-            adminConfig.new_api_user,
-            user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
-            kyxUserResult.user.group || 'default'
-        );
-
-        if (!deductResult || !deductResult.success) {
-            logger.error('至尊场', `❌ 扣除投注失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 错误: ${deductResult?.message || '未知错误'}`);
-            return c.json({
-                success: false,
-                message: `扣除投注失败: ${deductResult?.message || '未知错误'}，请稍后重试`
-            }, 500);
+        logger.info('至尊场', `准备扣除投注(本地钱包) - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuota}, 投注: ${betAmount}, 目标: ${newQuotaAfterBet}`);
+        if (newQuotaAfterBet < 0) {
+            return c.json({ success: false, message: '额度不足以支付投注金额' }, 400);
         }
-
-        logger.info('至尊场', `✅ 扣除投注成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
+        db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, updated_at) VALUES (?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
+          .run(session.linux_do_id, newQuotaAfterBet, Date.now(), newQuotaAfterBet, Date.now());
+        logger.info('至尊场', `✅ 扣除投注成功(本地钱包) - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
 
         // 🔥 显示中奖判定符号（与高级场保持一致）
         logger.info('中奖判定', `符号: ${symbols.join(',')}, 规则: ${winResult.ruleName}, 倍率: ${winResult.multiplier}`);
@@ -363,69 +346,17 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
 
         // 如果中奖，增加额度
         if (winAmount > 0) {
-            // 🔥 获取当前最新额度
-            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-            if (!currentKyxUser.success || !currentKyxUser.user) {
-                logger.error('至尊场', `❌ 中奖时获取用户信息失败 - 用户: ${getUserDisplayName(session.linux_do_id)}`);
-            } else {
-                const currentQuotaForWin = currentKyxUser.user.quota;
-                const newQuotaAfterWin = currentQuotaForWin + winAmount;
-
-                logger.info('至尊场', `准备添加奖金 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuotaForWin}, 奖金: ${winAmount}, 目标: ${newQuotaAfterWin}`);
-
-                const addResult = await updateKyxUserQuota(
-                    user.kyx_user_id,
-                    newQuotaAfterWin,
-                    adminConfig.session,
-                    adminConfig.new_api_user,
-                    user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
-                    kyxUserResult.user.group || 'default'
-                );
-
-                if (!addResult || !addResult.success) {
-                    logger.error('至尊场', `❌ 添加奖金失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 奖金: $${(winAmount / 500000).toFixed(2)}, 错误: ${addResult?.message || '未知错误'}`);
-                } else {
-                    quotaAfter = newQuotaAfterWin;
-                    logger.info('至尊场', `✅ 添加奖金成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 新余额: ${quotaAfter}`);
-                }
-            }
+            const addRes = addWallet(session.linux_do_id!, winAmount);
+            quotaAfter = addRes.newBalance;
+            logger.info('至尊场', `✅ 添加奖金成功(本地) - 用户: ${getUserDisplayName(session.linux_do_id)}, 新余额: ${quotaAfter}`);
         } else if (winAmount < 0) {
             // 🔥 惩罚扣除（律师函）
             const punishmentAmount = Math.abs(winAmount);
 
-            // 获取当前最新额度
-            const currentKyxUser = await getKyxUserById(user.kyx_user_id, adminConfig.session, adminConfig.new_api_user);
-            if (!currentKyxUser.success || !currentKyxUser.user) {
-                logger.error('至尊场', `❌ 惩罚时获取用户信息失败 - 用户: ${getUserDisplayName(session.linux_do_id)}`);
-                // 惩罚失败不阻止游戏继续，但需要记录
-            } else {
-                const currentQuotaForPunishment = currentKyxUser.user.quota;
-                // 计算实际扣除金额，确保不会为负数
-                const actualDeduction = Math.min(punishmentAmount, currentQuotaForPunishment);
-                const newQuotaAfterPunishment = currentQuotaForPunishment - actualDeduction;
-
-                logger.info('至尊场', `准备扣除惩罚 - 用户: ${getUserDisplayName(session.linux_do_id)}, 当前: ${currentQuotaForPunishment}, 惩罚: ${actualDeduction}, 目标: ${newQuotaAfterPunishment}`);
-
-                const deductPunishmentResult = await updateKyxUserQuota(
-                    user.kyx_user_id,
-                    newQuotaAfterPunishment,
-                    adminConfig.session,
-                    adminConfig.new_api_user,
-                    user.username,  // 🔥 使用公益站用户名（linuxdo_xxx格式）
-                    kyxUserResult.user.group || 'default'
-                );
-
-                if (!deductPunishmentResult || !deductPunishmentResult.success) {
-                    logger.error('至尊场', `❌ 惩罚扣除失败 - 用户: ${getUserDisplayName(session.linux_do_id)}, 应扣: $${(actualDeduction / 500000).toFixed(2)}, 错误: ${deductPunishmentResult?.message || '未知错误'}`);
-                    // 将 winAmount 设为0表示惩罚失败
-                    winAmount = 0;
-                } else {
-                    quotaAfter = newQuotaAfterPunishment;
-                    // winAmount 保持为负数，用于记录
-                    winAmount = -actualDeduction;
-                    logger.info('至尊场', `✅ 惩罚扣除成功 - 用户: ${getUserDisplayName(session.linux_do_id)}, 扣除: $${(actualDeduction / 500000).toFixed(2)}, 新余额: ${quotaAfter}`);
-                }
-            }
+            const dres = deductUpTo(session.linux_do_id!, punishmentAmount);
+            quotaAfter = dres.newBalance;
+            winAmount = -dres.actualDeducted;
+            logger.info('至尊场', `✅ 惩罚扣除成功(本地) - 用户: ${getUserDisplayName(session.linux_do_id)}, 扣除: 🥚${(actualDeduction / 500000).toFixed(2)}, 新余额: ${quotaAfter}`);
         }
 
         // 🔥 处理律师函惩罚封禁（与初级场/高级场保持一致）
@@ -599,6 +530,10 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
             message = '未中奖';
         }
 
+        // 使用本地钱包余额
+        const afterRow = db.query('SELECT balance_quota FROM user_wallets WHERE linux_do_id = ?').get(session.linux_do_id) as any;
+        const quotaAfterLocal = afterRow ? (afterRow.balance_quota as number) : 0;
+
         return c.json({
             success: true,
             message,
@@ -609,7 +544,7 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
                 multiplier: winResult.multiplier,
                 bet_amount: betAmount,
                 win_amount: winAmount,
-                quota_after: quotaAfter,
+                quota_after: quotaAfterLocal,
                 grant_free_spin: winResult.grantFreeSpin,
                 // 🏆 本次解锁的成就列表
                 unlocked_achievements: unlockedAchievements
