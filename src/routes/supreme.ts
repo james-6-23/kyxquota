@@ -291,8 +291,9 @@ supreme.post('/spin', requireAuth, createRateLimiter(RateLimits.SUPREME_SPIN), a
         if (newQuotaAfterBet < 0) {
             return c.json({ success: false, message: '额度不足以支付投注金额' }, 400);
         }
-        db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, updated_at) VALUES (?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
-          .run(session.linux_do_id, newQuotaAfterBet, Date.now(), newQuotaAfterBet, Date.now());
+        const now = Date.now();
+        db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
+          .run(session.linux_do_id, newQuotaAfterBet, now, now, newQuotaAfterBet, now);
         logger.info('至尊场', `✅ 扣除投注成功(本地钱包) - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
 
         // 🔥 显示中奖判定符号（与高级场保持一致）

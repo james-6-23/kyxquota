@@ -411,8 +411,9 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             if (newQuotaAfterBet < 0) {
                 return c.json({ success: false, message: `额度不足以支付投注金额 🥚${(betAmount / 500000).toFixed(2)}` }, 400);
             }
-            db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, updated_at) VALUES (?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
-              .run(session.linux_do_id as string, newQuotaAfterBet, Date.now(), newQuotaAfterBet, Date.now());
+            const now = Date.now();
+            db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
+              .run(session.linux_do_id as string, newQuotaAfterBet, now, now, newQuotaAfterBet, now);
             logger.info('老虎机', `✅ 扣除投注成功(本地钱包) - 用户: ${getUserDisplayName(session.linux_do_id)}, 剩余: ${newQuotaAfterBet}`);
         }
 
@@ -486,8 +487,9 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
             const walletRow2 = db.query('SELECT balance_quota FROM user_wallets WHERE linux_do_id = ?').get(session.linux_do_id as string) as any;
             const beforeWin = walletRow2 ? (walletRow2.balance_quota as number) : 0;
             const newQuotaAfterWin = beforeWin + winAmount;
-            db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, updated_at) VALUES (?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
-              .run(session.linux_do_id as string, newQuotaAfterWin, Date.now(), newQuotaAfterWin, Date.now());
+            const now2 = Date.now();
+            db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = ?, updated_at = ?')
+              .run(session.linux_do_id as string, newQuotaAfterWin, now2, now2, newQuotaAfterWin, now2);
         } else if (result.multiplier < 0) {
             // 惩罚扣除（负倍率）- 使用 calculationBetAmount 计算惩罚金额（本地钱包）
             const punishmentAmount = Math.floor(calculationBetAmount * Math.abs(result.multiplier));

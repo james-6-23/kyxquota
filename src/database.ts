@@ -291,6 +291,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS user_wallets (
       linux_do_id TEXT PRIMARY KEY,
       balance_quota INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )
   `);
@@ -300,6 +301,13 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE user_wallets ADD COLUMN balance_quota INTEGER DEFAULT 0');
         console.log('✅ 已添加 balance_quota 字段到 user_wallets');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    try {
+        db.exec('ALTER TABLE user_wallets ADD COLUMN created_at INTEGER DEFAULT 0');
+        console.log('✅ 已添加 created_at 字段到 user_wallets');
     } catch (e) {
         // 字段已存在，忽略错误
     }

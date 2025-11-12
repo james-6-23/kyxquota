@@ -131,8 +131,8 @@ app.post('/transfer', requireAuth, async (c) => {
     if (!upRes || !upRes.success) return c.json({ success: false, message: '上游扣款失败' }, 500);
     // 本地钱包增加
     const now = Date.now();
-    db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, updated_at) VALUES (?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = balance_quota + ?, updated_at = ?')
-      .run(linuxDoId, amountQuota, now, amountQuota, now);
+    db.query('INSERT INTO user_wallets (linux_do_id, balance_quota, created_at, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(linux_do_id) DO UPDATE SET balance_quota = balance_quota + ?, updated_at = ?')
+      .run(linuxDoId, amountQuota, now, now, amountQuota, now);
     // 记录
     db.query('INSERT INTO wallet_transfer_records (linux_do_id, direction, amount_quota, timestamp, date) VALUES (?, ?, ?, ?, ?)')
       .run(linuxDoId, 'in', amountQuota, now, today);
