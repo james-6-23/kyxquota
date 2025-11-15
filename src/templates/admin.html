@@ -623,6 +623,18 @@
               </div>
             </div>
             <div class="mb-6">
+              <label class="block text-sm font-semibold text-slate-700 mb-2">KYX API Base（newapi 地址）</label>
+              <div class="mb-2 p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="text-xs text-slate-500 mb-1">当前:</div>
+                <div id="currentKyxApiBase" class="text-sm font-mono text-slate-700 break-all">默认：https://api.kkyyxx.xyz</div>
+              </div>
+              <div class="flex gap-2 items-center">
+                <input type="text" id="kyxApiBaseValue" placeholder="例如：https://api.example.com" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg font-mono">
+                <button onclick="updateKyxApiBase()" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 whitespace-nowrap">更新</button>
+              </div>
+              <p class="text-xs text-slate-500 mt-1">留空则使用默认值：https://api.kkyyxx.xyz，可填写任意兼容 KYX API 的 newapi 域名。</p>
+            </div>
+            <div class="mb-6">
               <label class="block text-sm font-semibold text-slate-700 mb-2">Keys API URL</label>
               <div class="flex gap-2">
                 <input type="text" id="keysApiUrl" class="flex-1 px-4 py-2 border border-slate-300 rounded-lg">
@@ -4549,6 +4561,7 @@
           const usdValue = (claimQuota / 500000).toFixed(2);
           const maxDailyClaims = data.data.max_daily_claims || 1;
           const session = data.data.session || '';
+          const kyxApiBase = data.data.kyx_api_base || '';
           const newApiUser = data.data.new_api_user || '1';
           const keysApiUrl = data.data.keys_api_url || '';
           const keysAuthorization = data.data.keys_authorization || '';
@@ -4573,6 +4586,12 @@
           
           // 显示当前 new_api_user
           document.getElementById('currentNewApiUser').textContent = newApiUser;
+          // 显示当前 KYX API Base
+          const kyxBaseEl = document.getElementById('currentKyxApiBase');
+          if (kyxBaseEl) {
+            kyxBaseEl.textContent = kyxApiBase || '默认：https://api.kkyyxx.xyz';
+            kyxBaseEl.title = kyxApiBase || 'https://api.kkyyxx.xyz';
+          }
           
           document.getElementById('keysApiUrl').value = keysApiUrl;
           document.getElementById('modelscopeGroupId').value = modelscopeGroupId;
@@ -4720,6 +4739,25 @@
         if (data.success) {
           document.getElementById('newApiUserValue').value = '';
           await loadConfig();  // 重新加载配置以刷新显示
+        }
+      } catch (e) {
+        showMessage('更新失败', 'error');
+      }
+    }
+
+    async function updateKyxApiBase() {
+      const kyx_api_base = document.getElementById('kyxApiBaseValue').value.trim();
+      try {
+        const res = await fetch('/api/admin/config/kyx-api-base', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kyx_api_base }),
+        });
+        const data = await res.json();
+        showMessage(data.message, data.success ? 'success' : 'error');
+        if (data.success) {
+          document.getElementById('kyxApiBaseValue').value = '';
+          await loadConfig();
         }
       } catch (e) {
         showMessage('更新失败', 'error');

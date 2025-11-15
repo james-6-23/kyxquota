@@ -202,6 +202,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS admin_config (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       session TEXT DEFAULT '',
+      kyx_api_base TEXT DEFAULT '',
       new_api_user TEXT DEFAULT '1',
       claim_quota INTEGER DEFAULT 20000000,
       max_daily_claims INTEGER DEFAULT 1,
@@ -229,6 +230,14 @@ export function initDatabase() {
     try {
         db.exec('ALTER TABLE admin_config ADD COLUMN max_daily_claims INTEGER DEFAULT 1');
         console.log('✅ 已添加 max_daily_claims 字段');
+    } catch (e) {
+        // 字段已存在，忽略错误
+    }
+
+    // 兼容旧数据：如果表已存在但缺少 kyx_api_base 字段，则添加
+    try {
+        db.exec('ALTER TABLE admin_config ADD COLUMN kyx_api_base TEXT DEFAULT ''''');
+        console.log('✅ 已添加 kyx_api_base 字段');
     } catch (e) {
         // 字段已存在，忽略错误
     }
@@ -1758,7 +1767,7 @@ function initQueries() {
     adminQueries = {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
-            'UPDATE admin_config SET session = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
+            'UPDATE admin_config SET session = ?, kyx_api_base = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
         ),
         // 独立更新钱包配置（避免动到其它字段）
         updateWallet: db.query(

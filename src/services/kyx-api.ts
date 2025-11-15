@@ -2,8 +2,24 @@ import { CONFIG } from '../config';
 import { kyxApiLimiter } from './rate-limiter';
 import { userCache } from './user-cache';
 import { searchCache } from './search-cache';
-import { userQueries } from '../database';
+import { userQueries, adminQueries } from '../database';
 import logger from '../utils/logger';
+
+/**
+ * 获取当前生效的 KYX API Base（优先使用管理端配置）
+ */
+function getKyxApiBase(): string {
+    try {
+        const adminConfig = adminQueries.get.get();
+        const value = (adminConfig as any)?.kyx_api_base as string | undefined;
+        if (value && value.trim().length > 0) {
+            return value.trim().replace(/\/+$/, '');
+        }
+    } catch {
+        // 忽略配置读取错误，回退到默认值
+    }
+    return CONFIG.KYX_API_BASE.replace(/\/+$/, '');
+}
 
 /**
  * 获取用户显示名称（优先使用 linux_do_username，否则使用 linux_do_id）
@@ -59,7 +75,7 @@ export async function searchKyxUser(
                     logger.debug(context, `第${attempt}次尝试`);
                 }
 
-                const url = `${CONFIG.KYX_API_BASE}/api/user/search?keyword=${encodeURIComponent(username)}&p=${page}&page_size=${pageSize}`;
+                const url = `${getKyxApiBase()}/api/user/search?keyword=${encodeURIComponent(username)}&p=${page}&page_size=${pageSize}`;
 
                 const response = await fetch(url, {
                     headers: {
@@ -270,7 +286,7 @@ export async function getKyxUserById(
                     logger.info('查询用户', `用户ID: ${userId} - 第${attempt}次尝试（重试中）`);
                 }
 
-                const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/${userId}`, {
+                const response = await fetch(`${getKyxApiBase()}/api/user/${userId}`, {
                     headers: {
                         Cookie: `session=${session}`,
                         'new-api-user': newApiUser,
@@ -376,7 +392,7 @@ export async function updateKyxUserQuota(
                     logger.info('更新额度', `用户ID: ${userId}, 目标额度: ${newQuota}, 用户名: ${username} - 第${attempt}次尝试（重试中）`);
                 }
 
-                const response = await fetch(`${CONFIG.KYX_API_BASE}/api/user/`, {
+                const response = await fetch(`${getKyxApiBase()}/api/user/`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

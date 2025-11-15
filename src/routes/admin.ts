@@ -77,6 +77,7 @@ app.get('/config', requireAdmin, async (c) => {
     return c.json({
         success: true,
         data: {
+            kyx_api_base: config!.kyx_api_base || '',
             claim_quota: config!.claim_quota,
             max_daily_claims: config!.max_daily_claims || 1,
             session: config!.session || '',  // 返回实际的 session 值
@@ -100,6 +101,40 @@ app.get('/config', requireAdmin, async (c) => {
             memory_mb: (cacheStats.memoryUsage / 1024 / 1024).toFixed(2),
         },
     });
+});
+
+/**
+ * 更新 KYX API Base URL（newapi 地址）
+ */
+app.put('/config/kyx-api-base', requireAdmin, async (c) => {
+    const { kyx_api_base } = await c.req.json();
+
+    if (typeof kyx_api_base !== 'string' || !kyx_api_base.trim()) {
+        return c.json({ success: false, message: 'newapi 地址不能为空' }, 400);
+    }
+
+    // 允许 http/https 任意站点，只做最基本校验
+    const value = kyx_api_base.trim().replace(/\/+$/, '');
+
+    const config = adminQueries.get.get()!;
+    adminQueries.update.run(
+        config.session,
+        value,
+        config.new_api_user,
+        config.claim_quota,
+        config.max_daily_claims || 1,
+        config.keys_api_url,
+        config.keys_authorization,
+        config.modelscope_group_id,
+        config.iflow_group_id || 26,
+        config.max_daily_donate_modelscope || 1,
+        config.max_daily_donate_iflow || 1,
+        Date.now()
+    );
+
+    cacheManager.clear('admin_config');
+
+    return c.json({ success: true, message: 'newapi 地址已更新' });
 });
 
 /**
@@ -175,6 +210,7 @@ app.put('/config/quota', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.kyx_api_base || '',
         config.new_api_user,
         claim_quota,
         config.max_daily_claims || 1,
@@ -210,6 +246,7 @@ app.put('/config/max-daily-claims', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.kyx_api_base || '',
         config.new_api_user,
         config.claim_quota,
         max_daily_claims,
@@ -272,6 +309,7 @@ app.put('/config/new-api-user', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.kyx_api_base || '',
         new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -302,6 +340,7 @@ app.put('/config/keys-api-url', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.kyx_api_base || '',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -335,6 +374,7 @@ app.put('/config/keys-authorization', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.kyx_api_base || '',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
