@@ -901,6 +901,16 @@ slot.post('/spin', requireAuth, createRateLimiter(RateLimits.SLOT_SPIN), async (
         }
         // ========== 成就系统检查结束 ==========
 
+        // 重新读取本地钱包余额，作为本次旋转后的余额返回
+        let quotaAfterLocal = 0;
+        try {
+            const walletAfterRow = db.query('SELECT balance_quota FROM user_wallets WHERE linux_do_id = ?')
+                .get(session.linux_do_id as string) as any;
+            quotaAfterLocal = walletAfterRow ? (walletAfterRow.balance_quota as number) : 0;
+        } catch {
+            // 忽略读取错误，保持默认 0，不影响游戏主流程
+        }
+
         return c.json({
             success: true,
             data: {
