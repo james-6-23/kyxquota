@@ -236,7 +236,7 @@ export function initDatabase() {
 
     // 兼容旧数据：如果表已存在但缺少 kyx_api_base 字段，则添加
     try {
-        db.exec('ALTER TABLE admin_config ADD COLUMN kyx_api_base TEXT DEFAULT ''''');
+        db.exec("ALTER TABLE admin_config ADD COLUMN kyx_api_base TEXT DEFAULT ''");
         console.log('✅ 已添加 kyx_api_base 字段');
     } catch (e) {
         // 字段已存在，忽略错误
