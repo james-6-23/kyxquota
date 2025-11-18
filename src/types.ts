@@ -35,6 +35,7 @@ export interface DonateRecord {
 // 管理员配置
 export interface AdminConfig {
     session: string;
+    new_api_base: string;         // KYX API 地址，默认 https://api.kkyyxx.xyz
     new_api_user: string;
     claim_quota: number;
     max_daily_claims: number;  // 每日最大领取次数

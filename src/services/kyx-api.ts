@@ -11,14 +11,14 @@ import logger from '../utils/logger';
 function getKyxApiBase(): string {
     try {
         const adminConfig = adminQueries.get.get();
-        const value = (adminConfig as any)?.kyx_api_base as string | undefined;
+        const value = (adminConfig as any)?.new_api_base as string | undefined;
         if (value && value.trim().length > 0) {
             return value.trim().replace(/\/+$/, '');
         }
     } catch {
         // 忽略配置读取错误，回退到默认值
     }
-    return CONFIG.KYX_API_BASE.replace(/\/+$/, '');
+    return 'https://api.kkyyxx.xyz';
 }
 
 /**

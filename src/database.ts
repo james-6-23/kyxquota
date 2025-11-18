@@ -202,7 +202,7 @@ export function initDatabase() {
     CREATE TABLE IF NOT EXISTS admin_config (
       id INTEGER PRIMARY KEY CHECK (id = 1),
       session TEXT DEFAULT '',
-      kyx_api_base TEXT DEFAULT '',
+      new_api_base TEXT DEFAULT 'https://api.kkyyxx.xyz',
       new_api_user TEXT DEFAULT '1',
       claim_quota INTEGER DEFAULT 20000000,
       max_daily_claims INTEGER DEFAULT 1,
@@ -234,12 +234,24 @@ export function initDatabase() {
         // 字段已存在，忽略错误
     }
 
-    // 兼容旧数据：如果表已存在但缺少 kyx_api_base 字段，则添加
+    // 兼容旧数据：如果表已存在但缺少 new_api_base 字段，则添加
     try {
-        db.exec("ALTER TABLE admin_config ADD COLUMN kyx_api_base TEXT DEFAULT ''");
-        console.log('✅ 已添加 kyx_api_base 字段');
+        db.exec("ALTER TABLE admin_config ADD COLUMN new_api_base TEXT DEFAULT 'https://api.kkyyxx.xyz'");
+        console.log('✅ 已添加 new_api_base 字段');
     } catch (e) {
         // 字段已存在，忽略错误
+    }
+
+    // 迁移旧字段：如果存在 kyx_api_base 但 new_api_base 为空，则迁移数据
+    try {
+        const hasOldField = db.query("SELECT COUNT(*) as count FROM pragma_table_info('admin_config') WHERE name='kyx_api_base'").get();
+        if ((hasOldField as any).count > 0) {
+            // 复制旧数据（如果旧数据不为空）
+            db.exec("UPDATE admin_config SET new_api_base = kyx_api_base WHERE kyx_api_base IS NOT NULL AND kyx_api_base != '' AND (new_api_base IS NULL OR new_api_base = '')");
+            console.log('✅ 已将 kyx_api_base 数据迁移到 new_api_base');
+        }
+    } catch (e) {
+        // 忽略错误
     }
 
     // 兼容旧数据：重命名 group_id 为 modelscope_group_id
@@ -1381,49 +1393,123 @@ function insertDefaultData() {
             const now = Date.now();
             db.exec(`
                 INSERT INTO symbol_weight_configs (config_name, weight_m, weight_t, weight_n, weight_j, weight_lq, weight_bj, weight_zft, weight_bdk, weight_lsh, weight_man, description, is_deleted, created_at, updated_at)
-                VALUES 
-                    ('默认配置', 100, 100, 100, 100, 100, 100, 100, 100, 25, 25, '平衡的符号分布，适合日常运营', 0, ${now}, ${now}),
-                    ('高风险模式', 50, 50, 50, 50, 80, 80, 100, 120, 150, 30, '稀有符号出现概率提升，高风险高回报', 0, ${now}, ${now}),
-                    ('低风险模式', 150, 140, 130, 120, 30, 20, 10, 5, 2, 25, '常见符号出现概率提升，降低游戏难度', 0, ${now}, ${now})
+                VALUES
+                    ('初级场配置', 140, 140, 140, 140, 80, 70, 100, 90, 15, 65, '系统预设初级场权重配置', 0, ${now}, ${now}),
+                    ('高级场配置', 100, 80, 100, 80, 100, 100, 120, 120, 55, 35, '系统预设高级场权重配置', 0, ${now}, ${now}),
+                    ('至尊场配置', 70, 70, 60, 50, 120, 120, 60, 160, 80, 60, '系统预设至尊场权重配置', 0, ${now}, ${now})
             `);
-            console.log('✅ 已插入默认权重配置方案');
+            console.log('✅ 已插入系统预设权重配置方案（初级场 + 高级场 + 至尊场）');
         }
 
         // 插入默认奖励配置方案和规则（仅在表为空时）
         const existingRewardSchemes = db.query('SELECT COUNT(*) as count FROM reward_config_schemes').get() as { count: number };
         if (existingRewardSchemes.count === 0) {
             const now = Date.now();
-            // 创建初级场标准方案
+
+            // ========== 创建初级场预设方案 ==========
             db.exec(`
                 INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
-                VALUES ('初级场标准', '包含所有基础规则，含双连和惩罚机制', 0, ${now}, ${now})
+                VALUES ('初级', '系统预设初级场奖励方案', 0, ${now}, ${now})
             `);
             const normalSchemeId = db.query('SELECT last_insert_rowid() as id').get() as { id: number };
 
-            // 为初级场标准方案添加规则
+            // 为初级场添加规则
             db.exec(`
                 INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
                 VALUES
-                    (${normalSchemeId.id}, '按顺序jntm', 'super_jackpot', 'special', 'sequence', 4, '["j","n","t","m"]', 256, 0, 100, 1, '鸡你太美按顺序排列', ${now}, ${now}),
-                    (${normalSchemeId.id}, '乱序jntm', 'special_combo', 'special', 'combination', 4, '["j","n","t","m"]', 16, 0, 85, 1, '包含鸡你太美全部但不按顺序', ${now}, ${now}),
-                    (${normalSchemeId.id}, '四连', 'quad', 'combo', 'any', 4, NULL, 32, 1, 80, 1, '任意相同符号4个', ${now}, ${now}),
-                    (${normalSchemeId.id}, '严格3连', 'triple_strict', 'combo', 'consecutive', 3, NULL, 12, 1, 70, 1, '连续3个相同符号', ${now}, ${now}),
-                    (${normalSchemeId.id}, '普通3连', 'triple', 'combo', 'any', 3, NULL, 8, 0, 60, 1, '任意位置3个相同符号', ${now}, ${now}),
-                    (${normalSchemeId.id}, '两对2连', 'double_pair', 'combo', 'double_pair', 2, NULL, 5, 0, 50, 1, '两对连续的相同符号', ${now}, ${now}),
-                    (${normalSchemeId.id}, '严格2连', 'double_strict', 'combo', 'consecutive', 2, NULL, 3, 0, 40, 1, '连续2个相同符号', ${now}, ${now}),
-                    (${normalSchemeId.id}, '普通2连', 'double', 'combo', 'any', 2, NULL, 2, 0, 30, 1, '任意位置2个相同符号', ${now}, ${now})
+                    (${normalSchemeId.id}, '姬霓太美', 'sequence', 'special', 'sequence', 4, '["j","n","t","m"]', 128, 0, 100, 1, '必须按照 j→n→t→m 顺序出现', ${now}, ${now}),
+                    (${normalSchemeId.id}, '篮球大使', 'sequence', 'special', 'sequence', 4, '["bj","zft","bdk","lq"]', 128, 0, 100, 1, '必须按照 bj→zft→bdk→lq 顺序出现', ${now}, ${now}),
+                    (${normalSchemeId.id}, '鸡你不太美', 'combination', 'special', 'combination', 4, '["j","n","t","m"]', 16, 0, 90, 1, '包含 j、n、t、m 四个符号即可，顺序不限', ${now}, ${now}),
+                    (${normalSchemeId.id}, '厉不厉害你坤哥', 'combination', 'special', 'combination', 4, '["bj","zft","bdk","lq"]', 16, 0, 90, 1, '包含 bj、zft、bdk、lq 四个符号即可', ${now}, ${now}),
+                    (${normalSchemeId.id}, '4坤', '4-consecutive', 'special', '4-consecutive', 4, '["man"]', 50, 0, 85, 1, '4个man符号连续出现，25倍独立奖励（不可与其他规则组合）', ${now}, ${now}),
+                    (${normalSchemeId.id}, '4🐔', '4-consecutive', 'combo', '4-consecutive', 4, NULL, 32, 1, 80, 1, '任意4个相同符号连续出现', ${now}, ${now}),
+                    (${normalSchemeId.id}, '3坤', '3-consecutive', 'special', '3-consecutive', 3, '["man"]', 18, 0, 75, 1, '3个man符号连续出现，10倍（由于只剩1个位置，实际无法与其他规则组合）', ${now}, ${now}),
+                    (${normalSchemeId.id}, '普通3🐔', '3-any', 'combo', '3-any', 3, NULL, 8, 0, 60, 1, '任意3个相同符号（位置不限）', ${now}, ${now}),
+                    (${normalSchemeId.id}, '🔄 对称奖励（ABBA）', 'symmetric', 'combo', 'symmetric', 4, NULL, 10, 0, 56, 1, '前后对称格式（ABBA：首尾相同，中间相同，如JTTJ）', ${now}, ${now}),
+                    (${normalSchemeId.id}, '2坤', '2-consecutive', 'special', '2-consecutive', 2, '["man"]', 10, 0, 45, 1, '2个man符号连续出现，5倍（可与其他规则组合加成）', ${now}, ${now}),
+                    (${normalSchemeId.id}, '普通双🐔', '2-any', 'combo', '2-any', 2, NULL, 4, 0, 30, 1, '任意2个相同符号（位置不限）', ${now}, ${now})
             `);
 
-            // 为初级场标准方案添加律师函惩罚
+            // 为初级场添加律师函惩罚
             db.exec(`
                 INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
                 VALUES
                     (${normalSchemeId.id}, 1, 1, 0, 1, ${now}, ${now}),
                     (${normalSchemeId.id}, 2, 2, 0, 1, ${now}, ${now}),
-                    (${normalSchemeId.id}, 3, 3, 60, 1, ${now}, ${now}),
-                    (${normalSchemeId.id}, 4, 4, 60, 1, ${now}, ${now})
+                    (${normalSchemeId.id}, 3, 3, 2, 1, ${now}, ${now}),
+                    (${normalSchemeId.id}, 4, 4, 5, 1, ${now}, ${now})
             `);
-            console.log('✅ 已插入默认奖励配置方案');
+
+            // ========== 创建高级场预设方案 ==========
+            db.exec(`
+                INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
+                VALUES ('高级', '系统预设高级场奖励方案', 0, ${now}, ${now})
+            `);
+            const advancedSchemeId = db.query('SELECT last_insert_rowid() as id').get() as { id: number };
+
+            // 为高级场添加规则
+            db.exec(`
+                INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
+                VALUES
+                    (${advancedSchemeId.id}, '姬霓太美', 'sequence', 'special', 'sequence', 4, '["j","n","t","m"]', 256, 0, 100, 1, '必须按照 j→n→t→m 顺序出现', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '篮球大使', 'sequence', 'special', 'sequence', 4, '["bj","zft","bdk","lq"]', 256, 0, 100, 1, '必须按照 bj→zft→bdk→lq 顺序出现', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '姬霓不太美', 'combination', 'special', 'combination', 4, '["j","n","t","m"]', 32, 0, 90, 1, '包含 j、n、t、m 四个符号即可，顺序不限', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '你干嘛嗨嗨哟~~', 'combination', 'special', 'combination', 4, '["bj","zft","bdk","lq"]', 32, 0, 90, 1, '包含 bj、zft、bdk、lq 四个符号即可', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '4man', '4-consecutive', 'special', '4-consecutive', 4, '["man"]', 36, 0, 85, 1, '4个man符号连续出现，36倍独立奖励（不可与其他规则组合）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🎁 普通4连', '4-consecutive', 'combo', '4-consecutive', 4, NULL, 32, 1, 80, 1, '任意4个相同符号连续出现', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🦸 3man', '3-consecutive', 'special', '3-consecutive', 3, '["man"]', 10, 0, 75, 1, '3个man符号连续出现，10倍（由于只剩1个位置，实际无法与其他规则组合）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '💎 严格3连', '3-consecutive', 'combo', '3-consecutive', 3, NULL, 12, 0, 70, 1, '任意3个相同符号连续出现（严格相邻）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🔄 对称奖励（ABBA）', 'symmetric', 'combo', 'symmetric', 4, NULL, 10, 0, 56, 1, '前后对称格式（ABBA：首尾相同，中间相同，如JTTJ）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🎰 两对严格2连', 'double_pair', 'combo', 'double_pair', 4, NULL, 5, 0, 50, 1, '两对不同符号各自连续（MMNN或NNMM格式，排除4连和交错格式MNMN）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🏋️ 2Man', '2-consecutive', 'special', '2-consecutive', 2, '["man"]', 5, 0, 45, 1, '2个man符号连续出现，5倍（可与其他规则组合加成）', ${now}, ${now}),
+                    (${advancedSchemeId.id}, '🌟 严格2连', '2-consecutive', 'combo', '2-consecutive', 2, NULL, 3, 0, 40, 1, '任意2个相同符号连续出现', ${now}, ${now})
+            `);
+
+            // 为高级场添加律师函惩罚
+            db.exec(`
+                INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
+                VALUES
+                    (${advancedSchemeId.id}, 1, 2, 0, 1, ${now}, ${now}),
+                    (${advancedSchemeId.id}, 2, 4, 0, 1, ${now}, ${now}),
+                    (${advancedSchemeId.id}, 3, 6, 2, 1, ${now}, ${now}),
+                    (${advancedSchemeId.id}, 4, 8, 5, 1, ${now}, ${now})
+            `);
+
+            // ========== 创建至尊场预设方案 ==========
+            db.exec(`
+                INSERT INTO reward_config_schemes (scheme_name, description, is_deleted, created_at, updated_at)
+                VALUES ('至尊', '系统预设至尊场奖励方案', 0, ${now}, ${now})
+            `);
+            const supremeSchemeId = db.query('SELECT last_insert_rowid() as id').get() as { id: number };
+
+            // 为至尊场添加规则
+            db.exec(`
+                INSERT INTO reward_rules (scheme_id, rule_name, rule_type, rule_category, match_pattern, match_count, required_symbols, win_multiplier, grant_free_spin, priority, is_active, description, created_at, updated_at)
+                VALUES
+                    (${supremeSchemeId.id}, '姬霓实在是太美', 'sequence', 'special', 'sequence', 4, '["j","n","t","m"]', 512, 0, 100, 1, '必须按照 j→n→t→m 顺序出现', ${now}, ${now}),
+                    (${supremeSchemeId.id}, 'NBA篮球大使', 'sequence', 'special', 'sequence', 4, '["bj","zft","bdk","lq"]', 512, 0, 100, 1, '必须按照 bj→zft→bdk→lq 顺序出现', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '鸡你不太美', 'combination', 'special', 'combination', 4, '["j","n","t","m"]', 64, 0, 90, 1, '包含 j、n、t、m 四个符号即可，顺序不限', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '篮球大使', 'combination', 'special', 'combination', 4, '["bj","zft","bdk","lq"]', 64, 0, 90, 1, '包含 bj、zft、bdk、lq 四个符号即可', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '💪 Man*4', '4-consecutive', 'special', '4-consecutive', 4, '["man"]', 72, 0, 85, 1, '4个man符号连续出现，25倍独立奖励（不可与其他规则组合）', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '4连🐔', '4-consecutive', 'combo', '4-consecutive', 4, NULL, 72, 1, 80, 1, '任意4个相同符号连续出现', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '🦸 Man*3', '3-consecutive', 'special', '3-consecutive', 3, '["man"]', 40, 0, 75, 1, '3个man符号连续出现，10倍（由于只剩1个位置，实际无法与其他规则组合）', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '💎 严格3连', '3-consecutive', 'combo', '3-consecutive', 3, NULL, 36, 0, 70, 1, '任意3个相同符号连续出现（严格相邻）', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '🎰 两对严格2连', 'double_pair', 'combo', 'double_pair', 4, NULL, 30, 0, 50, 1, '两对不同符号各自连续（MMNN或NNMM格式，排除4连和交错格式MNMN）', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '🏋️ Man*2', '2-consecutive', 'special', '2-consecutive', 2, '["man"]', 25, 0, 45, 1, '2个man符号连续出现，5倍（可与其他规则组合加成）', ${now}, ${now}),
+                    (${supremeSchemeId.id}, '🌟 严格2连', '2-consecutive', 'combo', '2-consecutive', 2, NULL, 18, 0, 40, 1, '任意2个相同符号连续出现', ${now}, ${now})
+            `);
+
+            // 为至尊场添加律师函惩罚
+            db.exec(`
+                INSERT INTO punishment_lsh_configs (scheme_id, lsh_count, deduct_multiplier, ban_hours, is_active, created_at, updated_at)
+                VALUES
+                    (${supremeSchemeId.id}, 1, 16, 0, 1, ${now}, ${now}),
+                    (${supremeSchemeId.id}, 2, 32, 0, 1, ${now}, ${now}),
+                    (${supremeSchemeId.id}, 3, 64, 3, 1, ${now}, ${now}),
+                    (${supremeSchemeId.id}, 4, 96, 5, 1, ${now}, ${now})
+            `);
+
+            console.log('✅ 已插入系统预设奖励配置方案（初级 + 高级 + 至尊）');
         }
 
         // 插入默认至尊场配置
@@ -1767,7 +1853,7 @@ function initQueries() {
     adminQueries = {
         get: db.query<AdminConfig, never>('SELECT * FROM admin_config WHERE id = 1'),
         update: db.query(
-            'UPDATE admin_config SET session = ?, kyx_api_base = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
+            'UPDATE admin_config SET session = ?, new_api_base = ?, new_api_user = ?, claim_quota = ?, max_daily_claims = ?, keys_api_url = ?, keys_authorization = ?, modelscope_group_id = ?, iflow_group_id = ?, max_daily_donate_modelscope = ?, max_daily_donate_iflow = ?, updated_at = ? WHERE id = 1'
         ),
         // 独立更新钱包配置（避免动到其它字段）
         updateWallet: db.query(

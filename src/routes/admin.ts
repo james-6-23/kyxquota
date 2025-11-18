@@ -104,17 +104,17 @@ app.get('/config', requireAdmin, async (c) => {
 });
 
 /**
- * 更新 KYX API Base URL（newapi 地址）
+ * 更新 New API Base URL（newapi 地址）
  */
-app.put('/config/kyx-api-base', requireAdmin, async (c) => {
-    const { kyx_api_base } = await c.req.json();
+app.put('/config/new-api-base', requireAdmin, async (c) => {
+    const { new_api_base } = await c.req.json();
 
-    if (typeof kyx_api_base !== 'string' || !kyx_api_base.trim()) {
-        return c.json({ success: false, message: 'newapi 地址不能为空' }, 400);
+    // 允许空字符串（使用默认地址）
+    let value = 'https://api.kkyyxx.xyz'; // 默认地址
+    if (typeof new_api_base === 'string' && new_api_base.trim()) {
+        // 允许 http/https 任意站点，只做最基本校验
+        value = new_api_base.trim().replace(/\/+$/, '');
     }
-
-    // 允许 http/https 任意站点，只做最基本校验
-    const value = kyx_api_base.trim().replace(/\/+$/, '');
 
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
@@ -134,7 +134,8 @@ app.put('/config/kyx-api-base', requireAdmin, async (c) => {
 
     cacheManager.clear('admin_config');
 
-    return c.json({ success: true, message: 'newapi 地址已更新' });
+    console.log(`[管理员] ⚙️ 更新 New API Base - 新值: ${value}`);
+    return c.json({ success: true, message: 'New API Base 已更新' });
 });
 
 /**
@@ -210,7 +211,7 @@ app.put('/config/quota', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
-        config.kyx_api_base || '',
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         claim_quota,
         config.max_daily_claims || 1,
@@ -246,7 +247,7 @@ app.put('/config/max-daily-claims', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
-        config.kyx_api_base || '',
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         max_daily_claims,
@@ -278,6 +279,7 @@ app.put('/config/session', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         newSession,
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -309,7 +311,7 @@ app.put('/config/new-api-user', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
-        config.kyx_api_base || '',
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -340,7 +342,7 @@ app.put('/config/keys-api-url', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
-        config.kyx_api_base || '',
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -374,7 +376,7 @@ app.put('/config/keys-authorization', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
-        config.kyx_api_base || '',
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -405,6 +407,7 @@ app.put('/config/modelscope-group-id', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -436,6 +439,7 @@ app.put('/config/iflow-group-id', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -471,6 +475,7 @@ app.put('/config/max-daily-donate-modelscope', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
@@ -506,6 +511,7 @@ app.put('/config/max-daily-donate-iflow', requireAdmin, async (c) => {
     const config = adminQueries.get.get()!;
     adminQueries.update.run(
         config.session,
+        config.new_api_base || 'https://api.kkyyxx.xyz',
         config.new_api_user,
         config.claim_quota,
         config.max_daily_claims || 1,
