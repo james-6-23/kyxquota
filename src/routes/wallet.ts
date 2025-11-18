@@ -201,4 +201,54 @@ app.post('/transfer', requireAuth, async (c) => {
   }
 });
 
+// 获取划转记录
+app.get('/records', requireAuth, async (c) => {
+  const session = c.get('session');
+  const linuxDoId = session.linux_do_id as string;
+
+  // 获取查询参数
+  const limit = parseInt(c.req.query('limit') || '20');
+  const offset = parseInt(c.req.query('offset') || '0');
+
+  try {
+    // 获取总数
+    const countRow = db.query('SELECT COUNT(*) as total FROM wallet_transfer_records WHERE linux_do_id = ?')
+      .get(linuxDoId) as any;
+    const total = countRow ? (countRow.total as number) : 0;
+
+    // 获取记录列表
+    const records = db.query(`
+      SELECT id, direction, amount_quota, timestamp, date
+      FROM wallet_transfer_records
+      WHERE linux_do_id = ?
+      ORDER BY timestamp DESC
+      LIMIT ? OFFSET ?
+    `).all(linuxDoId, limit, offset) as any[];
+
+    // 获取汇率配置用于显示
+    const admin = adminQueries.get.get();
+    const rate = (admin?.wallet_exchange_rate as number) || 500000;
+
+    return c.json({
+      success: true,
+      data: {
+        total,
+        records: records.map(r => ({
+          id: r.id,
+          direction: r.direction,
+          amount_quota: r.amount_quota,
+          amount_egg: (r.amount_quota / rate).toFixed(2),
+          amount_chicken: (r.amount_quota / 500000).toFixed(2),
+          timestamp: r.timestamp,
+          date: r.date,
+          direction_text: r.direction === 'in' ? '公益站 → 本地' : '本地 → 公益站'
+        }))
+      }
+    });
+  } catch (error) {
+    logger.error('钱包记录', '获取划转记录失败', error);
+    return c.json({ success: false, message: '获取记录失败' }, 500);
+  }
+});
+
 export default app;

@@ -1299,26 +1299,22 @@
       </section>
 
       <section class="bg-white rounded-3xl shadow-lg border border-slate-100 p-6">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
           <div class="flex items-center gap-3">
-            <button class="px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500 to-blue-600 text-white text-sm font-medium shadow">交易记录</button>
-            <button class="px-4 py-2 rounded-full border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50">划转记录</button>
+            <span class="text-lg font-semibold text-slate-900">💳 划转记录</span>
           </div>
           <div class="flex items-center gap-2">
-            <select class="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 bg-white">
-              <option>全部类型</option>
-              <option>划转</option>
-              <option>收入</option>
-              <option>支出</option>
-            </select>
-            <button class="px-3 py-2 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50">
-              本月
+            <button onclick="loadWalletRecords()" class="px-4 py-2 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-medium transition-colors">
+              刷新记录
             </button>
           </div>
         </div>
-        <div class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-slate-500 text-sm">
-          <p class="font-medium text-slate-600">交易记录功能即将上线</p>
-          <p class="mt-1">我们将展示近期待处理的划转记录、上下游余额变化等信息，敬请期待。</p>
+
+        <!-- 记录列表 -->
+        <div id="walletRecordsContainer">
+          <div class="mt-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-slate-500 text-sm">
+            <p class="font-medium text-slate-600">正在加载划转记录...</p>
+          </div>
         </div>
       </section>
     </div>
@@ -3115,6 +3111,12 @@
 
     let currentUser = null;
     let currentMode = 'refuel'; // 'refuel' or 'entertain'
+    let walletExchangeRate = 500000; // 钱包汇率，默认500000，从API动态获取
+
+    // 全局货币转换函数
+    const CHICKEN_RATE = 500000; // 公益站固定汇率
+    const toEgg = (q) => (q / walletExchangeRate).toFixed(2); // quota 转 🥚
+    const toChicken = (q) => (q / CHICKEN_RATE).toFixed(2);   // quota 转 🐔🏀
 
     // 保存当前模式到 URL hash
     function saveCurrentMode(mode) {
@@ -3309,6 +3311,7 @@
       if (walletSection) walletSection.classList.remove('hidden');
 
       await loadWalletBalance();
+      await loadWalletRecords();
     }
 
     async function loadWalletBalance() {
@@ -3317,9 +3320,10 @@
         const data = await res.json();
         if (!data.success) throw new Error(data.message || '获取失败');
         const { rate, limit_count, today_count, remaining_count, wallet_quota, upstream_quota } = data.data;
-        const CHICKEN_RATE = 500000;
-        const toEgg = (q) => (q / rate).toFixed(2);
-        const toChicken = (q) => (q / CHICKEN_RATE).toFixed(2);
+
+        // 更新全局汇率变量
+        walletExchangeRate = rate || 500000;
+
         const formattedLocal = `🥚${toEgg(wallet_quota)}`;
         const formattedUpstream = `🐔🏀${toChicken(upstream_quota)}`;
 
@@ -3394,7 +3398,7 @@
             const slotQuotaEl = document.getElementById('slotQuota');
             const slotQuotaMobileEl = document.getElementById('slotQuotaMobile');
             if (slotQuotaEl || slotQuotaMobileEl) {
-              const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+              const quotaText = `🥚${toEgg(slotUserData.quota)}`;
               if (slotQuotaEl) slotQuotaEl.textContent = quotaText;
               if (slotQuotaMobileEl) slotQuotaMobileEl.textContent = quotaText;
             }
@@ -3410,6 +3414,92 @@
         } else if (btnOut) {
           btnOut.disabled = false;
         }
+      }
+    }
+
+    // 加载划转记录
+    async function loadWalletRecords() {
+      const container = document.getElementById('walletRecordsContainer');
+      if (!container) return;
+
+      try {
+        const res = await fetch('/api/wallet/records?limit=20');
+        const data = await res.json();
+
+        if (!data.success) {
+          container.innerHTML = `
+            <div class="rounded-2xl border border-dashed border-red-200 bg-red-50/60 p-10 text-center text-red-500 text-sm">
+              <p class="font-medium">加载失败</p>
+              <p class="mt-1">${data.message || '请稍后重试'}</p>
+            </div>
+          `;
+          return;
+        }
+
+        const records = data.data.records || [];
+
+        if (records.length === 0) {
+          container.innerHTML = `
+            <div class="rounded-2xl border border-dashed border-slate-200 bg-slate-50/60 p-10 text-center text-slate-500 text-sm">
+              <p class="font-medium text-slate-600">暂无划转记录</p>
+              <p class="mt-1">您还没有进行过任何划转操作</p>
+            </div>
+          `;
+          return;
+        }
+
+        // 渲染记录列表
+        const recordsHTML = records.map((record, index) => {
+          const isIn = record.direction === 'in';
+          const directionColor = isIn ? 'text-green-600' : 'text-blue-600';
+          const directionBg = isIn ? 'bg-green-50' : 'bg-blue-50';
+          const directionIcon = isIn ? '⬇️' : '⬆️';
+          const time = new Date(record.timestamp).toLocaleString('zh-CN', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          return `
+            <div class="flex items-center justify-between p-4 rounded-xl border border-slate-100 hover:bg-slate-50 transition-colors">
+              <div class="flex items-center gap-4">
+                <div class="${directionBg} ${directionColor} w-12 h-12 rounded-full flex items-center justify-center text-xl">
+                  ${directionIcon}
+                </div>
+                <div>
+                  <p class="font-semibold text-slate-900">${record.direction_text}</p>
+                  <p class="text-sm text-slate-500">${time}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="font-bold ${directionColor}">${isIn ? '+' : '-'}🥚${record.amount_egg}</p>
+                <p class="text-xs text-slate-500">${record.date}</p>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="space-y-3">
+            ${recordsHTML}
+          </div>
+          ${records.length >= 20 ? `
+            <div class="mt-4 text-center text-sm text-slate-500">
+              <p>仅显示最近20条记录</p>
+            </div>
+          ` : ''}
+        `;
+
+      } catch (error) {
+        console.error('加载划转记录失败:', error);
+        container.innerHTML = `
+          <div class="rounded-2xl border border-dashed border-red-200 bg-red-50/60 p-10 text-center text-red-500 text-sm">
+            <p class="font-medium">加载失败</p>
+            <p class="mt-1">网络错误，请稍后重试</p>
+          </div>
+        `;
       }
     }
 
@@ -4298,7 +4388,9 @@
         button.onclick = () => setAdvancedBet(amount);
         button.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         button.setAttribute('data-amount', amount);
-        button.textContent = `🐔🏀${amount}`;
+        // 高级场amount是美元，需转换：美元 * CHICKEN_RATE = quota，再 / walletExchangeRate = 🥚
+        const eggAmount = (amount * CHICKEN_RATE / walletExchangeRate).toFixed(2);
+        button.textContent = `🥚${eggAmount}`;
         container.appendChild(button);
       });
       
@@ -4309,8 +4401,9 @@
     function setAdvancedBet(amount) {
       advancedBetAmount = amount;
       document.getElementById('advancedBetSlider').value = amount;
-      document.getElementById('advancedBetDisplay').textContent = `🐔🏀${amount}`;
-      
+      const eggAmount = (amount * CHICKEN_RATE / walletExchangeRate).toFixed(2);
+      document.getElementById('advancedBetDisplay').textContent = `🥚${eggAmount}`;
+
       // 高亮选中的按钮
       document.querySelectorAll('.advanced-bet-option').forEach(btn => {
         if (parseInt(btn.dataset.amount) === amount) {
@@ -4319,17 +4412,18 @@
           btn.className = 'advanced-bet-option px-4 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg font-bold transition-all text-sm';
         }
       });
-      
+
       // 🔥 更新投注按钮状态
       updateAdvancedSpinButtonState();
-      
+
       // console.log('[高级场] 投注金额设置为:', amount);
     }
 
     // 🔥 更新投注金额显示（滑块）
     function updateAdvancedBetDisplay(value) {
       advancedBetAmount = parseInt(value);
-      document.getElementById('advancedBetDisplay').textContent = `🐔🏀${value}`;
+      const eggAmount = (value * CHICKEN_RATE / walletExchangeRate).toFixed(2);
+      document.getElementById('advancedBetDisplay').textContent = `🥚${eggAmount}`;
       
       // 更新按钮高亮（只有精确匹配的才高亮）
       const presets = [100, 200, 300, 500];
@@ -4391,31 +4485,27 @@
     
     // 🔥 更新指定场次的进度条
     function updateProgressBarForMode(mode) {
-      let progressText, progressBar, warningText, betLimit, todayBetAmount;
-      
+      let progressText, progressBar, warningText, betLimitQuota, todayBetQuota;
+
       if (mode === 'supreme') {
         progressText = document.getElementById('supremeDailyBetProgress');
         progressBar = document.getElementById('supremeDailyBetProgressBar');
         warningText = document.getElementById('supremeDailyBetWarning');
-        betLimit = supremeTokensData?.config?.daily_bet_limit 
-          ? supremeTokensData.config.daily_bet_limit / 500000 
-          : 50000;
-        todayBetAmount = (slotUserData.today_supreme_bet || 0) / 500000;
+        betLimitQuota = supremeTokensData?.config?.daily_bet_limit || (50000 * 500000);
+        todayBetQuota = slotUserData.today_supreme_bet || 0;
       } else if (mode === 'advanced') {
         progressText = document.getElementById('advancedDailyBetProgress');
         progressBar = document.getElementById('advancedDailyBetProgressBar');
         warningText = document.getElementById('advancedDailyBetWarning');
-        betLimit = advancedTicketsData?.config?.daily_bet_limit 
-          ? advancedTicketsData.config.daily_bet_limit / 500000 
-          : 5000;
-        todayBetAmount = (slotUserData.today_bet || 0) / 500000;
+        betLimitQuota = advancedTicketsData?.config?.daily_bet_limit || (5000 * 500000);
+        todayBetQuota = slotUserData.today_bet || 0;
       }
-      
+
       if (!progressText || !progressBar) return;
-      
-      const betPercentage = Math.min((todayBetAmount / betLimit) * 100, 100);
-      
-      progressText.textContent = `🐔🏀${todayBetAmount.toFixed(2)} / 🐔🏀${betLimit.toLocaleString()}`;
+
+      const betPercentage = Math.min((todayBetQuota / betLimitQuota) * 100, 100);
+
+      progressText.textContent = `🥚${toEgg(todayBetQuota)} / 🥚${toEgg(betLimitQuota)}`;
       progressBar.style.width = `${betPercentage}%`;
       
       // 根据进度改变颜色
@@ -5105,8 +5195,10 @@
         });
 
         // 2. 异步加载配置数据（不阻塞界面显示）
+        // 🔥 同时加载钱包余额以获取汇率配置
         const [configData] = await Promise.all([
           fetch('/api/slot/config').then(res => res.json()),
+          loadWalletBalance().catch(err => console.warn('加载钱包余额失败:', err)),
           // 添加一个最小延迟，确保动画流畅
           new Promise(resolve => setTimeout(resolve, 300))
         ]);
@@ -5469,7 +5561,7 @@
 
         // 计算用户盈亏
         const userProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const userProfitText = `${userProfit >= 0 ? '+' : ''}🐔🏀${(userProfit / 500000).toFixed(2)}`;
+        const userProfitText = `${userProfit >= 0 ? '+' : ''}🥚${toEgg(userProfit)}`;
         const userProfitColor = userProfit >= 0 ? 'text-green-300' : 'text-red-300';
 
         // 更新右侧排行榜的用户统计
@@ -5531,7 +5623,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🥚${toEgg(profit)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5590,7 +5682,7 @@
           
           // 计算盈亏
           const profit = (user.total_win || 0) - (user.total_bet || 0);
-          const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
+          const profitText = `${profit >= 0 ? '+' : ''}🥚${toEgg(profit)}`;
           const profitColor = profit >= 0 ? 'text-green-300' : 'text-red-300';
           
           return `
@@ -5713,7 +5805,7 @@
       //   bought_today: slotUserData.bought_today
       // });
 
-      const quotaText = `🥚${(slotUserData.quota / 500000).toFixed(2)}`;
+      const quotaText = `🥚${toEgg(slotUserData.quota)}`;
       document.getElementById('slotQuota').textContent = quotaText;
       // 同步更新移动端额度显示
       const slotQuotaMobile = document.getElementById('slotQuotaMobile');
@@ -5753,13 +5845,13 @@
       
       // 今日统计
       document.getElementById('todayPlayed').textContent = slotUserData.today_count || 0;
-      document.getElementById('todayBet').textContent = `🐔🏀${((slotUserData.today_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('todayWon').textContent = `🐔🏀${((slotUserData.today_win || 0) / 500000).toFixed(2)}`;
-      
+      document.getElementById('todayBet').textContent = `🥚${toEgg(slotUserData.today_bet || 0)}`;
+      document.getElementById('todayWon').textContent = `🥚${toEgg(slotUserData.today_win || 0)}`;
+
       // 历史总计
       document.getElementById('totalPlayed').textContent = slotUserData.total_spins || 0;
-      document.getElementById('totalBet').textContent = `🐔🏀${((slotUserData.total_bet || 0) / 500000).toFixed(2)}`;
-      document.getElementById('totalWon').textContent = `🐔🏀${((slotUserData.total_win || 0) / 500000).toFixed(2)}`;
+      document.getElementById('totalBet').textContent = `🥚${toEgg(slotUserData.total_bet || 0)}`;
+      document.getElementById('totalWon').textContent = `🥚${toEgg(slotUserData.total_win || 0)}`;
       
       // 🔥 更新投注限额进度条（在 updateSlotUI 中直接调用）
       // console.log('[updateSlotUI] 准备更新进度条，isInAdvancedMode:', isInAdvancedMode);
@@ -5824,12 +5916,12 @@
       const spinButtonPrice = document.getElementById('spinButtonPrice');
       if (spinButtonPrice) {
         if (isInAdvancedMode) {
-          // 🔥 高级场显示选择的投注金额
-          spinButtonPrice.textContent = `(🐔🏀${advancedBetAmount})`;
+          // 🔥 高级场显示选择的投注金额（高级场使用美元单位，需要转换为🥚）
+          const advBetEgg = (advancedBetAmount * CHICKEN_RATE / walletExchangeRate).toFixed(2);
+          spinButtonPrice.textContent = `(🥚${advBetEgg})`;
         } else {
           // 初级场显示配置的投注金额
-          const betAmountUSD = (slotConfig.bet_amount / 500000).toFixed(2);
-          spinButtonPrice.textContent = `(🐔🏀${betAmountUSD})`;
+          spinButtonPrice.textContent = `(🥚${toEgg(slotConfig.bet_amount)})`;
         }
       }
 
@@ -5886,9 +5978,8 @@
         buySpinsSection.classList.remove('hidden');
 
         // 更新价格显示
-        const buyPriceUSD = parseFloat((slotConfig.buy_spins_price / 500000).toFixed(2));
         const buySpinsPriceEl = document.getElementById('buySpinsPrice');
-        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `🐔🏀${buyPriceUSD}`;
+        if (buySpinsPriceEl) buySpinsPriceEl.textContent = `🥚${toEgg(slotConfig.buy_spins_price)}`;
 
         // 更新已购次数和滑块最大值
         const buySpinsTodayEl = document.getElementById('buySpinsToday');
@@ -5984,14 +6075,14 @@
       const buySpinsSlider = document.getElementById('buySpinsSlider');
       const buyCount = buySpinsSlider ? parseInt(buySpinsSlider.value) : 1;
       const totalPrice = slotConfig.buy_spins_price * buyCount;
-      const buyPriceUSD = (totalPrice / 500000).toFixed(2);
+      const buyPriceEgg = toEgg(totalPrice);
 
-      console.log('[购买次数] 显示确认弹窗 - 滑块值:', buySpinsSlider?.value, '购买数量:', buyCount, '总价:', buyPriceUSD);
+      console.log('[购买次数] 显示确认弹窗 - 滑块值:', buySpinsSlider?.value, '购买数量:', buyCount, '总价:', buyPriceEgg);
 
       // 更新弹窗中的价格显示
       const confirmPriceEl = document.getElementById('confirmBuyPrice');
       if (confirmPriceEl) {
-        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 🐔🏀${buyPriceUSD}`;
+        confirmPriceEl.textContent = `购买 ${buyCount} 次抽奖机会，花费 🥚${buyPriceEgg}`;
       }
 
       // 显示确认弹窗
@@ -6981,7 +7072,7 @@
               <div class="flex items-center justify-between mb-3">
                 <h3 class="text-base font-bold text-purple-700 flex items-center gap-2">
                   <span>📊</span>
-                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}🐔🏀${(netProfit / 500000).toFixed(2)}</span>
+                  <span>总记录: ${totalCount}次 · 中奖率: ${winRate}% · 盈亏: ${netProfit >= 0 ? '+' : ''}🥚${toEgg(netProfit)}</span>
                 </h3>
               </div>
               
@@ -6995,20 +7086,20 @@
                 
                 <!-- 总投注 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-red-100">
-                  <div class="text-xl font-bold text-red-600">🐔🏀${(totalBet / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-red-600">🥚${toEgg(totalBet)}</div>
                   <p class="text-xs text-slate-600">总投注</p>
                 </div>
-                
+
                 <!-- 总赢得 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm border border-green-100">
-                  <div class="text-xl font-bold text-green-600">🐔🏀${(totalWin / 500000).toFixed(2)}</div>
+                  <div class="text-xl font-bold text-green-600">🥚${toEgg(totalWin)}</div>
                   <p class="text-xs text-slate-600">总赢得</p>
                 </div>
-                
+
                 <!-- 盈亏 -->
                 <div class="bg-white rounded-lg p-2 text-center shadow-sm ${netProfit >= 0 ? 'border border-green-100' : 'border border-red-100'}">
                   <div class="text-xl font-bold ${netProfit >= 0 ? 'text-green-600' : 'text-red-600'}">
-                    ${netProfit >= 0 ? '+' : ''}🐔🏀${(netProfit / 500000).toFixed(2)}
+                    ${netProfit >= 0 ? '+' : ''}🥚${toEgg(netProfit)}
                   </div>
                   <p class="text-xs text-slate-600">净盈亏</p>
                 </div>
@@ -7112,12 +7203,12 @@
                       </span>
                     </div>
                     <div class="text-xs text-slate-600 leading-relaxed">
-                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">🐔🏀${(r.bet_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">投注</span> <span class="font-semibold text-slate-900">🥚${toEgg(r.bet_amount)}</span>
                       <span class="mx-1">·</span>
-                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">🐔🏀${(r.win_amount / 500000).toFixed(2)}</span>
+                      <span class="text-slate-700">赢得</span> <span class="font-semibold ${amountClass}">🥚${toEgg(r.win_amount)}</span>
                       <span class="mx-1">·</span>
                       <span class="font-semibold ${netAmount >= 0 ? 'text-green-600' : 'text-red-600'}">
-                        ${netAmount >= 0 ? '+' : ''}🐔🏀${(netAmount / 500000).toFixed(2)}
+                        ${netAmount >= 0 ? '+' : ''}🥚${toEgg(netAmount)}
                       </span>
                     </div>
                     ${r.free_spin_awarded ? `
@@ -7276,10 +7367,12 @@
             if (mode === 'advanced') {
               const advConfig = data.data.advancedConfig;
               if (advConfig) {
+                const betMinEgg = (advConfig.bet_min * CHICKEN_RATE / walletExchangeRate).toFixed(2);
+                const betMaxEgg = (advConfig.bet_max * CHICKEN_RATE / walletExchangeRate).toFixed(2);
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注范围</p>
-                    <p class="text-white font-bold">🐔🏀${advConfig.bet_min / 500000} - 🐔🏀${advConfig.bet_max / 500000}</p>
+                    <p class="text-white font-bold">🥚${betMinEgg} - 🥚${betMaxEgg}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">会话时长</p>
@@ -7301,7 +7394,7 @@
                 rulesHTML += `
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">投注金额</p>
-                    <p class="text-white font-bold">🐔🏀${normalConfig.bet_amount / 500000}</p>
+                    <p class="text-white font-bold">🥚${toEgg(normalConfig.bet_amount)}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">每日次数</p>
@@ -7309,7 +7402,7 @@
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">最低额度</p>
-                    <p class="text-white font-bold">🐔🏀${normalConfig.min_quota_required / 500000}</p>
+                    <p class="text-white font-bold">🥚${toEgg(normalConfig.min_quota_required)}</p>
                   </div>
                   <div class="bg-black/30 p-3 rounded-lg">
                     <p class="${themeColors.sectionTitle}">购买功能</p>
@@ -7717,16 +7810,16 @@
         // 更新用户统计
         document.getElementById('myRank').textContent = userRank > 0 ? `#${userRank}` : '-';
         document.getElementById('myTotalSpins').textContent = userStats.total_spins || 0;
-        document.getElementById('myTotalBet').textContent = `🐔🏀${((userStats.total_bet || 0) / 500000).toFixed(2)}`;
-        
+        document.getElementById('myTotalBet').textContent = `🥚${toEgg(userStats.total_bet || 0)}`;
+
         // 计算并显示用户盈亏
         const myProfit = (userStats.total_win || 0) - (userStats.total_bet || 0);
-        const myProfitText = `${myProfit >= 0 ? '+' : ''}🐔🏀${(myProfit / 500000).toFixed(2)}`;
+        const myProfitText = `${myProfit >= 0 ? '+' : ''}🥚${toEgg(myProfit)}`;
         const myProfitElement = document.getElementById('myTotalProfit');
         myProfitElement.textContent = myProfitText;
         myProfitElement.className = `text-2xl font-bold ${myProfit >= 0 ? 'text-green-600' : 'text-red-600'}`;
-        
-        document.getElementById('myBiggestWin').textContent = `🐔🏀${((userStats.biggest_win || 0) / 500000).toFixed(2)}`;
+
+        document.getElementById('myBiggestWin').textContent = `🥚${toEgg(userStats.biggest_win || 0)}`;
         
         const winTypeLabels = {
           'super_jackpot': '(🏆 超级大奖)',
@@ -7782,7 +7875,7 @@
                 
                 // 计算盈亏
                 const profit = (user.total_win || 0) - (user.total_bet || 0);
-                const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
+                const profitText = `${profit >= 0 ? '+' : ''}🥚${toEgg(profit)}`;
                 const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-600';
 
                 return `
@@ -7798,7 +7891,7 @@
                       <div class="text-right">
                         <p class="text-xs text-slate-500">总盈亏</p>
                         <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                        <p class="text-xs text-slate-500 mt-1">最大奖金: 🐔🏀${(user.biggest_win / 500000).toFixed(2)} ${winTypeLabel}</p>
+                        <p class="text-xs text-slate-500 mt-1">最大奖金: 🥚${toEgg(user.biggest_win)} ${winTypeLabel}</p>
                       </div>
                     </div>
                   </div>
@@ -7847,7 +7940,7 @@
                   
                   // 计算盈亏
                   const profit = (user.total_win || 0) - (user.total_bet || 0);
-                  const profitText = `${profit >= 0 ? '+' : ''}🐔🏀${(profit / 500000).toFixed(2)}`;
+                  const profitText = `${profit >= 0 ? '+' : ''}🥚${toEgg(profit)}`;
                   const profitColor = profit >= 0 ? 'text-green-600' : 'text-red-700';
 
                   return `
@@ -7863,7 +7956,7 @@
                         <div class="text-right">
                           <p class="text-xs text-slate-500">总盈亏</p>
                           <p class="text-2xl font-bold ${profitColor}">${profitText}</p>
-                          <p class="text-xs text-slate-500 mt-1">投注: 🐔🏀${(user.total_bet / 500000).toFixed(2)}</p>
+                          <p class="text-xs text-slate-500 mt-1">投注: 🥚${toEgg(user.total_bet)}</p>
                         </div>
                       </div>
                     </div>
